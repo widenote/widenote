@@ -1,0 +1,115 @@
+# RFC: Memory Model
+
+Status: Draft  
+Date: 2026-06-23
+
+## Context
+
+WideNote uses native Memory instead of a PKM core. The product default is silent capture and automatic acceptance for low-risk durable memories, with review reserved for conflicts, sensitive content, weak evidence, and low confidence.
+
+## Goals
+
+- Make Memory the durable user-editable knowledge layer.
+- Preserve source links for every Memory item.
+- Auto-accept safe memories without requiring user confirmation.
+- Keep review queues small and meaningful.
+- Support deletion, tombstones, revision history, and future sync.
+
+## Core Entities
+
+### Memory Candidate
+
+An agent-produced proposal before policy evaluation.
+
+Required fields:
+
+- `id`
+- `key`
+- `body`
+- `source_refs[]`
+- `memory_type`
+- `confidence`
+- `sensitivity`
+- `durability`
+- `status`
+- `policy_reasons[]`
+- `conflicting_memory_ids[]`
+
+### Memory Item
+
+The accepted durable record.
+
+Required fields:
+
+- `id`
+- `key`
+- `body`
+- `source_refs[]`
+- `memory_type`
+- `confidence`
+- `sensitivity`
+- `status`
+- `revision`
+- `created_at`
+- `updated_at`
+- `tombstone`
+
+## Memory Types
+
+| Type | Examples | Default Handling |
+| --- | --- | --- |
+| `preference` | Preferred tools, communication style | Auto-accept when evidenced and low sensitivity |
+| `project` | Current project facts, repo names, module decisions | Auto-accept when evidenced and non-conflicting |
+| `task_context` | Commit intent, near-term work context | Auto-accept when durable enough |
+| `person` | Names and relationship context | Review when sensitive or ambiguous |
+| `health` | Health, medical, therapy, medication | Review |
+| `finance` | Income, expenses, account details | Review |
+| `location` | Home, travel, frequent places | Review unless explicitly low sensitivity |
+| `credential` | Secrets, tokens, passwords | Reject or redact; never auto-accept |
+| `insight` | Inferred pattern or reflection | Review unless strongly evidenced |
+
+## Sensitivity
+
+| Level | Meaning | Auto-Accept |
+| --- | --- | --- |
+| `low` | Normal project, preference, or workflow context | Allowed |
+| `medium` | Personal context that could surprise the user | Review |
+| `high` | Health, finance, location, relationship, legal, credential-adjacent | Review or reject |
+
+## Auto-Accept Policy
+
+Auto-accept only when all conditions are true:
+
+- Candidate has at least one source ref with evidence text or URI.
+- Candidate has `confidence != low`.
+- Candidate has `sensitivity == low`.
+- Candidate has `durability == durable`.
+- Candidate does not conflict with an active Memory item.
+- Candidate type is not `credential`, `health`, `finance`, or `location`.
+
+Everything else goes to review. Review is a background correction surface, not a capture-time confirmation dialog.
+
+## User Visibility
+
+The product should remain mostly silent during capture. Visibility happens through:
+
+- Recent Memory section on the home tab.
+- Daily/weekly review cards for accepted memories.
+- Searchable Memory detail with source links.
+- Reversible delete/tombstone behavior.
+
+## Conflict Detection
+
+Phase one uses exact key conflict detection:
+
+- Same `key`
+- Existing active item
+- Different normalized `body`
+
+Future versions may add semantic similarity, time-aware facts, and per-type merge strategies.
+
+## Open Questions
+
+- Whether `insight` memories should default to review until trust is earned.
+- Whether location-derived Memory should require a dedicated permission even for low-sensitivity places.
+- Whether user-level policy overrides belong in Memory or Settings.

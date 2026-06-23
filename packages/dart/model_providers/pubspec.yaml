@@ -1,0 +1,14 @@
+name: widenote_model_providers
+description: Pure Dart model provider contracts and fakes for WideNote.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  widenote_agent_runtime:
+    path: ../agent_runtime
+
+dev_dependencies:
+  test: ^1.25.0

@@ -1,0 +1,14 @@
+name: widenote_agent_runtime
+description: Pure Dart local Agent Runtime Kernel for WideNote.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  widenote_core:
+    path: ../core
+
+dev_dependencies:
+  test: ^1.26.0

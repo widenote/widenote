@@ -12,15 +12,40 @@ Owns local runtime execution. It must not own app UI, backend execution, or publ
 
 ## Public Surface
 
-Future public surfaces include event dispatch APIs, task queue APIs, permission broker interfaces, tool registry APIs, and trace emission APIs.
+- `WnEvent`, `WnEventDraft`, `SubjectRef`, `WnActor`, `WnPrivacy`, and `WnEventTypes` for append-only runtime events.
+- `RuntimeKernel` for local event publication, subscription dispatch, task/run execution, and trace emission.
+- `EventStore` and `InMemoryEventStore` for testable event persistence boundaries.
+- `TraceSink`, `RuntimeTrace`, and `InMemoryTraceSink` for audit traces.
+- `PermissionBroker` and `InMemoryPermissionBroker` for explicit pack/tool permission checks.
+- `ToolRegistry`, `ToolDefinition`, `ToolInvocation`, and `InMemoryToolRegistry` for permissioned local tools.
+- `AgentPack`, `Subscription`, `AgentHandler`, `AgentContext`, `ModelClient`, and `FakeModel` for local pack execution without a real LLM.
+- `RuntimeTask` and `RuntimeRun` for task/run inspection.
 
 ## Dependencies
 
-May depend on `packages/dart/core`, `packages/dart/local_db`, and generated schema bindings. Must not depend on backend or runner-private code.
+Runtime dependencies:
+
+- `packages/dart/core`
+
+Dev dependencies: `test`.
+
+This package may later depend on `packages/dart/local_db` and generated schema bindings. It must not depend on Flutter UI, backend-private code, or runner-private code.
 
 ## Generated Artifacts
 
+None.
+
 Generated runtime bindings must point back to `packages/schemas`.
+
+## Tests
+
+Run from this directory:
+
+```sh
+dart test
+```
+
+The main vertical slice test publishes `wn.capture.created`, dispatches a subscribed pack, creates a task/run, emits memory proposal, card, insight, and todo events through a fake handler/model, and verifies trace output. No test needs a network connection or real API key.
 
 ## Related Context
 

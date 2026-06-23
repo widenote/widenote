@@ -17,10 +17,24 @@ It should stay short. It points to the right local context instead of duplicatin
 - `docs/architecture/runtime.md`
 - `docs/architecture/technology-stack.md`
 - `docs/architecture/privacy.md`
+- `docs/architecture/phase-one-technical-plan.md`
+- `docs/architecture/phase-one-module-plan.md`
+- `docs/architecture/engineering-rules.md`
 
 ## Decisions
 
 - `docs/decisions/index.md`
+
+## Research
+
+- `docs/research/2026-06-23-phase-one-technical-research.md`
+- `docs/research/2026-06-23-memex-design-critique.md`
+- `docs/research/2026-06-23-kimi-review-followup.md`
+
+## RFCs
+
+- `docs/rfcs/memory-model.md`
+- `docs/rfcs/agent-pack-schema.md`
 
 ## Areas
 
@@ -44,6 +58,8 @@ It should stay short. It points to the right local context instead of duplicatin
 | Dart core | `packages/dart/core/README.md` | Pure Dart models and utilities |
 | Dart local DB | `packages/dart/local_db/README.md` | Drift and SQLite data layer |
 | Dart agent runtime | `packages/dart/agent_runtime/README.md` | Local Agent Runtime Kernel |
+| Dart memory | `packages/dart/memory/README.md` | Memory lifecycle and auto-accept policy |
+| Dart model providers | `packages/dart/model_providers/README.md` | Provider contracts and runtime adapter |
 | Dart UI blocks | `packages/dart/ui_blocks/README.md` | Structured UI block rendering |
 | TS protocol | `packages/ts/protocol/README.md` | TypeScript protocol helpers |
 | TS runner core | `packages/ts/runner_core/README.md` | Runner execution primitives |
