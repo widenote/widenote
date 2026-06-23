@@ -13,3 +13,12 @@ templates/        Reusable ADR, RFC, and conversation-summary templates.
 ```
 
 For current decisions, start with [decisions/index.md](./decisions/index.md).
+
+## Context Structure
+
+Project context should be discoverable in layers:
+
+- Root docs explain the whole project.
+- Area READMEs explain top-level directories.
+- Module READMEs explain ownership boundaries and generated artifacts.
+- `agent-context/project-map.md` points to the current context entrypoints.

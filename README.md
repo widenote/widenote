@@ -40,6 +40,7 @@ tools/                 Repository automation and generation scripts.
 - [Project positioning](./docs/product/positioning.md)
 - [Architecture overview](./docs/architecture/overview.md)
 - [Project structure](./docs/architecture/project-structure.md)
+- [Context structure](./docs/architecture/context-structure.md)
 - [Technology stack](./docs/architecture/technology-stack.md)
 - [Decision index](./docs/decisions/index.md)
 - [Agent context entrypoint](./docs/agent-context/START_HERE.md)

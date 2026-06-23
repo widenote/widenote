@@ -38,3 +38,7 @@ Core records and generated outputs should be represented as events and durable o
 - Tool: capability exposed to agents through permissioned APIs.
 - Runner: execution host for local, self-hosted, or cloud tasks.
 - Trace: audit trail for agent and plugin behavior.
+
+## Context as Architecture
+
+The repository uses progressive context structure as part of the architecture. Root docs, area READMEs, module READMEs, and `docs/agent-context/project-map.md` must stay aligned so that agents can inspect the project gradually instead of loading the whole repository for every task.

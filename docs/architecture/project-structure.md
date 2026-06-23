@@ -42,6 +42,21 @@ tools/
 - `packages/ts/*` must not depend on mobile-private implementation details.
 - `packs/*` may depend only on public schemas and SDKs.
 
+## Module Documentation
+
+Each durable module must include a `README.md` using the module README shape in `docs/templates/module-readme.md`.
+
+At minimum, a module README should describe:
+
+- Purpose
+- Ownership boundary
+- Public surface
+- Dependencies
+- Generated artifacts
+- Related ADRs or RFCs
+
+When a module changes shape, update the module README and the parent directory README in the same change.
+
 ## Evolution
 
 Start with this monorepo. Split ecosystem repositories later when the contracts are stable:
