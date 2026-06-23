@@ -1,0 +1,21 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+
+# Dart / Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+coverage/
+
+# Node / TypeScript
+node_modules/
+dist/
+.turbo/
+
+# IDE
+.idea/
+.vscode/
