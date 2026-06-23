@@ -5,6 +5,7 @@ import 'package:test/test.dart';
 import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
 import 'package:widenote_core/widenote_core.dart';
 import 'package:widenote_local_db/widenote_local_db.dart';
+import 'package:widenote_memory/memory.dart' as memory;
 
 void main() {
   group('WideNoteLocalDatabase', () {
@@ -216,6 +217,143 @@ void main() {
       expect((item.sourceRefs.single as Map)['event_id'], 'event-2');
       expect(database.memoryItems.readAll(status: 'active'), hasLength(1));
     });
+
+    test('transitions memory review candidates in SQLite', () {
+      final createdAt = DateTime.utc(2026, 6, 23, 10, 30);
+      final reviewedAt = DateTime.utc(2026, 6, 23, 10, 45);
+      database.memoryCandidates
+        ..insert(
+          MemoryCandidateRecord(
+            id: 'candidate-accept',
+            key: 'preference.editor',
+            sourceEventId: 'event-accept',
+            status: 'needs_review',
+            body: 'The user prefers compact editor layouts.',
+            sourceRefs: const <Object?>[
+              <String, Object?>{
+                'kind': 'event',
+                'id': 'event-accept',
+                'evidence_text': 'compact editor layouts',
+              },
+            ],
+            memoryType: 'preference',
+            confidence: 'medium',
+            sensitivity: 'low',
+            createdAt: createdAt,
+            updatedAt: createdAt,
+          ),
+        )
+        ..insert(
+          MemoryCandidateRecord(
+            id: 'candidate-reject',
+            key: 'credential.api_key',
+            sourceEventId: 'event-reject',
+            status: 'needs_review',
+            body: 'The user pasted a secret token.',
+            memoryType: 'credential',
+            confidence: 'high',
+            sensitivity: 'high',
+            createdAt: createdAt,
+            updatedAt: createdAt,
+          ),
+        );
+
+      final accepted = database.memoryCandidates.acceptCandidate(
+        'candidate-accept',
+        itemId: 'memory-accepted',
+        body: 'The user prefers dense editor layouts.',
+        acceptedAt: reviewedAt,
+      );
+      final rejected = database.memoryCandidates.rejectCandidate(
+        'candidate-reject',
+        reason: 'credential_redacted',
+        rejectedAt: reviewedAt,
+      );
+
+      expect(accepted.id, 'memory-accepted');
+      expect(accepted.body, 'The user prefers dense editor layouts.');
+      expect(accepted.sourceEventId, 'event-accept');
+      expect((accepted.sourceRefs.single as Map)['kind'], 'event');
+      expect(
+        accepted.payload['accepted_from_candidate_id'],
+        'candidate-accept',
+      );
+      expect(
+        database.memoryCandidates.readById('candidate-accept')!.status,
+        'accepted',
+      );
+      expect(rejected.status, 'rejected');
+      expect(
+        rejected.payload['review_rejection_reason'],
+        'credential_redacted',
+      );
+      expect(database.memoryCandidates.readReviewQueue(), isEmpty);
+    });
+
+    test(
+      'memory service persists review actions through local DB adapter',
+      () async {
+        final repository = LocalDbMemoryRepository(
+          database,
+          clock: _sequenceClock([
+            DateTime.utc(2026, 6, 23, 10, 50),
+            DateTime.utc(2026, 6, 23, 10, 55),
+            DateTime.utc(2026, 6, 23, 11),
+          ]),
+        );
+        final service = memory.MemoryService(
+          repository: repository,
+          clock: _sequenceClock([
+            DateTime.utc(2026, 6, 23, 11, 5),
+            DateTime.utc(2026, 6, 23, 11, 10),
+          ]),
+          idFactory: () => 'memory-local-review',
+        );
+
+        await service.submitProposal(
+          memory.MemoryProposal(
+            id: 'proposal-local-review',
+            key: 'preference.layout',
+            body: 'The user likes narrow sidebars.',
+            evidence: const <memory.MemorySourceRef>[
+              memory.MemorySourceRef(
+                sourceType: 'event',
+                sourceId: 'event-local-review',
+                excerpt: 'narrow sidebars',
+              ),
+            ],
+            memoryType: memory.MemoryType.preference,
+            confidence: memory.MemoryConfidence.low,
+            sensitivity: memory.MemorySensitivity.low,
+          ),
+        );
+
+        expect(database.memoryCandidates.readReviewQueue(), hasLength(1));
+        final accepted = await service.acceptProposal(
+          'proposal-local-review',
+          editedBody: 'The user prefers narrow sidebars for writing.',
+        );
+
+        expect(accepted.accepted, isTrue);
+        expect(
+          database.memoryCandidates.readById('proposal-local-review')!.status,
+          'accepted',
+        );
+        final persisted = database.memoryItems.readById('memory-local-review')!;
+        expect(persisted.body, 'The user prefers narrow sidebars for writing.');
+        expect(persisted.sourceEventId, 'event-local-review');
+        expect(
+          (persisted.sourceRefs.single as Map)['evidence_text'],
+          isNotEmpty,
+        );
+        expect(
+          (await repository.listItems(
+            status: memory.MemoryItemStatus.active,
+          )).single.body,
+          'The user prefers narrow sidebars for writing.',
+        );
+      },
+    );
 
     test('updates todo status', () {
       final createdAt = DateTime.utc(2026, 6, 23, 11);
@@ -605,6 +743,17 @@ INSERT INTO trace_events (
       expect((await eventStore.readAll()).single.id, 'event-existing');
     });
   });
+}
+
+DateTime Function() _sequenceClock(List<DateTime> values) {
+  var index = 0;
+  return () {
+    final value = values[index];
+    if (index < values.length - 1) {
+      index += 1;
+    }
+    return value;
+  };
 }
 
 final class _PersistentMemoryHandler implements runtime.AgentHandler {

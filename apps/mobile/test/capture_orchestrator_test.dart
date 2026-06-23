@@ -98,8 +98,42 @@ void main() {
       expect(result.memoryItem.title, 'Memory 待复核');
       expect(result.memoryItem.statusLabel, 'needs review');
       expect(result.memoryItem.confidenceLabel, contains('review_only_type'));
+      expect(result.reviewCandidate, isNotNull);
+      expect(result.reviewCandidate!.reasonLabel, contains('review_only_type'));
     },
   );
+
+  test('review candidates can be accepted or rejected after capture', () async {
+    final orchestrator = CaptureOrchestrator.local(
+      clock: TickingWnClock(DateTime.utc(2026, 6, 23, 3)),
+      idGenerator: SequenceWnIdGenerator(seed: 'review'),
+      model: runtime.FakeModel(
+        responses: <String>[
+          'The user pasted an API token.',
+          'The user discussed medication timing.',
+        ],
+      ),
+    );
+
+    final first = await orchestrator.processCapture(
+      'My API token should be reviewed before storage.',
+    );
+    final accepted = await orchestrator.acceptMemoryProposal(
+      first.reviewCandidate!.id,
+      editedBody: 'The user wants secrets reviewed before storage.',
+    );
+
+    expect(accepted.title, 'Memory 已入库');
+    expect(accepted.summary, 'The user wants secrets reviewed before storage.');
+    expect(await orchestrator.listMemoryReviewQueue(), isEmpty);
+
+    final second = await orchestrator.processCapture(
+      'Doctor said medication timing should be checked.',
+    );
+    await orchestrator.rejectMemoryProposal(second.reviewCandidate!.id);
+
+    expect(await orchestrator.listMemoryReviewQueue(), isEmpty);
+  });
 }
 
 void _expectEventOrigin(

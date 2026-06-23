@@ -8,6 +8,7 @@ final captureOrchestratorProvider = Provider<CaptureOrchestrator>((ref) {
   return CaptureOrchestrator.local(
     eventStore: ref.watch(localEventStoreProvider),
     traceSink: ref.watch(localTraceSinkProvider),
+    memoryRepository: ref.watch(localMemoryRepositoryProvider),
   );
 });
 
@@ -47,7 +48,12 @@ class CaptureController extends Notifier<CaptureState> {
 
       state = state.copyWith(
         records: _replaceRecord(state.records, pendingRecord.id, result.record),
-        memories: [result.memoryItem, ...state.memories],
+        memories: result.memoryItem.needsReview
+            ? state.memories
+            : [result.memoryItem, ...state.memories],
+        reviewCandidates: result.reviewCandidate == null
+            ? state.reviewCandidates
+            : [result.reviewCandidate!, ...state.reviewCandidates],
         todos: [result.todo, ...state.todos],
         traces: [...result.traces, ...state.traces],
         isProcessing: false,
@@ -65,6 +71,48 @@ class CaptureController extends Notifier<CaptureState> {
     }
   }
 
+  Future<void> acceptReviewCandidate(String id) async {
+    try {
+      final memory = await ref
+          .read(captureOrchestratorProvider)
+          .acceptMemoryProposal(id);
+      state = state.copyWith(
+        memories: [memory, ...state.memories],
+        reviewCandidates: _removeReviewCandidate(state.reviewCandidates, id),
+        clearError: true,
+      );
+    } catch (error) {
+      state = state.copyWith(errorMessage: 'Memory review failed: $error');
+    }
+  }
+
+  Future<void> editAndAcceptReviewCandidate(String id, String body) async {
+    try {
+      final memory = await ref
+          .read(captureOrchestratorProvider)
+          .acceptMemoryProposal(id, editedBody: body);
+      state = state.copyWith(
+        memories: [memory, ...state.memories],
+        reviewCandidates: _removeReviewCandidate(state.reviewCandidates, id),
+        clearError: true,
+      );
+    } catch (error) {
+      state = state.copyWith(errorMessage: 'Memory review failed: $error');
+    }
+  }
+
+  Future<void> rejectReviewCandidate(String id) async {
+    try {
+      await ref.read(captureOrchestratorProvider).rejectMemoryProposal(id);
+      state = state.copyWith(
+        reviewCandidates: _removeReviewCandidate(state.reviewCandidates, id),
+        clearError: true,
+      );
+    } catch (error) {
+      state = state.copyWith(errorMessage: 'Memory review failed: $error');
+    }
+  }
+
   List<CaptureRecord> _replaceRecord(
     List<CaptureRecord> records,
     String id,
@@ -73,6 +121,16 @@ class CaptureController extends Notifier<CaptureState> {
     return [
       for (final record in records)
         if (record.id == id) replacement else record,
+    ];
+  }
+
+  List<MemoryReviewCandidate> _removeReviewCandidate(
+    List<MemoryReviewCandidate> candidates,
+    String id,
+  ) {
+    return [
+      for (final candidate in candidates)
+        if (candidate.id != id) candidate,
     ];
   }
 }

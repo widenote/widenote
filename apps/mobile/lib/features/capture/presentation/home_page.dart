@@ -28,7 +28,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     return ListView(
       key: const Key('home-page'),
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 112),
       children: [
         const _HomeHeader(),
         const SizedBox(height: 16),
@@ -40,6 +40,15 @@ class _HomePageState extends ConsumerState<HomePage> {
         if (captureState.errorMessage != null) ...[
           const SizedBox(height: 12),
           _ErrorLine(text: captureState.errorMessage!),
+        ],
+        if (captureState.reviewCandidates.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          _MemoryReviewSection(
+            candidates: captureState.reviewCandidates,
+            onAccept: _acceptReviewCandidate,
+            onReject: _rejectReviewCandidate,
+            onEdit: _editReviewCandidate,
+          ),
         ],
         const SizedBox(height: 16),
         _StageGrid(state: captureState),
@@ -61,6 +70,83 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
     _captureTextController.clear();
     FocusScope.of(context).unfocus();
+  }
+
+  void _acceptReviewCandidate(String id) {
+    unawaited(
+      ref.read(captureControllerProvider.notifier).acceptReviewCandidate(id),
+    );
+  }
+
+  void _rejectReviewCandidate(String id) {
+    unawaited(
+      ref.read(captureControllerProvider.notifier).rejectReviewCandidate(id),
+    );
+  }
+
+  Future<void> _editReviewCandidate(MemoryReviewCandidate candidate) async {
+    final editedBody = await showDialog<String>(
+      context: context,
+      builder: (context) => _MemoryEditDialog(initialBody: candidate.summary),
+    );
+    if (!mounted || editedBody == null) {
+      return;
+    }
+    unawaited(
+      ref
+          .read(captureControllerProvider.notifier)
+          .editAndAcceptReviewCandidate(candidate.id, editedBody),
+    );
+  }
+}
+
+class _MemoryEditDialog extends StatefulWidget {
+  const _MemoryEditDialog({required this.initialBody});
+
+  final String initialBody;
+
+  @override
+  State<_MemoryEditDialog> createState() => _MemoryEditDialogState();
+}
+
+class _MemoryEditDialogState extends State<_MemoryEditDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialBody);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Edit Memory'),
+      content: TextField(
+        key: const Key('memory-review-edit-field'),
+        controller: _controller,
+        minLines: 3,
+        maxLines: 5,
+        autofocus: true,
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          key: const Key('memory-review-edit-save'),
+          onPressed: () => Navigator.of(context).pop(_controller.text),
+          child: const Text('Save'),
+        ),
+      ],
+    );
   }
 }
 
@@ -156,9 +242,11 @@ class _StageGrid extends StatelessWidget {
       ),
       _StageData(
         title: 'Memory',
-        detail: state.memories.isEmpty
+        detail: state.memories.isEmpty && state.reviewCandidates.isEmpty
             ? 'ready'
-            : '${state.memories.length} auto-accepted',
+            : state.reviewCandidates.isEmpty
+            ? '${state.memories.length} auto-accepted'
+            : '${state.memories.length} accepted · ${state.reviewCandidates.length} review',
         icon: Icons.psychology_alt_outlined,
         color: const Color(0xFF178D66),
       ),
@@ -259,6 +347,119 @@ class _RecordsSection extends StatelessWidget {
                   ),
               ],
             ),
+    );
+  }
+}
+
+class _MemoryReviewSection extends StatelessWidget {
+  const _MemoryReviewSection({
+    required this.candidates,
+    required this.onAccept,
+    required this.onReject,
+    required this.onEdit,
+  });
+
+  final List<MemoryReviewCandidate> candidates;
+  final ValueChanged<String> onAccept;
+  final ValueChanged<String> onReject;
+  final ValueChanged<MemoryReviewCandidate> onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    return _Surface(
+      icon: Icons.rate_review_outlined,
+      title: 'Memory Review',
+      child: candidates.isEmpty
+          ? const _EmptyLine(text: 'No Memory candidates need review.')
+          : _Rows(
+              children: [
+                for (final candidate in candidates)
+                  _ReviewCandidateRow(
+                    candidate: candidate,
+                    onAccept: onAccept,
+                    onReject: onReject,
+                    onEdit: onEdit,
+                  ),
+              ],
+            ),
+    );
+  }
+}
+
+class _ReviewCandidateRow extends StatelessWidget {
+  const _ReviewCandidateRow({
+    required this.candidate,
+    required this.onAccept,
+    required this.onReject,
+    required this.onEdit,
+  });
+
+  final MemoryReviewCandidate candidate;
+  final ValueChanged<String> onAccept;
+  final ValueChanged<String> onReject;
+  final ValueChanged<MemoryReviewCandidate> onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          Icons.fact_check_outlined,
+          size: 20,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                candidate.summary,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${candidate.sourceLabel} · ${candidate.reasonLabel} · ${candidate.typeLabel}',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  FilledButton.icon(
+                    key: Key('memory-review-accept-${candidate.id}'),
+                    onPressed: () => onAccept(candidate.id),
+                    icon: const Icon(Icons.check),
+                    label: const Text('Accept'),
+                  ),
+                  OutlinedButton.icon(
+                    key: Key('memory-review-edit-${candidate.id}'),
+                    onPressed: () => onEdit(candidate),
+                    icon: const Icon(Icons.edit_outlined),
+                    label: const Text('Edit'),
+                  ),
+                  TextButton.icon(
+                    key: Key('memory-review-reject-${candidate.id}'),
+                    onPressed: () => onReject(candidate.id),
+                    icon: const Icon(Icons.close),
+                    label: const Text('Reject'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

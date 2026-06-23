@@ -33,9 +33,10 @@ Current source layout:
 
 The current client boots a device-local SQLite database at
 `local-data/widenote.sqlite` and injects `LocalDbEventStore` /
-`LocalDbTraceSink` into the local runtime by default. Capture UI read models are
-still held in feature state after processing; restart hydration and durable
-Memory review surfaces remain phase-one follow-up work.
+`LocalDbTraceSink` into the local runtime by default. It also injects
+`LocalDbMemoryRepository` so Memory candidates and reviewed Memory items are
+written to SQLite. Capture UI read models are still held in feature state after
+processing; restart hydration remains a phase-one follow-up work item.
 
 ## Dependencies
 

@@ -27,23 +27,28 @@ rendering.
 - `TraceEventsDao`
 - `LocalDbEventStore`
 - `LocalDbTraceSink`
+- `LocalDbMemoryRepository`
 - `JsonMap`
 - record models for each DAO
 
 ## Dependencies
 
-Depends on the pure Dart `sqlite3` package and the runtime port interfaces from
-`packages/dart/agent_runtime`. Must not depend on Flutter UI.
+Depends on the pure Dart `sqlite3` package, runtime port interfaces from
+`packages/dart/agent_runtime`, and the Memory repository interface from
+`packages/dart/memory`. Must not depend on Flutter UI.
 
 The dependency direction is intentional:
 
 ```text
 agent_runtime -> core
-local_db -> agent_runtime + sqlite3
+memory -> pure Dart Memory semantics
+local_db -> agent_runtime + memory + sqlite3
 apps/mobile -> agent_runtime + local_db + memory
 ```
 
 `agent_runtime` must not import SQLite, Drift, or local DB record types.
+`memory` owns review policy and lifecycle semantics; `local_db` only maps those
+interfaces to SQLite rows.
 
 The accepted long-term client decision still points to SQLite + Drift. This
 MVP intentionally uses hand-written SQLite with no code generation so the local
@@ -67,9 +72,10 @@ dart test
 ```
 
 Current tests cover capture insert/read, event append/read, Memory item and
-candidate storage, todo status updates, trace reads, in-memory schema bootstrap,
-file-path reopen persistence, v1-to-current migrations, pagination, and runtime
-EventStore/TraceSink adapters.
+candidate storage, Memory review accept/edit/reject transitions, the
+SQLite-backed Memory repository adapter, todo status updates, trace reads,
+in-memory schema bootstrap, file-path reopen persistence, v1-to-current
+migrations, pagination, and runtime EventStore/TraceSink adapters.
 
 ## Related Context
 

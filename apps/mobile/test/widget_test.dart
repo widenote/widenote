@@ -118,6 +118,103 @@ void main() {
     expect(find.text('4 linked'), findsOneWidget);
   });
 
+  testWidgets('sensitive capture can be accepted from Memory review', (
+    tester,
+  ) async {
+    await _pumpApp(tester);
+
+    const captureText = 'My API token should be reviewed before storage.';
+    await _submitQuickCapture(tester, captureText);
+
+    await tester.scrollUntilVisible(
+      find.text('Memory Review'),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.textContaining('review_only_type'), findsOneWidget);
+
+    await _scrollHomeActionIntoView(
+      tester,
+      find.widgetWithText(FilledButton, 'Accept'),
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Accept'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Memory Review'), findsNothing);
+    await tester.scrollUntilVisible(
+      find.text('Memory 已入库'),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Memory 已入库'), findsOneWidget);
+    expect(find.textContaining('accepted'), findsWidgets);
+  });
+
+  testWidgets('review candidate can be edited before acceptance', (
+    tester,
+  ) async {
+    await _pumpApp(tester);
+
+    await _submitQuickCapture(
+      tester,
+      'Doctor said medication timing should be checked.',
+    );
+    await tester.scrollUntilVisible(
+      find.text('Memory Review'),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
+
+    await _scrollHomeActionIntoView(
+      tester,
+      find.widgetWithText(OutlinedButton, 'Edit'),
+    );
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Edit'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('memory-review-edit-field')),
+      'Medication timing needs a user-confirmed follow-up.',
+    );
+    await tester.tap(find.byKey(const Key('memory-review-edit-save')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Memory Review'), findsNothing);
+    final state = ProviderScope.containerOf(
+      tester.element(find.byKey(const Key('home-page'))),
+    ).read(captureControllerProvider);
+    expect(state.reviewCandidates, isEmpty);
+    expect(
+      state.memories.single.summary,
+      'Medication timing needs a user-confirmed follow-up.',
+    );
+  });
+
+  testWidgets('review candidate can be rejected without creating Memory', (
+    tester,
+  ) async {
+    await _pumpApp(tester);
+
+    await _submitQuickCapture(
+      tester,
+      'Salary and bank details should stay out of automatic Memory.',
+    );
+    await tester.scrollUntilVisible(
+      find.text('Memory Review'),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
+
+    await _scrollHomeActionIntoView(
+      tester,
+      find.widgetWithText(TextButton, 'Reject'),
+    );
+    await tester.tap(find.widgetWithText(TextButton, 'Reject'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Memory Review'), findsNothing);
+    expect(find.text('Memory 已入库'), findsNothing);
+  });
+
   testWidgets('generated todo appears on Todos tab with source link', (
     tester,
   ) async {
@@ -179,6 +276,7 @@ void main() {
             .map((trace) => trace.traceType),
         everyElement('run_completed'),
       );
+      expect(database.memoryItems.readAll(status: 'active'), hasLength(1));
     },
   );
 
@@ -246,6 +344,25 @@ Future<void> _submitQuickCapture(WidgetTester tester, String text) async {
 Future<void> _openTab(WidgetTester tester, Key tabKey) async {
   await tester.tap(find.byKey(tabKey));
   await tester.pumpAndSettle();
+}
+
+Future<void> _scrollHomeActionIntoView(
+  WidgetTester tester,
+  Finder finder,
+) async {
+  await tester.scrollUntilVisible(
+    finder,
+    120,
+    scrollable: find.byType(Scrollable).first,
+  );
+  final center = tester.getCenter(finder);
+  if (center.dy > 500) {
+    await tester.drag(
+      find.byType(Scrollable).first,
+      Offset(0, -(center.dy - 440)),
+    );
+    await tester.pumpAndSettle();
+  }
 }
 
 Iterable<String> _visibleTextValues(WidgetTester tester) {

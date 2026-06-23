@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
 import 'package:widenote_local_db/widenote_local_db.dart';
+import 'package:widenote_memory/memory.dart' as memory;
 
 final localDatabaseProvider = Provider<WideNoteLocalDatabase>((ref) {
   throw StateError('localDatabaseProvider must be provided by app bootstrap.');
@@ -15,6 +16,10 @@ final localEventStoreProvider = Provider<runtime.EventStore>((ref) {
 
 final localTraceSinkProvider = Provider<runtime.TraceSink>((ref) {
   return LocalDbTraceSink(ref.watch(localDatabaseProvider));
+});
+
+final localMemoryRepositoryProvider = Provider<memory.MemoryRepository>((ref) {
+  return LocalDbMemoryRepository(ref.watch(localDatabaseProvider));
 });
 
 final class WideNoteMobileBootstrap {

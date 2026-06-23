@@ -104,6 +104,43 @@ final class MemoryItemRecord {
   final JsonMap payload;
   final DateTime createdAt;
   final DateTime updatedAt;
+
+  MemoryItemRecord copyWith({
+    String? key,
+    int? schemaVersion,
+    String? sourceCaptureId,
+    String? sourceEventId,
+    String? status,
+    String? body,
+    JsonList? sourceRefs,
+    String? memoryType,
+    String? confidence,
+    String? sensitivity,
+    int? revision,
+    bool? tombstone,
+    JsonMap? payload,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return MemoryItemRecord(
+      id: id,
+      key: key ?? this.key,
+      schemaVersion: schemaVersion ?? this.schemaVersion,
+      sourceCaptureId: sourceCaptureId ?? this.sourceCaptureId,
+      sourceEventId: sourceEventId ?? this.sourceEventId,
+      status: status ?? this.status,
+      body: body ?? this.body,
+      sourceRefs: sourceRefs ?? this.sourceRefs,
+      memoryType: memoryType ?? this.memoryType,
+      confidence: confidence ?? this.confidence,
+      sensitivity: sensitivity ?? this.sensitivity,
+      revision: revision ?? this.revision,
+      tombstone: tombstone ?? this.tombstone,
+      payload: payload ?? this.payload,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 }
 
 final class MemoryCandidateRecord {
@@ -138,6 +175,39 @@ final class MemoryCandidateRecord {
   final JsonMap payload;
   final DateTime createdAt;
   final DateTime updatedAt;
+
+  MemoryCandidateRecord copyWith({
+    String? key,
+    int? schemaVersion,
+    String? sourceCaptureId,
+    String? sourceEventId,
+    String? status,
+    String? body,
+    JsonList? sourceRefs,
+    String? memoryType,
+    String? confidence,
+    String? sensitivity,
+    JsonMap? payload,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return MemoryCandidateRecord(
+      id: id,
+      key: key ?? this.key,
+      schemaVersion: schemaVersion ?? this.schemaVersion,
+      sourceCaptureId: sourceCaptureId ?? this.sourceCaptureId,
+      sourceEventId: sourceEventId ?? this.sourceEventId,
+      status: status ?? this.status,
+      body: body ?? this.body,
+      sourceRefs: sourceRefs ?? this.sourceRefs,
+      memoryType: memoryType ?? this.memoryType,
+      confidence: confidence ?? this.confidence,
+      sensitivity: sensitivity ?? this.sensitivity,
+      payload: payload ?? this.payload,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 }
 
 final class TodoRecord {

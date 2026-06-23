@@ -14,6 +14,7 @@ final class CapturePipelineResult {
     required this.events,
     required this.acceptedMemoryCount,
     required this.reviewMemoryCount,
+    this.reviewCandidate,
   });
 
   final CaptureRecord record;
@@ -24,6 +25,7 @@ final class CapturePipelineResult {
   final List<CapturePipelineEvent> events;
   final int acceptedMemoryCount;
   final int reviewMemoryCount;
+  final MemoryReviewCandidate? reviewCandidate;
 }
 
 final class CapturePipelineEvent {
@@ -66,6 +68,7 @@ final class CaptureOrchestrator {
     runtime.ModelClient? model,
     runtime.EventStore? eventStore,
     runtime.TraceSink? traceSink,
+    memory.MemoryRepository? memoryRepository,
   }) {
     final localClock = clock ?? const SystemWnClock();
     final runtimeEventStore = eventStore ?? runtime.InMemoryEventStore();
@@ -87,9 +90,10 @@ final class CaptureOrchestrator {
       ..registerPack(_defaultPack)
       ..registerPack(_todoPack);
 
-    final memoryRepository = memory.InMemoryMemoryRepository();
+    final localMemoryRepository =
+        memoryRepository ?? memory.InMemoryMemoryRepository();
     final memoryService = memory.MemoryService(
-      repository: memoryRepository,
+      repository: localMemoryRepository,
       clock: localClock.now,
     );
 
@@ -98,7 +102,7 @@ final class CaptureOrchestrator {
       eventStore: kernel.eventStore,
       traceSink: kernel.traceSink,
       memoryService: memoryService,
-      memoryRepository: memoryRepository,
+      memoryRepository: localMemoryRepository,
     );
   }
 
@@ -202,7 +206,51 @@ final class CaptureOrchestrator {
           .toList(growable: false),
       acceptedMemoryCount: activeMemories.length,
       reviewMemoryCount: reviewProposals.length,
+      reviewCandidate: memoryResult.needsReview
+          ? _reviewCandidateView(memoryResult.proposal, capture.id)
+          : null,
     );
+  }
+
+  Future<List<MemoryReviewCandidate>> listMemoryReviewQueue() async {
+    final proposals = await _memoryService.listReviewQueue();
+    return proposals.map(_reviewCandidateView).toList(growable: false);
+  }
+
+  Future<CaptureMemoryItem> acceptMemoryProposal(
+    String proposalId, {
+    String? editedBody,
+  }) async {
+    final result = await _memoryService.acceptProposal(
+      proposalId,
+      editedBody: editedBody,
+    );
+    final item = result.item;
+    if (item == null) {
+      throw StateError('Accepted proposal did not create Memory: $proposalId');
+    }
+    return _acceptedMemoryView(item);
+  }
+
+  Future<void> rejectMemoryProposal(String proposalId) async {
+    await _memoryService.rejectProposal(proposalId);
+  }
+
+  Future<CaptureMemoryItem> mergeMemoryProposal(
+    String proposalId, {
+    required String targetMemoryId,
+    String? mergedBody,
+  }) async {
+    final result = await _memoryService.mergeProposal(
+      proposalId,
+      targetMemoryId: targetMemoryId,
+      mergedBody: mergedBody,
+    );
+    final item = result.item;
+    if (item == null) {
+      throw StateError('Merged proposal did not update Memory: $proposalId');
+    }
+    return _acceptedMemoryView(item);
   }
 
   Future<memory.MemoryWriteResult> _writeFirstMemoryProposal(
@@ -237,7 +285,7 @@ final class CaptureOrchestrator {
       body: body,
       evidence: <memory.MemorySourceRef>[
         memory.MemorySourceRef(
-          sourceType: 'capture',
+          sourceType: 'event',
           sourceId: sourceId,
           excerpt: _string(payload['source_excerpt'], fallback: body),
         ),
@@ -261,6 +309,7 @@ final class CaptureOrchestrator {
         sourceRecordId: capture.id,
         confidenceLabel: '${item.confidence.name} confidence',
         statusLabel: 'auto-accepted',
+        needsReview: false,
       );
     }
 
@@ -271,6 +320,19 @@ final class CaptureOrchestrator {
       sourceRecordId: capture.id,
       confidenceLabel: result.decision.reasons.join(', '),
       statusLabel: 'needs review',
+      needsReview: true,
+    );
+  }
+
+  CaptureMemoryItem _acceptedMemoryView(memory.MemoryItem item) {
+    return CaptureMemoryItem(
+      id: item.id,
+      title: 'Memory 已入库',
+      summary: item.body,
+      sourceRecordId: _sourceLabel(item.evidence),
+      confidenceLabel: '${item.confidence.name} confidence',
+      statusLabel: 'accepted',
+      needsReview: false,
     );
   }
 
@@ -325,6 +387,39 @@ runtime.WnEvent? _firstEventOfType(List<runtime.WnEvent> events, String type) {
     }
   }
   return null;
+}
+
+MemoryReviewCandidate _reviewCandidateView(
+  memory.MemoryProposal proposal, [
+  String? fallbackSourceId,
+]) {
+  return MemoryReviewCandidate(
+    id: proposal.id,
+    summary: proposal.body,
+    sourceLabel: _sourceLabel(proposal.evidence, fallback: fallbackSourceId),
+    reasonLabel: proposal.policyReasons.isEmpty
+        ? 'needs review'
+        : proposal.policyReasons.join(', '),
+    typeLabel:
+        '${_memoryTypeLabel(proposal.memoryType)} · '
+        '${proposal.confidence.name} confidence · '
+        '${proposal.sensitivity.name} sensitivity',
+  );
+}
+
+String _sourceLabel(List<memory.MemorySourceRef> evidence, {String? fallback}) {
+  if (evidence.isEmpty) {
+    return fallback ?? 'unknown source';
+  }
+  final source = evidence.first;
+  return '${source.sourceType}: ${source.sourceId}';
+}
+
+String _memoryTypeLabel(memory.MemoryType type) {
+  return switch (type) {
+    memory.MemoryType.taskContext => 'task_context',
+    _ => type.name,
+  };
 }
 
 final class _CaptureAgent implements runtime.AgentHandler {

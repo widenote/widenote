@@ -18,6 +18,7 @@ orchestration behavior.
 - `go_router`
 - `path_provider`
 - `packages/dart/local_db`
+- `packages/dart/memory`
 
 ## Public Surface
 
@@ -28,6 +29,7 @@ orchestration behavior.
 - `localDatabaseProvider`
 - `localEventStoreProvider`
 - `localTraceSinkProvider`
+- `localMemoryRepositoryProvider`
 
 ## Generated Artifacts
 

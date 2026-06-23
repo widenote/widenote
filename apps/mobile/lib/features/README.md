@@ -15,7 +15,7 @@ Features may own presentation and temporary app-local controllers. Durable runti
 
 ## Public Surface
 
-- `capture`: home/records tab and fake capture state.
+- `capture`: home/records tab, quick capture state, and Memory review surface.
 - `chat`: conversation list and input placeholder.
 - `todos`: source-linked todo list placeholder.
 - `plugins`: pack, permission, model, backup, and trace control entries.
