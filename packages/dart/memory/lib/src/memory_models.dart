@@ -41,6 +41,10 @@ final class MemorySourceRef {
   final Uri? uri;
 
   bool get hasEvidenceText => excerpt != null && excerpt!.trim().isNotEmpty;
+
+  bool get hasEvidenceUri => uri != null && uri.toString().trim().isNotEmpty;
+
+  bool get hasEvidence => hasEvidenceText || hasEvidenceUri;
 }
 
 final class MemoryTombstone {
@@ -144,7 +148,9 @@ final class MemoryProposal {
   final List<String> policyReasons;
   final List<String> conflictingMemoryIds;
 
-  bool get hasEvidence => evidence.isNotEmpty;
+  bool get hasEvidence {
+    return evidence.any((sourceRef) => sourceRef.hasEvidence);
+  }
 
   MemoryProposal copyWith({
     String? id,

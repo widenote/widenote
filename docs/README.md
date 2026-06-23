@@ -28,6 +28,22 @@ For current decisions, start with [decisions/index.md](./decisions/index.md).
 - [Memory Model](./rfcs/memory-model.md)
 - [Agent Pack Schema](./rfcs/agent-pack-schema.md)
 
+## Contract Sources
+
+- [Schema sources](../packages/schemas/README.md)
+- [Official default Agent Pack manifest](../packs/official/default/manifest.json)
+- [Official todo Agent Pack manifest](../packs/official/todo/manifest.json)
+
+## Contract Validation
+
+Validate phase-one official Agent Pack manifests with the lightweight validator:
+
+```sh
+node tools/pack_validator/validate.mjs packs/official/default/manifest.json packs/official/todo/manifest.json
+```
+
+This is a lightweight validator, not a complete JSON Schema validator.
+
 ## Context Structure
 
 Project context should be discoverable in layers:

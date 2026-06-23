@@ -89,6 +89,17 @@ Auto-accept only when all conditions are true:
 
 Everything else goes to review. Review is a background correction surface, not a capture-time confirmation dialog.
 
+## Review Operations V1
+
+The phase-one review surface supports a narrow set of explicit user actions:
+
+- `accept`: create an active Memory item from the reviewed candidate while preserving source refs.
+- `edit then accept`: replace the candidate body with the user's edited body, then create an active Memory item with the same provenance.
+- `reject`: mark the candidate rejected without creating Memory.
+- `merge`: update a selected active Memory item, increment its revision, merge provenance refs, and mark the candidate merged.
+
+These operations are Memory service semantics. SQLite adapters may provide atomic transition helpers, but UI code should call the Memory service/repository boundary rather than mutating private tables directly.
+
 ## User Visibility
 
 The product should remain mostly silent during capture. Visibility happens through:

@@ -1,0 +1,53 @@
+import 'package:sqlite3/sqlite3.dart';
+
+import 'daos.dart';
+import 'migration.dart';
+
+final class WideNoteLocalDatabase {
+  WideNoteLocalDatabase._(this._database)
+    : eventLog = EventLogDao(_database),
+      captures = CapturesDao(_database),
+      memoryItems = MemoryItemsDao(_database),
+      memoryCandidates = MemoryCandidatesDao(_database),
+      todos = TodosDao(_database),
+      traceEvents = TraceEventsDao(_database);
+
+  factory WideNoteLocalDatabase.open(
+    Database database, {
+    bool bootstrap = true,
+  }) {
+    if (bootstrap) {
+      LocalDbMigrator.bootstrap(database);
+    }
+    return WideNoteLocalDatabase._(database);
+  }
+
+  factory WideNoteLocalDatabase.openPath(String path, {bool bootstrap = true}) {
+    return WideNoteLocalDatabase.open(sqlite3.open(path), bootstrap: bootstrap);
+  }
+
+  factory WideNoteLocalDatabase.inMemory() {
+    return WideNoteLocalDatabase.open(sqlite3.openInMemory());
+  }
+
+  final Database _database;
+
+  final EventLogDao eventLog;
+  final CapturesDao captures;
+  final MemoryItemsDao memoryItems;
+  final MemoryCandidatesDao memoryCandidates;
+  final TodosDao todos;
+  final TraceEventsDao traceEvents;
+
+  int get schemaVersion => LocalDbMigrator.readSchemaVersion(_database);
+
+  Database get rawDatabase => _database;
+
+  void close() {
+    _database.dispose();
+  }
+}
+
+WideNoteLocalDatabase openInMemoryWideNoteLocalDatabase() {
+  return WideNoteLocalDatabase.inMemory();
+}

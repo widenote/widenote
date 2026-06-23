@@ -11,10 +11,14 @@ dependencies:
     sdk: flutter
   flutter_riverpod: ^2.6.1
   go_router: ^14.6.3
+  path_provider: ^2.1.5
+  sqlite3_flutter_libs: ^0.5.42
   widenote_agent_runtime:
     path: ../../packages/dart/agent_runtime
   widenote_core:
     path: ../../packages/dart/core
+  widenote_local_db:
+    path: ../../packages/dart/local_db
   widenote_memory:
     path: ../../packages/dart/memory
 

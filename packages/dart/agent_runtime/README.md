@@ -29,7 +29,9 @@ Runtime dependencies:
 
 Dev dependencies: `test`.
 
-This package may later depend on `packages/dart/local_db` and generated schema bindings. It must not depend on Flutter UI, backend-private code, or runner-private code.
+This package may later depend on generated schema bindings. It must not depend on Flutter UI, backend-private code, runner-private code, SQLite, Drift, or `packages/dart/local_db`.
+
+Persistence adapters live below this package. For example, `packages/dart/local_db` may implement `EventStore` and `TraceSink`, but the runtime kernel must only know those interfaces.
 
 ## Generated Artifacts
 

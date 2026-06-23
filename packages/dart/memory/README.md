@@ -4,7 +4,9 @@
 
 Pure Dart Memory lifecycle primitives for WideNote.
 
-This package owns the product-semantic layer for proposed and accepted Memory before durable storage adapters are introduced.
+This package owns the product-semantic layer for proposed, reviewed, and
+accepted Memory. Durable storage adapters implement the repository interface
+outside this package.
 
 ## Ownership Boundary
 
@@ -22,6 +24,8 @@ It must not own Flutter UI, extraction prompts, local database migrations, vecto
 - `MemoryRepository`
 - `InMemoryMemoryRepository`
 - `MemoryService`
+- `MemoryReviewAction`
+- `MemoryReviewResult`
 
 ## Dependencies
 
@@ -39,7 +43,8 @@ Run:
 dart test
 ```
 
-Current tests cover default auto-acceptance, review routing, conflict routing, and deletion tombstones.
+Current tests cover default auto-acceptance, review routing, accept/edit/reject
+review actions, conflict routing, merge review actions, and deletion tombstones.
 
 ## Related Context
 

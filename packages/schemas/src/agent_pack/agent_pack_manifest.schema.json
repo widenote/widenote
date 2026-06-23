@@ -1,0 +1,358 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://widenote.dev/schemas/agent_pack_manifest.schema.json",
+  "title": "WideNote Agent Pack Manifest",
+  "description": "Manifest contract for declarative Agent Packs.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name",
+    "version",
+    "schema_version",
+    "publisher",
+    "edition",
+    "permissions",
+    "subscriptions",
+    "agents"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "id": {
+      "$ref": "#/$defs/pack_id"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"
+    },
+    "schema_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "publisher": {
+      "type": "string",
+      "minLength": 1
+    },
+    "edition": {
+      "type": "string",
+      "enum": [
+        "official",
+        "store",
+        "community",
+        "local_dev"
+      ]
+    },
+    "description": {
+      "type": "string"
+    },
+    "compatibility": {
+      "$ref": "#/$defs/compatibility"
+    },
+    "entrypoint_kind": {
+      "type": "string",
+      "enum": [
+        "native",
+        "declarative",
+        "remote",
+        "script"
+      ]
+    },
+    "permissions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/permission_id"
+      },
+      "uniqueItems": true
+    },
+    "subscriptions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/subscription"
+      }
+    },
+    "agents": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/agent"
+      }
+    },
+    "model_profiles": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/model_profile"
+      }
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/tool"
+      }
+    },
+    "ui_blocks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ui_block"
+      }
+    },
+    "settings_schema": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "secrets_schema": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "storage_quota": {
+      "$ref": "#/$defs/storage_quota"
+    },
+    "integrity": {
+      "$ref": "#/$defs/integrity"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "pack_id": {
+      "type": "string",
+      "pattern": "^pack\\.[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$"
+    },
+    "agent_id": {
+      "type": "string",
+      "pattern": "^agent\\.[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$"
+    },
+    "permission_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+    },
+    "event_type": {
+      "type": "string",
+      "pattern": "^wn\\.[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+    },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "widenote_min": {
+          "type": "string"
+        },
+        "widenote_max": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "schema_version": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "subscription": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "event_types",
+        "agent_id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^sub\\.[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$"
+        },
+        "event_types": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/event_type"
+          },
+          "uniqueItems": true
+        },
+        "agent_id": {
+          "$ref": "#/$defs/agent_id"
+        },
+        "delivery": {
+          "type": "string",
+          "enum": [
+            "async",
+            "sync"
+          ]
+        },
+        "enabled_by_default": {
+          "type": "boolean"
+        }
+      }
+    },
+    "agent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "runtime",
+        "output_events"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/agent_id"
+        },
+        "runtime": {
+          "type": "string",
+          "enum": [
+            "native",
+            "declarative",
+            "remote",
+            "script"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "prompt_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "model_profile_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "permissions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/permission_id"
+          },
+          "uniqueItems": true
+        },
+        "tools": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "output_events": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/event_type"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "model_profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "purpose"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1
+        },
+        "required": {
+          "type": "boolean"
+        }
+      }
+    },
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "permissions"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "permissions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/permission_id"
+          },
+          "uniqueItems": true
+        },
+        "side_effect": {
+          "type": "string",
+          "enum": [
+            "none",
+            "local_write",
+            "external_write",
+            "network",
+            "model_call",
+            "file_access",
+            "script_execution"
+          ]
+        }
+      }
+    },
+    "ui_block": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/event_type"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "storage_quota": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "local_bytes": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "checksum_sha256": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "signature": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  }
+}

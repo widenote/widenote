@@ -1,0 +1,60 @@
+{
+  "$schema": "../../../packages/schemas/src/agent_pack/agent_pack_manifest.schema.json",
+  "id": "pack.todo",
+  "name": "Todo Extraction Loop",
+  "version": "0.1.0",
+  "schema_version": 1,
+  "publisher": "widenote",
+  "edition": "official",
+  "description": "Built-in pack for source-linked todo suggestions.",
+  "compatibility": {
+    "widenote_min": "0.1.0",
+    "widenote_max": null,
+    "schema_version": 1
+  },
+  "entrypoint_kind": "native",
+  "permissions": [
+    "todo.suggest"
+  ],
+  "subscriptions": [
+    {
+      "id": "sub.todo_capture_created",
+      "event_types": [
+        "wn.capture.created"
+      ],
+      "agent_id": "agent.todo_loop",
+      "delivery": "async",
+      "enabled_by_default": true
+    }
+  ],
+  "agents": [
+    {
+      "id": "agent.todo_loop",
+      "runtime": "native",
+      "name": "Todo Loop Agent",
+      "prompt_ref": null,
+      "model_profile_ref": null,
+      "permissions": [
+        "todo.suggest"
+      ],
+      "tools": [],
+      "output_events": [
+        "wn.todo.suggested"
+      ]
+    }
+  ],
+  "model_profiles": [],
+  "tools": [],
+  "ui_blocks": [],
+  "storage_quota": {
+    "local_bytes": 0
+  },
+  "integrity": {
+    "checksum_sha256": null,
+    "signature": null
+  },
+  "metadata": {
+    "status": "draft",
+    "source": "packs/official/todo/manifest.json"
+  }
+}

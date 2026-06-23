@@ -9,6 +9,7 @@ void main() {
       final model = FakeModel(responses: <String>['runtime slice summary']);
       final permissions = InMemoryPermissionBroker()
         ..grantAll('pack.default', <String>{
+          ModelPermissions.complete,
           'memory.propose',
           'card.write',
           'insight.write',
@@ -74,6 +75,201 @@ void main() {
     },
   );
 
+  test('unmatched event appends without creating a task or run', () async {
+    final store = InMemoryEventStore();
+    final traceSink = InMemoryTraceSink();
+    final permissions = InMemoryPermissionBroker()
+      ..grantAll('pack.default', <String>{
+        ModelPermissions.complete,
+        'memory.propose',
+        'card.write',
+        'insight.write',
+        'todo.suggest',
+      });
+    final handler = _CountingHandler();
+    final kernel = _kernel(
+      store: store,
+      traceSink: traceSink,
+      permissions: permissions,
+      model: FakeModel(),
+      handler: handler,
+    );
+
+    await kernel.publish(
+      const WnEventDraft(
+        type: 'wn.capture.ignored',
+        actor: WnActor.user,
+        payload: <String, Object?>{'text': 'No pack subscribes to this.'},
+      ),
+    );
+
+    final events = await store.readAll();
+    final traces = await traceSink.readAll();
+
+    expect(events.single.type, 'wn.capture.ignored');
+    expect(handler.calls, 0);
+    expect(kernel.tasks, isEmpty);
+    expect(kernel.runs, isEmpty);
+    expect(traces.map((trace) => trace.name), ['runtime.event.appended']);
+  });
+
+  test('multiple packs subscribed to one event both run', () async {
+    final store = InMemoryEventStore();
+    final traceSink = InMemoryTraceSink();
+    final kernel = _blankKernel(store: store, traceSink: traceSink);
+    kernel
+      ..registerPack(
+        const AgentPack(
+          id: 'pack.alpha',
+          name: 'Alpha pack',
+          version: '0.1.0',
+          subscriptions: <Subscription>[
+            Subscription(
+              id: 'sub.alpha',
+              agentId: 'agent.alpha',
+              eventTypes: <String>{WnEventTypes.captureCreated},
+            ),
+          ],
+          agents: <String, AgentHandler>{
+            'agent.alpha': _NamedInsightHandler('alpha'),
+          },
+        ),
+      )
+      ..registerPack(
+        const AgentPack(
+          id: 'pack.beta',
+          name: 'Beta pack',
+          version: '0.1.0',
+          subscriptions: <Subscription>[
+            Subscription(
+              id: 'sub.beta',
+              agentId: 'agent.beta',
+              eventTypes: <String>{WnEventTypes.captureCreated},
+            ),
+          ],
+          agents: <String, AgentHandler>{
+            'agent.beta': _NamedInsightHandler('beta'),
+          },
+        ),
+      );
+
+    await kernel.publish(
+      const WnEventDraft(
+        type: WnEventTypes.captureCreated,
+        actor: WnActor.user,
+        payload: <String, Object?>{'text': 'Fan out to both packs.'},
+      ),
+    );
+
+    final insights = await store.readByType(WnEventTypes.insightCreated);
+
+    expect(kernel.tasks, hasLength(2));
+    expect(kernel.runs, hasLength(2));
+    expect(
+      kernel.runs.map((run) => run.status),
+      everyElement(RuntimeRunStatus.succeeded),
+    );
+    expect(insights.map((event) => event.packId), ['pack.alpha', 'pack.beta']);
+    expect(insights.map((event) => event.payload['source']), ['alpha', 'beta']);
+  });
+
+  test('default and todo packs keep output ownership separated', () async {
+    final store = InMemoryEventStore();
+    final traceSink = InMemoryTraceSink();
+    final model = FakeModel(responses: <String>['official summary']);
+    final permissions = InMemoryPermissionBroker()
+      ..grantAll('pack.default', <String>{
+        ModelPermissions.complete,
+        'memory.propose',
+        'card.write',
+        'insight.write',
+      })
+      ..grantAll('pack.todo', <String>{'todo.suggest'});
+    final kernel = _blankKernel(
+      store: store,
+      traceSink: traceSink,
+      model: model,
+      permissions: permissions,
+    );
+    kernel
+      ..registerPack(
+        const AgentPack(
+          id: 'pack.default',
+          name: 'Default capture loop',
+          version: '0.1.0',
+          requiredPermissions: <String>{
+            ModelPermissions.complete,
+            'memory.propose',
+            'card.write',
+            'insight.write',
+          },
+          subscriptions: <Subscription>[
+            Subscription(
+              id: 'sub.capture_created',
+              agentId: 'agent.capture_loop',
+              eventTypes: <String>{WnEventTypes.captureCreated},
+            ),
+          ],
+          agents: <String, AgentHandler>{
+            'agent.capture_loop': _DefaultPackHandler(),
+          },
+        ),
+      )
+      ..registerPack(
+        const AgentPack(
+          id: 'pack.todo',
+          name: 'Todo extraction loop',
+          version: '0.1.0',
+          requiredPermissions: <String>{'todo.suggest'},
+          subscriptions: <Subscription>[
+            Subscription(
+              id: 'sub.todo_capture_created',
+              agentId: 'agent.todo_loop',
+              eventTypes: <String>{WnEventTypes.captureCreated},
+            ),
+          ],
+          agents: <String, AgentHandler>{'agent.todo_loop': _TodoPackHandler()},
+        ),
+      );
+
+    await kernel.publish(
+      const WnEventDraft(
+        type: WnEventTypes.captureCreated,
+        actor: WnActor.user,
+        subjectRef: SubjectRef(kind: 'capture', id: 'capture-official'),
+        payload: <String, Object?>{'text': 'Keep official packs separate.'},
+      ),
+    );
+
+    final outputs = (await store.readAll()).skip(1).toList(growable: false);
+
+    expect(model.requests, hasLength(1));
+    expect(
+      outputs
+          .where((event) => event.packId == 'pack.default')
+          .map((event) => event.type),
+      <String>[
+        WnEventTypes.memoryProposed,
+        WnEventTypes.cardCreated,
+        WnEventTypes.insightCreated,
+      ],
+    );
+    expect(
+      outputs.where((event) => event.packId == 'pack.todo').map((event) {
+        return event.type;
+      }),
+      <String>[WnEventTypes.todoSuggested],
+    );
+    expect(
+      outputs
+          .where((event) => event.type == WnEventTypes.todoSuggested)
+          .single
+          .agentId,
+      'agent.todo_loop',
+    );
+    expect(kernel.runs.map((run) => run.packId), ['pack.default', 'pack.todo']);
+  });
+
   test(
     'missing pack permission creates denied run without handler output',
     () async {
@@ -110,11 +306,58 @@ void main() {
     },
   );
 
+  test('model.complete is permission checked at call time', () async {
+    final store = InMemoryEventStore();
+    final traceSink = InMemoryTraceSink();
+    final model = FakeModel(responses: <String>['should not be used']);
+    final kernel =
+        _blankKernel(
+          store: store,
+          traceSink: traceSink,
+          model: model,
+        )..registerPack(
+          const AgentPack(
+            id: 'pack.model',
+            name: 'Model pack',
+            version: '0.1.0',
+            subscriptions: <Subscription>[
+              Subscription(
+                id: 'sub.model',
+                agentId: 'agent.model',
+                eventTypes: <String>{WnEventTypes.captureCreated},
+              ),
+            ],
+            agents: <String, AgentHandler>{'agent.model': _ModelUsingHandler()},
+          ),
+        );
+
+    await kernel.publish(
+      const WnEventDraft(
+        type: WnEventTypes.captureCreated,
+        actor: WnActor.user,
+        payload: <String, Object?>{'text': 'Needs model permission.'},
+      ),
+    );
+
+    final events = await store.readAll();
+    final traces = await traceSink.readAll();
+
+    expect(events, hasLength(1));
+    expect(model.requests, isEmpty);
+    expect(kernel.runs.single.status, RuntimeRunStatus.failed);
+    expect(kernel.runs.single.error, contains(ModelPermissions.complete));
+    final failedTrace = traces.singleWhere(
+      (trace) => trace.name == 'runtime.run.failed',
+    );
+    expect(failedTrace.details['error'], contains(ModelPermissions.complete));
+  });
+
   test('agent tool invocation is permission checked', () async {
     final store = InMemoryEventStore();
     final traceSink = InMemoryTraceSink();
     final permissions = InMemoryPermissionBroker()
       ..grantAll('pack.default', <String>{
+        ModelPermissions.complete,
         'memory.propose',
         'card.write',
         'insight.write',
@@ -158,6 +401,7 @@ void main() {
     final traceSink = InMemoryTraceSink();
     final permissions = InMemoryPermissionBroker()
       ..grantAll('pack.default', <String>{
+        ModelPermissions.complete,
         'memory.propose',
         'card.write',
         'insight.write',
@@ -232,6 +476,7 @@ void main() {
     final traceSink = InMemoryTraceSink();
     final permissions = InMemoryPermissionBroker()
       ..grantAll('pack.default', <String>{
+        ModelPermissions.complete,
         'memory.propose',
         'card.write',
         'insight.write',
@@ -267,11 +512,43 @@ void main() {
     expect(kernel.runs.single.status, RuntimeRunStatus.succeeded);
   });
 
+  test('tool_not_found is returned to the handler', () async {
+    final store = InMemoryEventStore();
+    final traceSink = InMemoryTraceSink();
+    final permissions = InMemoryPermissionBroker()
+      ..grantAll('pack.default', <String>{
+        ModelPermissions.complete,
+        'memory.propose',
+        'card.write',
+        'insight.write',
+        'todo.suggest',
+      });
+    final kernel = _kernel(
+      store: store,
+      traceSink: traceSink,
+      permissions: permissions,
+      model: FakeModel(),
+      handler: const _ToolMissingHandler(),
+    );
+
+    await kernel.publish(
+      const WnEventDraft(
+        type: WnEventTypes.captureCreated,
+        actor: WnActor.user,
+      ),
+    );
+
+    final insights = await store.readByType(WnEventTypes.insightCreated);
+    expect(insights.single.payload['tool_error'], 'tool_not_found');
+    expect(kernel.runs.single.status, RuntimeRunStatus.succeeded);
+  });
+
   test('empty handler result still completes task and run', () async {
     final store = InMemoryEventStore();
     final traceSink = InMemoryTraceSink();
     final permissions = InMemoryPermissionBroker()
       ..grantAll('pack.default', <String>{
+        ModelPermissions.complete,
         'memory.propose',
         'card.write',
         'insight.write',
@@ -297,6 +574,49 @@ void main() {
     expect(kernel.tasks.single.status, RuntimeTaskStatus.succeeded);
     expect(kernel.runs.single.status, RuntimeRunStatus.succeeded);
     expect(kernel.runs.single.outputEventIds, isEmpty);
+  });
+
+  test('trace readByRun filters traces to one run', () async {
+    final store = InMemoryEventStore();
+    final traceSink = InMemoryTraceSink();
+    final permissions = InMemoryPermissionBroker()
+      ..grantAll('pack.default', <String>{
+        ModelPermissions.complete,
+        'memory.propose',
+        'card.write',
+        'insight.write',
+        'todo.suggest',
+      });
+    final kernel = _kernel(
+      store: store,
+      traceSink: traceSink,
+      permissions: permissions,
+      model: FakeModel(responses: <String>['trace summary']),
+      handler: const _CaptureProjectionHandler(),
+    );
+
+    await kernel.publish(
+      const WnEventDraft(
+        type: WnEventTypes.captureCreated,
+        actor: WnActor.user,
+        payload: <String, Object?>{'text': 'Trace this run.'},
+      ),
+    );
+
+    final runId = kernel.runs.single.id;
+    final runTraces = await traceSink.readByRun(runId);
+
+    expect(runTraces, isNotEmpty);
+    expect(runTraces.map((trace) => trace.runId), everyElement(runId));
+    expect(
+      runTraces.map((trace) => trace.name),
+      containsAll(<String>[
+        'runtime.run.started',
+        'runtime.handler.output',
+        'runtime.run.completed',
+      ]),
+    );
+    expect(await traceSink.readByRun('missing-run'), isEmpty);
   });
 }
 
@@ -324,6 +644,7 @@ RuntimeKernel _kernel({
       name: 'Default capture projections',
       version: '0.1.0',
       requiredPermissions: const <String>{
+        ModelPermissions.complete,
         'memory.propose',
         'card.write',
         'insight.write',
@@ -345,15 +666,17 @@ RuntimeKernel _kernel({
 RuntimeKernel _blankKernel({
   required EventStore store,
   required TraceSink traceSink,
+  ModelClient? model,
+  PermissionBroker? permissions,
 }) {
   return RuntimeKernel(
     eventStore: store,
     traceSink: traceSink,
-    permissionBroker: InMemoryPermissionBroker(),
+    permissionBroker: permissions ?? InMemoryPermissionBroker(),
     toolRegistry: InMemoryToolRegistry(),
     idGenerator: SequenceWnIdGenerator(seed: 'test'),
     clock: TickingWnClock(DateTime.utc(2026, 6, 23, 1)),
-    model: FakeModel(),
+    model: model ?? FakeModel(),
     deviceId: 'device-local',
   );
 }
@@ -421,6 +744,71 @@ final class _CountingHandler implements AgentHandler {
   }
 }
 
+final class _NamedInsightHandler implements AgentHandler {
+  const _NamedInsightHandler(this.source);
+
+  final String source;
+
+  @override
+  Future<AgentHandlerResult> handle(AgentContext context, WnEvent event) async {
+    return AgentHandlerResult(
+      events: <WnEventDraft>[
+        context.emit(
+          type: WnEventTypes.insightCreated,
+          payload: <String, Object?>{'source': source},
+        ),
+      ],
+    );
+  }
+}
+
+final class _DefaultPackHandler implements AgentHandler {
+  const _DefaultPackHandler();
+
+  @override
+  Future<AgentHandlerResult> handle(AgentContext context, WnEvent event) async {
+    final response = await context.model.complete(
+      const ModelRequest(prompt: 'Summarize official capture.'),
+    );
+    return AgentHandlerResult(
+      events: <WnEventDraft>[
+        context.emit(
+          type: WnEventTypes.memoryProposed,
+          subjectRef: event.subjectRef,
+          payload: <String, Object?>{'text': response.text},
+        ),
+        context.emit(
+          type: WnEventTypes.cardCreated,
+          subjectRef: event.subjectRef,
+          payload: <String, Object?>{'body': response.text},
+        ),
+        context.emit(
+          type: WnEventTypes.insightCreated,
+          subjectRef: event.subjectRef,
+          payload: const <String, Object?>{'kind': 'official'},
+        ),
+      ],
+    );
+  }
+}
+
+final class _TodoPackHandler implements AgentHandler {
+  const _TodoPackHandler();
+
+  @override
+  Future<AgentHandlerResult> handle(AgentContext context, WnEvent event) async {
+    return AgentHandlerResult(
+      events: <WnEventDraft>[
+        context.emit(
+          type: WnEventTypes.todoSuggested,
+          subjectRef: event.subjectRef,
+          payload: const <String, Object?>{'text': 'Review capture.'},
+        ),
+      ],
+    );
+  }
+}
+
 final class _ToolUsingHandler implements AgentHandler {
   const _ToolUsingHandler();
 
@@ -436,6 +824,44 @@ final class _ToolUsingHandler implements AgentHandler {
           type: WnEventTypes.insightCreated,
           payload: <String, Object?>{
             'tool_echo': result.isOk ? result.value['echo'] : null,
+            'tool_error': result.isErr ? result.failure.code : null,
+          },
+        ),
+      ],
+    );
+  }
+}
+
+final class _ModelUsingHandler implements AgentHandler {
+  const _ModelUsingHandler();
+
+  @override
+  Future<AgentHandlerResult> handle(AgentContext context, WnEvent event) async {
+    final response = await context.model.complete(
+      const ModelRequest(prompt: 'Use a model.'),
+    );
+    return AgentHandlerResult(
+      events: <WnEventDraft>[
+        context.emit(
+          type: WnEventTypes.insightCreated,
+          payload: <String, Object?>{'text': response.text},
+        ),
+      ],
+    );
+  }
+}
+
+final class _ToolMissingHandler implements AgentHandler {
+  const _ToolMissingHandler();
+
+  @override
+  Future<AgentHandlerResult> handle(AgentContext context, WnEvent event) async {
+    final result = await context.invokeTool('missing');
+    return AgentHandlerResult(
+      events: <WnEventDraft>[
+        context.emit(
+          type: WnEventTypes.insightCreated,
+          payload: <String, Object?>{
             'tool_error': result.isErr ? result.failure.code : null,
           },
         ),

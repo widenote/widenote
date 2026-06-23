@@ -85,6 +85,140 @@ void main() {
       },
     );
 
+    test('routes empty source refs to review', () async {
+      final repository = InMemoryMemoryRepository();
+      final service = MemoryService(repository: repository);
+
+      final result = await service.submitProposal(
+        _proposal(
+          evidence: const [
+            MemorySourceRef(sourceType: 'record', sourceId: 'record-empty'),
+          ],
+        ),
+      );
+
+      expect(result.needsReview, isTrue);
+      expect(result.decision.reasons, contains('missing_evidence'));
+      expect(await repository.listItems(), isEmpty);
+    });
+
+    test('accepts a reviewed proposal into durable Memory', () async {
+      final repository = InMemoryMemoryRepository();
+      final service = MemoryService(
+        repository: repository,
+        clock: () => DateTime.utc(2026, 6, 23, 3),
+        idFactory: _sequenceIds('memory'),
+      );
+
+      final routed = await service.submitProposal(
+        _proposal(id: 'review-me', confidence: MemoryConfidence.low),
+      );
+      final queue = await service.listReviewQueue();
+      final accepted = await service.acceptProposal('review-me');
+
+      expect(routed.needsReview, isTrue);
+      expect(queue.single.id, 'review-me');
+      expect(accepted.accepted, isTrue);
+      expect(accepted.item!.id, 'memory-1');
+      expect(accepted.item!.body, 'The user prefers concise editor layouts.');
+      expect(accepted.proposal.status, MemoryProposalStatus.accepted);
+      expect(accepted.proposal.policyReasons, contains('user_accepted'));
+      expect(await service.listReviewQueue(), isEmpty);
+    });
+
+    test('edits a reviewed proposal before accepting it', () async {
+      final repository = InMemoryMemoryRepository();
+      final service = MemoryService(
+        repository: repository,
+        idFactory: () => 'memory-edited',
+      );
+
+      await service.submitProposal(
+        _proposal(id: 'edit-me', confidence: MemoryConfidence.low),
+      );
+      final accepted = await service.acceptProposal(
+        'edit-me',
+        editedBody: 'The user prefers dense editor layouts.',
+      );
+
+      expect(accepted.item!.id, 'memory-edited');
+      expect(accepted.item!.body, 'The user prefers dense editor layouts.');
+      expect(accepted.proposal.body, 'The user prefers dense editor layouts.');
+      expect(accepted.proposal.status, MemoryProposalStatus.accepted);
+    });
+
+    test('rejects a reviewed proposal without creating Memory', () async {
+      final repository = InMemoryMemoryRepository();
+      final service = MemoryService(repository: repository);
+
+      await service.submitProposal(
+        _proposal(id: 'reject-me', confidence: MemoryConfidence.low),
+      );
+      final rejected = await service.rejectProposal('reject-me');
+
+      expect(rejected.rejected, isTrue);
+      expect(rejected.proposal.status, MemoryProposalStatus.rejected);
+      expect(rejected.proposal.policyReasons, contains('user_rejected'));
+      expect(await repository.listItems(), isEmpty);
+      expect(await service.listReviewQueue(), isEmpty);
+    });
+
+    test('accepts source refs with uri evidence', () async {
+      final repository = InMemoryMemoryRepository();
+      final service = MemoryService(
+        repository: repository,
+        idFactory: _sequenceIds('memory'),
+      );
+
+      final result = await service.submitProposal(
+        _proposal(
+          evidence: [
+            MemorySourceRef(
+              sourceType: 'record',
+              sourceId: 'record-link',
+              uri: Uri.parse('widenote://records/record-link'),
+            ),
+          ],
+        ),
+      );
+
+      expect(result.accepted, isTrue);
+      expect(result.item!.evidence.single.uri, isNotNull);
+    });
+
+    test('routes transient proposals to review', () async {
+      final repository = InMemoryMemoryRepository();
+      final service = MemoryService(repository: repository);
+
+      final result = await service.submitProposal(
+        _proposal(id: 'transient', durability: MemoryDurability.transient),
+      );
+
+      expect(result.needsReview, isTrue);
+      expect(result.decision.reasons, contains('not_durable'));
+      expect(await repository.listItems(), isEmpty);
+    });
+
+    test('never auto-accepts credential memory', () async {
+      final repository = InMemoryMemoryRepository();
+      final service = MemoryService(repository: repository);
+
+      final result = await service.submitProposal(
+        _proposal(
+          id: 'credential',
+          key: 'credential.api_token',
+          body: 'The user keeps an API token in the dev keychain.',
+          memoryType: MemoryType.credential,
+          confidence: MemoryConfidence.high,
+          sensitivity: MemorySensitivity.low,
+        ),
+      );
+
+      expect(result.needsReview, isTrue);
+      expect(result.decision.reasons, contains('review_only_type'));
+      expect(await repository.listItems(), isEmpty);
+    });
+
     test('routes conflicting proposals to review', () async {
       final repository = InMemoryMemoryRepository();
       final service = MemoryService(
@@ -116,6 +250,84 @@ void main() {
         await repository.listItems(status: MemoryItemStatus.active),
         hasLength(1),
       );
+    });
+
+    test('merges a reviewed conflict into an existing Memory item', () async {
+      final repository = InMemoryMemoryRepository();
+      final service = MemoryService(
+        repository: repository,
+        clock: _sequenceClock([
+          DateTime.utc(2026, 6, 23, 4),
+          DateTime.utc(2026, 6, 23, 5),
+        ]),
+        idFactory: _sequenceIds('memory'),
+      );
+
+      final original = await service.submitProposal(
+        _proposal(
+          id: 'original',
+          key: 'preference.drink',
+          body: 'The user prefers coffee.',
+        ),
+      );
+      await service.submitProposal(
+        _proposal(
+          id: 'conflict',
+          key: 'preference.drink',
+          body: 'The user prefers tea.',
+          evidence: const [
+            MemorySourceRef(
+              sourceType: 'record',
+              sourceId: 'record-2',
+              excerpt: 'I drink tea at night.',
+            ),
+          ],
+        ),
+      );
+      final merged = await service.mergeProposal(
+        'conflict',
+        targetMemoryId: original.item!.id,
+        mergedBody: 'The user prefers coffee during work and tea at night.',
+      );
+
+      expect(merged.merged, isTrue);
+      expect(merged.item!.id, original.item!.id);
+      expect(merged.item!.revision, 2);
+      expect(
+        merged.item!.body,
+        'The user prefers coffee during work and tea at night.',
+      );
+      expect(merged.proposal.status, MemoryProposalStatus.merged);
+      expect(merged.proposal.conflictingMemoryIds, contains(original.item!.id));
+      expect(merged.item!.evidence, hasLength(2));
+    });
+
+    test('same key with same body does not conflict', () async {
+      final repository = InMemoryMemoryRepository();
+      final service = MemoryService(
+        repository: repository,
+        idFactory: _sequenceIds('memory'),
+      );
+
+      final original = await service.submitProposal(
+        _proposal(
+          id: 'original',
+          key: 'preference.drink',
+          body: 'The user prefers coffee.',
+        ),
+      );
+      final repeated = await service.submitProposal(
+        _proposal(
+          id: 'repeated',
+          key: 'preference.drink',
+          body: 'The user prefers coffee.',
+        ),
+      );
+
+      expect(original.accepted, isTrue);
+      expect(repeated.accepted, isTrue);
+      expect(repeated.conflicts, isEmpty);
+      expect(repeated.decision.reasons, isNot(contains('conflict')));
     });
 
     test('deletes memory with a tombstone revision', () async {

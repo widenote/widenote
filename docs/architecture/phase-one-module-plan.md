@@ -44,7 +44,7 @@ When adding, moving, renaming, or deleting a durable module:
 | `apps/runner-ts` | TypeScript runner for self-hosted or cloud execution | Task lease/complete APIs, trace emission, tool execution, model calls | `src/worker`, `src/executors`, `src/tools`, `src/providers`, `src/traces` | Must not define core runtime semantics privately |
 | `packages/schemas` | Public runtime contracts | Event, Memory, Agent Pack, Permission, Task, Tool, UI Block, Sync, Trace schemas | `src/event`, `src/memory`, `src/agent_pack`, `src/permission`, `src/task`, `src/tool`, `src/ui_block`, `src/sync`, `src/trace`, `fixtures` | Generated Dart/TS bindings must point back here |
 | `packages/dart/core` | Pure Dart primitives and utilities | IDs, clocks, result types, schema helpers, value objects | `lib/src/ids`, `lib/src/time`, `lib/src/result`, `lib/src/json` | Must not depend on Flutter or app-private code |
-| `packages/dart/local_db` | Drift/SQLite local persistence | Database, DAOs, migrations, local query APIs | See detailed plan below | Document table ownership and migration commands |
+| `packages/dart/local_db` | SQLite local persistence; Drift remains the long-term client target | Database, DAOs, migrations, local query APIs | See detailed plan below | Document table ownership and migration commands |
 | `packages/dart/agent_runtime` | Local Agent Runtime Kernel | Event dispatch, task queue, pack registry, permission broker, tool registry, traces | See detailed plan below | Link ADR-0003 and runtime docs |
 | `packages/dart/ui_blocks` | Flutter rendering for structured UI blocks | Safe UI block widgets/renderers | `lib/src/renderers`, `lib/src/widgets`, `lib/src/theme`, `test/fixtures` | Must not execute arbitrary plugin UI in store-safe path |
 | `packages/ts/protocol` | TypeScript schema helpers and validators | Generated types, validators, helpers | `src/generated`, `src/validators`, `src/helpers` | Generated outputs must cite `packages/schemas` |
@@ -123,13 +123,23 @@ Boundary rules:
 - Mobile must not define public Event, Memory, Agent Pack, Permission, Task, or Sync contracts privately.
 - Platform-specific code may live in the app, but must expose narrow Dart interfaces.
 
+Current foundation note:
+
+- `apps/mobile/lib/app/local_database.dart` is the current bootstrap/provider
+  boundary for production SQLite startup. It opens `local-data/widenote.sqlite`
+  and injects `LocalDbEventStore` / `LocalDbTraceSink` into the local runtime.
+- Capture UI state is still an app-local read model after processing. Restart
+  hydration should be added after durable Memory review and timeline read
+  models are formalized.
+
 ## `packages/dart/local_db`
 
-`packages/dart/local_db` owns local persistence and migrations. It is the SQLite/Drift implementation detail for local-first storage, not the public protocol authority.
+`packages/dart/local_db` owns local persistence and migrations. It is the SQLite local-first storage implementation detail, with Drift still reserved as the long-term client target, not the public protocol authority.
 
 Key interfaces:
 
-- `WideNoteDatabase`
+- `WideNoteLocalDatabase`
+- `WideNoteLocalDatabase.openPath`
 - `EventLogDao`
 - `CaptureDao`
 - `AttachmentDao`

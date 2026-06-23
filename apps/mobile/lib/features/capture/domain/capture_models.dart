@@ -13,6 +13,20 @@ class CaptureRecord {
   final String body;
   final DateTime createdAt;
   final String status;
+
+  CaptureRecord copyWith({
+    String? id,
+    String? body,
+    DateTime? createdAt,
+    String? status,
+  }) {
+    return CaptureRecord(
+      id: id ?? this.id,
+      body: body ?? this.body,
+      createdAt: createdAt ?? this.createdAt,
+      status: status ?? this.status,
+    );
+  }
 }
 
 @immutable
@@ -24,6 +38,7 @@ class CaptureMemoryItem {
     required this.sourceRecordId,
     required this.confidenceLabel,
     required this.statusLabel,
+    required this.needsReview,
   });
 
   final String id;
@@ -32,6 +47,24 @@ class CaptureMemoryItem {
   final String sourceRecordId;
   final String confidenceLabel;
   final String statusLabel;
+  final bool needsReview;
+}
+
+@immutable
+class MemoryReviewCandidate {
+  const MemoryReviewCandidate({
+    required this.id,
+    required this.summary,
+    required this.sourceLabel,
+    required this.reasonLabel,
+    required this.typeLabel,
+  });
+
+  final String id;
+  final String summary;
+  final String sourceLabel;
+  final String reasonLabel;
+  final String typeLabel;
 }
 
 @immutable
@@ -57,6 +90,9 @@ class TraceEvent {
     required this.detail,
     required this.sourceRecordId,
     required this.timeLabel,
+    this.packId,
+    this.agentId,
+    this.runId,
   });
 
   final String id;
@@ -64,6 +100,9 @@ class TraceEvent {
   final String detail;
   final String sourceRecordId;
   final String timeLabel;
+  final String? packId;
+  final String? agentId;
+  final String? runId;
 }
 
 @immutable
@@ -71,6 +110,7 @@ class CaptureState {
   const CaptureState({
     required this.records,
     required this.memories,
+    required this.reviewCandidates,
     required this.todos,
     required this.traces,
     required this.isProcessing,
@@ -81,6 +121,7 @@ class CaptureState {
     return const CaptureState(
       records: [],
       memories: [],
+      reviewCandidates: [],
       todos: [
         SourceTodo(
           id: 'seed-todo-1',
@@ -103,6 +144,7 @@ class CaptureState {
 
   final List<CaptureRecord> records;
   final List<CaptureMemoryItem> memories;
+  final List<MemoryReviewCandidate> reviewCandidates;
   final List<SourceTodo> todos;
   final List<TraceEvent> traces;
   final bool isProcessing;
@@ -111,6 +153,7 @@ class CaptureState {
   CaptureState copyWith({
     List<CaptureRecord>? records,
     List<CaptureMemoryItem>? memories,
+    List<MemoryReviewCandidate>? reviewCandidates,
     List<SourceTodo>? todos,
     List<TraceEvent>? traces,
     bool? isProcessing,
@@ -120,6 +163,7 @@ class CaptureState {
     return CaptureState(
       records: records ?? this.records,
       memories: memories ?? this.memories,
+      reviewCandidates: reviewCandidates ?? this.reviewCandidates,
       todos: todos ?? this.todos,
       traces: traces ?? this.traces,
       isProcessing: isProcessing ?? this.isProcessing,

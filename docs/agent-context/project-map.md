@@ -36,6 +36,13 @@ It should stay short. It points to the right local context instead of duplicatin
 - `docs/rfcs/memory-model.md`
 - `docs/rfcs/agent-pack-schema.md`
 
+## Contract Sources
+
+- `packages/schemas/src/`
+- `packs/official/default/manifest.json`
+- `packs/official/todo/manifest.json`
+- `tools/pack_validator/validate.mjs`
+
 ## Areas
 
 | Area | Context | Purpose |
@@ -56,7 +63,7 @@ It should stay short. It points to the right local context instead of duplicatin
 | TypeScript runner | `apps/runner-ts/README.md` | Self-hosted or cloud runner |
 | Schemas | `packages/schemas/README.md` | Shared runtime contracts and generated types |
 | Dart core | `packages/dart/core/README.md` | Pure Dart models and utilities |
-| Dart local DB | `packages/dart/local_db/README.md` | Drift and SQLite data layer |
+| Dart local DB | `packages/dart/local_db/README.md` | SQLite local truth layer; Drift remains the long-term client target |
 | Dart agent runtime | `packages/dart/agent_runtime/README.md` | Local Agent Runtime Kernel |
 | Dart memory | `packages/dart/memory/README.md` | Memory lifecycle and auto-accept policy |
 | Dart model providers | `packages/dart/model_providers/README.md` | Provider contracts and runtime adapter |
@@ -65,6 +72,8 @@ It should stay short. It points to the right local context instead of duplicatin
 | TS runner core | `packages/ts/runner_core/README.md` | Runner execution primitives |
 | TS agent SDK | `packages/ts/agent_sdk/README.md` | Runner-side Agent Pack SDK |
 | Default Agent Pack | `packs/official/default/README.md` | Default capture to insight loop |
+| Todo Agent Pack | `packs/official/todo/README.md` | Source-linked todo suggestion loop |
+| Pack validator | `tools/pack_validator/README.md` | Lightweight Agent Pack manifest checks |
 
 ## Maintenance Rule
 

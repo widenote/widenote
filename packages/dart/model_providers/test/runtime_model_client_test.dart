@@ -33,6 +33,45 @@ void main() {
     },
   );
 
+  test(
+    'RuntimeModelClientAdapter maps usage and metadata to raw output',
+    () async {
+      final provider = FakeModelProvider(
+        responder: (request) async {
+          return ModelResponse(
+            providerId: 'fake',
+            model: request.model ?? 'fallback-model',
+            text: 'raw mapped',
+            usage: const ModelUsage(inputTokens: 12, outputTokens: 7),
+            metadata: const <String, Object?>{
+              'finish_reason': 'stop',
+              'request_id': 'req-1',
+            },
+          );
+        },
+      );
+      final client = RuntimeModelClientAdapter(
+        provider: provider,
+        model: 'local-test-model',
+      );
+
+      final response = await client.complete(
+        const runtime.ModelRequest(prompt: 'Map raw fields'),
+      );
+
+      expect(response.text, 'raw mapped');
+      expect(response.raw['usage'], <String, Object?>{
+        'input_tokens': 12,
+        'output_tokens': 7,
+        'total_tokens': 19,
+      });
+      expect(response.raw['metadata'], <String, Object?>{
+        'finish_reason': 'stop',
+        'request_id': 'req-1',
+      });
+    },
+  );
+
   test('RuntimeModelClientAdapter wraps provider failures', () async {
     final provider = FakeModelProvider(
       responder: (request) => throw StateError('provider failed'),

@@ -27,24 +27,23 @@ schema_version: 1
 publisher: widenote
 edition: official
 permissions:
+  - model.complete
   - memory.propose
   - card.write
   - insight.write
-  - todo.suggest
 subscriptions:
-  - id: sub.capture
+  - id: sub.capture_created
     event_types:
       - wn.capture.created
-    agent_id: agent.capture
+    agent_id: agent.capture_loop
 agents:
-  - id: agent.capture
+  - id: agent.capture_loop
     runtime: native
-    prompt_ref: prompts/capture.md
+    prompt_ref: null
     output_events:
       - wn.memory.proposed
       - wn.card.created
       - wn.insight.created
-      - wn.todo.suggested
 ```
 
 ## Pack Fields
@@ -62,6 +61,30 @@ agents:
 | `agents[]` | Yes | Agent handlers and prompts |
 | `tools[]` | No | Tool declarations used by agents |
 | `ui_blocks[]` | No | Structured UI blocks exposed by the pack |
+
+## Schema Source Paths
+
+Phase-one source schemas live under `packages/schemas/src`:
+
+| Contract | Source |
+| --- | --- |
+| Event envelope | `packages/schemas/src/event/event.schema.json` |
+| Memory candidate/item | `packages/schemas/src/memory/memory.schema.json` |
+| Agent Pack manifest | `packages/schemas/src/agent_pack/agent_pack_manifest.schema.json` |
+| Permission declaration | `packages/schemas/src/permission/permission.schema.json` |
+| Trace event | `packages/schemas/src/trace/trace.schema.json` |
+
+Official phase-one pack manifests live under `packs/official/*/manifest.json`.
+
+## Manifest Validation
+
+Phase-one official manifests are checked with the lightweight validator:
+
+```sh
+node tools/pack_validator/validate.mjs packs/official/default/manifest.json packs/official/todo/manifest.json
+```
+
+This is a lightweight validator, not a complete JSON Schema validator. It currently checks JSON parse, required manifest shape, intra-manifest references, agent permission subsets, non-empty output events, and the `pack.default` / `pack.todo` phase-one guardrails.
 
 ## Subscription Contract
 
@@ -127,7 +150,7 @@ Pack prompts should follow progressive context disclosure:
 
 | Pack | Default | Purpose |
 | --- | --- | --- |
-| `pack.default` | Yes | Capture to Memory/card/insight/todo suggestions |
+| `pack.default` | Yes | Capture to Memory/card/insight |
 | `pack.todo` | Yes | Source-linked todos and lightweight action review |
 | `pack.conversation` | Yes | Chat over local Memory and records |
 | `pack.backup_export` | Yes | Local export/import and backup |
@@ -137,7 +160,7 @@ Pack prompts should follow progressive context disclosure:
 
 1. Implement built-in official packs as native Dart handlers to prove the event model and tests.
 2. Keep each native pack's id, permissions, subscriptions, agents, and output events aligned with this RFC.
-3. Add a manifest validator under `tools/pack_validator`.
+3. Maintain a lightweight manifest validator under `tools/pack_validator`.
 4. Generate or load a manifest for every built-in pack.
 5. Move user-installable packs to manifest-first loading.
 6. Defer scripted handlers until sandbox and store/community edition rules are accepted.
@@ -150,8 +173,11 @@ Pack prompts should follow progressive context disclosure:
 - Dynamic UI block scripting.
 - Cross-device sync of pack state.
 
+## Resolved Phase-One Decisions
+
+- `pack.todo` is a separate always-on official pack, not part of `pack.default`.
+
 ## Open Questions
 
-- Whether Todo remains part of `pack.default` or becomes a separate always-on official pack.
 - Whether companion mode should share the conversation pack or ship as a separate pack.
 - How strict pack schema validation should be before store distribution exists.
