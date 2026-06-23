@@ -25,6 +25,14 @@ The mobile app must not become the only source of truth for public Event, Memory
 
 Initial public surfaces are the Flutter app entrypoint, platform integration boundaries, and local runtime wiring.
 
+Current source layout:
+
+- `lib/main.dart`: app process entrypoint and Riverpod scope.
+- `lib/app`: app shell, theme, and routing.
+- `lib/features`: feature-owned UI and app-local controllers.
+
+The current client uses an app-local fake capture controller until the pure Dart runtime and local database packages are integrated.
+
 ## Dependencies
 
 Allowed dependencies:

@@ -1,0 +1,482 @@
+import 'package:test/test.dart';
+import 'package:widenote_agent_runtime/widenote_agent_runtime.dart';
+import 'package:widenote_core/widenote_core.dart';
+
+void main() {
+  test(
+    'capture.created drives subscription, run, output events, and trace',
+    () async {
+      final model = FakeModel(responses: <String>['runtime slice summary']);
+      final permissions = InMemoryPermissionBroker()
+        ..grantAll('pack.default', <String>{
+          'memory.propose',
+          'card.write',
+          'insight.write',
+          'todo.suggest',
+        });
+      final store = InMemoryEventStore();
+      final traceSink = InMemoryTraceSink();
+      final kernel = _kernel(
+        store: store,
+        traceSink: traceSink,
+        permissions: permissions,
+        model: model,
+        handler: const _CaptureProjectionHandler(),
+      );
+
+      final capture = await kernel.publish(
+        const WnEventDraft(
+          type: WnEventTypes.captureCreated,
+          actor: WnActor.user,
+          subjectRef: SubjectRef(kind: 'capture', id: 'capture-1'),
+          payload: <String, Object?>{
+            'text': 'Ship the local runtime test slice.',
+            'source': 'manual',
+          },
+        ),
+      );
+
+      final events = await store.readAll();
+      final eventTypes = events.map((event) => event.type).toList();
+
+      expect(eventTypes, <String>[
+        WnEventTypes.captureCreated,
+        WnEventTypes.memoryProposed,
+        WnEventTypes.cardCreated,
+        WnEventTypes.insightCreated,
+        WnEventTypes.todoSuggested,
+      ]);
+      expect(model.requests.single.prompt, contains('Ship the local runtime'));
+      expect(kernel.tasks.single.status, RuntimeTaskStatus.succeeded);
+      expect(kernel.runs.single.status, RuntimeRunStatus.succeeded);
+      expect(kernel.runs.single.outputEventIds, hasLength(4));
+
+      final outputs = events.skip(1).toList();
+      for (final output in outputs) {
+        expect(output.actor, WnActor.agent);
+        expect(output.packId, 'pack.default');
+        expect(output.agentId, 'agent.capture');
+        expect(output.causationId, capture.id);
+        expect(output.correlationId, capture.id);
+      }
+      expect(outputs.first.payload['state'], 'proposed');
+
+      final traces = await traceSink.readAll();
+      final traceNames = traces.map((trace) => trace.name).toList();
+      expect(traceNames, contains('runtime.event.appended'));
+      expect(traceNames, contains('runtime.task.created'));
+      expect(traceNames, contains('runtime.run.started'));
+      expect(
+        traceNames.where((name) => name == 'runtime.handler.output'),
+        hasLength(4),
+      );
+      expect(traceNames, contains('runtime.run.completed'));
+    },
+  );
+
+  test(
+    'missing pack permission creates denied run without handler output',
+    () async {
+      final store = InMemoryEventStore();
+      final traceSink = InMemoryTraceSink();
+      final handler = _CountingHandler();
+      final kernel = _kernel(
+        store: store,
+        traceSink: traceSink,
+        permissions: InMemoryPermissionBroker(),
+        model: FakeModel(),
+        handler: handler,
+      );
+
+      await kernel.publish(
+        const WnEventDraft(
+          type: WnEventTypes.captureCreated,
+          actor: WnActor.user,
+          payload: <String, Object?>{'text': 'Needs permission.'},
+        ),
+      );
+
+      final events = await store.readAll();
+      final traces = await traceSink.readAll();
+
+      expect(handler.calls, 0);
+      expect(events, hasLength(1));
+      expect(kernel.tasks.single.status, RuntimeTaskStatus.denied);
+      expect(kernel.runs.single.status, RuntimeRunStatus.denied);
+      expect(
+        traces.map((trace) => trace.name),
+        contains('runtime.permission.denied'),
+      );
+    },
+  );
+
+  test('agent tool invocation is permission checked', () async {
+    final store = InMemoryEventStore();
+    final traceSink = InMemoryTraceSink();
+    final permissions = InMemoryPermissionBroker()
+      ..grantAll('pack.default', <String>{
+        'memory.propose',
+        'card.write',
+        'insight.write',
+        'todo.suggest',
+        'tool.echo',
+      });
+    final tools = InMemoryToolRegistry()
+      ..register(
+        ToolDefinition(
+          name: 'echo',
+          description: 'Returns input for tests.',
+          requiredPermissions: const <String>{'tool.echo'},
+          handler: (invocation) async => <String, Object?>{
+            'echo': invocation.input['value'],
+          },
+        ),
+      );
+    final kernel = _kernel(
+      store: store,
+      traceSink: traceSink,
+      permissions: permissions,
+      model: FakeModel(),
+      tools: tools,
+      handler: const _ToolUsingHandler(),
+    );
+
+    await kernel.publish(
+      const WnEventDraft(
+        type: WnEventTypes.captureCreated,
+        actor: WnActor.user,
+        payload: <String, Object?>{'text': 'hello'},
+      ),
+    );
+
+    final insights = await store.readByType(WnEventTypes.insightCreated);
+    expect(insights.single.payload['tool_echo'], 'hello');
+  });
+
+  test('handler failure marks task and run failed with error trace', () async {
+    final store = InMemoryEventStore();
+    final traceSink = InMemoryTraceSink();
+    final permissions = InMemoryPermissionBroker()
+      ..grantAll('pack.default', <String>{
+        'memory.propose',
+        'card.write',
+        'insight.write',
+        'todo.suggest',
+      });
+    final kernel = _kernel(
+      store: store,
+      traceSink: traceSink,
+      permissions: permissions,
+      model: FakeModel(),
+      handler: const _ThrowingHandler(),
+    );
+
+    await kernel.publish(
+      const WnEventDraft(
+        type: WnEventTypes.captureCreated,
+        actor: WnActor.user,
+        payload: <String, Object?>{'text': 'boom'},
+      ),
+    );
+
+    expect(kernel.tasks.single.status, RuntimeTaskStatus.failed);
+    expect(kernel.runs.single.status, RuntimeRunStatus.failed);
+    expect(kernel.runs.single.error, contains('handler exploded'));
+
+    final traces = await traceSink.readAll();
+    final failedTrace = traces.singleWhere(
+      (trace) => trace.name == 'runtime.run.failed',
+    );
+    expect(failedTrace.level, TraceLevel.error);
+    expect(failedTrace.details['error'], contains('handler exploded'));
+  });
+
+  test('missing handler records trace without creating a task', () async {
+    final store = InMemoryEventStore();
+    final traceSink = InMemoryTraceSink();
+    final kernel = _blankKernel(store: store, traceSink: traceSink);
+    kernel.registerPack(
+      const AgentPack(
+        id: 'pack.default',
+        name: 'Missing handler pack',
+        version: '0.1.0',
+        subscriptions: <Subscription>[
+          Subscription(
+            id: 'sub.capture',
+            agentId: 'agent.missing',
+            eventTypes: <String>{WnEventTypes.captureCreated},
+          ),
+        ],
+        agents: <String, AgentHandler>{},
+      ),
+    );
+
+    await kernel.publish(
+      const WnEventDraft(
+        type: WnEventTypes.captureCreated,
+        actor: WnActor.user,
+      ),
+    );
+
+    expect(kernel.tasks, isEmpty);
+    expect(kernel.runs, isEmpty);
+    final traces = await traceSink.readAll();
+    expect(
+      traces.map((trace) => trace.name),
+      contains('runtime.handler.missing'),
+    );
+  });
+
+  test('tool permission denial is returned to the handler', () async {
+    final store = InMemoryEventStore();
+    final traceSink = InMemoryTraceSink();
+    final permissions = InMemoryPermissionBroker()
+      ..grantAll('pack.default', <String>{
+        'memory.propose',
+        'card.write',
+        'insight.write',
+        'todo.suggest',
+      });
+    final tools = InMemoryToolRegistry()
+      ..register(
+        ToolDefinition(
+          name: 'secret',
+          description: 'Requires an extra permission.',
+          requiredPermissions: const <String>{'tool.secret'},
+          handler: (invocation) async => const <String, Object?>{'ok': true},
+        ),
+      );
+    final kernel = _kernel(
+      store: store,
+      traceSink: traceSink,
+      permissions: permissions,
+      model: FakeModel(),
+      tools: tools,
+      handler: const _ToolDeniedHandler(),
+    );
+
+    await kernel.publish(
+      const WnEventDraft(
+        type: WnEventTypes.captureCreated,
+        actor: WnActor.user,
+      ),
+    );
+
+    final insights = await store.readByType(WnEventTypes.insightCreated);
+    expect(insights.single.payload['tool_error'], 'permission_denied');
+    expect(kernel.runs.single.status, RuntimeRunStatus.succeeded);
+  });
+
+  test('empty handler result still completes task and run', () async {
+    final store = InMemoryEventStore();
+    final traceSink = InMemoryTraceSink();
+    final permissions = InMemoryPermissionBroker()
+      ..grantAll('pack.default', <String>{
+        'memory.propose',
+        'card.write',
+        'insight.write',
+        'todo.suggest',
+      });
+    final kernel = _kernel(
+      store: store,
+      traceSink: traceSink,
+      permissions: permissions,
+      model: FakeModel(),
+      handler: const _EmptyHandler(),
+    );
+
+    await kernel.publish(
+      const WnEventDraft(
+        type: WnEventTypes.captureCreated,
+        actor: WnActor.user,
+      ),
+    );
+
+    final events = await store.readAll();
+    expect(events, hasLength(1));
+    expect(kernel.tasks.single.status, RuntimeTaskStatus.succeeded);
+    expect(kernel.runs.single.status, RuntimeRunStatus.succeeded);
+    expect(kernel.runs.single.outputEventIds, isEmpty);
+  });
+}
+
+RuntimeKernel _kernel({
+  required EventStore store,
+  required TraceSink traceSink,
+  required PermissionBroker permissions,
+  required ModelClient model,
+  required AgentHandler handler,
+  ToolRegistry? tools,
+}) {
+  final kernel = RuntimeKernel(
+    eventStore: store,
+    traceSink: traceSink,
+    permissionBroker: permissions,
+    toolRegistry: tools ?? InMemoryToolRegistry(),
+    idGenerator: SequenceWnIdGenerator(seed: 'test'),
+    clock: TickingWnClock(DateTime.utc(2026, 6, 23, 1)),
+    model: model,
+    deviceId: 'device-local',
+  );
+  kernel.registerPack(
+    AgentPack(
+      id: 'pack.default',
+      name: 'Default capture projections',
+      version: '0.1.0',
+      requiredPermissions: const <String>{
+        'memory.propose',
+        'card.write',
+        'insight.write',
+        'todo.suggest',
+      },
+      subscriptions: const <Subscription>[
+        Subscription(
+          id: 'sub.capture',
+          agentId: 'agent.capture',
+          eventTypes: <String>{WnEventTypes.captureCreated},
+        ),
+      ],
+      agents: <String, AgentHandler>{'agent.capture': handler},
+    ),
+  );
+  return kernel;
+}
+
+RuntimeKernel _blankKernel({
+  required EventStore store,
+  required TraceSink traceSink,
+}) {
+  return RuntimeKernel(
+    eventStore: store,
+    traceSink: traceSink,
+    permissionBroker: InMemoryPermissionBroker(),
+    toolRegistry: InMemoryToolRegistry(),
+    idGenerator: SequenceWnIdGenerator(seed: 'test'),
+    clock: TickingWnClock(DateTime.utc(2026, 6, 23, 1)),
+    model: FakeModel(),
+    deviceId: 'device-local',
+  );
+}
+
+final class _CaptureProjectionHandler implements AgentHandler {
+  const _CaptureProjectionHandler();
+
+  @override
+  Future<AgentHandlerResult> handle(AgentContext context, WnEvent event) async {
+    final text = event.payload['text'] as String? ?? '';
+    final summary = await context.model.complete(
+      ModelRequest(prompt: 'Summarize capture: $text'),
+    );
+    final subject =
+        event.subjectRef ?? SubjectRef(kind: 'capture', id: event.id);
+
+    return AgentHandlerResult(
+      events: <WnEventDraft>[
+        context.emit(
+          type: WnEventTypes.memoryProposed,
+          subjectRef: subject,
+          payload: <String, Object?>{
+            'state': 'proposed',
+            'source_event_id': event.id,
+            'text': summary.text,
+            'confidence': 0.76,
+          },
+        ),
+        context.emit(
+          type: WnEventTypes.cardCreated,
+          subjectRef: subject,
+          payload: <String, Object?>{
+            'title': 'Runtime slice',
+            'body': summary.text,
+          },
+        ),
+        context.emit(
+          type: WnEventTypes.insightCreated,
+          subjectRef: subject,
+          payload: <String, Object?>{
+            'kind': 'implementation',
+            'text': 'Capture can drive local agent output offline.',
+          },
+        ),
+        context.emit(
+          type: WnEventTypes.todoSuggested,
+          subjectRef: subject,
+          payload: <String, Object?>{
+            'text': 'Review generated runtime events.',
+            'source_event_id': event.id,
+          },
+        ),
+      ],
+    );
+  }
+}
+
+final class _CountingHandler implements AgentHandler {
+  int calls = 0;
+
+  @override
+  Future<AgentHandlerResult> handle(AgentContext context, WnEvent event) async {
+    calls += 1;
+    return const AgentHandlerResult.empty();
+  }
+}
+
+final class _ToolUsingHandler implements AgentHandler {
+  const _ToolUsingHandler();
+
+  @override
+  Future<AgentHandlerResult> handle(AgentContext context, WnEvent event) async {
+    final result = await context.invokeTool(
+      'echo',
+      input: <String, Object?>{'value': event.payload['text']},
+    );
+    return AgentHandlerResult(
+      events: <WnEventDraft>[
+        context.emit(
+          type: WnEventTypes.insightCreated,
+          payload: <String, Object?>{
+            'tool_echo': result.isOk ? result.value['echo'] : null,
+            'tool_error': result.isErr ? result.failure.code : null,
+          },
+        ),
+      ],
+    );
+  }
+}
+
+final class _ThrowingHandler implements AgentHandler {
+  const _ThrowingHandler();
+
+  @override
+  Future<AgentHandlerResult> handle(AgentContext context, WnEvent event) {
+    throw StateError('handler exploded');
+  }
+}
+
+final class _ToolDeniedHandler implements AgentHandler {
+  const _ToolDeniedHandler();
+
+  @override
+  Future<AgentHandlerResult> handle(AgentContext context, WnEvent event) async {
+    final result = await context.invokeTool('secret');
+    return AgentHandlerResult(
+      events: <WnEventDraft>[
+        context.emit(
+          type: WnEventTypes.insightCreated,
+          payload: <String, Object?>{
+            'tool_error': result.isErr ? result.failure.code : null,
+          },
+        ),
+      ],
+    );
+  }
+}
+
+final class _EmptyHandler implements AgentHandler {
+  const _EmptyHandler();
+
+  @override
+  Future<AgentHandlerResult> handle(AgentContext context, WnEvent event) async {
+    return const AgentHandlerResult.empty();
+  }
+}

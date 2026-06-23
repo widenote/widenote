@@ -1,0 +1,10 @@
+name: widenote_memory
+description: Pure Dart Memory lifecycle primitives for WideNote.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.11.0
+
+dev_dependencies:
+  test: ^1.25.0
