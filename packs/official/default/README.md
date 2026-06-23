@@ -16,7 +16,20 @@ Owns the default product capability bundle. It must stay conservative and store-
 
 ## Public Surface
 
-Future public surfaces include the default Agent Pack manifest, subscriptions, prompt definitions, permission requests, and UI/output declarations.
+Current public surface:
+
+| Surface | Source |
+| --- | --- |
+| Agent Pack manifest | `manifest.json` |
+
+The manifest declares:
+
+- Permission requests: `model.complete`, `card.write`, `memory.propose`, `insight.write`
+- Subscription: `wn.capture.created`
+- Native agent: `agent.capture_loop`
+- Output events: `wn.card.created`, `wn.memory.proposed`, `wn.insight.created`
+
+Future public surfaces include prompt definitions, richer permission requests, and UI/output declarations.
 
 ## Dependencies
 
@@ -24,9 +37,13 @@ May depend on public Agent Pack, Event, Memory, Permission, Tool, and UI Block s
 
 ## Generated Artifacts
 
-Generated pack indexes or manifest docs must point back to the pack manifest source when introduced.
+No generated artifacts exist yet.
+
+Generated pack indexes or manifest docs must point back to `manifest.json` when introduced.
 
 ## Related Context
 
 - `docs/product/positioning.md`
 - `docs/architecture/runtime.md`
+- `docs/rfcs/agent-pack-schema.md`
+- `packages/schemas/src/agent_pack/agent_pack_manifest.schema.json`

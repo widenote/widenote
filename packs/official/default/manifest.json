@@ -1,0 +1,74 @@
+{
+  "$schema": "../../../packages/schemas/src/agent_pack/agent_pack_manifest.schema.json",
+  "id": "pack.default",
+  "name": "Default Capture Loop",
+  "version": "0.1.0",
+  "schema_version": 1,
+  "publisher": "widenote",
+  "edition": "official",
+  "description": "Conservative built-in pack for capture cards, Memory candidates, and lightweight insight.",
+  "compatibility": {
+    "widenote_min": "0.1.0",
+    "widenote_max": null,
+    "schema_version": 1
+  },
+  "entrypoint_kind": "native",
+  "permissions": [
+    "model.complete",
+    "card.write",
+    "memory.propose",
+    "insight.write"
+  ],
+  "subscriptions": [
+    {
+      "id": "sub.capture_created",
+      "event_types": [
+        "wn.capture.created"
+      ],
+      "agent_id": "agent.capture_loop",
+      "delivery": "async",
+      "enabled_by_default": true
+    }
+  ],
+  "agents": [
+    {
+      "id": "agent.capture_loop",
+      "runtime": "native",
+      "name": "Capture Loop Agent",
+      "prompt_ref": null,
+      "model_profile_ref": "local_or_user_selected_model",
+      "permissions": [
+        "model.complete",
+        "card.write",
+        "memory.propose",
+        "insight.write"
+      ],
+      "tools": [],
+      "output_events": [
+        "wn.card.created",
+        "wn.memory.proposed",
+        "wn.insight.created"
+      ]
+    }
+  ],
+  "model_profiles": [
+    {
+      "id": "local_or_user_selected_model",
+      "purpose": "Summarize captures into cards, Memory candidates, and lightweight insights.",
+      "required": false
+    }
+  ],
+  "tools": [],
+  "ui_blocks": [],
+  "storage_quota": {
+    "local_bytes": 0
+  },
+  "integrity": {
+    "checksum_sha256": null,
+    "signature": null
+  },
+  "metadata": {
+    "status": "draft",
+    "source": "packs/official/default/manifest.json"
+  }
+}

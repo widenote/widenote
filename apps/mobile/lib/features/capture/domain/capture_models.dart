@@ -13,6 +13,20 @@ class CaptureRecord {
   final String body;
   final DateTime createdAt;
   final String status;
+
+  CaptureRecord copyWith({
+    String? id,
+    String? body,
+    DateTime? createdAt,
+    String? status,
+  }) {
+    return CaptureRecord(
+      id: id ?? this.id,
+      body: body ?? this.body,
+      createdAt: createdAt ?? this.createdAt,
+      status: status ?? this.status,
+    );
+  }
 }
 
 @immutable
@@ -57,6 +71,9 @@ class TraceEvent {
     required this.detail,
     required this.sourceRecordId,
     required this.timeLabel,
+    this.packId,
+    this.agentId,
+    this.runId,
   });
 
   final String id;
@@ -64,6 +81,9 @@ class TraceEvent {
   final String detail;
   final String sourceRecordId;
   final String timeLabel;
+  final String? packId;
+  final String? agentId;
+  final String? runId;
 }
 
 @immutable

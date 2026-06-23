@@ -85,6 +85,79 @@ void main() {
       },
     );
 
+    test('routes empty source refs to review', () async {
+      final repository = InMemoryMemoryRepository();
+      final service = MemoryService(repository: repository);
+
+      final result = await service.submitProposal(
+        _proposal(
+          evidence: const [
+            MemorySourceRef(sourceType: 'record', sourceId: 'record-empty'),
+          ],
+        ),
+      );
+
+      expect(result.needsReview, isTrue);
+      expect(result.decision.reasons, contains('missing_evidence'));
+      expect(await repository.listItems(), isEmpty);
+    });
+
+    test('accepts source refs with uri evidence', () async {
+      final repository = InMemoryMemoryRepository();
+      final service = MemoryService(
+        repository: repository,
+        idFactory: _sequenceIds('memory'),
+      );
+
+      final result = await service.submitProposal(
+        _proposal(
+          evidence: [
+            MemorySourceRef(
+              sourceType: 'record',
+              sourceId: 'record-link',
+              uri: Uri.parse('widenote://records/record-link'),
+            ),
+          ],
+        ),
+      );
+
+      expect(result.accepted, isTrue);
+      expect(result.item!.evidence.single.uri, isNotNull);
+    });
+
+    test('routes transient proposals to review', () async {
+      final repository = InMemoryMemoryRepository();
+      final service = MemoryService(repository: repository);
+
+      final result = await service.submitProposal(
+        _proposal(id: 'transient', durability: MemoryDurability.transient),
+      );
+
+      expect(result.needsReview, isTrue);
+      expect(result.decision.reasons, contains('not_durable'));
+      expect(await repository.listItems(), isEmpty);
+    });
+
+    test('never auto-accepts credential memory', () async {
+      final repository = InMemoryMemoryRepository();
+      final service = MemoryService(repository: repository);
+
+      final result = await service.submitProposal(
+        _proposal(
+          id: 'credential',
+          key: 'credential.api_token',
+          body: 'The user keeps an API token in the dev keychain.',
+          memoryType: MemoryType.credential,
+          confidence: MemoryConfidence.high,
+          sensitivity: MemorySensitivity.low,
+        ),
+      );
+
+      expect(result.needsReview, isTrue);
+      expect(result.decision.reasons, contains('review_only_type'));
+      expect(await repository.listItems(), isEmpty);
+    });
+
     test('routes conflicting proposals to review', () async {
       final repository = InMemoryMemoryRepository();
       final service = MemoryService(
@@ -116,6 +189,34 @@ void main() {
         await repository.listItems(status: MemoryItemStatus.active),
         hasLength(1),
       );
+    });
+
+    test('same key with same body does not conflict', () async {
+      final repository = InMemoryMemoryRepository();
+      final service = MemoryService(
+        repository: repository,
+        idFactory: _sequenceIds('memory'),
+      );
+
+      final original = await service.submitProposal(
+        _proposal(
+          id: 'original',
+          key: 'preference.drink',
+          body: 'The user prefers coffee.',
+        ),
+      );
+      final repeated = await service.submitProposal(
+        _proposal(
+          id: 'repeated',
+          key: 'preference.drink',
+          body: 'The user prefers coffee.',
+        ),
+      );
+
+      expect(original.accepted, isTrue);
+      expect(repeated.accepted, isTrue);
+      expect(repeated.conflicts, isEmpty);
+      expect(repeated.decision.reasons, isNot(contains('conflict')));
     });
 
     test('deletes memory with a tombstone revision', () async {

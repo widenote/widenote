@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://widenote.dev/schemas/permission.schema.json",
+  "title": "WideNote Permission",
+  "description": "Permission declaration used by Agent Packs, tools, and runtime grants.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "description",
+    "risk",
+    "grant_behavior",
+    "side_effects"
+  ],
+  "properties": {
+    "id": {
+      "$ref": "#/$defs/permission_id"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "risk": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "grant_behavior": {
+      "type": "string",
+      "enum": [
+        "implicit_for_official_default",
+        "grant_on_enable",
+        "ask_each_time",
+        "community_only"
+      ]
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "side_effects": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "none",
+          "local_write",
+          "external_write",
+          "network",
+          "model_call",
+          "file_access",
+          "script_execution"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "requires_trace": {
+      "type": "boolean",
+      "default": true
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "permission_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+    }
+  }
+}

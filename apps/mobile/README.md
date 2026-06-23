@@ -27,11 +27,15 @@ Initial public surfaces are the Flutter app entrypoint, platform integration bou
 
 Current source layout:
 
-- `lib/main.dart`: app process entrypoint and Riverpod scope.
-- `lib/app`: app shell, theme, and routing.
+- `lib/main.dart`: app process entrypoint, production bootstrap, and Riverpod scope.
+- `lib/app`: app shell, theme, routing, and local database provider wiring.
 - `lib/features`: feature-owned UI and app-local controllers.
 
-The current client uses an app-local fake capture controller until the pure Dart runtime and local database packages are integrated.
+The current client boots a device-local SQLite database at
+`local-data/widenote.sqlite` and injects `LocalDbEventStore` /
+`LocalDbTraceSink` into the local runtime by default. Capture UI read models are
+still held in feature state after processing; restart hydration and durable
+Memory review surfaces remain phase-one follow-up work.
 
 ## Dependencies
 
@@ -42,6 +46,11 @@ Allowed dependencies:
 - `packages/dart/agent_runtime`
 - `packages/dart/ui_blocks`
 - `packages/schemas`
+
+Flutter plugin dependencies used by the app bootstrap:
+
+- `path_provider`
+- `sqlite3_flutter_libs`
 
 ## Generated Artifacts
 

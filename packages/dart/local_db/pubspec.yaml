@@ -1,0 +1,17 @@
+name: widenote_local_db
+description: Pure Dart SQLite local truth package for WideNote.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  widenote_agent_runtime:
+    path: ../agent_runtime
+  sqlite3: ^2.4.0
+
+dev_dependencies:
+  widenote_core:
+    path: ../core
+  test: ^1.26.0

@@ -165,7 +165,11 @@ final class RuntimeKernel {
       agentId: task.agentId,
       task: task,
       run: run,
-      model: model,
+      model: _PermissionCheckedModelClient(
+        packId: task.packId,
+        permissionBroker: permissionBroker,
+        delegate: model,
+      ),
       tools: _RuntimeToolInvoker(
         packId: task.packId,
         runId: run.id,
@@ -351,6 +355,32 @@ final class RuntimeKernel {
       agentId: task.agentId,
       details: <String, Object?>{'missing_permissions': missing},
     );
+  }
+}
+
+final class _PermissionCheckedModelClient implements ModelClient {
+  const _PermissionCheckedModelClient({
+    required this.packId,
+    required this.permissionBroker,
+    required this.delegate,
+  });
+
+  final String packId;
+  final PermissionBroker permissionBroker;
+  final ModelClient delegate;
+
+  @override
+  Future<ModelResponse> complete(ModelRequest request) async {
+    final granted = await permissionBroker.isGranted(
+      packId,
+      ModelPermissions.complete,
+    );
+    if (!granted) {
+      throw StateError(
+        'Pack $packId is missing ${ModelPermissions.complete} permission.',
+      );
+    }
+    return delegate.complete(request);
   }
 }
 

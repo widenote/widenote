@@ -309,13 +309,21 @@ class _TraceSection extends StatelessWidget {
                 for (final trace in traces)
                   _RecordRow(
                     title: trace.label,
-                    subtitle: '${trace.detail} · ${trace.timeLabel}',
+                    subtitle:
+                        '${trace.detail} · ${_traceOrigin(trace)} · ${trace.timeLabel}',
                     icon: Icons.route_outlined,
                   ),
               ],
             ),
     );
   }
+}
+
+String _traceOrigin(TraceEvent trace) {
+  final pack = trace.packId ?? 'runtime';
+  final agent = trace.agentId ?? 'system';
+  final run = trace.runId ?? 'no-run';
+  return '$pack · $agent · $run';
 }
 
 class _Surface extends StatelessWidget {

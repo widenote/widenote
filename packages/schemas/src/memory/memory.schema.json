@@ -1,0 +1,267 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://widenote.dev/schemas/memory.schema.json",
+  "title": "WideNote Memory",
+  "description": "Memory candidate and durable Memory item contracts.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/memory_candidate"
+    },
+    {
+      "$ref": "#/$defs/memory_item"
+    }
+  ],
+  "$defs": {
+    "source_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "event",
+            "record",
+            "memory",
+            "file",
+            "uri",
+            "manual"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "event_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "uri": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "evidence_text": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "memory_type": {
+      "type": "string",
+      "enum": [
+        "preference",
+        "project",
+        "task_context",
+        "person",
+        "health",
+        "finance",
+        "location",
+        "credential",
+        "insight"
+      ]
+    },
+    "confidence": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "sensitivity": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "durability": {
+      "type": "string",
+      "enum": [
+        "transient",
+        "session",
+        "durable"
+      ]
+    },
+    "memory_candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "key",
+        "body",
+        "source_refs",
+        "memory_type",
+        "confidence",
+        "sensitivity",
+        "durability",
+        "status",
+        "policy_reasons",
+        "conflicting_memory_ids"
+      ],
+      "properties": {
+        "kind": {
+          "const": "memory_candidate"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/source_ref"
+          }
+        },
+        "memory_type": {
+          "$ref": "#/$defs/memory_type"
+        },
+        "confidence": {
+          "$ref": "#/$defs/confidence"
+        },
+        "sensitivity": {
+          "$ref": "#/$defs/sensitivity"
+        },
+        "durability": {
+          "$ref": "#/$defs/durability"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "proposed",
+            "needs_review",
+            "accepted",
+            "rejected"
+          ]
+        },
+        "policy_reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "conflicting_memory_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "memory_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "key",
+        "body",
+        "source_refs",
+        "memory_type",
+        "confidence",
+        "sensitivity",
+        "status",
+        "revision",
+        "created_at",
+        "updated_at",
+        "tombstone"
+      ],
+      "properties": {
+        "kind": {
+          "const": "memory_item"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/source_ref"
+          }
+        },
+        "memory_type": {
+          "$ref": "#/$defs/memory_type"
+        },
+        "confidence": {
+          "$ref": "#/$defs/confidence"
+        },
+        "sensitivity": {
+          "$ref": "#/$defs/sensitivity"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "archived",
+            "deleted"
+          ]
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "tombstone": {
+          "type": "boolean"
+        },
+        "deleted_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}

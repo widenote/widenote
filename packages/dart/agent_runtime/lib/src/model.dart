@@ -29,6 +29,10 @@ abstract interface class ModelClient {
   Future<ModelResponse> complete(ModelRequest request);
 }
 
+abstract final class ModelPermissions {
+  static const complete = 'model.complete';
+}
+
 final class FakeModel implements ModelClient {
   FakeModel({Iterable<String> responses = const <String>['ok']})
     : _responses = Queue<String>.of(responses);

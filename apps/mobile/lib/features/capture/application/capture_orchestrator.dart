@@ -11,6 +11,7 @@ final class CapturePipelineResult {
     required this.todo,
     required this.traces,
     required this.eventTypes,
+    required this.events,
     required this.acceptedMemoryCount,
     required this.reviewMemoryCount,
   });
@@ -20,8 +21,21 @@ final class CapturePipelineResult {
   final SourceTodo todo;
   final List<TraceEvent> traces;
   final List<String> eventTypes;
+  final List<CapturePipelineEvent> events;
   final int acceptedMemoryCount;
   final int reviewMemoryCount;
+}
+
+final class CapturePipelineEvent {
+  const CapturePipelineEvent({
+    required this.type,
+    required this.packId,
+    required this.agentId,
+  });
+
+  final String type;
+  final String? packId;
+  final String? agentId;
 }
 
 final class CapturePipelineException implements Exception {
@@ -50,13 +64,18 @@ final class CaptureOrchestrator {
     WnClock? clock,
     WnIdGenerator? idGenerator,
     runtime.ModelClient? model,
+    runtime.EventStore? eventStore,
+    runtime.TraceSink? traceSink,
   }) {
     final localClock = clock ?? const SystemWnClock();
+    final runtimeEventStore = eventStore ?? runtime.InMemoryEventStore();
+    final runtimeTraceSink = traceSink ?? runtime.InMemoryTraceSink();
     final permissions = runtime.InMemoryPermissionBroker()
-      ..grantAll(_packId, _requiredPermissions);
+      ..grantAll(_defaultPackId, _defaultRequiredPermissions)
+      ..grantAll(_todoPackId, _todoRequiredPermissions);
     final kernel = runtime.RuntimeKernel(
-      eventStore: runtime.InMemoryEventStore(),
-      traceSink: runtime.InMemoryTraceSink(),
+      eventStore: runtimeEventStore,
+      traceSink: runtimeTraceSink,
       permissionBroker: permissions,
       toolRegistry: runtime.InMemoryToolRegistry(),
       idGenerator: idGenerator ?? MonotonicWnIdGenerator(clock: localClock),
@@ -64,7 +83,9 @@ final class CaptureOrchestrator {
       model: model ?? const _CaptureSummaryModel(),
       deviceId: 'local-device',
     );
-    kernel.registerPack(_capturePack);
+    kernel
+      ..registerPack(_defaultPack)
+      ..registerPack(_todoPack);
 
     final memoryRepository = memory.InMemoryMemoryRepository();
     final memoryService = memory.MemoryService(
@@ -81,28 +102,48 @@ final class CaptureOrchestrator {
     );
   }
 
-  static const _packId = 'pack.default';
-  static const _agentId = 'agent.capture';
-  static const _requiredPermissions = <String>{
+  static const _defaultPackId = 'pack.default';
+  static const _defaultAgentId = 'agent.capture_loop';
+  static const _todoPackId = 'pack.todo';
+  static const _todoAgentId = 'agent.todo_loop';
+
+  static const _defaultRequiredPermissions = <String>{
+    'model.complete',
     'memory.propose',
     'card.write',
     'insight.write',
-    'todo.suggest',
   };
 
-  static const _capturePack = runtime.AgentPack(
-    id: _packId,
-    name: 'Default capture projections',
+  static const _todoRequiredPermissions = <String>{'todo.suggest'};
+
+  static const _defaultPack = runtime.AgentPack(
+    id: _defaultPackId,
+    name: 'Default capture loop',
     version: '0.1.0',
-    requiredPermissions: _requiredPermissions,
+    requiredPermissions: _defaultRequiredPermissions,
     subscriptions: <runtime.Subscription>[
       runtime.Subscription(
-        id: 'sub.capture',
-        agentId: _agentId,
+        id: 'sub.capture_created',
+        agentId: _defaultAgentId,
         eventTypes: <String>{runtime.WnEventTypes.captureCreated},
       ),
     ],
-    agents: <String, runtime.AgentHandler>{_agentId: _CaptureAgent()},
+    agents: <String, runtime.AgentHandler>{_defaultAgentId: _CaptureAgent()},
+  );
+
+  static const _todoPack = runtime.AgentPack(
+    id: _todoPackId,
+    name: 'Todo extraction loop',
+    version: '0.1.0',
+    requiredPermissions: _todoRequiredPermissions,
+    subscriptions: <runtime.Subscription>[
+      runtime.Subscription(
+        id: 'sub.todo_capture_created',
+        agentId: _todoAgentId,
+        eventTypes: <String>{runtime.WnEventTypes.captureCreated},
+      ),
+    ],
+    agents: <String, runtime.AgentHandler>{_todoAgentId: _TodoAgent()},
   );
 
   final runtime.RuntimeKernel _kernel;
@@ -150,6 +191,15 @@ final class CaptureOrchestrator {
       todo: todo,
       traces: traces,
       eventTypes: newEvents.map((event) => event.type).toList(growable: false),
+      events: newEvents
+          .map(
+            (event) => CapturePipelineEvent(
+              type: event.type,
+              packId: event.packId,
+              agentId: event.agentId,
+            ),
+          )
+          .toList(growable: false),
       acceptedMemoryCount: activeMemories.length,
       reviewMemoryCount: reviewProposals.length,
     );
@@ -234,7 +284,7 @@ final class CaptureOrchestrator {
     );
     if (todoEvent == null) {
       throw const CapturePipelineException(
-        'Capture pack did not emit a Todo suggestion.',
+        'Todo pack did not emit a Todo suggestion.',
       );
     }
     return SourceTodo(
@@ -259,6 +309,9 @@ final class CaptureOrchestrator {
             detail: trace.message,
             sourceRecordId: trace.eventId ?? capture.id,
             timeLabel: _timeLabel(trace.createdAt.toLocal()),
+            packId: trace.packId,
+            agentId: trace.agentId,
+            runId: trace.runId,
           ),
         )
         .toList(growable: false);
@@ -285,6 +338,7 @@ final class _CaptureAgent implements runtime.AgentHandler {
     final text = _string(event.payload['text'], fallback: '');
     final subject =
         event.subjectRef ?? runtime.SubjectRef(kind: 'capture', id: event.id);
+    final policy = _policyForCaptureText(text);
     final summary = await context.model.complete(
       runtime.ModelRequest(
         prompt: 'Summarize capture for Memory: $text',
@@ -302,9 +356,9 @@ final class _CaptureAgent implements runtime.AgentHandler {
             'text': summary.text,
             'source_event_id': event.id,
             'source_excerpt': _preview(text),
-            'memory_type': 'task_context',
-            'confidence': 'high',
-            'sensitivity': 'low',
+            'memory_type': policy.memoryType,
+            'confidence': policy.confidence,
+            'sensitivity': policy.sensitivity,
           },
         ),
         context.emit(
@@ -323,6 +377,37 @@ final class _CaptureAgent implements runtime.AgentHandler {
             'text': 'This capture can be recalled through Memory.',
           },
         ),
+      ],
+    );
+  }
+}
+
+final class _MemoryPolicyFields {
+  const _MemoryPolicyFields({
+    required this.memoryType,
+    required this.confidence,
+    required this.sensitivity,
+  });
+
+  final String memoryType;
+  final String confidence;
+  final String sensitivity;
+}
+
+final class _TodoAgent implements runtime.AgentHandler {
+  const _TodoAgent();
+
+  @override
+  Future<runtime.AgentHandlerResult> handle(
+    runtime.AgentContext context,
+    runtime.WnEvent event,
+  ) async {
+    final text = _string(event.payload['text'], fallback: '');
+    final subject =
+        event.subjectRef ?? runtime.SubjectRef(kind: 'capture', id: event.id);
+
+    return runtime.AgentHandlerResult(
+      events: <runtime.WnEventDraft>[
         context.emit(
           type: runtime.WnEventTypes.todoSuggested,
           subjectRef: subject,
@@ -380,7 +465,10 @@ memory.MemoryConfidence _confidence(Object? value) {
   if (value == 'medium') {
     return memory.MemoryConfidence.medium;
   }
-  return memory.MemoryConfidence.high;
+  if (value == 'high') {
+    return memory.MemoryConfidence.high;
+  }
+  return memory.MemoryConfidence.low;
 }
 
 memory.MemorySensitivity _sensitivity(Object? value) {
@@ -390,7 +478,10 @@ memory.MemorySensitivity _sensitivity(Object? value) {
   if (value == 'high') {
     return memory.MemorySensitivity.high;
   }
-  return memory.MemorySensitivity.low;
+  if (value == 'low') {
+    return memory.MemorySensitivity.low;
+  }
+  return memory.MemorySensitivity.medium;
 }
 
 memory.MemoryType _memoryType(Object? value) {
@@ -419,6 +510,88 @@ memory.MemoryType _memoryType(Object? value) {
     return memory.MemoryType.insight;
   }
   return memory.MemoryType.taskContext;
+}
+
+_MemoryPolicyFields _policyForCaptureText(String text) {
+  final lower = text.toLowerCase();
+  if (_containsAny(lower, const [
+    'api key',
+    'apikey',
+    'access token',
+    'token',
+    'password',
+    'secret',
+    'credential',
+    '密钥',
+    '密码',
+    '令牌',
+  ])) {
+    return const _MemoryPolicyFields(
+      memoryType: 'credential',
+      confidence: 'high',
+      sensitivity: 'high',
+    );
+  }
+  if (_containsAny(lower, const [
+    'doctor',
+    'medical',
+    'health',
+    'diagnosis',
+    'medication',
+    'hospital',
+    '健康',
+    '医生',
+    '诊断',
+    '用药',
+  ])) {
+    return const _MemoryPolicyFields(
+      memoryType: 'health',
+      confidence: 'medium',
+      sensitivity: 'high',
+    );
+  }
+  if (_containsAny(lower, const [
+    'bank',
+    'salary',
+    'income',
+    'tax',
+    'credit card',
+    'invoice',
+    '银行',
+    '薪资',
+    '收入',
+    '税',
+    '信用卡',
+  ])) {
+    return const _MemoryPolicyFields(
+      memoryType: 'finance',
+      confidence: 'medium',
+      sensitivity: 'high',
+    );
+  }
+  if (_containsAny(lower, const [
+    'home address',
+    'current location',
+    'gps',
+    '住址',
+    '地址',
+    '定位',
+  ])) {
+    return const _MemoryPolicyFields(
+      memoryType: 'location',
+      confidence: 'medium',
+      sensitivity: 'high',
+    );
+  }
+  return const _MemoryPolicyFields(
+    memoryType: 'task_context',
+    confidence: 'high',
+    sensitivity: 'low',
+  );
+}
+
+bool _containsAny(String text, Iterable<String> needles) {
+  return needles.any(text.contains);
 }
 
 String _timeLabel(DateTime time) {
