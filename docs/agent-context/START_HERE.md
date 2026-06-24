@@ -10,9 +10,10 @@ Read these in order:
 4. `docs/architecture/overview.md`
 5. `docs/architecture/context-structure.md`
 6. `docs/architecture/project-structure.md`
-7. `docs/agent-context/project-map.md`
-8. `docs/agent-context/open-questions.md`
-9. `widenote_project_brief.md` when deeper product context is needed
+7. `docs/architecture/engineering-rules.md`
+8. `docs/agent-context/project-map.md`
+9. `docs/agent-context/open-questions.md`
+10. `widenote_project_brief.md` when deeper product context is needed
 
 ## Current Foundation
 
@@ -29,3 +30,5 @@ Backend, sync, runner, exports, todos, documents, and graphical agent flows are 
 ## Context Shape
 
 Use `docs/agent-context/project-map.md` to locate the right area and module documents. Module READMEs are part of the source of truth, not decorative documentation.
+
+Use `docs/architecture/engineering-rules.md` for collaboration, test gates, complexity budgets, external review boundaries, and serialized Android emulator validation.

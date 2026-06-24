@@ -1,73 +1,102 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../l10n/l10n.dart';
+import '../../model_providers/application/model_provider_settings_controller.dart';
+import 'agent_platform_panel.dart';
 
 class PluginsPage extends StatelessWidget {
   const PluginsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return ListView(
       key: const Key('plugins-page'),
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-      children: const [
-        _PageHeader(
-          title: '插件',
-          subtitle:
-              'Pack controls for permissions, models, backup, and traces.',
-        ),
-        SizedBox(height: 16),
-        _ControlList(),
+      children: [
+        _PageHeader(title: l10n.pluginsTitle, subtitle: l10n.pluginsSubtitle),
+        const SizedBox(height: 16),
+        const _ControlList(),
+        const SizedBox(height: 16),
+        const AgentPlatformPanel(),
       ],
     );
   }
 }
 
-class _ControlList extends StatelessWidget {
+class _ControlList extends ConsumerWidget {
   const _ControlList();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final providerState = ref
+        .watch(modelProviderSettingsControllerProvider)
+        .valueOrNull;
     return _Surface(
       icon: Icons.extension_outlined,
-      title: 'Control entries',
+      title: l10n.pluginsControlEntriesTitle,
       child: Column(
-        children: const [
+        children: [
           _ControlRow(
             icon: Icons.inventory_2_outlined,
-            title: 'Pack Library',
-            subtitle: 'Install, inspect, and disable Agent Packs.',
-            status: 'placeholder',
+            title: l10n.pluginsPackLibraryTitle,
+            subtitle: l10n.pluginsPackLibrarySubtitle,
+            status: l10n.pluginsPackLibraryStatus,
           ),
-          Divider(height: 20),
+          const Divider(height: 20),
           _ControlRow(
             icon: Icons.verified_user_outlined,
-            title: 'Permission Gate',
-            subtitle: 'Review sensitive capabilities before a pack can run.',
-            status: 'explicit',
+            title: l10n.pluginsPermissionGateTitle,
+            subtitle: l10n.pluginsPermissionGateSubtitle,
+            status: l10n.pluginsPermissionGateStatus,
           ),
-          Divider(height: 20),
+          const Divider(height: 20),
           _ControlRow(
+            key: const Key('model-provider-entry'),
             icon: Icons.memory_outlined,
-            title: 'Model Provider',
-            subtitle: 'Configure local or BYOK model access.',
-            status: 'not connected',
+            title: l10n.pluginsModelProviderTitle,
+            subtitle: l10n.pluginsModelProviderSubtitle,
+            status: _providerStatus(l10n, providerState),
+            onTap: () => context.go('/plugins/model-providers'),
           ),
-          Divider(height: 20),
+          const Divider(height: 20),
           _ControlRow(
+            key: const Key('backup-entry'),
             icon: Icons.backup_outlined,
-            title: 'Backup',
-            subtitle: 'Prepare optional sync and export controls.',
-            status: 'local-first',
+            title: l10n.pluginsBackupTitle,
+            subtitle: l10n.pluginsBackupSubtitle,
+            status: l10n.pluginsBackupStatus,
+            onTap: () => context.go('/plugins/backup'),
           ),
-          Divider(height: 20),
+          const Divider(height: 20),
           _ControlRow(
             icon: Icons.account_tree_outlined,
-            title: 'Trace Console',
-            subtitle: 'Inspect pack runs, permissions, and generated outputs.',
-            status: 'trace-ready',
+            title: l10n.pluginsTraceConsoleTitle,
+            subtitle: l10n.pluginsTraceConsoleSubtitle,
+            status: l10n.pluginsTraceConsoleStatus,
           ),
         ],
       ),
     );
+  }
+
+  String _providerStatus(
+    AppLocalizations l10n,
+    ModelProviderSettingsState? state,
+  ) {
+    if (state == null || state.providers.isEmpty) {
+      return l10n.pluginsModelProviderStatus;
+    }
+    final hasConnectedProvider = state.connectionResults.values.any(
+      (connection) => connection.status == ProviderConnectionStatus.succeeded,
+    );
+    if (hasConnectedProvider) {
+      return l10n.providerConnectionConnected;
+    }
+    return l10n.pluginsModelProviderConfigured(state.providers.length);
   }
 }
 
@@ -77,43 +106,59 @@ class _ControlRow extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.status,
+    this.onTap,
+    super.key,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
   final String status;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, color: Theme.of(context).colorScheme.primary),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+    final row = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
                 ),
-              ),
-            ],
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(width: 8),
-        Chip(visualDensity: VisualDensity.compact, label: Text(status)),
-      ],
+          const SizedBox(width: 8),
+          Chip(visualDensity: VisualDensity.compact, label: Text(status)),
+        ],
+      ),
+    );
+
+    if (onTap == null) {
+      return row;
+    }
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: onTap,
+      child: row,
     );
   }
 }

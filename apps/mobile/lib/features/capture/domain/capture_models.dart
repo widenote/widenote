@@ -7,24 +7,28 @@ class CaptureRecord {
     required this.body,
     required this.createdAt,
     required this.status,
+    this.sourceEventId,
   });
 
   final String id;
   final String body;
   final DateTime createdAt;
   final String status;
+  final String? sourceEventId;
 
   CaptureRecord copyWith({
     String? id,
     String? body,
     DateTime? createdAt,
     String? status,
+    String? sourceEventId,
   }) {
     return CaptureRecord(
       id: id ?? this.id,
       body: body ?? this.body,
       createdAt: createdAt ?? this.createdAt,
       status: status ?? this.status,
+      sourceEventId: sourceEventId ?? this.sourceEventId,
     );
   }
 }
@@ -74,12 +78,54 @@ class SourceTodo {
     required this.title,
     required this.sourceLabel,
     required this.statusLabel,
+    this.sourceCaptureId,
+    this.sourceEventId,
   });
 
   final String id;
   final String title;
   final String sourceLabel;
   final String statusLabel;
+  final String? sourceCaptureId;
+  final String? sourceEventId;
+}
+
+@immutable
+class SourceCard {
+  const SourceCard({
+    required this.id,
+    required this.title,
+    required this.summary,
+    required this.sourceLabel,
+    required this.kindLabel,
+    required this.statusLabel,
+  });
+
+  final String id;
+  final String title;
+  final String summary;
+  final String sourceLabel;
+  final String kindLabel;
+  final String statusLabel;
+}
+
+@immutable
+class SourceInsight {
+  const SourceInsight({
+    required this.id,
+    required this.title,
+    required this.summary,
+    required this.sourceLabel,
+    required this.kindLabel,
+    required this.metricLabel,
+  });
+
+  final String id;
+  final String title;
+  final String summary;
+  final String sourceLabel;
+  final String kindLabel;
+  final String metricLabel;
 }
 
 @immutable
@@ -111,6 +157,8 @@ class CaptureState {
     required this.records,
     required this.memories,
     required this.reviewCandidates,
+    required this.cards,
+    required this.insights,
     required this.todos,
     required this.traces,
     required this.isProcessing,
@@ -122,20 +170,9 @@ class CaptureState {
       records: [],
       memories: [],
       reviewCandidates: [],
-      todos: [
-        SourceTodo(
-          id: 'seed-todo-1',
-          title: 'Review generated Memory before export',
-          sourceLabel: 'source: local capture placeholder',
-          statusLabel: 'source-linked placeholder',
-        ),
-        SourceTodo(
-          id: 'seed-todo-2',
-          title: 'Confirm backup permission boundary',
-          sourceLabel: 'source: permission pack placeholder',
-          statusLabel: 'needs explicit permission',
-        ),
-      ],
+      cards: [],
+      insights: [],
+      todos: [],
       traces: [],
       isProcessing: false,
       errorMessage: null,
@@ -145,6 +182,8 @@ class CaptureState {
   final List<CaptureRecord> records;
   final List<CaptureMemoryItem> memories;
   final List<MemoryReviewCandidate> reviewCandidates;
+  final List<SourceCard> cards;
+  final List<SourceInsight> insights;
   final List<SourceTodo> todos;
   final List<TraceEvent> traces;
   final bool isProcessing;
@@ -154,6 +193,8 @@ class CaptureState {
     List<CaptureRecord>? records,
     List<CaptureMemoryItem>? memories,
     List<MemoryReviewCandidate>? reviewCandidates,
+    List<SourceCard>? cards,
+    List<SourceInsight>? insights,
     List<SourceTodo>? todos,
     List<TraceEvent>? traces,
     bool? isProcessing,
@@ -164,6 +205,8 @@ class CaptureState {
       records: records ?? this.records,
       memories: memories ?? this.memories,
       reviewCandidates: reviewCandidates ?? this.reviewCandidates,
+      cards: cards ?? this.cards,
+      insights: insights ?? this.insights,
       todos: todos ?? this.todos,
       traces: traces ?? this.traces,
       isProcessing: isProcessing ?? this.isProcessing,

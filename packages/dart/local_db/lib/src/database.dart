@@ -5,10 +5,16 @@ import 'migration.dart';
 
 final class WideNoteLocalDatabase {
   WideNoteLocalDatabase._(this._database)
-    : eventLog = EventLogDao(_database),
-      captures = CapturesDao(_database),
-      memoryItems = MemoryItemsDao(_database),
+      : eventLog = EventLogDao(_database),
+        captures = CapturesDao(_database),
+        attachments = AttachmentsDao(_database),
+        memoryItems = MemoryItemsDao(_database),
       memoryCandidates = MemoryCandidatesDao(_database),
+      cards = CardsDao(_database),
+      insights = InsightsDao(_database),
+      chatSessions = ChatSessionsDao(_database),
+      chatMessages = ChatMessagesDao(_database),
+      modelProviderConfigs = ModelProviderConfigsDao(_database),
       todos = TodosDao(_database),
       traceEvents = TraceEventsDao(_database);
 
@@ -34,8 +40,14 @@ final class WideNoteLocalDatabase {
 
   final EventLogDao eventLog;
   final CapturesDao captures;
+  final AttachmentsDao attachments;
   final MemoryItemsDao memoryItems;
   final MemoryCandidatesDao memoryCandidates;
+  final CardsDao cards;
+  final InsightsDao insights;
+  final ChatSessionsDao chatSessions;
+  final ChatMessagesDao chatMessages;
+  final ModelProviderConfigsDao modelProviderConfigs;
   final TodosDao todos;
   final TraceEventsDao traceEvents;
 

@@ -30,6 +30,7 @@ Current source layout:
 - `lib/main.dart`: app process entrypoint, production bootstrap, and Riverpod scope.
 - `lib/app`: app shell, theme, routing, and local database provider wiring.
 - `lib/features`: feature-owned UI and app-local controllers.
+- `lib/l10n`: Flutter localization resources and generated bindings.
 
 The current client boots a device-local SQLite database at
 `local-data/widenote.sqlite` and injects `LocalDbEventStore` /
@@ -45,7 +46,9 @@ Allowed dependencies:
 - `packages/dart/core`
 - `packages/dart/local_db`
 - `packages/dart/agent_runtime`
+- `packages/dart/cards`
 - `packages/dart/ui_blocks`
+- `packages/dart/model_providers`
 - `packages/schemas`
 
 Flutter plugin dependencies used by the app bootstrap:
@@ -53,7 +56,31 @@ Flutter plugin dependencies used by the app bootstrap:
 - `path_provider`
 - `sqlite3_flutter_libs`
 
+Model access:
+
+- The default mobile bootstrap uses a deterministic local summary model so core
+  capture works offline and tests do not require network access.
+- Provider settings use `packages/dart/model_providers` for config models,
+  compatible adapter boundaries, and fake connection tests.
+- Android QA builds may opt into Xiaomi MIMO through
+  `--dart-define=WIDENOTE_QA_MIMO_API_KEY=...`. The key must never be committed,
+  logged, or written into test fixtures.
+
 ## Generated Artifacts
+
+Generated Flutter localization bindings live under `lib/l10n/generated`.
+
+Source of truth:
+
+- `lib/l10n/app_en.arb`
+- `lib/l10n/app_zh.arb`
+- `l10n.yaml`
+
+Generation command:
+
+```sh
+flutter gen-l10n
+```
 
 Generated Flutter, Drift, localization, or platform files must document their source of truth and generator command here when introduced.
 

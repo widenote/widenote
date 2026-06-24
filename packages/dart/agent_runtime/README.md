@@ -18,8 +18,10 @@ Owns local runtime execution. It must not own app UI, backend execution, or publ
 - `TraceSink`, `RuntimeTrace`, and `InMemoryTraceSink` for audit traces.
 - `PermissionBroker` and `InMemoryPermissionBroker` for explicit pack/tool permission checks.
 - `ToolRegistry`, `ToolDefinition`, `ToolInvocation`, and `InMemoryToolRegistry` for permissioned local tools.
-- `AgentPack`, `Subscription`, `AgentHandler`, `AgentContext`, `ModelClient`, and `FakeModel` for local pack execution without a real LLM.
-- `RuntimeTask` and `RuntimeRun` for task/run inspection.
+- `AgentPack`, `Subscription`, `AgentDefinition`, `AgentHandler`, `AgentContext`, `ModelClient`, and `FakeModel` for local pack execution without a real LLM.
+- `RuntimeTask`, `RuntimeRun`, `RetryPolicy`, and `RuntimePackStatus` for queued task/run inspection, retry, dependency, cancellation, permission-denied, and pack status surfaces.
+
+Script runtime kinds are represented as manifest/runtime configuration only. The local kernel rejects them with a denied run until a sandbox RFC is accepted and implemented.
 
 ## Dependencies
 
@@ -47,7 +49,7 @@ Run from this directory:
 dart test
 ```
 
-The main vertical slice test publishes `wn.capture.created`, dispatches a subscribed pack, creates a task/run, emits memory proposal, card, insight, and todo events through a fake handler/model, and verifies trace output. No test needs a network connection or real API key.
+The main vertical slice test publishes `wn.capture.created`, dispatches a subscribed pack, creates a task/run, emits memory proposal, card, insight, and todo events through a fake handler/model, and verifies trace output. Queue tests also cover dependency ordering, retry, cancellation, permission denial, tool-not-found, failure traces, and script-runtime rejection. No test needs a network connection or real API key.
 
 ## Related Context
 

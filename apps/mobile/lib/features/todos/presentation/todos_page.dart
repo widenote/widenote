@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../l10n/l10n.dart';
 import '../../capture/application/capture_controller.dart';
 import '../../capture/domain/capture_models.dart';
 
@@ -9,20 +10,18 @@ class TodosPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final todos = ref.watch(captureControllerProvider).todos;
 
     return ListView(
       key: const Key('todos-page'),
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       children: [
-        const _PageHeader(
-          title: '待办',
-          subtitle: 'Source-linked actions with visible record provenance.',
-        ),
+        _PageHeader(title: l10n.todosTitle, subtitle: l10n.todosSubtitle),
         const SizedBox(height: 16),
         _Surface(
           icon: Icons.checklist_outlined,
-          title: 'Source-linked todos',
+          title: l10n.todosSurfaceTitle,
           child: _TodoList(todos: todos),
         ),
       ],
@@ -37,11 +36,19 @@ class _TodoList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (todos.isEmpty) {
+      return Text(
+        context.l10n.todosEmpty,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      );
+    }
     return Column(
       children: [
         for (var index = 0; index < todos.length; index++) ...[
           if (index > 0) const Divider(height: 20),
-          _TodoRow(todo: todos[index]),
+          _TodoRow(key: Key('todo-row-${todos[index].id}'), todo: todos[index]),
         ],
       ],
     );
@@ -49,12 +56,13 @@ class _TodoList extends StatelessWidget {
 }
 
 class _TodoRow extends StatelessWidget {
-  const _TodoRow({required this.todo});
+  const _TodoRow({required this.todo, super.key});
 
   final SourceTodo todo;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -66,7 +74,7 @@ class _TodoRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  todo.title,
+                  _localizedTodoTitle(l10n, todo.title),
                   style: Theme.of(
                     context,
                   ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
@@ -76,8 +84,14 @@ class _TodoRow extends StatelessWidget {
                   spacing: 8,
                   runSpacing: 4,
                   children: [
-                    _Tag(icon: Icons.link, label: todo.sourceLabel),
-                    _Tag(icon: Icons.info_outline, label: todo.statusLabel),
+                    _Tag(
+                      icon: Icons.link,
+                      label: _localizedTodoSourceLabel(l10n, todo.sourceLabel),
+                    ),
+                    _Tag(
+                      icon: Icons.info_outline,
+                      label: _localizedTodoStatusLabel(l10n, todo.statusLabel),
+                    ),
                   ],
                 ),
               ],
@@ -87,6 +101,33 @@ class _TodoRow extends StatelessWidget {
       ],
     );
   }
+}
+
+String _localizedTodoTitle(AppLocalizations l10n, String title) {
+  if (title.startsWith('Follow up: ')) {
+    return l10n.todoFollowUpTitle(title.substring('Follow up: '.length));
+  }
+  return switch (title) {
+    'Review generated Memory before export' => l10n.todoSeedReviewMemory,
+    'Confirm backup permission boundary' => l10n.todoSeedConfirmBackup,
+    _ => title,
+  };
+}
+
+String _localizedTodoSourceLabel(AppLocalizations l10n, String sourceLabel) {
+  if (sourceLabel.startsWith('source: ')) {
+    final sourceId = sourceLabel.substring('source: '.length);
+    return l10n.todoSourceLabel(sourceId);
+  }
+  return sourceLabel;
+}
+
+String _localizedTodoStatusLabel(AppLocalizations l10n, String statusLabel) {
+  return switch (statusLabel) {
+    'needs explicit permission' => l10n.todoStatusNeedsExplicitPermission,
+    'suggested by agent' => l10n.todoStatusSuggestedByAgent,
+    _ => statusLabel,
+  };
 }
 
 class _Tag extends StatelessWidget {

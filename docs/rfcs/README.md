@@ -10,3 +10,5 @@ When an RFC resolves, record the final decision as one or more ADRs.
 
 - [Memory Model](./memory-model.md)
 - [Agent Pack Schema](./agent-pack-schema.md)
+- [Model Provider Settings](./model-provider-settings.md)
+- [Phase-One Product Scope](./phase-one-product-scope.md)

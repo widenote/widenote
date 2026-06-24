@@ -62,6 +62,18 @@ Current lightweight Agent Pack manifest validation checks parseability, basic sh
 node tools/pack_validator/validate.mjs packs/official/default/manifest.json packs/official/todo/manifest.json
 ```
 
+The Agent Pack manifest currently includes subscription dependencies through
+`depends_on[]` and deterministic retry bounds through
+`agents[].retry_policy.max_attempts`. Script runtime and script side effects are
+described only as deferred contract values; phase-one validation rejects them
+until a sandbox RFC is accepted.
+
+Validator self-tests:
+
+```sh
+node tools/pack_validator/validate_test.mjs
+```
+
 This is a lightweight validator, not a complete JSON Schema validator. Full JSON Schema validation should be introduced under repo tooling when schema codegen or installable pack loading lands.
 
 ## Related Context

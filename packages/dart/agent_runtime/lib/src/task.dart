@@ -1,6 +1,38 @@
-enum RuntimeTaskStatus { queued, running, succeeded, failed, denied }
+enum RuntimeTaskStatus {
+  queued,
+  waiting,
+  running,
+  succeeded,
+  failed,
+  denied,
+  canceled,
+  blocked,
+}
 
-enum RuntimeRunStatus { running, succeeded, failed, denied }
+enum RuntimeRunStatus { running, succeeded, failed, denied, canceled }
+
+extension RuntimeTaskStatusState on RuntimeTaskStatus {
+  bool get isTerminal {
+    return switch (this) {
+      RuntimeTaskStatus.succeeded ||
+      RuntimeTaskStatus.failed ||
+      RuntimeTaskStatus.denied ||
+      RuntimeTaskStatus.canceled ||
+      RuntimeTaskStatus.blocked => true,
+      RuntimeTaskStatus.queued ||
+      RuntimeTaskStatus.waiting ||
+      RuntimeTaskStatus.running => false,
+    };
+  }
+}
+
+final class RetryPolicy {
+  const RetryPolicy({this.maxAttempts = 1});
+
+  final int maxAttempts;
+
+  int get normalizedMaxAttempts => maxAttempts < 1 ? 1 : maxAttempts;
+}
 
 final class RuntimeTask {
   const RuntimeTask({
@@ -12,6 +44,11 @@ final class RuntimeTask {
     required this.status,
     required this.createdAt,
     required this.updatedAt,
+    this.dependencyTaskIds = const <String>[],
+    this.missingDependencyIds = const <String>[],
+    this.attempts = 0,
+    this.maxAttempts = 1,
+    this.error,
   });
 
   final String id;
@@ -22,8 +59,24 @@ final class RuntimeTask {
   final RuntimeTaskStatus status;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final List<String> dependencyTaskIds;
+  final List<String> missingDependencyIds;
+  final int attempts;
+  final int maxAttempts;
+  final String? error;
 
-  RuntimeTask copyWith({RuntimeTaskStatus? status, DateTime? updatedAt}) {
+  bool get canRetry => attempts < maxAttempts;
+
+  RuntimeTask copyWith({
+    RuntimeTaskStatus? status,
+    DateTime? updatedAt,
+    List<String>? dependencyTaskIds,
+    List<String>? missingDependencyIds,
+    int? attempts,
+    int? maxAttempts,
+    String? error,
+    bool clearError = false,
+  }) {
     return RuntimeTask(
       id: id,
       packId: packId,
@@ -33,6 +86,11 @@ final class RuntimeTask {
       status: status ?? this.status,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      dependencyTaskIds: dependencyTaskIds ?? this.dependencyTaskIds,
+      missingDependencyIds: missingDependencyIds ?? this.missingDependencyIds,
+      attempts: attempts ?? this.attempts,
+      maxAttempts: maxAttempts ?? this.maxAttempts,
+      error: clearError ? null : error ?? this.error,
     );
   }
 }
@@ -45,6 +103,7 @@ final class RuntimeRun {
     required this.agentId,
     required this.status,
     required this.startedAt,
+    required this.attempt,
     this.completedAt,
     this.outputEventIds = const <String>[],
     this.error,
@@ -56,6 +115,7 @@ final class RuntimeRun {
   final String agentId;
   final RuntimeRunStatus status;
   final DateTime startedAt;
+  final int attempt;
   final DateTime? completedAt;
   final List<String> outputEventIds;
   final String? error;
@@ -73,9 +133,49 @@ final class RuntimeRun {
       agentId: agentId,
       status: status ?? this.status,
       startedAt: startedAt,
+      attempt: attempt,
       completedAt: completedAt ?? this.completedAt,
       outputEventIds: outputEventIds ?? this.outputEventIds,
       error: error ?? this.error,
     );
   }
+}
+
+enum RuntimePackStatusKind {
+  idle,
+  queued,
+  running,
+  succeeded,
+  failed,
+  denied,
+  canceled,
+  blocked,
+}
+
+final class RuntimePackStatus {
+  const RuntimePackStatus({
+    required this.packId,
+    required this.name,
+    required this.status,
+    required this.taskCount,
+    required this.queuedCount,
+    required this.runningCount,
+    required this.succeededCount,
+    required this.failedCount,
+    required this.deniedCount,
+    required this.canceledCount,
+    required this.blockedCount,
+  });
+
+  final String packId;
+  final String name;
+  final RuntimePackStatusKind status;
+  final int taskCount;
+  final int queuedCount;
+  final int runningCount;
+  final int succeededCount;
+  final int failedCount;
+  final int deniedCount;
+  final int canceledCount;
+  final int blockedCount;
 }

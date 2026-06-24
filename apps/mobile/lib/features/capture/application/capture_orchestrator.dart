@@ -1,8 +1,11 @@
 import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
+import 'package:widenote_cards/widenote_cards.dart' as cards;
 import 'package:widenote_core/widenote_core.dart';
 import 'package:widenote_memory/memory.dart' as memory;
 
+import '../../../shared/text_preview.dart';
 import '../domain/capture_models.dart';
+import '../media/capture_media.dart';
 
 final class CapturePipelineResult {
   const CapturePipelineResult({
@@ -12,6 +15,8 @@ final class CapturePipelineResult {
     required this.traces,
     required this.eventTypes,
     required this.events,
+    required this.cards,
+    required this.insights,
     required this.acceptedMemoryCount,
     required this.reviewMemoryCount,
     this.reviewCandidate,
@@ -23,6 +28,8 @@ final class CapturePipelineResult {
   final List<TraceEvent> traces;
   final List<String> eventTypes;
   final List<CapturePipelineEvent> events;
+  final List<SourceCard> cards;
+  final List<SourceInsight> insights;
   final int acceptedMemoryCount;
   final int reviewMemoryCount;
   final MemoryReviewCandidate? reviewCandidate;
@@ -33,11 +40,13 @@ final class CapturePipelineEvent {
     required this.type,
     required this.packId,
     required this.agentId,
+    required this.payload,
   });
 
   final String type;
   final String? packId;
   final String? agentId;
+  final Map<String, Object?> payload;
 }
 
 final class CapturePipelineException implements Exception {
@@ -49,6 +58,10 @@ final class CapturePipelineException implements Exception {
   String toString() => 'CapturePipelineException: $message';
 }
 
+abstract interface class CaptureKnowledgeSink {
+  Future<void> save(cards.MemoryFirstCardBundle bundle);
+}
+
 final class CaptureOrchestrator {
   CaptureOrchestrator._({
     required runtime.RuntimeKernel kernel,
@@ -56,11 +69,13 @@ final class CaptureOrchestrator {
     required runtime.TraceSink traceSink,
     required memory.MemoryService memoryService,
     required memory.MemoryRepository memoryRepository,
+    CaptureKnowledgeSink? knowledgeSink,
   }) : _kernel = kernel,
        _eventStore = eventStore,
        _traceSink = traceSink,
        _memoryService = memoryService,
-       _memoryRepository = memoryRepository;
+       _memoryRepository = memoryRepository,
+       _knowledgeSink = knowledgeSink;
 
   factory CaptureOrchestrator.local({
     WnClock? clock,
@@ -69,6 +84,7 @@ final class CaptureOrchestrator {
     runtime.EventStore? eventStore,
     runtime.TraceSink? traceSink,
     memory.MemoryRepository? memoryRepository,
+    CaptureKnowledgeSink? knowledgeSink,
   }) {
     final localClock = clock ?? const SystemWnClock();
     final runtimeEventStore = eventStore ?? runtime.InMemoryEventStore();
@@ -103,6 +119,7 @@ final class CaptureOrchestrator {
       traceSink: kernel.traceSink,
       memoryService: memoryService,
       memoryRepository: localMemoryRepository,
+      knowledgeSink: knowledgeSink,
     );
   }
 
@@ -155,20 +172,31 @@ final class CaptureOrchestrator {
   final runtime.TraceSink _traceSink;
   final memory.MemoryService _memoryService;
   final memory.MemoryRepository _memoryRepository;
+  final CaptureKnowledgeSink? _knowledgeSink;
 
-  Future<CapturePipelineResult> processCapture(String body) async {
+  Future<CapturePipelineResult> processCapture(
+    String body, {
+    List<CaptureAttachment> attachments = const <CaptureAttachment>[],
+    String? captureId,
+  }) async {
+    final rawText = body.trim();
+    final captureBody = rawText.isEmpty
+        ? _attachmentOnlyText(attachments)
+        : rawText;
     final priorEventCount = (await _eventStore.readAll()).length;
     final priorTraceCount = (await _traceSink.readAll()).length;
+    final captureSubjectId = captureId ?? _kernel.idGenerator.nextId('capture');
 
     final capture = await _kernel.publish(
       runtime.WnEventDraft(
         type: runtime.WnEventTypes.captureCreated,
         actor: runtime.WnActor.user,
-        subjectRef: runtime.SubjectRef(
-          kind: 'capture',
-          id: _kernel.idGenerator.nextId('capture'),
+        subjectRef: runtime.SubjectRef(kind: 'capture', id: captureSubjectId),
+        payload: _capturePayload(
+          text: captureBody,
+          rawText: rawText,
+          attachments: attachments,
         ),
-        payload: <String, Object?>{'text': body, 'source': 'manual'},
       ),
     );
 
@@ -183,13 +211,15 @@ final class CaptureOrchestrator {
     final reviewProposals = await _memoryRepository.listProposals(
       status: memory.MemoryProposalStatus.needsReview,
     );
+    final knowledgeLayer = await buildKnowledgeLayer();
 
     return CapturePipelineResult(
       record: CaptureRecord(
-        id: capture.id,
-        body: body,
+        id: captureSubjectId,
+        body: captureBody,
         createdAt: capture.createdAt,
         status: 'Processed locally',
+        sourceEventId: capture.id,
       ),
       memoryItem: _memoryView(memoryResult, capture),
       todo: todo,
@@ -201,9 +231,12 @@ final class CaptureOrchestrator {
               type: event.type,
               packId: event.packId,
               agentId: event.agentId,
+              payload: event.payload,
             ),
           )
           .toList(growable: false),
+      cards: knowledgeLayer.cards,
+      insights: knowledgeLayer.insights,
       acceptedMemoryCount: activeMemories.length,
       reviewMemoryCount: reviewProposals.length,
       reviewCandidate: memoryResult.needsReview
@@ -215,6 +248,22 @@ final class CaptureOrchestrator {
   Future<List<MemoryReviewCandidate>> listMemoryReviewQueue() async {
     final proposals = await _memoryService.listReviewQueue();
     return proposals.map(_reviewCandidateView).toList(growable: false);
+  }
+
+  Future<CaptureKnowledgeLayer> buildKnowledgeLayer() async {
+    final events = await _eventStore.readAll();
+    final activeMemories = await _memoryRepository.listItems(
+      status: memory.MemoryItemStatus.active,
+    );
+    final bundle = const cards.MemoryFirstCardService().generate(
+      cards.MemoryFirstCardInput(
+        now: _kernel.clock.now(),
+        captures: _captureSources(events),
+        memories: _memorySources(activeMemories),
+      ),
+    );
+    await _knowledgeSink?.save(bundle);
+    return _knowledgeLayerView(bundle);
   }
 
   Future<CaptureMemoryItem> acceptMemoryProposal(
@@ -304,7 +353,7 @@ final class CaptureOrchestrator {
     if (item != null) {
       return CaptureMemoryItem(
         id: item.id,
-        title: 'Memory 自动入库',
+        title: 'memory.auto_saved',
         summary: item.body,
         sourceRecordId: capture.id,
         confidenceLabel: '${item.confidence.name} confidence',
@@ -315,7 +364,7 @@ final class CaptureOrchestrator {
 
     return CaptureMemoryItem(
       id: result.proposal.id,
-      title: 'Memory 待复核',
+      title: 'memory.needs_review',
       summary: result.proposal.body,
       sourceRecordId: capture.id,
       confidenceLabel: result.decision.reasons.join(', '),
@@ -327,7 +376,7 @@ final class CaptureOrchestrator {
   CaptureMemoryItem _acceptedMemoryView(memory.MemoryItem item) {
     return CaptureMemoryItem(
       id: item.id,
-      title: 'Memory 已入库',
+      title: 'memory.accepted',
       summary: item.body,
       sourceRecordId: _sourceLabel(item.evidence),
       confidenceLabel: '${item.confidence.name} confidence',
@@ -352,8 +401,14 @@ final class CaptureOrchestrator {
     return SourceTodo(
       id: todoEvent.id,
       title: _string(todoEvent.payload['text'], fallback: 'Review capture'),
-      sourceLabel: 'source: ${todoEvent.causationId ?? capture.id}',
+      sourceLabel:
+          'source: ${todoEvent.subjectRef?.id ?? todoEvent.causationId ?? capture.id}',
       statusLabel: 'suggested by agent',
+      sourceCaptureId: todoEvent.subjectRef?.id,
+      sourceEventId: _string(
+        todoEvent.payload['source_event_id'],
+        fallback: todoEvent.causationId ?? capture.id,
+      ),
     );
   }
 
@@ -415,6 +470,200 @@ String _sourceLabel(List<memory.MemorySourceRef> evidence, {String? fallback}) {
   return '${source.sourceType}: ${source.sourceId}';
 }
 
+Map<String, Object?> _capturePayload({
+  required String text,
+  required String rawText,
+  required List<CaptureAttachment> attachments,
+}) {
+  final attachmentPayloads = attachments
+      .map((attachment) => attachment.toEventPayload())
+      .toList(growable: false);
+  final sourceRefs = <Object?>[
+    if (rawText.isNotEmpty)
+      <String, Object?>{'kind': 'raw_text', 'id': 'composer'},
+    for (final attachment in attachments)
+      <String, Object?>{
+        'kind': 'capture_attachment',
+        'id': attachment.id,
+        'attachment_kind': attachment.kind.wireName,
+      },
+  ];
+  return <String, Object?>{
+    'text': text,
+    'raw_text': rawText,
+    'source': attachments.isEmpty ? 'manual' : 'manual_with_attachments',
+    if (attachmentPayloads.isNotEmpty) 'attachments': attachmentPayloads,
+    if (sourceRefs.isNotEmpty) 'source_refs': sourceRefs,
+    'attachment_count': attachments.length,
+    'modalities': <String>[
+      if (rawText.isNotEmpty) 'text',
+      for (final attachment in attachments) attachment.kind.wireName,
+    ],
+  };
+}
+
+String _attachmentOnlyText(List<CaptureAttachment> attachments) {
+  final summaries = attachments
+      .where((attachment) => attachment.state == CaptureAttachmentState.ready)
+      .map(_attachmentSummary)
+      .where((summary) => summary.isNotEmpty)
+      .toList(growable: false);
+  if (summaries.isEmpty) {
+    return '';
+  }
+  return summaries.join('\n');
+}
+
+String _attachmentSummary(CaptureAttachment attachment) {
+  final preview = attachment.previewText.trim();
+  if (preview.isNotEmpty && attachment.canRenderPreview) {
+    return preview;
+  }
+  return '${attachment.kind.wireName}: ${attachment.displayName}';
+}
+
+String _captureTextFromPayload(Map<String, Object?> payload) {
+  final text = _string(payload['text'], fallback: '');
+  final attachmentText = _attachmentTextFromPayload(payload['attachments']);
+  if (attachmentText.isEmpty) {
+    return text;
+  }
+  if (_string(payload['raw_text'], fallback: '').isEmpty &&
+      text == attachmentText) {
+    return text;
+  }
+  if (text.isEmpty) {
+    return attachmentText;
+  }
+  return '$text\n$attachmentText';
+}
+
+String _attachmentTextFromPayload(Object? value) {
+  if (value is! List<Object?>) {
+    return '';
+  }
+  final lines = <String>[];
+  for (final item in value) {
+    if (item is! Map) {
+      continue;
+    }
+    final state = item['state'];
+    final name = _string(item['display_name'], fallback: 'attachment');
+    if (state == CaptureAttachmentState.blocked.wireName) {
+      lines.add('Blocked attachment: $name');
+      continue;
+    }
+    final preview = _string(item['preview_text'], fallback: '');
+    lines.add(preview.isEmpty ? name : preview);
+  }
+  return lines.join('\n');
+}
+
+final class CaptureKnowledgeLayer {
+  const CaptureKnowledgeLayer({required this.cards, required this.insights});
+
+  final List<SourceCard> cards;
+  final List<SourceInsight> insights;
+}
+
+List<cards.CaptureCardSource> _captureSources(List<runtime.WnEvent> events) {
+  return events
+      .where((event) => event.type == runtime.WnEventTypes.captureCreated)
+      .map(
+        (event) => cards.CaptureCardSource(
+          id: event.id,
+          text: _captureTextFromPayload(event.payload),
+          createdAt: event.createdAt,
+        ),
+      )
+      .toList(growable: false);
+}
+
+List<cards.MemoryCardSource> _memorySources(List<memory.MemoryItem> items) {
+  return items
+      .map(
+        (item) => cards.MemoryCardSource(
+          id: item.id,
+          key: item.key,
+          body: item.body,
+          memoryType: _memoryTypeLabel(item.memoryType),
+          createdAt: item.createdAt,
+          sourceLinks: _cardSourceLinks(item.evidence),
+        ),
+      )
+      .toList(growable: false);
+}
+
+List<cards.SourceLink> _cardSourceLinks(List<memory.MemorySourceRef> refs) {
+  return refs
+      .map(
+        (ref) => cards.SourceLink(
+          kind: ref.sourceType,
+          id: ref.sourceId,
+          excerpt: ref.excerpt,
+          uri: ref.uri,
+        ),
+      )
+      .toList(growable: false);
+}
+
+CaptureKnowledgeLayer _knowledgeLayerView(cards.MemoryFirstCardBundle bundle) {
+  return CaptureKnowledgeLayer(
+    cards: bundle.cards.map(_cardView).toList(growable: false),
+    insights: bundle.insights.map(_insightView).toList(growable: false),
+  );
+}
+
+SourceCard _cardView(cards.MemoryFirstCard card) {
+  return SourceCard(
+    id: card.id,
+    title: card.title,
+    summary: card.body,
+    sourceLabel: _sourceLinkLabel(card.sourceLinks),
+    kindLabel: _cardKindLabel(card.kind),
+    statusLabel: '${card.sourceLinks.length} source link(s)',
+  );
+}
+
+SourceInsight _insightView(cards.MemoryFirstInsight insight) {
+  return SourceInsight(
+    id: insight.id,
+    title: insight.title,
+    summary: insight.summary,
+    sourceLabel: _sourceLinkLabel(insight.sourceLinks),
+    kindLabel: _insightKindLabel(insight.kind),
+    metricLabel: _metricLabel(insight),
+  );
+}
+
+String _sourceLinkLabel(List<cards.SourceLink> links) {
+  final first = links.first;
+  final extra = links.length == 1 ? '' : ' +${links.length - 1}';
+  return 'source: ${first.kind}:${first.id}$extra';
+}
+
+String _metricLabel(cards.MemoryFirstInsight insight) {
+  if (insight.metricLabel == null || insight.metricValue == null) {
+    return 'source-linked';
+  }
+  return '${insight.metricValue} ${insight.metricLabel}';
+}
+
+String _cardKindLabel(cards.MemoryFirstCardKind kind) {
+  return switch (kind) {
+    cards.MemoryFirstCardKind.captureSummary => 'capture card',
+    cards.MemoryFirstCardKind.memorySummary => 'Memory card',
+  };
+}
+
+String _insightKindLabel(cards.MemoryFirstInsightKind kind) {
+  return switch (kind) {
+    cards.MemoryFirstInsightKind.summary => 'summary insight',
+    cards.MemoryFirstInsightKind.count => 'count insight',
+    cards.MemoryFirstInsightKind.trend => 'trend insight',
+  };
+}
+
 String _memoryTypeLabel(memory.MemoryType type) {
   return switch (type) {
     memory.MemoryType.taskContext => 'task_context',
@@ -430,16 +679,16 @@ final class _CaptureAgent implements runtime.AgentHandler {
     runtime.AgentContext context,
     runtime.WnEvent event,
   ) async {
-    final text = _string(event.payload['text'], fallback: '');
+    final text = _captureTextFromPayload(event.payload);
     final subject =
         event.subjectRef ?? runtime.SubjectRef(kind: 'capture', id: event.id);
     final policy = _policyForCaptureText(text);
-    final summary = await context.model.complete(
-      runtime.ModelRequest(
-        prompt: 'Summarize capture for Memory: $text',
-        context: <String, Object?>{'source_event_id': event.id},
-      ),
+    final summary = await _summarizeCapture(
+      context.model,
+      text: text,
+      sourceEventId: event.id,
     );
+    final usedModelFallback = summary.raw['model_fallback'] == true;
 
     return runtime.AgentHandlerResult(
       events: <runtime.WnEventDraft>[
@@ -450,10 +699,17 @@ final class _CaptureAgent implements runtime.AgentHandler {
             'key': 'capture.${subject.id}.summary',
             'text': summary.text,
             'source_event_id': event.id,
-            'source_excerpt': _preview(text),
+            'source_excerpt': previewText(text),
             'memory_type': policy.memoryType,
-            'confidence': policy.confidence,
+            'confidence': usedModelFallback ? 'low' : policy.confidence,
             'sensitivity': policy.sensitivity,
+            if (usedModelFallback) 'model_fallback': true,
+            if (summary.raw['model_fallback_error_type'] is String)
+              'model_fallback_error_type':
+                  summary.raw['model_fallback_error_type'],
+            if (summary.raw['model_fallback_status_code'] is int)
+              'model_fallback_status_code':
+                  summary.raw['model_fallback_status_code'],
           },
         ),
         context.emit(
@@ -462,6 +718,15 @@ final class _CaptureAgent implements runtime.AgentHandler {
           payload: <String, Object?>{
             'title': 'Capture summary',
             'body': summary.text,
+            'source_capture_id': subject.id,
+            'source_event_id': event.id,
+            'source_refs': <Object?>[
+              <String, Object?>{
+                'kind': 'capture',
+                'id': event.id,
+                'excerpt': previewText(text),
+              },
+            ],
           },
         ),
         context.emit(
@@ -470,11 +735,57 @@ final class _CaptureAgent implements runtime.AgentHandler {
           payload: <String, Object?>{
             'kind': 'capture_reflection',
             'text': 'This capture can be recalled through Memory.',
+            'source_capture_id': subject.id,
+            'source_event_id': event.id,
+            'source_refs': <Object?>[
+              <String, Object?>{
+                'kind': 'capture',
+                'id': event.id,
+                'excerpt': previewText(text),
+              },
+            ],
           },
         ),
       ],
     );
   }
+}
+
+Future<runtime.ModelResponse> _summarizeCapture(
+  runtime.ModelClient model, {
+  required String text,
+  required String sourceEventId,
+}) async {
+  try {
+    return await model.complete(
+      runtime.ModelRequest(
+        prompt: 'Summarize capture for Memory: $text',
+        context: <String, Object?>{'source_event_id': sourceEventId},
+      ),
+    );
+  } catch (error) {
+    final statusCode = _statusCodeFromError(error);
+    return runtime.ModelResponse(
+      text: previewText(text),
+      raw: <String, Object?>{
+        'model_fallback': true,
+        'model_fallback_error_type': error.runtimeType.toString(),
+        'model_fallback_status_code': ?statusCode,
+      },
+    );
+  }
+}
+
+int? _statusCodeFromError(Object error) {
+  try {
+    final value = (error as dynamic).statusCode;
+    if (value is int) {
+      return value;
+    }
+  } on Object {
+    return null;
+  }
+  return null;
 }
 
 final class _MemoryPolicyFields {
@@ -497,7 +808,7 @@ final class _TodoAgent implements runtime.AgentHandler {
     runtime.AgentContext context,
     runtime.WnEvent event,
   ) async {
-    final text = _string(event.payload['text'], fallback: '');
+    final text = _captureTextFromPayload(event.payload);
     final subject =
         event.subjectRef ?? runtime.SubjectRef(kind: 'capture', id: event.id);
 
@@ -507,7 +818,7 @@ final class _TodoAgent implements runtime.AgentHandler {
           type: runtime.WnEventTypes.todoSuggested,
           subjectRef: subject,
           payload: <String, Object?>{
-            'text': 'Follow up: ${_preview(text)}',
+            'text': 'Follow up: ${previewText(text)}',
             'source_event_id': event.id,
           },
         ),
@@ -525,16 +836,8 @@ final class _CaptureSummaryModel implements runtime.ModelClient {
       'Summarize capture for Memory: ',
       '',
     );
-    return runtime.ModelResponse(text: _preview(text));
+    return runtime.ModelResponse(text: previewText(text));
   }
-}
-
-String _preview(String text) {
-  final trimmed = text.trim();
-  if (trimmed.length <= 80) {
-    return trimmed;
-  }
-  return '${trimmed.substring(0, 80)}...';
 }
 
 String _string(Object? value, {required String fallback}) {

@@ -1,14 +1,22 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/local_database.dart';
+import '../../../app/model_client.dart';
 import 'capture_orchestrator.dart';
+import 'local_capture_read_model.dart';
+import 'local_knowledge_sink.dart';
 import '../domain/capture_models.dart';
+import '../media/capture_media.dart';
 
 final captureOrchestratorProvider = Provider<CaptureOrchestrator>((ref) {
   return CaptureOrchestrator.local(
     eventStore: ref.watch(localEventStoreProvider),
     traceSink: ref.watch(localTraceSinkProvider),
     memoryRepository: ref.watch(localMemoryRepositoryProvider),
+    knowledgeSink: LocalDbCaptureKnowledgeSink(
+      ref.watch(localDatabaseProvider),
+    ),
+    model: ref.watch(modelClientProvider),
   );
 });
 
@@ -17,23 +25,37 @@ final captureControllerProvider =
 
 class CaptureController extends Notifier<CaptureState> {
   @override
-  CaptureState build() => CaptureState.initial();
+  CaptureState build() {
+    return _readModelStore().hydrate();
+  }
 
-  Future<void> submitCapture(String value) async {
+  Future<void> submitCapture(
+    String value, {
+    List<CaptureAttachment> attachments = const <CaptureAttachment>[],
+  }) async {
     final body = value.trim();
-    if (body.isEmpty) {
+    if (body.isEmpty && attachments.isEmpty) {
       return;
     }
     if (state.isProcessing) {
       return;
     }
+    if (attachments.any((attachment) => !attachment.isReady)) {
+      state = state.copyWith(
+        errorMessage: 'Review or remove pending attachments before recording.',
+      );
+      return;
+    }
+
+    final recordBody = body.isEmpty ? _attachmentRecordBody(attachments) : body;
 
     final pendingRecord = CaptureRecord(
       id: 'local-${DateTime.now().toUtc().microsecondsSinceEpoch}',
-      body: body,
+      body: recordBody,
       createdAt: DateTime.now().toUtc(),
       status: 'Saved locally, processing',
     );
+    _readModelStore().saveCapture(pendingRecord, attachments: attachments);
 
     state = state.copyWith(
       records: [pendingRecord, ...state.records],
@@ -44,7 +66,14 @@ class CaptureController extends Notifier<CaptureState> {
     try {
       final result = await ref
           .read(captureOrchestratorProvider)
-          .processCapture(body);
+          .processCapture(
+            body,
+            attachments: attachments,
+            captureId: pendingRecord.id,
+          );
+      _readModelStore()
+        ..saveCapture(result.record, attachments: attachments)
+        ..saveTodo(result.todo);
 
       state = state.copyWith(
         records: _replaceRecord(state.records, pendingRecord.id, result.record),
@@ -54,17 +83,20 @@ class CaptureController extends Notifier<CaptureState> {
         reviewCandidates: result.reviewCandidate == null
             ? state.reviewCandidates
             : [result.reviewCandidate!, ...state.reviewCandidates],
+        cards: result.cards,
+        insights: result.insights,
         todos: [result.todo, ...state.todos],
         traces: [...result.traces, ...state.traces],
         isProcessing: false,
+        clearError: true,
       );
     } catch (error) {
+      final failedRecord = pendingRecord.copyWith(
+        status: 'Saved locally, agent failed',
+      );
+      _readModelStore().saveCapture(failedRecord, attachments: attachments);
       state = state.copyWith(
-        records: _replaceRecord(
-          state.records,
-          pendingRecord.id,
-          pendingRecord.copyWith(status: 'Saved locally, agent failed'),
-        ),
+        records: _replaceRecord(state.records, pendingRecord.id, failedRecord),
         isProcessing: false,
         errorMessage: 'Capture failed: $error',
       );
@@ -76,9 +108,14 @@ class CaptureController extends Notifier<CaptureState> {
       final memory = await ref
           .read(captureOrchestratorProvider)
           .acceptMemoryProposal(id);
+      final knowledgeLayer = await ref
+          .read(captureOrchestratorProvider)
+          .buildKnowledgeLayer();
       state = state.copyWith(
         memories: [memory, ...state.memories],
         reviewCandidates: _removeReviewCandidate(state.reviewCandidates, id),
+        cards: knowledgeLayer.cards,
+        insights: knowledgeLayer.insights,
         clearError: true,
       );
     } catch (error) {
@@ -91,9 +128,14 @@ class CaptureController extends Notifier<CaptureState> {
       final memory = await ref
           .read(captureOrchestratorProvider)
           .acceptMemoryProposal(id, editedBody: body);
+      final knowledgeLayer = await ref
+          .read(captureOrchestratorProvider)
+          .buildKnowledgeLayer();
       state = state.copyWith(
         memories: [memory, ...state.memories],
         reviewCandidates: _removeReviewCandidate(state.reviewCandidates, id),
+        cards: knowledgeLayer.cards,
+        insights: knowledgeLayer.insights,
         clearError: true,
       );
     } catch (error) {
@@ -132,5 +174,22 @@ class CaptureController extends Notifier<CaptureState> {
       for (final candidate in candidates)
         if (candidate.id != id) candidate,
     ];
+  }
+
+  String _attachmentRecordBody(List<CaptureAttachment> attachments) {
+    return attachments
+        .map((attachment) {
+          final preview = attachment.previewText.trim();
+          if (preview.isNotEmpty) {
+            return preview;
+          }
+          return '${attachment.kind.wireName}: ${attachment.displayName}';
+        })
+        .where((preview) => preview.isNotEmpty)
+        .join('\n');
+  }
+
+  LocalCaptureReadModelStore _readModelStore() {
+    return LocalCaptureReadModelStore(ref.read(localDatabaseProvider));
   }
 }

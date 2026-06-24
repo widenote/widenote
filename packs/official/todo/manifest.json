@@ -40,7 +40,10 @@
       "tools": [],
       "output_events": [
         "wn.todo.suggested"
-      ]
+      ],
+      "retry_policy": {
+        "max_attempts": 2
+      }
     }
   ],
   "model_profiles": [],

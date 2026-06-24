@@ -30,11 +30,16 @@ It should stay short. It points to the right local context instead of duplicatin
 - `docs/research/2026-06-23-phase-one-technical-research.md`
 - `docs/research/2026-06-23-memex-design-critique.md`
 - `docs/research/2026-06-23-kimi-review-followup.md`
+- `docs/research/2026-06-24-external-review-followup.md`
+- `docs/research/2026-06-24-android-emulator-qa.md`
+- `docs/research/2026-06-24-memex-phase-one-gap-audit.md`
 
 ## RFCs
 
 - `docs/rfcs/memory-model.md`
 - `docs/rfcs/agent-pack-schema.md`
+- `docs/rfcs/model-provider-settings.md`
+- `docs/rfcs/phase-one-product-scope.md`
 
 ## Contract Sources
 
@@ -59,10 +64,13 @@ It should stay short. It points to the right local context instead of duplicatin
 | Module | Context | Purpose |
 | --- | --- | --- |
 | Mobile app | `apps/mobile/README.md` | Flutter client and local runtime host |
+| Mobile backup | `apps/mobile/lib/features/backup/README.md` | Local JSON backup export/import UI |
+| Mobile model providers | `apps/mobile/lib/features/model_providers/README.md` | Provider settings UI and local state |
 | API service | `apps/api/README.md` | Optional backend API |
 | TypeScript runner | `apps/runner-ts/README.md` | Self-hosted or cloud runner |
 | Schemas | `packages/schemas/README.md` | Shared runtime contracts and generated types |
 | Dart core | `packages/dart/core/README.md` | Pure Dart models and utilities |
+| Dart cards | `packages/dart/cards/README.md` | Memory-first cards and source-linked insight derivation |
 | Dart local DB | `packages/dart/local_db/README.md` | SQLite local truth layer; Drift remains the long-term client target |
 | Dart agent runtime | `packages/dart/agent_runtime/README.md` | Local Agent Runtime Kernel |
 | Dart memory | `packages/dart/memory/README.md` | Memory lifecycle and auto-accept policy |

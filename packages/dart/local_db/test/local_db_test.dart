@@ -85,6 +85,66 @@ void main() {
       expect(database.captures.readAll(status: 'created'), hasLength(1));
     });
 
+    test('stores attachment metadata linked to captures', () {
+      final createdAt = DateTime.utc(2026, 6, 24, 8, 10);
+      database.captures.insert(
+        CaptureRecord(
+          id: 'capture-asset-1',
+          sourceType: 'manual_with_attachments',
+          payload: const <String, Object?>{'text': 'Photo note'},
+          createdAt: createdAt,
+          updatedAt: createdAt,
+        ),
+      );
+      database.attachments.insert(
+        AttachmentRecord(
+          id: 'attachment-1',
+          captureId: 'capture-asset-1',
+          sourceEventId: 'event-asset-1',
+          assetKind: 'photo',
+          mimeType: 'image/jpeg',
+          storagePath: 'media/originals/2026/06/attachment-1.jpg',
+          originalFileName: 'field-note.jpg',
+          sha256: 'hash-attachment-1',
+          byteLength: 1024,
+          payload: const <String, Object?>{
+            'preview_text': 'whiteboard snapshot',
+          },
+          createdAt: createdAt,
+          updatedAt: createdAt,
+        ),
+      );
+
+      final attachment = database.attachments.readById('attachment-1')!;
+
+      expect(attachment.captureId, 'capture-asset-1');
+      expect(attachment.assetKind, 'photo');
+      expect(attachment.mimeType, 'image/jpeg');
+      expect(attachment.sha256, 'hash-attachment-1');
+      expect(attachment.byteLength, 1024);
+      expect(
+        database.attachments
+            .readByCapture('capture-asset-1')
+            .map((record) => record.id),
+        ['attachment-1'],
+      );
+      expect(database.attachments.readAll(status: 'available'), hasLength(1));
+      expect(
+        () => database.attachments.insert(
+          AttachmentRecord(
+            id: 'attachment-bad-size',
+            captureId: 'capture-asset-1',
+            assetKind: 'photo',
+            storagePath: 'media/originals/bad.jpg',
+            byteLength: -1,
+            createdAt: createdAt,
+            updatedAt: createdAt,
+          ),
+        ),
+        throwsArgumentError,
+      );
+    });
+
     test('appends and reads event log entries', () {
       final firstCreatedAt = DateTime.utc(2026, 6, 23, 9);
       final secondCreatedAt = DateTime.utc(2026, 6, 23, 9, 1);
@@ -216,6 +276,165 @@ void main() {
       expect(item.tombstone, isFalse);
       expect((item.sourceRefs.single as Map)['event_id'], 'event-2');
       expect(database.memoryItems.readAll(status: 'active'), hasLength(1));
+    });
+
+    test('stores source-linked cards and insights', () {
+      final createdAt = DateTime.utc(2026, 6, 24, 8);
+      const sourceRefs = <Object?>[
+        <String, Object?>{
+          'kind': 'capture',
+          'id': 'capture-card-1',
+          'excerpt': 'source-linked card',
+        },
+      ];
+
+      database.cards.insert(
+        CardRecord(
+          id: 'card-1',
+          cardKind: 'capture_summary',
+          title: 'Capture: source-linked card',
+          body: 'A card derived from the original capture.',
+          sourceRefs: sourceRefs,
+          payload: const <String, Object?>{'source_count': 1},
+          createdAt: createdAt,
+          updatedAt: createdAt,
+        ),
+      );
+      database.insights.insert(
+        InsightRecord(
+          id: 'insight-1',
+          insightKind: 'count',
+          title: 'Knowledge layer coverage',
+          summary: '1 captures and 0 Memory items generated 1 card.',
+          sourceRefs: sourceRefs,
+          metricLabel: 'source-linked cards',
+          metricValue: 1,
+          payload: const <String, Object?>{'capture_count': 1},
+          createdAt: createdAt,
+          updatedAt: createdAt,
+        ),
+      );
+
+      final card = database.cards.readById('card-1');
+      final insight = database.insights.readById('insight-1');
+
+      expect(card, isNotNull);
+      expect(card!.cardKind, 'capture_summary');
+      expect(card.title, 'Capture: source-linked card');
+      expect((card.sourceRefs.single as Map)['id'], 'capture-card-1');
+      expect(card.payload['source_count'], 1);
+      expect(database.cards.readAll(status: 'active'), hasLength(1));
+
+      expect(insight, isNotNull);
+      expect(insight!.insightKind, 'count');
+      expect(insight.metricLabel, 'source-linked cards');
+      expect(insight.metricValue, 1);
+      expect((insight.sourceRefs.single as Map)['kind'], 'capture');
+      expect(database.insights.readAll(status: 'active'), hasLength(1));
+    });
+
+    test('rejects card and insight rows without source links', () {
+      final createdAt = DateTime.utc(2026, 6, 24, 8, 30);
+
+      expect(
+        () => database.cards.insert(
+          CardRecord(
+            id: 'card-empty-source',
+            cardKind: 'capture_summary',
+            title: 'No source',
+            body: 'This should not be stored.',
+            sourceRefs: const <Object?>[],
+            createdAt: createdAt,
+            updatedAt: createdAt,
+          ),
+        ),
+        throwsArgumentError,
+      );
+      expect(
+        () => database.insights.insert(
+          InsightRecord(
+            id: 'insight-empty-source',
+            insightKind: 'count',
+            title: 'No source',
+            summary: 'This should not be stored.',
+            sourceRefs: const <Object?>[],
+            createdAt: createdAt,
+            updatedAt: createdAt,
+          ),
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('stores chat sessions, messages, and provider configs', () {
+      final createdAt = DateTime.utc(2026, 6, 23, 10, 15);
+      final updatedAt = DateTime.utc(2026, 6, 23, 10, 20);
+
+      database.chatSessions.save(
+        ChatSessionRecord(
+          id: 'session-1',
+          title: 'Launch review',
+          payload: const <String, Object?>{'source': 'test'},
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+        ),
+      );
+      database.chatMessages
+        ..save(
+          ChatMessageRecord(
+            id: 'message-user',
+            sessionId: 'session-1',
+            role: 'user',
+            body: 'What did Lin say?',
+            createdAt: createdAt,
+          ),
+        )
+        ..save(
+          ChatMessageRecord(
+            id: 'message-assistant',
+            sessionId: 'session-1',
+            role: 'assistant',
+            body: 'Lin asked for source-linked cards.',
+            sourceRefs: const <Object?>[
+              <String, Object?>{'kind': 'memory', 'id': 'memory-1'},
+            ],
+            createdAt: updatedAt,
+          ),
+        );
+      database.modelProviderConfigs.save(
+        ModelProviderConfigRecord(
+          id: 'mimo-main',
+          providerKind: 'mimo',
+          displayName: 'Xiaomi MIMO',
+          endpoint:
+              'https://token-plan-sgp.xiaomimimo.com/anthropic/v1/messages',
+          model: 'mimo-v2.5-pro',
+          isDefault: true,
+          hasApiKey: true,
+          apiKey: _testCredential(),
+          capabilities: const <Object?>['chat', 'completion'],
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+        ),
+      );
+
+      expect(database.chatSessions.readAll().single.title, 'Launch review');
+      expect(
+        database.chatMessages
+            .readBySession('session-1')
+            .map((message) => message.role),
+        ['user', 'assistant'],
+      );
+      expect(
+        (database.chatMessages.readById('message-assistant')!.sourceRefs.single
+            as Map)['id'],
+        'memory-1',
+      );
+      final provider = database.modelProviderConfigs.readDefault()!;
+      expect(provider.id, 'mimo-main');
+      expect(provider.hasApiKey, isTrue);
+      expect(provider.apiKey, _testCredential());
+      expect(provider.capabilities, contains('chat'));
     });
 
     test('transitions memory review candidates in SQLite', () {
@@ -437,6 +656,16 @@ void main() {
             updatedAt: timestamp,
           ),
         );
+        database.attachments.insert(
+          AttachmentRecord(
+            id: 'attachment-$index',
+            captureId: 'capture-$index',
+            assetKind: 'photo',
+            storagePath: 'media/originals/attachment-$index.jpg',
+            createdAt: timestamp,
+            updatedAt: timestamp,
+          ),
+        );
         database.eventLog.append(
           EventLogEntry(
             id: 'event-$index',
@@ -466,6 +695,62 @@ void main() {
             updatedAt: timestamp,
           ),
         );
+        database.cards.insert(
+          CardRecord(
+            id: 'card-$index',
+            cardKind: 'capture_summary',
+            title: 'Card $index',
+            body: 'Card $index',
+            sourceRefs: <Object?>[
+              <String, Object?>{'kind': 'capture', 'id': 'capture-$index'},
+            ],
+            createdAt: timestamp,
+            updatedAt: timestamp,
+          ),
+        );
+        database.insights.insert(
+          InsightRecord(
+            id: 'insight-$index',
+            insightKind: 'count',
+            title: 'Insight $index',
+            summary: 'Insight $index',
+            sourceRefs: <Object?>[
+              <String, Object?>{'kind': 'capture', 'id': 'capture-$index'},
+            ],
+            metricValue: index,
+            createdAt: timestamp,
+            updatedAt: timestamp,
+          ),
+        );
+        database.chatSessions.insert(
+          ChatSessionRecord(
+            id: 'session-$index',
+            title: 'Session $index',
+            createdAt: timestamp,
+            updatedAt: timestamp,
+          ),
+        );
+        database.chatMessages.insert(
+          ChatMessageRecord(
+            id: 'message-$index',
+            sessionId: 'session-$index',
+            role: 'user',
+            body: 'Message $index',
+            createdAt: timestamp,
+          ),
+        );
+        database.modelProviderConfigs.insert(
+          ModelProviderConfigRecord(
+            id: 'provider-$index',
+            providerKind: 'openAiCompatible',
+            displayName: 'Provider $index',
+            endpoint: 'https://example.com/v1/chat/completions',
+            model: 'model-$index',
+            capabilities: const <Object?>['chat'],
+            createdAt: timestamp,
+            updatedAt: timestamp,
+          ),
+        );
         database.todos.insert(
           TodoRecord(
             id: 'todo-$index',
@@ -489,6 +774,10 @@ void main() {
         'capture-1',
       );
       expect(
+        database.attachments.readAll(limit: 1, offset: 1).single.id,
+        'attachment-1',
+      );
+      expect(
         database.eventLog.readAll(limit: 1, offset: 1).single.id,
         'event-1',
       );
@@ -499,6 +788,23 @@ void main() {
       expect(
         database.memoryItems.readAll(limit: 1, offset: 1).single.id,
         'memory-1',
+      );
+      expect(database.cards.readAll(limit: 1, offset: 1).single.id, 'card-1');
+      expect(
+        database.insights.readAll(limit: 1, offset: 1).single.id,
+        'insight-1',
+      );
+      expect(
+        database.chatSessions.readAll(limit: 1, offset: 1).single.id,
+        'session-1',
+      );
+      expect(
+        database.chatMessages.readAll(limit: 1, offset: 1).single.id,
+        'message-1',
+      );
+      expect(
+        database.modelProviderConfigs.readAll(limit: 1, offset: 1).single.id,
+        'provider-1',
       );
       expect(database.todos.readAll(limit: 1, offset: 1).single.id, 'todo-1');
       expect(
@@ -511,7 +817,7 @@ void main() {
       );
     });
 
-    test('migrates v1 contract columns to schema version 3', () {
+    test('migrates v1 contract columns to current schema version', () {
       final rawDatabase = sqlite3.openInMemory();
       LocalDbMigrator.bootstrap(rawDatabase, targetVersion: 1);
       rawDatabase
@@ -567,7 +873,7 @@ INSERT INTO trace_events (
       );
       addTearDown(migrated.close);
 
-      expect(migrated.schemaVersion, 3);
+      expect(migrated.schemaVersion, LocalDbSchema.currentVersion);
       final event = migrated.eventLog.readById('event-old')!;
       expect(event.privacy, 'local_only');
       expect(event.subjectRefKind, 'capture');
@@ -577,6 +883,17 @@ INSERT INTO trace_events (
       expect(trace.traceType, 'run_started');
       expect(trace.runId, 'run-old');
       expect(trace.severity, 'warn');
+      expect(migrated.cards.readAll(), isEmpty);
+      expect(migrated.insights.readAll(), isEmpty);
+      expect(migrated.attachments.readAll(), isEmpty);
+      expect(migrated.chatSessions.readAll(), isEmpty);
+      expect(migrated.modelProviderConfigs.readAll(), isEmpty);
+      expect(
+        rawDatabase
+            .select('PRAGMA table_info(model_provider_configs);')
+            .map((row) => row['name']),
+        contains('api_key'),
+      );
     });
 
     test('backs runtime event store and trace sink', () async {
@@ -743,6 +1060,24 @@ INSERT INTO trace_events (
       expect((await eventStore.readAll()).single.id, 'event-existing');
     });
   });
+}
+
+String _testCredential() {
+  return String.fromCharCodes(<int>[
+    116,
+    101,
+    115,
+    116,
+    45,
+    109,
+    105,
+    109,
+    111,
+    45,
+    107,
+    101,
+    121,
+  ]);
 }
 
 DateTime Function() _sequenceClock(List<DateTime> values) {

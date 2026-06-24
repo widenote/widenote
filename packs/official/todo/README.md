@@ -25,6 +25,7 @@ The manifest declares:
 - Permission requests: `todo.suggest`
 - Subscription: `wn.capture.created`
 - Native agent: `agent.todo_loop`
+- Retry policy: `max_attempts = 2`
 - Output event: `wn.todo.suggested`
 
 ## Dependencies

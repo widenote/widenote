@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -6,7 +8,10 @@ import 'package:widenote_local_db/widenote_local_db.dart';
 import 'package:widenote_mobile/app/local_database.dart';
 import 'package:widenote_mobile/app/widenote_app.dart';
 import 'package:widenote_mobile/features/capture/application/capture_controller.dart';
+import 'package:widenote_mobile/features/capture/application/capture_input_controller.dart';
 import 'package:widenote_mobile/features/capture/application/capture_orchestrator.dart';
+import 'package:widenote_mobile/features/capture/domain/capture_models.dart';
+import 'package:widenote_mobile/features/capture/media/capture_media.dart';
 
 void main() {
   testWidgets('switches between the four WideNote tabs', (tester) async {
@@ -31,6 +36,92 @@ void main() {
     expect(find.byKey(const Key('home-page')), findsOneWidget);
   });
 
+  testWidgets('captured state remains visible after visiting all four tabs', (
+    tester,
+  ) async {
+    await _pumpApp(tester);
+
+    const captureText = 'Keep this capture visible across tab changes.';
+    await _submitQuickCapture(tester, captureText);
+
+    final state = _readCaptureState(tester);
+    final record = state.records.single;
+    expect(record.body, captureText);
+
+    await _openTab(tester, const Key('tab-chat'));
+    await _openTab(tester, const Key('tab-todos'));
+    await _openTab(tester, const Key('tab-plugins'));
+    await _openTab(tester, const Key('tab-home'));
+
+    expect(find.text('1 processed'), findsOneWidget);
+    expect(find.text('1 accepted'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.byKey(Key('record-row-${record.id}')),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.byKey(Key('record-row-${record.id}')), findsOneWidget);
+    expect(find.text(captureText), findsOneWidget);
+    expect(_readCaptureState(tester).cards, hasLength(2));
+    expect(_readCaptureState(tester).insights, hasLength(3));
+  });
+
+  testWidgets('home and todos hydrate from local DB after relaunch', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    await _pumpApp(tester, database: database, closeDatabase: false);
+
+    const captureText = 'Hydrate this capture after relaunch.';
+    await _submitQuickCapture(tester, captureText);
+    final stateBeforeRelaunch = _readCaptureState(tester);
+    final todo = stateBeforeRelaunch.todos.single;
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    await _pumpApp(tester, database: database, closeDatabase: false);
+
+    expect(find.text('1 processed'), findsOneWidget);
+    expect(find.text('1 accepted'), findsOneWidget);
+    expect(find.text('1 linked'), findsOneWidget);
+    final hydrated = _readCaptureState(tester);
+    expect(hydrated.records.single.body, captureText);
+    expect(hydrated.todos.single.id, todo.id);
+    expect(hydrated.cards, hasLength(2));
+    expect(hydrated.insights, hasLength(3));
+
+    await tester.scrollUntilVisible(
+      find.text(captureText),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text(captureText), findsOneWidget);
+    await _openTab(tester, const Key('tab-todos'));
+    expect(find.byKey(Key('todo-row-${todo.id}')), findsOneWidget);
+    expect(find.text('Follow up: $captureText'), findsOneWidget);
+  });
+
+  testWidgets('backup export counts persisted captures and todos', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    await _pumpApp(tester, database: database, closeDatabase: false);
+
+    await _submitQuickCapture(tester, 'Count this capture in backup.');
+
+    final backup = LocalBackupService(database).exportBackup();
+
+    expect(backup.manifest.recordCounts['captures'], 1);
+    expect(backup.manifest.recordCounts['todos'], 1);
+    expect(
+      backup.captures.single.payload['text'],
+      'Count this capture in backup.',
+    );
+    expect(backup.todos.single.payload['title'], startsWith('Follow up:'));
+  });
+
   testWidgets('quick capture creates record, auto-accepted Memory, and trace', (
     tester,
   ) async {
@@ -40,22 +131,60 @@ void main() {
 
     await _submitQuickCapture(tester, captureText);
 
-    expect(find.text(captureText), findsOneWidget);
-
-    await tester.drag(
-      find.byKey(const Key('home-page')),
-      const Offset(0, -500),
+    await tester.scrollUntilVisible(
+      find.text(captureText),
+      120,
+      scrollable: find.byType(Scrollable).first,
     );
-    await tester.pumpAndSettle();
-    expect(find.text('Memory 自动入库'), findsOneWidget);
+    expect(find.text(captureText), findsOneWidget);
+    final state = _readCaptureState(tester);
+    expect(state.cards, hasLength(2));
+    expect(state.insights, hasLength(3));
+
+    await tester.scrollUntilVisible(
+      find.byKey(Key('card-row-${state.cards.first.id}')),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.textContaining('source:'), findsWidgets);
+
+    await tester.scrollUntilVisible(
+      find.byKey(Key('insight-row-${state.insights.first.id}')),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.textContaining('summary insight'), findsWidgets);
+
+    await tester.scrollUntilVisible(
+      find.text('Memory saved automatically'),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Memory saved automatically'), findsOneWidget);
     expect(find.textContaining('auto-accepted'), findsWidgets);
 
-    await tester.drag(
-      find.byKey(const Key('home-page')),
-      const Offset(0, -500),
+    await tester.scrollUntilVisible(
+      find.textContaining('runtime.run.completed').first,
+      120,
+      scrollable: find.byType(Scrollable).first,
     );
-    await tester.pumpAndSettle();
     expect(find.textContaining('runtime.run.completed'), findsWidgets);
+    expect(
+      find.textContaining('pack.default · agent.capture_loop'),
+      findsWidgets,
+    );
+    expect(find.textContaining('pack.todo · agent.todo_loop'), findsWidgets);
+
+    final completedRuns = _readCaptureState(
+      tester,
+    ).traces.where((trace) => trace.label == 'runtime.run.completed');
+    expect(
+      completedRuns.map((trace) => '${trace.packId}/${trace.agentId}'),
+      containsAll(<String>[
+        'pack.default/agent.capture_loop',
+        'pack.todo/agent.todo_loop',
+      ]),
+    );
   });
 
   testWidgets('blank quick capture does not create a local record', (
@@ -65,15 +194,171 @@ void main() {
 
     expect(find.text('idle'), findsOneWidget);
     expect(find.text('ready'), findsOneWidget);
-    expect(find.text('2 linked'), findsOneWidget);
+    expect(find.text('0 linked'), findsOneWidget);
     expect(find.textContaining('Processed locally'), findsNothing);
 
     await _submitQuickCapture(tester, '   ');
 
     expect(find.text('idle'), findsOneWidget);
     expect(find.text('ready'), findsOneWidget);
-    expect(find.text('2 linked'), findsOneWidget);
+    expect(find.text('0 linked'), findsOneWidget);
     expect(find.textContaining('Processed locally'), findsNothing);
+    expect(_readCaptureState(tester).cards, isEmpty);
+    expect(_readCaptureState(tester).insights, isEmpty);
+  });
+
+  testWidgets('photo attachment sample can be previewed and removed', (
+    tester,
+  ) async {
+    await _pumpApp(tester);
+
+    await tester.tap(find.byKey(const Key('add-photo-attachment-button')));
+    await tester.pumpAndSettle();
+
+    final attachment = _readCaptureInputState(tester).attachments.single;
+    expect(attachment.kind, CaptureAssetKind.photo);
+    expect(find.text('Field photo sample.jpg'), findsOneWidget);
+    expect(find.textContaining('Photo sample'), findsOneWidget);
+
+    await tester.tap(find.byKey(Key('remove-attachment-${attachment.id}')));
+    await tester.pumpAndSettle();
+
+    expect(_readCaptureInputState(tester).attachments, isEmpty);
+    expect(find.text('Field photo sample.jpg'), findsNothing);
+  });
+
+  testWidgets('attachment-only capture falls back to attachment name', (
+    tester,
+  ) async {
+    await _pumpApp(tester);
+
+    final attachment = CaptureAttachment(
+      id: 'empty-preview-photo',
+      kind: CaptureAssetKind.photo,
+      displayName: 'Empty preview.jpg',
+      mimeType: 'image/jpeg',
+      sourceUri: 'fake://camera/empty-preview.jpg',
+      createdAt: DateTime.utc(2026, 6, 24, 12),
+      state: CaptureAttachmentState.ready,
+      rawMetadata: const <String, Object?>{'adapter': 'test'},
+    );
+
+    await ProviderScope.containerOf(tester.element(find.byType(WideNoteApp)))
+        .read(captureControllerProvider.notifier)
+        .submitCapture('', attachments: <CaptureAttachment>[attachment]);
+    await tester.pumpAndSettle();
+
+    final state = _readCaptureState(tester);
+    expect(state.records.single.body, 'photo: Empty preview.jpg');
+    expect(state.memories.single.summary, contains('photo: Empty preview.jpg'));
+  });
+
+  testWidgets('blocked photo attachment hides raw preview and blocks submit', (
+    tester,
+  ) async {
+    await _pumpApp(
+      tester,
+      overrides: [
+        photoCaptureAdapterProvider.overrideWithValue(
+          const FakePhotoCaptureAdapter(mode: FakePhotoMode.dangerous),
+        ),
+      ],
+    );
+
+    await tester.tap(find.byKey(const Key('add-photo-attachment-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Blocked photo sample.jpg'), findsOneWidget);
+    expect(find.textContaining('Blocked attachment'), findsOneWidget);
+    expect(find.textContaining('Preview hidden'), findsOneWidget);
+    expect(find.textContaining('DANGEROUS RAW PREVIEW'), findsNothing);
+
+    await tester.tap(find.byKey(const Key('record-capture-button')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Remove blocked attachments before recording.'),
+      findsOneWidget,
+    );
+    expect(_readCaptureState(tester).records, isEmpty);
+  });
+
+  testWidgets('voice transcript sample requires review before capture', (
+    tester,
+  ) async {
+    await _pumpApp(tester);
+
+    await tester.tap(find.byKey(const Key('add-voice-attachment-button')));
+    await tester.pumpAndSettle();
+
+    final attachment = _readCaptureInputState(tester).attachments.single;
+    expect(attachment.kind, CaptureAssetKind.voice);
+    expect(find.text('Voice transcript sample.m4a'), findsOneWidget);
+    expect(find.textContaining('Transcript needs review'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('record-capture-button')));
+    await tester.pumpAndSettle();
+    expect(find.text('Review attachments before recording.'), findsOneWidget);
+
+    await tester.tap(find.byKey(Key('review-attachment-${attachment.id}')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Ready'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('record-capture-button')));
+    await tester.pumpAndSettle();
+
+    final state = _readCaptureState(tester);
+    expect(state.records.single.body, contains('Transcript draft'));
+    expect(_readCaptureInputState(tester).attachments, isEmpty);
+  });
+
+  testWidgets('share import sample writes raw metadata to capture event', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    await _pumpApp(tester, database: database);
+
+    await tester.tap(find.byKey(const Key('add-share-import-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Shared web note sample'), findsOneWidget);
+    expect(find.textContaining('Shared link'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('record-capture-button')));
+    await tester.pumpAndSettle();
+
+    final event = (await LocalDbEventStore(database).readAll()).first;
+    final attachments = event.payload['attachments']! as List<Object?>;
+    final sharePayload = attachments.single! as Map;
+    final rawMetadata = sharePayload['raw_metadata']! as Map;
+    final adapterMetadata = rawMetadata['adapter_metadata']! as Map;
+
+    expect(event.payload['source'], 'manual_with_attachments');
+    expect(event.payload['raw_text'], '');
+    expect(sharePayload['kind'], 'share');
+    expect(adapterMetadata['url'], 'https://example.test/widenote');
+    expect(
+      _readCaptureState(tester).records.single.body,
+      contains('Shared link'),
+    );
+  });
+
+  testWidgets('home shows card and insight empty states', (tester) async {
+    await _pumpApp(tester);
+
+    await tester.drag(
+      find.byKey(const Key('home-page')),
+      const Offset(0, -360),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('No source-linked cards yet.'), findsOneWidget);
+
+    await tester.drag(
+      find.byKey(const Key('home-page')),
+      const Offset(0, -260),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('No source-linked insights yet.'), findsOneWidget);
   });
 
   testWidgets('raw capture stays visible when agent processing fails', (
@@ -83,7 +368,7 @@ void main() {
       tester,
       overrides: [
         captureOrchestratorProvider.overrideWithValue(
-          CaptureOrchestrator.local(model: const _FailingModel()),
+          CaptureOrchestrator.local(eventStore: _FailingEventStore()),
         ),
       ],
     );
@@ -100,6 +385,40 @@ void main() {
     );
     expect(find.text(captureText), findsOneWidget);
     expect(find.textContaining('Saved locally, agent failed'), findsOneWidget);
+
+    final state = _readCaptureState(tester);
+    expect(state.records.single.body, captureText);
+    expect(state.records.single.status, 'Saved locally, agent failed');
+    expect(state.memories, isEmpty);
+    expect(state.reviewCandidates, isEmpty);
+    expect(state.traces, isEmpty);
+    expect(state.cards, isEmpty);
+    expect(state.insights, isEmpty);
+    expect(state.todos, isEmpty);
+  });
+
+  testWidgets('quick capture input is locked while processing', (tester) async {
+    await _pumpApp(
+      tester,
+      overrides: [
+        captureOrchestratorProvider.overrideWithValue(
+          CaptureOrchestrator.local(model: const _HangingModel()),
+        ),
+      ],
+    );
+
+    await tester.enterText(
+      find.byKey(const Key('quick-capture-field')),
+      'Keep one capture in flight.',
+    );
+    await tester.tap(find.byKey(const Key('record-capture-button')));
+    await tester.pump();
+
+    final input = tester.widget<TextField>(
+      find.byKey(const Key('quick-capture-field')),
+    );
+    expect(input.enabled, isFalse);
+    expect(find.text('Processing'), findsWidgets);
   });
 
   testWidgets('multiple captures update counters and linked todos', (
@@ -109,13 +428,17 @@ void main() {
 
     await _submitQuickCapture(tester, 'First follow-up for Ada.');
     expect(find.text('1 processed'), findsOneWidget);
-    expect(find.text('1 auto-accepted'), findsOneWidget);
-    expect(find.text('3 linked'), findsOneWidget);
+    expect(find.text('1 accepted'), findsOneWidget);
+    expect(find.text('2 cards'), findsOneWidget);
+    expect(find.text('3 source-linked'), findsOneWidget);
+    expect(find.text('1 linked'), findsOneWidget);
 
     await _submitQuickCapture(tester, 'Second follow-up for Chen.');
     expect(find.text('2 processed'), findsOneWidget);
-    expect(find.text('2 auto-accepted'), findsOneWidget);
-    expect(find.text('4 linked'), findsOneWidget);
+    expect(find.text('2 accepted'), findsOneWidget);
+    expect(find.text('4 cards'), findsOneWidget);
+    expect(find.text('3 source-linked'), findsOneWidget);
+    expect(find.text('2 linked'), findsOneWidget);
   });
 
   testWidgets('sensitive capture can be accepted from Memory review', (
@@ -125,6 +448,13 @@ void main() {
 
     const captureText = 'My API token should be reviewed before storage.';
     await _submitQuickCapture(tester, captureText);
+
+    final stateBeforeReview = _readCaptureState(tester);
+    final record = stateBeforeReview.records.single;
+    final candidate = stateBeforeReview.reviewCandidates.single;
+    expect(candidate.sourceLabel, startsWith('event: evt-'));
+    expect(candidate.sourceLabel, isNot('event: ${record.id}'));
+    expect(stateBeforeReview.cards, hasLength(1));
 
     await tester.scrollUntilVisible(
       find.text('Memory Review'),
@@ -142,12 +472,28 @@ void main() {
 
     expect(find.text('Memory Review'), findsNothing);
     await tester.scrollUntilVisible(
-      find.text('Memory 已入库'),
+      find.text('Memory saved'),
       120,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.text('Memory 已入库'), findsOneWidget);
+    expect(find.text('Memory saved'), findsOneWidget);
     expect(find.textContaining('accepted'), findsWidgets);
+    await tester.scrollUntilVisible(
+      find.text('1 accepted'),
+      -120,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('1 accepted'), findsOneWidget);
+    expect(find.text('1 auto-accepted'), findsNothing);
+
+    final stateAfterReview = _readCaptureState(tester);
+    expect(stateAfterReview.records.single.body, captureText);
+    expect(
+      stateAfterReview.memories.single.sourceRecordId,
+      startsWith('event: evt-'),
+    );
+    expect(stateAfterReview.cards, hasLength(2));
+    expect(stateAfterReview.insights, hasLength(3));
   });
 
   testWidgets('review candidate can be edited before acceptance', (
@@ -187,6 +533,8 @@ void main() {
       state.memories.single.summary,
       'Medication timing needs a user-confirmed follow-up.',
     );
+    expect(state.cards, hasLength(2));
+    expect(state.insights, hasLength(3));
   });
 
   testWidgets('review candidate can be rejected without creating Memory', (
@@ -212,7 +560,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Memory Review'), findsNothing);
-    expect(find.text('Memory 已入库'), findsNothing);
+    expect(find.text('Memory saved'), findsNothing);
   });
 
   testWidgets('generated todo appears on Todos tab with source link', (
@@ -222,14 +570,22 @@ void main() {
 
     const captureText = 'Call Mina about launch review and sample todos.';
     await _submitQuickCapture(tester, captureText);
+
+    final state = _readCaptureState(tester);
+    final record = state.records.single;
+    final todo = state.todos.first;
+    expect(todo.sourceLabel, 'source: ${record.id}');
+
     await _openTab(tester, const Key('tab-todos'));
 
     expect(find.byKey(const Key('todos-page')), findsOneWidget);
+    expect(find.byKey(Key('todo-row-${todo.id}')), findsOneWidget);
     expect(find.text('Follow up: $captureText'), findsOneWidget);
     expect(find.text('suggested by agent'), findsOneWidget);
+    expect(find.text('source: ${record.id}'), findsOneWidget);
     expect(
       _visibleTextValues(tester).where(
-        (text) => text.startsWith('source: ') && !text.contains('placeholder'),
+        (text) => text.startsWith('source: ') && !text.contains('sample'),
       ),
       isNotEmpty,
     );
@@ -264,6 +620,20 @@ void main() {
         'pack.todo',
       );
       expect(
+        events
+            .where((event) => event.type == runtime.WnEventTypes.cardCreated)
+            .single
+            .payload['source_refs'],
+        isA<List>(),
+      );
+      expect(
+        events
+            .where((event) => event.type == runtime.WnEventTypes.insightCreated)
+            .single
+            .payload['source_refs'],
+        isA<List>(),
+      );
+      expect(
         traces
             .where((trace) => trace.name == 'runtime.run.completed')
             .map((trace) => trace.packId),
@@ -277,6 +647,13 @@ void main() {
         everyElement('run_completed'),
       );
       expect(database.memoryItems.readAll(status: 'active'), hasLength(1));
+      expect(database.cards.readAll(status: 'active'), hasLength(2));
+      expect(database.insights.readAll(status: 'active'), hasLength(3));
+      expect(
+        (database.cards.readAll(status: 'active').first.sourceRefs.first
+            as Map)['kind'],
+        isNotNull,
+      );
     },
   );
 
@@ -292,41 +669,45 @@ void main() {
     expect(find.text('Trace Console'), findsOneWidget);
   });
 
-  testWidgets('Chat page shows sessions and disabled input placeholder', (
+  testWidgets('Chat page shows local conversation shell and composer', (
     tester,
   ) async {
     await _pumpApp(tester);
     await _openTab(tester, const Key('tab-chat'));
 
     expect(find.byKey(const Key('chat-page')), findsOneWidget);
-    expect(find.text('Sessions'), findsOneWidget);
-    expect(find.text('Daily review'), findsOneWidget);
-    expect(find.text('Memory QA'), findsOneWidget);
-    expect(find.text('Agent Pack sandbox'), findsOneWidget);
+    expect(find.text('History'), findsOneWidget);
+    expect(find.text('No local sessions yet.'), findsOneWidget);
+    expect(find.text('Local chat'), findsOneWidget);
     expect(
-      find.text('Ask WideNote about a record, Memory item, or pack run...'),
+      find.text('Ask a question about records, Memory, or todos.'),
       findsOneWidget,
     );
+    expect(find.text('Ask'), findsOneWidget);
 
     final input = tester.widget<TextField>(find.byType(TextField));
-    expect(input.enabled, isFalse);
+    expect(input.enabled, isTrue);
   });
 }
 
 Future<void> _pumpApp(
   WidgetTester tester, {
   WideNoteLocalDatabase? database,
+  Locale locale = const Locale('en'),
   List<Override> overrides = const [],
+  bool closeDatabase = true,
 }) async {
   final localDatabase = database ?? WideNoteLocalDatabase.inMemory();
-  addTearDown(localDatabase.close);
+  if (closeDatabase) {
+    addTearDown(localDatabase.close);
+  }
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         localDatabaseProvider.overrideWithValue(localDatabase),
         ...overrides,
       ],
-      child: const WideNoteApp(),
+      child: WideNoteApp(locale: locale),
     ),
   );
   await tester.pumpAndSettle();
@@ -355,14 +736,18 @@ Future<void> _scrollHomeActionIntoView(
     120,
     scrollable: find.byType(Scrollable).first,
   );
-  final center = tester.getCenter(finder);
-  if (center.dy > 500) {
-    await tester.drag(
-      find.byType(Scrollable).first,
-      Offset(0, -(center.dy - 440)),
-    );
-    await tester.pumpAndSettle();
-  }
+}
+
+CaptureState _readCaptureState(WidgetTester tester) {
+  return ProviderScope.containerOf(
+    tester.element(find.byType(WideNoteApp)),
+  ).read(captureControllerProvider);
+}
+
+CaptureInputState _readCaptureInputState(WidgetTester tester) {
+  return ProviderScope.containerOf(
+    tester.element(find.byType(WideNoteApp)),
+  ).read(captureInputControllerProvider);
 }
 
 Iterable<String> _visibleTextValues(WidgetTester tester) {
@@ -372,11 +757,33 @@ Iterable<String> _visibleTextValues(WidgetTester tester) {
       .whereType<String>();
 }
 
-final class _FailingModel implements runtime.ModelClient {
-  const _FailingModel();
+final class _FailingEventStore implements runtime.EventStore {
+  @override
+  Future<void> append(runtime.WnEvent event) {
+    throw StateError('event store unavailable');
+  }
+
+  @override
+  Future<void> appendAll(Iterable<runtime.WnEvent> events) {
+    throw StateError('event store unavailable');
+  }
+
+  @override
+  Future<List<runtime.WnEvent>> readAll() async => const <runtime.WnEvent>[];
+
+  @override
+  Future<runtime.WnEvent?> readById(String id) async => null;
+
+  @override
+  Future<List<runtime.WnEvent>> readByType(String type) async =>
+      const <runtime.WnEvent>[];
+}
+
+final class _HangingModel implements runtime.ModelClient {
+  const _HangingModel();
 
   @override
   Future<runtime.ModelResponse> complete(runtime.ModelRequest request) {
-    throw StateError('model unavailable');
+    return Completer<runtime.ModelResponse>().future;
   }
 }

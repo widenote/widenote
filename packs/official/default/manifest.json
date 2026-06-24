@@ -48,7 +48,10 @@
         "wn.card.created",
         "wn.memory.proposed",
         "wn.insight.created"
-      ]
+      ],
+      "retry_policy": {
+        "max_attempts": 2
+      }
     }
   ],
   "model_profiles": [

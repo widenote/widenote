@@ -25,6 +25,14 @@ When a limit is exceeded, split by responsibility before adding more behavior.
 
 Generated files are exempt, but their source of truth and generator command must be documented.
 
+Single-file and single-function rules:
+
+- Do not add unrelated responsibilities to a file just because it is nearby.
+- If a source file is already over budget, only make a narrow fix there; create a follow-up split plan before adding new feature behavior.
+- Extract private helpers, small value objects, presenters, or widgets when a function needs multiple phases of logic.
+- Prefer named boundaries over dense inline callbacks when state, permission, persistence, or runtime behavior crosses layers.
+- Keep public APIs boring: small names, clear ownership, and README coverage before reuse.
+
 ## Test Rules
 
 - Runtime, Memory, model routing, permissions, data storage, and migrations need unit tests.
@@ -33,6 +41,23 @@ Generated files are exempt, but their source of truth and generator command must
 - Tests must use deterministic fake agents and fake model clients by default.
 - Real model-provider tests are opt-in and must not be required for CI.
 - Do not store API keys in the repository, fixtures, snapshots, logs, or docs.
+
+UI test gate:
+
+- Rendering, state changes, navigation, dialogs, sheets, buttons, gestures, empty/loading/error states, localization, and user interaction all count as UI changes.
+- Every UI change must include widget tests in the same work package unless the change is docs-only or purely non-rendered plumbing.
+- Widget tests should assert the user-visible result, not only that a widget type exists.
+- Golden tests are optional; they do not replace interaction and state coverage.
+- When a UI change depends on runtime/model output, use fake runtime events or fake model clients.
+
+Validation gates:
+
+- Docs-only changes can use lightweight checks such as `rg` link/text checks.
+- Code changes should run the narrowest useful unit/widget/orchestration tests for the touched surface.
+- Changes to cross-layer flows should include at least one end-to-end or orchestration proof with deterministic fakes.
+- Android emulator validation is required for Android-specific behavior and high-risk mobile user journeys.
+- Android emulator validation must be serialized across agents; only one agent owns the emulator at a time.
+- If emulator validation is skipped, record why and list the remaining risk.
 
 ## Agent Runtime Test Minimum
 
@@ -67,18 +92,37 @@ Rules:
 
 When using subagents:
 
-- Assign disjoint write scopes.
+- Split by durable ownership boundary, not by arbitrary file count.
+- Assign disjoint write scopes before work starts; overlapping files require coordinator approval.
+- Give each subagent the required context files, related ADRs/RFCs, expected tests, and allowed write paths.
 - Require tests in the same work package.
 - Require module README updates when module shape changes.
-- Require a summary of changed files, tests run, and known risks.
-- Main coordinator owns final integration, conflict resolution, and verification.
+- Require a summary of changed files, tests run, skipped checks, and known risks.
+- Keep Android emulator validation in a single serialized lane coordinated by the main agent.
+- Main coordinator owns final integration, conflict resolution, latest-state verification, and final risk call.
+
+Good splits include:
+
+- Schema/contracts vs generated bindings.
+- Runtime kernel vs UI presentation.
+- Local persistence vs feature read models.
+- Independent feature modules with separate tests.
+
+Bad splits include:
+
+- Multiple agents editing the same navigation, bootstrap, database, or generated file at once.
+- One agent changing public contracts while another consumes guessed contract behavior.
+- UI changes without an assigned widget-test owner.
 
 ## External Review Rules
 
 External model review is useful but not authoritative.
 
-- Use Kimi or another configured model to review architecture and code when credentials work.
+- Use Kimi or another configured model to review architecture, rules, code risk, or test gaps when credentials work.
 - Never paste secrets into files.
 - Redact or omit sensitive user data.
-- Treat review findings as input; fix confirmed issues locally.
-
+- Do not send raw private records, API keys, credentials, local database contents, or unpublished user data.
+- Do not let external review override accepted ADRs/RFCs, public schemas, repository instructions, or local test evidence.
+- Treat review findings as input; verify and fix confirmed issues locally.
+- Keep durable review conclusions in `docs/research/` before linking them from ADRs or RFCs.
+- Do not block local progress on external review when credentials, quota, network, or tool access fail; record the skipped review and continue with local checks.

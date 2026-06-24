@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { readFileSync } from "node:fs";
+import { pathToFileURL } from "node:url";
 
 const TODO_PERMISSION = "todo.suggest";
 const TODO_OUTPUT_EVENT = "wn.todo.suggested";
@@ -17,40 +18,46 @@ const requiredManifestFields = [
   "agents",
 ];
 
-const manifestPaths = process.argv.slice(2);
-
-if (manifestPaths.length === 0) {
-  console.error(
-    "Usage: node tools/pack_validator/validate.mjs <manifest.json> [...]",
-  );
-  process.exit(2);
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  runCli(process.argv.slice(2));
 }
 
-let failureCount = 0;
-
-for (const manifestPath of manifestPaths) {
-  const errors = validateManifestPath(manifestPath);
-
-  if (errors.length > 0) {
-    failureCount += errors.length;
-    console.error(`${manifestPath}: invalid`);
-    for (const error of errors) {
-      console.error(`  - ${error}`);
-    }
-    continue;
+function runCli(manifestPaths) {
+  if (manifestPaths.length === 0) {
+    console.error(
+      "Usage: node tools/pack_validator/validate.mjs <manifest.json> [...]",
+    );
+    process.exit(2);
   }
 
-  console.log(`${manifestPath}: ok`);
+  let failureCount = 0;
+
+  for (const manifestPath of manifestPaths) {
+    const errors = validateManifestPath(manifestPath);
+
+    if (errors.length > 0) {
+      failureCount += errors.length;
+      console.error(`${manifestPath}: invalid`);
+      for (const error of errors) {
+        console.error(`  - ${error}`);
+      }
+      continue;
+    }
+
+    console.log(`${manifestPath}: ok`);
+  }
+
+  if (failureCount > 0) {
+    console.error(
+      `${failureCount} validation ${
+        failureCount === 1 ? "error" : "errors"
+      } found.`,
+    );
+    process.exit(1);
+  }
 }
 
-if (failureCount > 0) {
-  console.error(
-    `${failureCount} validation ${failureCount === 1 ? "error" : "errors"} found.`,
-  );
-  process.exit(1);
-}
-
-function validateManifestPath(manifestPath) {
+export function validateManifestPath(manifestPath) {
   let manifest;
 
   try {
@@ -62,7 +69,7 @@ function validateManifestPath(manifestPath) {
   return validateManifest(manifest);
 }
 
-function validateManifest(manifest) {
+export function validateManifest(manifest) {
   const errors = [];
 
   if (!isPlainObject(manifest)) {
@@ -82,12 +89,15 @@ function validateManifest(manifest) {
   const modelProfiles = Array.isArray(manifest.model_profiles)
     ? manifest.model_profiles
     : [];
+  const tools = Array.isArray(manifest.tools) ? manifest.tools : [];
 
   validateAgentIds(agents, errors);
   validateSubscriptions(subscriptions, agents, errors);
+  validateSubscriptionDependencies(subscriptions, errors);
   validateAgentPermissions(agents, packPermissionSet, errors);
   validateModelProfileRefs(agents, modelProfiles, errors);
   validateOutputEvents(agents, errors);
+  validateExecutableSafety(agents, tools, errors);
   validatePhaseOneGuardrails(manifest, agents, errors);
 
   return errors;
@@ -125,6 +135,10 @@ function validateBasicShape(manifest, errors) {
     });
   }
 
+  if ("tools" in manifest) {
+    validateObjectArrayField(manifest, "tools", errors, { allowEmpty: true });
+  }
+
   if (Array.isArray(manifest.subscriptions)) {
     manifest.subscriptions.forEach((subscription, index) => {
       if (!isPlainObject(subscription)) {
@@ -139,6 +153,15 @@ function validateBasicShape(manifest, errors) {
         errors,
       );
       validateStringValue(subscription.agent_id, `${path}.agent_id`, errors);
+
+      if ("depends_on" in subscription) {
+        validateStringArrayValue(
+          subscription.depends_on,
+          `${path}.depends_on`,
+          errors,
+          { allowEmpty: true },
+        );
+      }
     });
   }
 
@@ -168,6 +191,10 @@ function validateBasicShape(manifest, errors) {
           errors,
         );
       }
+
+      if ("retry_policy" in agent) {
+        validateRetryPolicy(agent.retry_policy, `${path}.retry_policy`, errors);
+      }
     });
   }
 
@@ -178,6 +205,23 @@ function validateBasicShape(manifest, errors) {
       }
 
       validateStringValue(profile.id, `model_profiles[${index}].id`, errors);
+    });
+  }
+
+  if (Array.isArray(manifest.tools)) {
+    manifest.tools.forEach((tool, index) => {
+      if (!isPlainObject(tool)) {
+        return;
+      }
+
+      const path = `tools[${index}]`;
+      validateStringValue(tool.id, `${path}.id`, errors);
+      if ("permissions" in tool) {
+        validateStringArrayValue(tool.permissions, `${path}.permissions`, errors);
+      }
+      if ("side_effect" in tool) {
+        validateStringValue(tool.side_effect, `${path}.side_effect`, errors);
+      }
     });
   }
 }
@@ -225,6 +269,76 @@ function validateSubscriptions(subscriptions, agents, errors) {
       );
     }
   });
+}
+
+function validateSubscriptionDependencies(subscriptions, errors) {
+  const seen = new Set();
+  const byId = new Map();
+
+  subscriptions.forEach((subscription, index) => {
+    if (!isPlainObject(subscription) || typeof subscription.id !== "string") {
+      return;
+    }
+
+    if (seen.has(subscription.id)) {
+      errors.push(
+        `subscriptions[${index}].id duplicates subscription id: ${subscription.id}`,
+      );
+      return;
+    }
+
+    seen.add(subscription.id);
+    byId.set(subscription.id, subscription);
+  });
+
+  subscriptions.forEach((subscription, index) => {
+    if (!isPlainObject(subscription) || !Array.isArray(subscription.depends_on)) {
+      return;
+    }
+
+    for (const dependency of subscription.depends_on) {
+      if (dependency === subscription.id) {
+        errors.push(`subscriptions[${index}].depends_on references itself`);
+      }
+      if (typeof dependency === "string" && !byId.has(dependency)) {
+        errors.push(
+          `subscriptions[${index}].depends_on references missing subscription: ${dependency}`,
+        );
+      }
+    }
+  });
+
+  const visiting = new Set();
+  const visited = new Set();
+
+  for (const id of byId.keys()) {
+    visitSubscription(id, byId, visiting, visited, errors);
+  }
+}
+
+function visitSubscription(id, byId, visiting, visited, errors) {
+  if (visited.has(id)) {
+    return;
+  }
+  if (visiting.has(id)) {
+    errors.push(`subscriptions.depends_on contains a cycle at ${id}`);
+    return;
+  }
+
+  const subscription = byId.get(id);
+  if (!subscription || !Array.isArray(subscription.depends_on)) {
+    visited.add(id);
+    return;
+  }
+
+  visiting.add(id);
+  for (const dependency of subscription.depends_on) {
+    if (typeof dependency === "string" && byId.has(dependency)) {
+      visitSubscription(dependency, byId, visiting, visited, errors);
+    }
+  }
+  visiting.delete(id);
+  visited.add(id);
 }
 
 function validateAgentPermissions(agents, packPermissionSet, errors) {
@@ -284,6 +398,32 @@ function validateOutputEvents(agents, errors) {
       `agents[${index}].output_events`,
       errors,
     );
+  });
+}
+
+function validateExecutableSafety(agents, tools, errors) {
+  agents.forEach((agent, index) => {
+    if (!isPlainObject(agent)) {
+      return;
+    }
+
+    if (agent.runtime === "script") {
+      errors.push(
+        `agents[${index}].runtime script is deferred until a sandbox RFC is accepted`,
+      );
+    }
+  });
+
+  tools.forEach((tool, index) => {
+    if (!isPlainObject(tool)) {
+      return;
+    }
+
+    if (tool.side_effect === "script_execution") {
+      errors.push(
+        `tools[${index}].side_effect script_execution is deferred until a sandbox RFC is accepted`,
+      );
+    }
   });
 }
 
@@ -363,6 +503,22 @@ function validatePhaseOneGuardrails(manifest, agents, errors) {
 function validateStringField(object, field, errors) {
   if (field in object) {
     validateStringValue(object[field], field, errors);
+  }
+}
+
+function validateRetryPolicy(value, path, errors) {
+  if (!isPlainObject(value)) {
+    errors.push(`${path} must be an object`);
+    return;
+  }
+
+  if (!Number.isInteger(value.max_attempts)) {
+    errors.push(`${path}.max_attempts must be an integer`);
+    return;
+  }
+
+  if (value.max_attempts < 1 || value.max_attempts > 5) {
+    errors.push(`${path}.max_attempts must be between 1 and 5`);
   }
 }
 

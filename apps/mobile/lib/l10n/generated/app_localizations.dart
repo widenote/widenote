@@ -1,0 +1,1112 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/intl.dart' as intl;
+
+import 'app_localizations_en.dart';
+import 'app_localizations_zh.dart';
+
+// ignore_for_file: type=lint
+
+/// Callers can lookup localized strings with an instance of AppLocalizations
+/// returned by `AppLocalizations.of(context)`.
+///
+/// Applications need to include `AppLocalizations.delegate()` in their app's
+/// `localizationDelegates` list, and the locales they support in the app's
+/// `supportedLocales` list. For example:
+///
+/// ```dart
+/// import 'generated/app_localizations.dart';
+///
+/// return MaterialApp(
+///   localizationsDelegates: AppLocalizations.localizationsDelegates,
+///   supportedLocales: AppLocalizations.supportedLocales,
+///   home: MyApplicationHome(),
+/// );
+/// ```
+///
+/// ## Update pubspec.yaml
+///
+/// Please make sure to update your pubspec.yaml to include the following
+/// packages:
+///
+/// ```yaml
+/// dependencies:
+///   # Internationalization support.
+///   flutter_localizations:
+///     sdk: flutter
+///   intl: any # Use the pinned version from flutter_localizations
+///
+///   # Rest of dependencies
+/// ```
+///
+/// ## iOS Applications
+///
+/// iOS applications define key application metadata, including supported
+/// locales, in an Info.plist file that is built into the application bundle.
+/// To configure the locales supported by your app, you’ll need to edit this
+/// file.
+///
+/// First, open your project’s ios/Runner.xcworkspace Xcode workspace file.
+/// Then, in the Project Navigator, open the Info.plist file under the Runner
+/// project’s Runner folder.
+///
+/// Next, select the Information Property List item, select Add Item from the
+/// Editor menu, then select Localizations from the pop-up menu.
+///
+/// Select and expand the newly-created Localizations item then, for each
+/// locale your application supports, add a new item and select the locale
+/// you wish to add from the pop-up menu in the Value field. This list should
+/// be consistent with the languages listed in the AppLocalizations.supportedLocales
+/// property.
+abstract class AppLocalizations {
+  AppLocalizations(String locale)
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+
+  final String localeName;
+
+  static AppLocalizations of(BuildContext context) {
+    return Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+  }
+
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
+
+  /// A list of this localizations delegate along with the default localizations
+  /// delegates.
+  ///
+  /// Returns a list of localizations delegates containing this delegate along with
+  /// GlobalMaterialLocalizations.delegate, GlobalCupertinoLocalizations.delegate,
+  /// and GlobalWidgetsLocalizations.delegate.
+  ///
+  /// Additional delegates can be added by appending to this list in
+  /// MaterialApp. This list does not have to be used at all if a custom list
+  /// of delegates is preferred or required.
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
+
+  /// A list of this localizations delegate's supported locales.
+  static const List<Locale> supportedLocales = <Locale>[
+    Locale('en'),
+    Locale('zh'),
+  ];
+
+  /// No description provided for @appTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'WideNote / 广记'**
+  String get appTitle;
+
+  /// No description provided for @tabHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get tabHome;
+
+  /// No description provided for @tabChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat'**
+  String get tabChat;
+
+  /// No description provided for @tabTodos.
+  ///
+  /// In en, this message translates to:
+  /// **'Todos'**
+  String get tabTodos;
+
+  /// No description provided for @tabPlugins.
+  ///
+  /// In en, this message translates to:
+  /// **'Packs'**
+  String get tabPlugins;
+
+  /// No description provided for @homeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'quick capture -> timeline -> memory -> insight'**
+  String get homeSubtitle;
+
+  /// No description provided for @quickCaptureTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Capture'**
+  String get quickCaptureTitle;
+
+  /// No description provided for @quickCaptureHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop a thought, meeting note, promise, or raw memory...'**
+  String get quickCaptureHint;
+
+  /// No description provided for @recordButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Record'**
+  String get recordButton;
+
+  /// No description provided for @recordButtonProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing'**
+  String get recordButtonProcessing;
+
+  /// No description provided for @stageProcessingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing'**
+  String get stageProcessingTitle;
+
+  /// No description provided for @stageProcessingRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'running'**
+  String get stageProcessingRunning;
+
+  /// No description provided for @stageProcessingIdle.
+  ///
+  /// In en, this message translates to:
+  /// **'idle'**
+  String get stageProcessingIdle;
+
+  /// No description provided for @stageProcessingProcessed.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 processed} other{{count} processed}}'**
+  String stageProcessingProcessed(int count);
+
+  /// No description provided for @stageMemoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory'**
+  String get stageMemoryTitle;
+
+  /// No description provided for @stageMemoryReady.
+  ///
+  /// In en, this message translates to:
+  /// **'ready'**
+  String get stageMemoryReady;
+
+  /// No description provided for @stageMemoryAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 accepted} other{{count} accepted}}'**
+  String stageMemoryAccepted(int count);
+
+  /// No description provided for @stageMemoryAcceptedReview.
+  ///
+  /// In en, this message translates to:
+  /// **'{acceptedCount, plural, =1{1 accepted} other{{acceptedCount} accepted}} · {reviewCount, plural, =1{1 review} other{{reviewCount} review}}'**
+  String stageMemoryAcceptedReview(int acceptedCount, int reviewCount);
+
+  /// No description provided for @stageCardsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cards'**
+  String get stageCardsTitle;
+
+  /// No description provided for @stageCardsWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'waiting'**
+  String get stageCardsWaiting;
+
+  /// No description provided for @stageCardsLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 card} other{{count} cards}}'**
+  String stageCardsLinked(int count);
+
+  /// No description provided for @stageInsightTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Insight'**
+  String get stageInsightTitle;
+
+  /// No description provided for @stageInsightDraftLane.
+  ///
+  /// In en, this message translates to:
+  /// **'draft lane'**
+  String get stageInsightDraftLane;
+
+  /// No description provided for @stageInsightWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'waiting'**
+  String get stageInsightWaiting;
+
+  /// No description provided for @stageInsightSourceLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 source-linked} other{{count} source-linked}}'**
+  String stageInsightSourceLinked(int count);
+
+  /// No description provided for @stageTodoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Todo'**
+  String get stageTodoTitle;
+
+  /// No description provided for @stageTodoLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 linked} other{{count} linked}}'**
+  String stageTodoLinked(int count);
+
+  /// No description provided for @cardsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cards'**
+  String get cardsTitle;
+
+  /// No description provided for @cardsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No source-linked cards yet.'**
+  String get cardsEmpty;
+
+  /// No description provided for @insightsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Insights'**
+  String get insightsTitle;
+
+  /// No description provided for @insightsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No source-linked insights yet.'**
+  String get insightsEmpty;
+
+  /// No description provided for @recordsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Records'**
+  String get recordsTitle;
+
+  /// No description provided for @recordsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No local records yet.'**
+  String get recordsEmpty;
+
+  /// No description provided for @memoryReviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory Review'**
+  String get memoryReviewTitle;
+
+  /// No description provided for @memoryReviewEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No Memory candidates need review.'**
+  String get memoryReviewEmpty;
+
+  /// No description provided for @memoryReviewAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get memoryReviewAccept;
+
+  /// No description provided for @memoryReviewEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get memoryReviewEdit;
+
+  /// No description provided for @memoryReviewReject.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get memoryReviewReject;
+
+  /// No description provided for @memoryEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Memory'**
+  String get memoryEditTitle;
+
+  /// No description provided for @cancelButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancelButton;
+
+  /// No description provided for @saveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get saveButton;
+
+  /// No description provided for @memoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory'**
+  String get memoryTitle;
+
+  /// No description provided for @memoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory queue is waiting for first capture.'**
+  String get memoryEmpty;
+
+  /// No description provided for @traceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trace'**
+  String get traceTitle;
+
+  /// No description provided for @traceEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Local runtime events appear here after captures or pack runs.'**
+  String get traceEmpty;
+
+  /// No description provided for @recordStatusSavedProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved locally, processing'**
+  String get recordStatusSavedProcessing;
+
+  /// No description provided for @recordStatusProcessed.
+  ///
+  /// In en, this message translates to:
+  /// **'Processed locally'**
+  String get recordStatusProcessed;
+
+  /// No description provided for @recordStatusAgentFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved locally, agent failed'**
+  String get recordStatusAgentFailed;
+
+  /// No description provided for @memoryAutoSavedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory saved automatically'**
+  String get memoryAutoSavedTitle;
+
+  /// No description provided for @memoryNeedsReviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory needs review'**
+  String get memoryNeedsReviewTitle;
+
+  /// No description provided for @memorySavedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory saved'**
+  String get memorySavedTitle;
+
+  /// No description provided for @statusAutoAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'auto-accepted'**
+  String get statusAutoAccepted;
+
+  /// No description provided for @statusNeedsReview.
+  ///
+  /// In en, this message translates to:
+  /// **'needs review'**
+  String get statusNeedsReview;
+
+  /// No description provided for @statusAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'accepted'**
+  String get statusAccepted;
+
+  /// No description provided for @confidenceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{confidence} confidence'**
+  String confidenceLabel(String confidence);
+
+  /// No description provided for @confidenceHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'high'**
+  String get confidenceHigh;
+
+  /// No description provided for @confidenceMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'medium'**
+  String get confidenceMedium;
+
+  /// No description provided for @confidenceLow.
+  ///
+  /// In en, this message translates to:
+  /// **'low'**
+  String get confidenceLow;
+
+  /// No description provided for @todoFollowUpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow up: {body}'**
+  String todoFollowUpTitle(String body);
+
+  /// No description provided for @todoSeedReviewMemory.
+  ///
+  /// In en, this message translates to:
+  /// **'Review generated Memory before export'**
+  String get todoSeedReviewMemory;
+
+  /// No description provided for @todoSeedConfirmBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm backup permission boundary'**
+  String get todoSeedConfirmBackup;
+
+  /// No description provided for @todoSourceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'source: {sourceId}'**
+  String todoSourceLabel(String sourceId);
+
+  /// No description provided for @todoStatusNeedsExplicitPermission.
+  ///
+  /// In en, this message translates to:
+  /// **'needs explicit permission'**
+  String get todoStatusNeedsExplicitPermission;
+
+  /// No description provided for @todoStatusSuggestedByAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'suggested by agent'**
+  String get todoStatusSuggestedByAgent;
+
+  /// No description provided for @chatTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat'**
+  String get chatTitle;
+
+  /// No description provided for @chatSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask WideNote with local Memory, records, and todos as context.'**
+  String get chatSubtitle;
+
+  /// No description provided for @chatSessionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sessions'**
+  String get chatSessionsTitle;
+
+  /// No description provided for @chatDailyReviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily review'**
+  String get chatDailyReviewTitle;
+
+  /// No description provided for @chatDailyReviewSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask about today, linked records, and pending todos.'**
+  String get chatDailyReviewSubtitle;
+
+  /// No description provided for @chatMemoryQaTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory QA'**
+  String get chatMemoryQaTitle;
+
+  /// No description provided for @chatMemoryQaSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Query editable local Memory with visible provenance.'**
+  String get chatMemoryQaSubtitle;
+
+  /// No description provided for @chatAgentPackSandboxTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent Pack sandbox'**
+  String get chatAgentPackSandboxTitle;
+
+  /// No description provided for @chatAgentPackSandboxSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Try pack actions after permission review.'**
+  String get chatAgentPackSandboxSubtitle;
+
+  /// No description provided for @chatInputTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Input'**
+  String get chatInputTitle;
+
+  /// No description provided for @chatInputHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask WideNote about a record, Memory item, or pack run...'**
+  String get chatInputHint;
+
+  /// No description provided for @chatLoadErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat failed to load'**
+  String get chatLoadErrorTitle;
+
+  /// No description provided for @chatLoadErrorBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The local chat could not be opened. Please try again.'**
+  String get chatLoadErrorBody;
+
+  /// No description provided for @chatHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get chatHistoryTitle;
+
+  /// No description provided for @chatEmptySessions.
+  ///
+  /// In en, this message translates to:
+  /// **'No local sessions yet.'**
+  String get chatEmptySessions;
+
+  /// No description provided for @chatSessionSwitchDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait for the current answer before switching sessions.'**
+  String get chatSessionSwitchDisabled;
+
+  /// No description provided for @chatLocalConversationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Local chat'**
+  String get chatLocalConversationTitle;
+
+  /// No description provided for @chatEmptyConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask a question about records, Memory, or todos.'**
+  String get chatEmptyConversation;
+
+  /// No description provided for @chatSendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Send failed'**
+  String get chatSendFailed;
+
+  /// No description provided for @retryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retryButton;
+
+  /// No description provided for @chatSourcesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sources'**
+  String get chatSourcesTitle;
+
+  /// No description provided for @chatTyping.
+  ///
+  /// In en, this message translates to:
+  /// **'Answering with local context...'**
+  String get chatTyping;
+
+  /// No description provided for @chatComposerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask'**
+  String get chatComposerTitle;
+
+  /// No description provided for @chatComposerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask about local records, Memory, or todos...'**
+  String get chatComposerHint;
+
+  /// No description provided for @chatSendButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get chatSendButton;
+
+  /// No description provided for @chatGeneratingButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Generating'**
+  String get chatGeneratingButton;
+
+  /// No description provided for @chatAssistantEmptyReply.
+  ///
+  /// In en, this message translates to:
+  /// **'I don\'t have local records to cite yet. Add captures first, then I can answer from Memory, records, and todos.'**
+  String get chatAssistantEmptyReply;
+
+  /// No description provided for @chatAssistantContextReply.
+  ///
+  /// In en, this message translates to:
+  /// **'I found {count} local context item(s). {lead}\n\n{sources}'**
+  String chatAssistantContextReply(int count, String lead, String sources);
+
+  /// No description provided for @chatAssistantLeadTodo.
+  ///
+  /// In en, this message translates to:
+  /// **'The closest match is a todo: {excerpt}'**
+  String chatAssistantLeadTodo(String excerpt);
+
+  /// No description provided for @chatAssistantLeadMemory.
+  ///
+  /// In en, this message translates to:
+  /// **'The closest match is a Memory item: {excerpt}'**
+  String chatAssistantLeadMemory(String excerpt);
+
+  /// No description provided for @chatAssistantLeadCapture.
+  ///
+  /// In en, this message translates to:
+  /// **'The closest match is a raw record: {excerpt}'**
+  String chatAssistantLeadCapture(String excerpt);
+
+  /// No description provided for @chatAssistantLeadGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'The closest match is: {excerpt}'**
+  String chatAssistantLeadGeneric(String excerpt);
+
+  /// No description provided for @chatContextMemoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory'**
+  String get chatContextMemoryTitle;
+
+  /// No description provided for @chatContextRecordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Record'**
+  String get chatContextRecordTitle;
+
+  /// No description provided for @chatContextTodoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Todo'**
+  String get chatContextTodoTitle;
+
+  /// No description provided for @chatContextUntitledCapture.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled local capture'**
+  String get chatContextUntitledCapture;
+
+  /// No description provided for @chatContextUntitledTodo.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled todo suggestion'**
+  String get chatContextUntitledTodo;
+
+  /// No description provided for @todosTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Todos'**
+  String get todosTitle;
+
+  /// No description provided for @todosSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Source-linked actions with visible record provenance.'**
+  String get todosSubtitle;
+
+  /// No description provided for @todosSurfaceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Source-linked todos'**
+  String get todosSurfaceTitle;
+
+  /// No description provided for @todosEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No source-linked todos yet.'**
+  String get todosEmpty;
+
+  /// No description provided for @pluginsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Packs'**
+  String get pluginsTitle;
+
+  /// No description provided for @pluginsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pack controls for permissions, models, backup, and traces.'**
+  String get pluginsSubtitle;
+
+  /// No description provided for @pluginsControlEntriesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Control entries'**
+  String get pluginsControlEntriesTitle;
+
+  /// No description provided for @pluginsPackLibraryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pack Library'**
+  String get pluginsPackLibraryTitle;
+
+  /// No description provided for @pluginsPackLibrarySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Install, inspect, and disable Agent Packs.'**
+  String get pluginsPackLibrarySubtitle;
+
+  /// No description provided for @pluginsPackLibraryStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'available'**
+  String get pluginsPackLibraryStatus;
+
+  /// No description provided for @pluginsPermissionGateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission Gate'**
+  String get pluginsPermissionGateTitle;
+
+  /// No description provided for @pluginsPermissionGateSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review sensitive capabilities before a pack can run.'**
+  String get pluginsPermissionGateSubtitle;
+
+  /// No description provided for @pluginsPermissionGateStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'explicit'**
+  String get pluginsPermissionGateStatus;
+
+  /// No description provided for @pluginsModelProviderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Model Provider'**
+  String get pluginsModelProviderTitle;
+
+  /// No description provided for @pluginsModelProviderSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure local or BYOK model access.'**
+  String get pluginsModelProviderSubtitle;
+
+  /// No description provided for @pluginsModelProviderStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'not connected'**
+  String get pluginsModelProviderStatus;
+
+  /// No description provided for @pluginsModelProviderConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 provider} other{{count} providers}}'**
+  String pluginsModelProviderConfigured(int count);
+
+  /// No description provided for @pluginsBackupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup'**
+  String get pluginsBackupTitle;
+
+  /// No description provided for @pluginsBackupSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export or import the local WideNote backup.'**
+  String get pluginsBackupSubtitle;
+
+  /// No description provided for @pluginsBackupStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'local-first'**
+  String get pluginsBackupStatus;
+
+  /// No description provided for @pluginsTraceConsoleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trace Console'**
+  String get pluginsTraceConsoleTitle;
+
+  /// No description provided for @pluginsTraceConsoleSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspect pack runs, permissions, and generated outputs.'**
+  String get pluginsTraceConsoleSubtitle;
+
+  /// No description provided for @pluginsTraceConsoleStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'trace-ready'**
+  String get pluginsTraceConsoleStatus;
+
+  /// No description provided for @providerSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Model Providers'**
+  String get providerSettingsTitle;
+
+  /// No description provided for @providerSettingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Local provider setup for runtime and Agent Pack model access.'**
+  String get providerSettingsSubtitle;
+
+  /// No description provided for @providerSettingsAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add provider'**
+  String get providerSettingsAdd;
+
+  /// No description provided for @providerSettingsListTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Providers'**
+  String get providerSettingsListTitle;
+
+  /// No description provided for @providerSettingsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No providers configured.'**
+  String get providerSettingsEmpty;
+
+  /// No description provided for @providerSettingsDefaultTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get providerSettingsDefaultTag;
+
+  /// No description provided for @providerConnectionUntested.
+  ///
+  /// In en, this message translates to:
+  /// **'Untested'**
+  String get providerConnectionUntested;
+
+  /// No description provided for @providerConnectionTesting.
+  ///
+  /// In en, this message translates to:
+  /// **'Testing'**
+  String get providerConnectionTesting;
+
+  /// No description provided for @providerConnectionConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get providerConnectionConnected;
+
+  /// No description provided for @providerConnectionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get providerConnectionFailed;
+
+  /// No description provided for @providerActionSetDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Set default'**
+  String get providerActionSetDefault;
+
+  /// No description provided for @providerActionTestConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Test connection'**
+  String get providerActionTestConnection;
+
+  /// No description provided for @providerActionEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit provider'**
+  String get providerActionEdit;
+
+  /// No description provided for @providerDialogAddTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add provider'**
+  String get providerDialogAddTitle;
+
+  /// No description provided for @providerDialogEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit provider'**
+  String get providerDialogEditTitle;
+
+  /// No description provided for @providerFieldProviderType.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider type'**
+  String get providerFieldProviderType;
+
+  /// No description provided for @providerFieldDisplayName.
+  ///
+  /// In en, this message translates to:
+  /// **'Display name'**
+  String get providerFieldDisplayName;
+
+  /// No description provided for @providerFieldEndpoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Endpoint'**
+  String get providerFieldEndpoint;
+
+  /// No description provided for @providerFieldModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get providerFieldModel;
+
+  /// No description provided for @providerFieldApiKey.
+  ///
+  /// In en, this message translates to:
+  /// **'API key'**
+  String get providerFieldApiKey;
+
+  /// No description provided for @providerApiKeyKeepSessionHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave blank to keep the session credential.'**
+  String get providerApiKeyKeepSessionHelper;
+
+  /// No description provided for @providerInvalidEndpoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Endpoint is not a valid URI.'**
+  String get providerInvalidEndpoint;
+
+  /// No description provided for @providerSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider could not be saved.'**
+  String get providerSaveFailed;
+
+  /// No description provided for @backupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup'**
+  String get backupTitle;
+
+  /// No description provided for @backupSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export and import local records, Memory, cards, chat, providers, todos, and trace data.'**
+  String get backupSubtitle;
+
+  /// No description provided for @backupIdleStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Local data stays on this device until you export or paste a backup.'**
+  String get backupIdleStatus;
+
+  /// No description provided for @backupExportReadyStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup JSON is ready.'**
+  String get backupExportReadyStatus;
+
+  /// No description provided for @backupImportDoneStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup imported into local storage.'**
+  String get backupImportDoneStatus;
+
+  /// No description provided for @backupFailedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup failed: {details}'**
+  String backupFailedStatus(String details);
+
+  /// No description provided for @backupExportSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get backupExportSectionTitle;
+
+  /// No description provided for @backupExportButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Export JSON'**
+  String get backupExportButton;
+
+  /// No description provided for @backupExportEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Export creates a versioned local backup JSON with manifest counts.'**
+  String get backupExportEmpty;
+
+  /// No description provided for @backupSecretWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Backups include provider API keys. Keep exported JSON private.'**
+  String get backupSecretWarning;
+
+  /// No description provided for @backupManifestCountsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manifest counts'**
+  String get backupManifestCountsTitle;
+
+  /// No description provided for @backupCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{section}: {count}'**
+  String backupCount(String section, int count);
+
+  /// No description provided for @backupExportJsonTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup JSON'**
+  String get backupExportJsonTitle;
+
+  /// No description provided for @backupImportSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get backupImportSectionTitle;
+
+  /// No description provided for @backupImportHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste a WideNote local backup JSON...'**
+  String get backupImportHint;
+
+  /// No description provided for @backupImportButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Import backup'**
+  String get backupImportButton;
+}
+
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
+  const _AppLocalizationsDelegate();
+
+  @override
+  Future<AppLocalizations> load(Locale locale) {
+    return SynchronousFuture<AppLocalizations>(lookupAppLocalizations(locale));
+  }
+
+  @override
+  bool isSupported(Locale locale) =>
+      <String>['en', 'zh'].contains(locale.languageCode);
+
+  @override
+  bool shouldReload(_AppLocalizationsDelegate old) => false;
+}
+
+AppLocalizations lookupAppLocalizations(Locale locale) {
+  // Lookup logic when only language code is specified.
+  switch (locale.languageCode) {
+    case 'en':
+      return AppLocalizationsEn();
+    case 'zh':
+      return AppLocalizationsZh();
+  }
+
+  throw FlutterError(
+    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
+}

@@ -2,9 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../l10n/l10n.dart';
 import '../application/capture_controller.dart';
+import '../application/capture_input_controller.dart';
 import '../domain/capture_models.dart';
+import '../media/capture_media.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -25,6 +29,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     final captureState = ref.watch(captureControllerProvider);
+    final inputState = ref.watch(captureInputControllerProvider);
 
     return ListView(
       key: const Key('home-page'),
@@ -35,7 +40,13 @@ class _HomePageState extends ConsumerState<HomePage> {
         _QuickCaptureCard(
           controller: _captureTextController,
           onSubmit: _submitCapture,
+          onAddPhoto: _addPhoto,
+          onAddVoice: _addVoice,
+          onAddShare: _addShare,
+          onRemoveAttachment: _removeAttachment,
+          onAcceptAttachmentReview: _acceptAttachmentReview,
           isProcessing: captureState.isProcessing,
+          inputState: inputState,
         ),
         if (captureState.errorMessage != null) ...[
           const SizedBox(height: 12),
@@ -53,6 +64,10 @@ class _HomePageState extends ConsumerState<HomePage> {
         const SizedBox(height: 16),
         _StageGrid(state: captureState),
         const SizedBox(height: 16),
+        _CardsSection(cards: captureState.cards),
+        const SizedBox(height: 16),
+        _InsightsSection(insights: captureState.insights),
+        const SizedBox(height: 16),
         _RecordsSection(records: captureState.records),
         const SizedBox(height: 16),
         _MemorySection(memories: captureState.memories),
@@ -63,13 +78,50 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   void _submitCapture() {
-    unawaited(
-      ref
-          .read(captureControllerProvider.notifier)
-          .submitCapture(_captureTextController.text),
+    final inputState = ref.read(captureInputControllerProvider);
+    if (!inputState.canSubmit) {
+      ref.read(captureInputControllerProvider.notifier).markSubmitBlocked();
+      return;
+    }
+    final attachments = List<CaptureAttachment>.unmodifiable(
+      inputState.attachments,
     );
-    _captureTextController.clear();
+    final future = ref
+        .read(captureControllerProvider.notifier)
+        .submitCapture(_captureTextController.text, attachments: attachments);
+    if (_captureTextController.text.trim().isNotEmpty ||
+        attachments.isNotEmpty) {
+      _captureTextController.clear();
+      ref.read(captureInputControllerProvider.notifier).clear();
+    }
+    unawaited(future);
     FocusScope.of(context).unfocus();
+  }
+
+  void _addPhoto() {
+    unawaited(ref.read(captureInputControllerProvider.notifier).addPhoto());
+  }
+
+  void _addVoice() {
+    unawaited(
+      ref.read(captureInputControllerProvider.notifier).addVoiceTranscript(),
+    );
+  }
+
+  void _addShare() {
+    unawaited(
+      ref.read(captureInputControllerProvider.notifier).addShareImport(),
+    );
+  }
+
+  void _removeAttachment(String id) {
+    ref.read(captureInputControllerProvider.notifier).removeAttachment(id);
+  }
+
+  void _acceptAttachmentReview(String id) {
+    ref
+        .read(captureInputControllerProvider.notifier)
+        .acceptAttachmentReview(id);
   }
 
   void _acceptReviewCandidate(String id) {
@@ -126,8 +178,9 @@ class _MemoryEditDialogState extends State<_MemoryEditDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return AlertDialog(
-      title: const Text('Edit Memory'),
+      title: Text(l10n.memoryEditTitle),
       content: TextField(
         key: const Key('memory-review-edit-field'),
         controller: _controller,
@@ -138,12 +191,12 @@ class _MemoryEditDialogState extends State<_MemoryEditDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancelButton),
         ),
         FilledButton(
           key: const Key('memory-review-edit-save'),
           onPressed: () => Navigator.of(context).pop(_controller.text),
-          child: const Text('Save'),
+          child: Text(l10n.saveButton),
         ),
       ],
     );
@@ -155,21 +208,47 @@ class _HomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    final l10n = context.l10n;
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'WideNote / 广记',
-          style: Theme.of(
-            context,
-          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'quick capture -> timeline -> memory -> insight',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.appTitle,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                l10n.homeSubtitle,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
           ),
+        ),
+        const SizedBox(width: 12),
+        Wrap(
+          spacing: 8,
+          children: [
+            IconButton.filledTonal(
+              key: const Key('open-timeline-button'),
+              tooltip: 'Open Timeline',
+              onPressed: () => context.go('/timeline'),
+              icon: const Icon(Icons.view_timeline_outlined),
+            ),
+            IconButton.outlined(
+              key: const Key('open-timeline-search-button'),
+              tooltip: 'Search',
+              onPressed: () => context.go('/timeline/search'),
+              icon: const Icon(Icons.search),
+            ),
+          ],
         ),
       ],
     );
@@ -180,46 +259,211 @@ class _QuickCaptureCard extends StatelessWidget {
   const _QuickCaptureCard({
     required this.controller,
     required this.onSubmit,
+    required this.onAddPhoto,
+    required this.onAddVoice,
+    required this.onAddShare,
+    required this.onRemoveAttachment,
+    required this.onAcceptAttachmentReview,
     required this.isProcessing,
+    required this.inputState,
   });
 
   final TextEditingController controller;
   final VoidCallback onSubmit;
+  final VoidCallback onAddPhoto;
+  final VoidCallback onAddVoice;
+  final VoidCallback onAddShare;
+  final ValueChanged<String> onRemoveAttachment;
+  final ValueChanged<String> onAcceptAttachmentReview;
   final bool isProcessing;
+  final CaptureInputState inputState;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final inputBusy = inputState.isBusy || isProcessing;
     return _Surface(
       icon: Icons.flash_on_outlined,
-      title: 'Quick Capture',
+      title: l10n.quickCaptureTitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           TextField(
             key: const Key('quick-capture-field'),
             controller: controller,
+            enabled: !inputBusy,
             minLines: 3,
             maxLines: 5,
             textInputAction: TextInputAction.newline,
-            decoration: const InputDecoration(
-              hintText:
-                  'Drop a thought, meeting note, promise, or raw memory...',
-            ),
+            decoration: InputDecoration(hintText: l10n.quickCaptureHint),
           ),
           const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerRight,
-            child: FilledButton.icon(
-              key: const Key('record-capture-button'),
-              onPressed: isProcessing ? null : onSubmit,
-              icon: const Icon(Icons.fiber_manual_record),
-              label: Text(isProcessing ? '处理中' : '记录'),
-            ),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                key: const Key('add-photo-attachment-button'),
+                onPressed: inputBusy ? null : onAddPhoto,
+                icon: const Icon(Icons.add_photo_alternate_outlined),
+                label: const Text('Photo'),
+              ),
+              OutlinedButton.icon(
+                key: const Key('add-voice-attachment-button'),
+                onPressed: inputBusy ? null : onAddVoice,
+                icon: const Icon(Icons.graphic_eq_outlined),
+                label: const Text('Voice'),
+              ),
+              OutlinedButton.icon(
+                key: const Key('add-share-import-button'),
+                onPressed: inputBusy ? null : onAddShare,
+                icon: const Icon(Icons.file_upload_outlined),
+                label: const Text('Import'),
+              ),
+              FilledButton.icon(
+                key: const Key('record-capture-button'),
+                onPressed: isProcessing ? null : onSubmit,
+                icon: const Icon(Icons.fiber_manual_record),
+                label: Text(
+                  isProcessing
+                      ? l10n.recordButtonProcessing
+                      : l10n.recordButton,
+                ),
+              ),
+            ],
           ),
+          if (inputState.errorMessage != null) ...[
+            const SizedBox(height: 8),
+            _ErrorLine(text: inputState.errorMessage!),
+          ],
+          if (inputState.hasAttachments) ...[
+            const SizedBox(height: 12),
+            _AttachmentPreviewList(
+              attachments: inputState.attachments,
+              onRemove: onRemoveAttachment,
+              onAcceptReview: onAcceptAttachmentReview,
+            ),
+          ],
         ],
       ),
     );
   }
+}
+
+class _AttachmentPreviewList extends StatelessWidget {
+  const _AttachmentPreviewList({
+    required this.attachments,
+    required this.onRemove,
+    required this.onAcceptReview,
+  });
+
+  final List<CaptureAttachment> attachments;
+  final ValueChanged<String> onRemove;
+  final ValueChanged<String> onAcceptReview;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        for (var index = 0; index < attachments.length; index++) ...[
+          if (index > 0) const Divider(height: 20),
+          _AttachmentPreviewRow(
+            attachment: attachments[index],
+            onRemove: onRemove,
+            onAcceptReview: onAcceptReview,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _AttachmentPreviewRow extends StatelessWidget {
+  const _AttachmentPreviewRow({
+    required this.attachment,
+    required this.onRemove,
+    required this.onAcceptReview,
+  });
+
+  final CaptureAttachment attachment;
+  final ValueChanged<String> onRemove;
+  final ValueChanged<String> onAcceptReview;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(_attachmentIcon(attachment.kind), color: colorScheme.primary),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                attachment.displayName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _attachmentStateLine(attachment),
+                key: Key('attachment-state-${attachment.id}'),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  if (attachment.state == CaptureAttachmentState.needsReview)
+                    TextButton.icon(
+                      key: Key('review-attachment-${attachment.id}'),
+                      onPressed: () => onAcceptReview(attachment.id),
+                      icon: const Icon(Icons.fact_check_outlined),
+                      label: const Text('Use transcript'),
+                    ),
+                  IconButton(
+                    key: Key('remove-attachment-${attachment.id}'),
+                    onPressed: () => onRemove(attachment.id),
+                    tooltip: 'Remove',
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+IconData _attachmentIcon(CaptureAssetKind kind) {
+  return switch (kind) {
+    CaptureAssetKind.photo => Icons.image_outlined,
+    CaptureAssetKind.voice => Icons.graphic_eq_outlined,
+    CaptureAssetKind.share => Icons.file_upload_outlined,
+  };
+}
+
+String _attachmentStateLine(CaptureAttachment attachment) {
+  final reason = attachment.reviewReason;
+  return switch (attachment.state) {
+    CaptureAttachmentState.ready => 'Ready · ${attachment.previewText}',
+    CaptureAttachmentState.needsReview =>
+      'Transcript needs review · ${attachment.previewText}',
+    CaptureAttachmentState.blocked =>
+      'Blocked attachment · ${reason ?? 'asset safety'} · Preview hidden until review.',
+  };
 }
 
 class _StageGrid extends StatelessWidget {
@@ -229,36 +473,50 @@ class _StageGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final stages = [
       _StageData(
-        title: 'Processing',
+        title: l10n.stageProcessingTitle,
         detail: state.isProcessing
-            ? 'running'
+            ? l10n.stageProcessingRunning
             : state.records.isEmpty
-            ? 'idle'
-            : '${state.records.length} processed',
+            ? l10n.stageProcessingIdle
+            : l10n.stageProcessingProcessed(state.records.length),
         icon: Icons.sync_outlined,
         color: const Color(0xFF2367C9),
       ),
       _StageData(
-        title: 'Memory',
+        title: l10n.stageMemoryTitle,
         detail: state.memories.isEmpty && state.reviewCandidates.isEmpty
-            ? 'ready'
+            ? l10n.stageMemoryReady
             : state.reviewCandidates.isEmpty
-            ? '${state.memories.length} auto-accepted'
-            : '${state.memories.length} accepted · ${state.reviewCandidates.length} review',
+            ? l10n.stageMemoryAccepted(state.memories.length)
+            : l10n.stageMemoryAcceptedReview(
+                state.memories.length,
+                state.reviewCandidates.length,
+              ),
         icon: Icons.psychology_alt_outlined,
         color: const Color(0xFF178D66),
       ),
-      const _StageData(
-        title: 'Insight',
-        detail: 'draft lane',
-        icon: Icons.lightbulb_outline,
-        color: Color(0xFFB7791F),
+      _StageData(
+        title: l10n.stageCardsTitle,
+        detail: state.cards.isEmpty
+            ? l10n.stageCardsWaiting
+            : l10n.stageCardsLinked(state.cards.length),
+        icon: Icons.dashboard_customize_outlined,
+        color: const Color(0xFF7A5AF8),
       ),
       _StageData(
-        title: 'Todo',
-        detail: '${state.todos.length} linked',
+        title: l10n.stageInsightTitle,
+        detail: state.insights.isEmpty
+            ? l10n.stageInsightWaiting
+            : l10n.stageInsightSourceLinked(state.insights.length),
+        icon: Icons.lightbulb_outline,
+        color: const Color(0xFFB7791F),
+      ),
+      _StageData(
+        title: l10n.stageTodoTitle,
+        detail: l10n.stageTodoLinked(state.todos.length),
         icon: Icons.task_alt_outlined,
         color: const Color(0xFFC94A3A),
       ),
@@ -325,6 +583,66 @@ class _StageCard extends StatelessWidget {
   }
 }
 
+class _CardsSection extends StatelessWidget {
+  const _CardsSection({required this.cards});
+
+  final List<SourceCard> cards;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return _Surface(
+      icon: Icons.dashboard_customize_outlined,
+      title: l10n.cardsTitle,
+      child: cards.isEmpty
+          ? _EmptyLine(text: l10n.cardsEmpty)
+          : _Rows(
+              children: [
+                for (final card in cards)
+                  _RecordRow(
+                    key: Key('card-row-${card.id}'),
+                    title: card.title,
+                    subtitle:
+                        '${card.summary} · ${card.sourceLabel} · '
+                        '${card.kindLabel} · ${card.statusLabel}',
+                    icon: Icons.view_agenda_outlined,
+                  ),
+              ],
+            ),
+    );
+  }
+}
+
+class _InsightsSection extends StatelessWidget {
+  const _InsightsSection({required this.insights});
+
+  final List<SourceInsight> insights;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return _Surface(
+      icon: Icons.lightbulb_outline,
+      title: l10n.insightsTitle,
+      child: insights.isEmpty
+          ? _EmptyLine(text: l10n.insightsEmpty)
+          : _Rows(
+              children: [
+                for (final insight in insights)
+                  _RecordRow(
+                    key: Key('insight-row-${insight.id}'),
+                    title: insight.title,
+                    subtitle:
+                        '${insight.summary} · ${insight.sourceLabel} · '
+                        '${insight.kindLabel} · ${insight.metricLabel}',
+                    icon: Icons.insights_outlined,
+                  ),
+              ],
+            ),
+    );
+  }
+}
+
 class _RecordsSection extends StatelessWidget {
   const _RecordsSection({required this.records});
 
@@ -332,17 +650,20 @@ class _RecordsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return _Surface(
       icon: Icons.article_outlined,
-      title: 'Records',
+      title: l10n.recordsTitle,
       child: records.isEmpty
-          ? const _EmptyLine(text: 'No local records yet.')
+          ? _EmptyLine(text: l10n.recordsEmpty)
           : _Rows(
               children: [
                 for (final record in records)
                   _RecordRow(
+                    key: Key('record-row-${record.id}'),
                     title: record.body,
-                    subtitle: '${record.id} · ${record.status}',
+                    subtitle:
+                        '${record.id} · ${_localizedRecordStatus(l10n, record.status)}',
                     icon: Icons.notes_outlined,
                   ),
               ],
@@ -366,11 +687,12 @@ class _MemoryReviewSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return _Surface(
       icon: Icons.rate_review_outlined,
-      title: 'Memory Review',
+      title: l10n.memoryReviewTitle,
       child: candidates.isEmpty
-          ? const _EmptyLine(text: 'No Memory candidates need review.')
+          ? _EmptyLine(text: l10n.memoryReviewEmpty)
           : _Rows(
               children: [
                 for (final candidate in candidates)
@@ -401,6 +723,7 @@ class _ReviewCandidateRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -440,19 +763,19 @@ class _ReviewCandidateRow extends StatelessWidget {
                     key: Key('memory-review-accept-${candidate.id}'),
                     onPressed: () => onAccept(candidate.id),
                     icon: const Icon(Icons.check),
-                    label: const Text('Accept'),
+                    label: Text(l10n.memoryReviewAccept),
                   ),
                   OutlinedButton.icon(
                     key: Key('memory-review-edit-${candidate.id}'),
                     onPressed: () => onEdit(candidate),
                     icon: const Icon(Icons.edit_outlined),
-                    label: const Text('Edit'),
+                    label: Text(l10n.memoryReviewEdit),
                   ),
                   TextButton.icon(
                     key: Key('memory-review-reject-${candidate.id}'),
                     onPressed: () => onReject(candidate.id),
                     icon: const Icon(Icons.close),
-                    label: const Text('Reject'),
+                    label: Text(l10n.memoryReviewReject),
                   ),
                 ],
               ),
@@ -471,18 +794,22 @@ class _MemorySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return _Surface(
       icon: Icons.psychology_alt_outlined,
-      title: 'Memory',
+      title: l10n.memoryTitle,
       child: memories.isEmpty
-          ? const _EmptyLine(text: 'Memory queue is waiting for first capture.')
+          ? _EmptyLine(text: l10n.memoryEmpty)
           : _Rows(
               children: [
                 for (final memory in memories)
                   _RecordRow(
-                    title: memory.title,
+                    key: Key('memory-row-${memory.id}'),
+                    title: _localizedMemoryTitle(l10n, memory.title),
                     subtitle:
-                        '${memory.summary} · ${memory.sourceRecordId} · ${memory.confidenceLabel} · ${memory.statusLabel}',
+                        '${memory.summary} · ${memory.sourceRecordId} · '
+                        '${_localizedConfidenceLabel(l10n, memory.confidenceLabel)} · '
+                        '${_localizedStatusLabel(l10n, memory.statusLabel)}',
                     icon: Icons.auto_awesome_outlined,
                   ),
               ],
@@ -498,17 +825,17 @@ class _TraceSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return _Surface(
       icon: Icons.account_tree_outlined,
-      title: 'Trace',
+      title: l10n.traceTitle,
       child: traces.isEmpty
-          ? const _EmptyLine(
-              text: 'Trace 占位: local runtime events appear here.',
-            )
+          ? _EmptyLine(text: l10n.traceEmpty)
           : _Rows(
               children: [
                 for (final trace in traces)
                   _RecordRow(
+                    key: Key('trace-row-${trace.id}'),
                     title: trace.label,
                     subtitle:
                         '${trace.detail} · ${_traceOrigin(trace)} · ${trace.timeLabel}',
@@ -525,6 +852,43 @@ String _traceOrigin(TraceEvent trace) {
   final agent = trace.agentId ?? 'system';
   final run = trace.runId ?? 'no-run';
   return '$pack · $agent · $run';
+}
+
+String _localizedRecordStatus(AppLocalizations l10n, String status) {
+  return switch (status) {
+    'Saved locally, processing' => l10n.recordStatusSavedProcessing,
+    'Processed locally' => l10n.recordStatusProcessed,
+    'Saved locally, agent failed' => l10n.recordStatusAgentFailed,
+    _ => status,
+  };
+}
+
+String _localizedMemoryTitle(AppLocalizations l10n, String title) {
+  return switch (title) {
+    'memory.auto_saved' => l10n.memoryAutoSavedTitle,
+    'memory.needs_review' => l10n.memoryNeedsReviewTitle,
+    'memory.accepted' => l10n.memorySavedTitle,
+    _ => title,
+  };
+}
+
+String _localizedStatusLabel(AppLocalizations l10n, String status) {
+  return switch (status) {
+    'auto-accepted' => l10n.statusAutoAccepted,
+    'needs review' => l10n.statusNeedsReview,
+    'accepted' => l10n.statusAccepted,
+    _ => status,
+  };
+}
+
+String _localizedConfidenceLabel(AppLocalizations l10n, String label) {
+  final confidence = switch (label) {
+    'high confidence' => l10n.confidenceHigh,
+    'medium confidence' => l10n.confidenceMedium,
+    'low confidence' => l10n.confidenceLow,
+    _ => null,
+  };
+  return confidence == null ? label : l10n.confidenceLabel(confidence);
 }
 
 class _Surface extends StatelessWidget {
@@ -592,6 +956,7 @@ class _Rows extends StatelessWidget {
 
 class _RecordRow extends StatelessWidget {
   const _RecordRow({
+    super.key,
     required this.title,
     required this.subtitle,
     required this.icon,

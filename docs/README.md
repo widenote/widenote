@@ -18,15 +18,20 @@ For current decisions, start with [decisions/index.md](./decisions/index.md).
 
 - [Phase One Technical Plan](./architecture/phase-one-technical-plan.md)
 - [Phase One Module Plan](./architecture/phase-one-module-plan.md)
-- [Engineering Rules](./architecture/engineering-rules.md)
+- [Engineering Rules](./architecture/engineering-rules.md) for complexity budgets, test gates, subagent collaboration, external review boundaries, and emulator validation
 - [Phase One Technical Research](./research/2026-06-23-phase-one-technical-research.md)
 - [MemeX Design Critique](./research/2026-06-23-memex-design-critique.md)
 - [Kimi Review Follow-Up](./research/2026-06-23-kimi-review-followup.md)
+- [External Review Follow-Up](./research/2026-06-24-external-review-followup.md)
+- [Android Emulator QA](./research/2026-06-24-android-emulator-qa.md)
+- [MemeX Phase-One Parity Gap Audit](./research/2026-06-24-memex-phase-one-gap-audit.md)
 
 ## Active RFCs
 
 - [Memory Model](./rfcs/memory-model.md)
 - [Agent Pack Schema](./rfcs/agent-pack-schema.md)
+- [Model Provider Settings](./rfcs/model-provider-settings.md)
+- [Phase-One Product Scope](./rfcs/phase-one-product-scope.md)
 
 ## Contract Sources
 
