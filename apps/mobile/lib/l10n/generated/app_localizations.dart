@@ -134,6 +134,18 @@ abstract class AppLocalizations {
   /// **'quick capture -> timeline -> memory -> insight'**
   String get homeSubtitle;
 
+  /// No description provided for @homeOpenTimelineTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Timeline'**
+  String get homeOpenTimelineTooltip;
+
+  /// No description provided for @homeSearchTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get homeSearchTooltip;
+
   /// No description provided for @quickCaptureTitle.
   ///
   /// In en, this message translates to:
@@ -145,6 +157,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Drop a thought, meeting note, promise, or raw memory...'**
   String get quickCaptureHint;
+
+  /// No description provided for @captureModeText.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get captureModeText;
+
+  /// No description provided for @captureModeVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice draft'**
+  String get captureModeVoice;
+
+  /// No description provided for @captureModeImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get captureModeImport;
+
+  /// No description provided for @captureModeTextTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Write first'**
+  String get captureModeTextTitle;
+
+  /// No description provided for @captureModeTextBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Fast local capture stays the default. Agents organize it after the raw record is saved.'**
+  String get captureModeTextBody;
+
+  /// No description provided for @captureVoiceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add optional context while a voice draft waits for transcript review...'**
+  String get captureVoiceHint;
+
+  /// No description provided for @captureVoiceDraftTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice draft'**
+  String get captureVoiceDraftTitle;
+
+  /// No description provided for @captureVoiceDraftBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This slice uses a transcript draft adapter. No microphone permission starts here; save only after review.'**
+  String get captureVoiceDraftBody;
+
+  /// No description provided for @captureVoiceDraftButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add voice draft'**
+  String get captureVoiceDraftButton;
+
+  /// No description provided for @captureImportHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add context for an imported photo, link, or file...'**
+  String get captureImportHint;
+
+  /// No description provided for @captureImportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bring material in'**
+  String get captureImportTitle;
+
+  /// No description provided for @captureImportBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach a photo or shared item, keep the raw source, then let WideNote create source-linked Memory.'**
+  String get captureImportBody;
+
+  /// No description provided for @captureImportPhotoButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add photo'**
+  String get captureImportPhotoButton;
+
+  /// No description provided for @captureImportShareButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Import item'**
+  String get captureImportShareButton;
+
+  /// No description provided for @captureActionPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo'**
+  String get captureActionPhoto;
+
+  /// No description provided for @captureActionVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice'**
+  String get captureActionVoice;
+
+  /// No description provided for @captureActionImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get captureActionImport;
+
+  /// No description provided for @captureUseTranscriptButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Use transcript'**
+  String get captureUseTranscriptButton;
+
+  /// No description provided for @captureRemoveAttachmentTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get captureRemoveAttachmentTooltip;
+
+  /// No description provided for @captureAttachmentReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready · {preview}'**
+  String captureAttachmentReady(String preview);
+
+  /// No description provided for @captureAttachmentNeedsReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcript needs review · {preview}'**
+  String captureAttachmentNeedsReview(String preview);
+
+  /// No description provided for @captureAttachmentBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked attachment · {reason} · Preview hidden until review.'**
+  String captureAttachmentBlocked(String reason);
 
   /// No description provided for @recordButton.
   ///

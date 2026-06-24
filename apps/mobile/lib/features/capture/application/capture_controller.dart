@@ -42,7 +42,7 @@ class CaptureController extends Notifier<CaptureState> {
     }
     if (attachments.any((attachment) => !attachment.isReady)) {
       state = state.copyWith(
-        errorMessage: 'Review or remove pending attachments before recording.',
+        errorMessage: 'Review or remove pending attachments before saving.',
       );
       return;
     }

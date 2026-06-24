@@ -4,6 +4,39 @@ import 'package:widenote_mobile/features/capture/application/capture_input_contr
 import 'package:widenote_mobile/features/capture/media/capture_media.dart';
 
 void main() {
+  test('capture mode switching does not call media adapters', () async {
+    final photo = _CountingPhotoAdapter();
+    final voice = _CountingVoiceAdapter();
+    final share = _CountingShareAdapter();
+    final container = ProviderContainer(
+      overrides: [
+        photoCaptureAdapterProvider.overrideWithValue(photo),
+        voiceCaptureAdapterProvider.overrideWithValue(voice),
+        shareImportAdapterProvider.overrideWithValue(share),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final controller = container.read(captureInputControllerProvider.notifier);
+    controller
+      ..setMode(CaptureMode.voice)
+      ..setMode(CaptureMode.import)
+      ..setMode(CaptureMode.text);
+
+    final state = container.read(captureInputControllerProvider);
+    expect(state.mode, CaptureMode.text);
+    expect(state.attachments, isEmpty);
+    expect(photo.calls, 0);
+    expect(voice.calls, 0);
+    expect(share.calls, 0);
+
+    await controller.addVoiceTranscript();
+
+    expect(voice.calls, 1);
+    expect(photo.calls, 0);
+    expect(share.calls, 0);
+  });
+
   test('fake photo adapter creates safe attachment metadata', () async {
     final raw = await FakePhotoCaptureAdapter(
       now: () => DateTime.utc(2026, 6, 24, 1),
@@ -92,4 +125,40 @@ void main() {
     expect(attachment.state, CaptureAttachmentState.ready);
     expect(adapterMetadata['url'], 'https://example.test/widenote');
   });
+}
+
+final class _CountingPhotoAdapter implements PhotoCaptureAdapter {
+  int calls = 0;
+
+  @override
+  Future<RawCaptureAsset> pickPhoto() {
+    calls += 1;
+    return FakePhotoCaptureAdapter(
+      now: () => DateTime.utc(2026, 6, 24, 6),
+    ).pickPhoto();
+  }
+}
+
+final class _CountingVoiceAdapter implements VoiceCaptureAdapter {
+  int calls = 0;
+
+  @override
+  Future<RawCaptureAsset> captureVoiceTranscript() {
+    calls += 1;
+    return FakeVoiceCaptureAdapter(
+      now: () => DateTime.utc(2026, 6, 24, 7),
+    ).captureVoiceTranscript();
+  }
+}
+
+final class _CountingShareAdapter implements ShareImportAdapter {
+  int calls = 0;
+
+  @override
+  Future<RawCaptureAsset> importSharedItem() {
+    calls += 1;
+    return FakeShareImportAdapter(
+      now: () => DateTime.utc(2026, 6, 24, 8),
+    ).importSharedItem();
+  }
 }

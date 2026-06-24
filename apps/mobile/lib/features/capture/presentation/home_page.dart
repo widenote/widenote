@@ -2,13 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../l10n/l10n.dart';
 import '../application/capture_controller.dart';
 import '../application/capture_input_controller.dart';
 import '../domain/capture_models.dart';
 import '../media/capture_media.dart';
+import 'capture_console.dart';
+import 'home_header.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -35,11 +36,12 @@ class _HomePageState extends ConsumerState<HomePage> {
       key: const Key('home-page'),
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 112),
       children: [
-        const _HomeHeader(),
+        const HomeHeader(),
         const SizedBox(height: 16),
-        _QuickCaptureCard(
+        CaptureConsole(
           controller: _captureTextController,
           onSubmit: _submitCapture,
+          onModeChanged: _setCaptureMode,
           onAddPhoto: _addPhoto,
           onAddVoice: _addVoice,
           onAddShare: _addShare,
@@ -100,6 +102,10 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   void _addPhoto() {
     unawaited(ref.read(captureInputControllerProvider.notifier).addPhoto());
+  }
+
+  void _setCaptureMode(CaptureMode mode) {
+    ref.read(captureInputControllerProvider.notifier).setMode(mode);
   }
 
   void _addVoice() {
@@ -201,269 +207,6 @@ class _MemoryEditDialogState extends State<_MemoryEditDialog> {
       ],
     );
   }
-}
-
-class _HomeHeader extends StatelessWidget {
-  const _HomeHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.appTitle,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                l10n.homeSubtitle,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 12),
-        Wrap(
-          spacing: 8,
-          children: [
-            IconButton.filledTonal(
-              key: const Key('open-timeline-button'),
-              tooltip: 'Open Timeline',
-              onPressed: () => context.go('/timeline'),
-              icon: const Icon(Icons.view_timeline_outlined),
-            ),
-            IconButton.outlined(
-              key: const Key('open-timeline-search-button'),
-              tooltip: 'Search',
-              onPressed: () => context.go('/timeline/search'),
-              icon: const Icon(Icons.search),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _QuickCaptureCard extends StatelessWidget {
-  const _QuickCaptureCard({
-    required this.controller,
-    required this.onSubmit,
-    required this.onAddPhoto,
-    required this.onAddVoice,
-    required this.onAddShare,
-    required this.onRemoveAttachment,
-    required this.onAcceptAttachmentReview,
-    required this.isProcessing,
-    required this.inputState,
-  });
-
-  final TextEditingController controller;
-  final VoidCallback onSubmit;
-  final VoidCallback onAddPhoto;
-  final VoidCallback onAddVoice;
-  final VoidCallback onAddShare;
-  final ValueChanged<String> onRemoveAttachment;
-  final ValueChanged<String> onAcceptAttachmentReview;
-  final bool isProcessing;
-  final CaptureInputState inputState;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final inputBusy = inputState.isBusy || isProcessing;
-    return _Surface(
-      icon: Icons.flash_on_outlined,
-      title: l10n.quickCaptureTitle,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          TextField(
-            key: const Key('quick-capture-field'),
-            controller: controller,
-            enabled: !inputBusy,
-            minLines: 3,
-            maxLines: 5,
-            textInputAction: TextInputAction.newline,
-            decoration: InputDecoration(hintText: l10n.quickCaptureHint),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              OutlinedButton.icon(
-                key: const Key('add-photo-attachment-button'),
-                onPressed: inputBusy ? null : onAddPhoto,
-                icon: const Icon(Icons.add_photo_alternate_outlined),
-                label: const Text('Photo'),
-              ),
-              OutlinedButton.icon(
-                key: const Key('add-voice-attachment-button'),
-                onPressed: inputBusy ? null : onAddVoice,
-                icon: const Icon(Icons.graphic_eq_outlined),
-                label: const Text('Voice'),
-              ),
-              OutlinedButton.icon(
-                key: const Key('add-share-import-button'),
-                onPressed: inputBusy ? null : onAddShare,
-                icon: const Icon(Icons.file_upload_outlined),
-                label: const Text('Import'),
-              ),
-              FilledButton.icon(
-                key: const Key('record-capture-button'),
-                onPressed: isProcessing ? null : onSubmit,
-                icon: const Icon(Icons.fiber_manual_record),
-                label: Text(
-                  isProcessing
-                      ? l10n.recordButtonProcessing
-                      : l10n.recordButton,
-                ),
-              ),
-            ],
-          ),
-          if (inputState.errorMessage != null) ...[
-            const SizedBox(height: 8),
-            _ErrorLine(text: inputState.errorMessage!),
-          ],
-          if (inputState.hasAttachments) ...[
-            const SizedBox(height: 12),
-            _AttachmentPreviewList(
-              attachments: inputState.attachments,
-              onRemove: onRemoveAttachment,
-              onAcceptReview: onAcceptAttachmentReview,
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _AttachmentPreviewList extends StatelessWidget {
-  const _AttachmentPreviewList({
-    required this.attachments,
-    required this.onRemove,
-    required this.onAcceptReview,
-  });
-
-  final List<CaptureAttachment> attachments;
-  final ValueChanged<String> onRemove;
-  final ValueChanged<String> onAcceptReview;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        for (var index = 0; index < attachments.length; index++) ...[
-          if (index > 0) const Divider(height: 20),
-          _AttachmentPreviewRow(
-            attachment: attachments[index],
-            onRemove: onRemove,
-            onAcceptReview: onAcceptReview,
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-class _AttachmentPreviewRow extends StatelessWidget {
-  const _AttachmentPreviewRow({
-    required this.attachment,
-    required this.onRemove,
-    required this.onAcceptReview,
-  });
-
-  final CaptureAttachment attachment;
-  final ValueChanged<String> onRemove;
-  final ValueChanged<String> onAcceptReview;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(_attachmentIcon(attachment.kind), color: colorScheme.primary),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                attachment.displayName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                _attachmentStateLine(attachment),
-                key: Key('attachment-state-${attachment.id}'),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: [
-                  if (attachment.state == CaptureAttachmentState.needsReview)
-                    TextButton.icon(
-                      key: Key('review-attachment-${attachment.id}'),
-                      onPressed: () => onAcceptReview(attachment.id),
-                      icon: const Icon(Icons.fact_check_outlined),
-                      label: const Text('Use transcript'),
-                    ),
-                  IconButton(
-                    key: Key('remove-attachment-${attachment.id}'),
-                    onPressed: () => onRemove(attachment.id),
-                    tooltip: 'Remove',
-                    icon: const Icon(Icons.close),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-IconData _attachmentIcon(CaptureAssetKind kind) {
-  return switch (kind) {
-    CaptureAssetKind.photo => Icons.image_outlined,
-    CaptureAssetKind.voice => Icons.graphic_eq_outlined,
-    CaptureAssetKind.share => Icons.file_upload_outlined,
-  };
-}
-
-String _attachmentStateLine(CaptureAttachment attachment) {
-  final reason = attachment.reviewReason;
-  return switch (attachment.state) {
-    CaptureAttachmentState.ready => 'Ready · ${attachment.previewText}',
-    CaptureAttachmentState.needsReview =>
-      'Transcript needs review · ${attachment.previewText}',
-    CaptureAttachmentState.blocked =>
-      'Blocked attachment · ${reason ?? 'asset safety'} · Preview hidden until review.',
-  };
 }
 
 class _StageGrid extends StatelessWidget {

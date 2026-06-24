@@ -35,6 +35,8 @@ It should stay short. It points to the right local context instead of duplicatin
 - `docs/research/2026-06-24-android-emulator-qa.md`
 - `docs/research/2026-06-24-android-followup-qa.md`
 - `docs/research/2026-06-24-memex-phase-one-gap-audit.md`
+- `docs/research/2026-06-24-omi-clean-room-plan.md`
+- `docs/research/2026-06-24-omi-android-qa.md`
 
 ## RFCs
 
