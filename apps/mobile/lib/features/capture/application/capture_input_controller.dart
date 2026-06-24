@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../media/capture_media.dart';
 
+enum CaptureMode { text, voice, import }
+
 final assetSafetyGuardProvider = Provider<AssetSafetyGuard>((ref) {
   return const AssetSafetyGuard();
 });
@@ -26,6 +28,7 @@ final captureInputControllerProvider =
 final class CaptureInputState {
   const CaptureInputState({
     required this.attachments,
+    this.mode = CaptureMode.text,
     this.errorMessage,
     this.isBusy = false,
   });
@@ -35,6 +38,7 @@ final class CaptureInputState {
   }
 
   final List<CaptureAttachment> attachments;
+  final CaptureMode mode;
   final String? errorMessage;
   final bool isBusy;
 
@@ -52,12 +56,14 @@ final class CaptureInputState {
 
   CaptureInputState copyWith({
     List<CaptureAttachment>? attachments,
+    CaptureMode? mode,
     String? errorMessage,
     bool? isBusy,
     bool clearError = false,
   }) {
     return CaptureInputState(
       attachments: attachments ?? this.attachments,
+      mode: mode ?? this.mode,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
       isBusy: isBusy ?? this.isBusy,
     );
@@ -67,6 +73,13 @@ final class CaptureInputState {
 class CaptureInputController extends Notifier<CaptureInputState> {
   @override
   CaptureInputState build() => CaptureInputState.initial();
+
+  void setMode(CaptureMode mode) {
+    if (state.mode == mode || state.isBusy) {
+      return;
+    }
+    state = state.copyWith(mode: mode, clearError: true);
+  }
 
   Future<void> addPhoto() async {
     await _capture(() => ref.read(photoCaptureAdapterProvider).pickPhoto());
@@ -123,8 +136,8 @@ class CaptureInputController extends Notifier<CaptureInputState> {
 
   void markSubmitBlocked() {
     final message = state.hasBlockedAttachment
-        ? 'Remove blocked attachments before recording.'
-        : 'Review attachments before recording.';
+        ? 'Remove blocked attachments before saving.'
+        : 'Review attachments before saving.';
     state = state.copyWith(errorMessage: message);
   }
 

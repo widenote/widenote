@@ -16,6 +16,7 @@ Phase one must include these five product areas:
 
 | Area | Required outcome |
 | --- | --- |
+| Capture console and import readiness | Home opens around a local-first capture console with text, voice-draft, photo/share import, attachment review, and raw input preservation. Real microphone recording and live ASR remain permissioned follow-ups. |
 | i18n | The mobile app supports at least Chinese and English through Flutter localization, not hardcoded strings. |
 | Model providers | Users can configure, test, and select local/BYOK model providers through a provider abstraction. |
 | Backup, import, migration | Users can export and import local data through a versioned WideNote backup format, with migration/error handling. |
@@ -107,6 +108,7 @@ The coordinator owns route integration, migration conflict resolution, Kimi revi
 ## Open Questions
 
 - Whether companion characters are required in phase one or should become a phase-two module.
-- Whether media capture is part of this immediate implementation slice or the next slice after the five confirmed areas.
+- Whether real microphone recording and ASR provider integration should land in
+  the next media slice or wait for Agent Pack audio permissions.
 - Whether provider secrets should later move from the local DB into platform
   secure storage while preserving full user-managed backup/restore.

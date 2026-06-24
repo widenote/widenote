@@ -27,10 +27,88 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeSubtitle => '快速记录 -> 时间线 -> 记忆 -> 洞察';
 
   @override
+  String get homeOpenTimelineTooltip => '打开时间线';
+
+  @override
+  String get homeSearchTooltip => '搜索';
+
+  @override
   String get quickCaptureTitle => '快速记录';
 
   @override
   String get quickCaptureHint => '写下一个想法、会议记录、承诺，或一段原始记忆...';
+
+  @override
+  String get captureModeText => '文字';
+
+  @override
+  String get captureModeVoice => '语音草稿';
+
+  @override
+  String get captureModeImport => '导入';
+
+  @override
+  String get captureModeTextTitle => '先记录下来';
+
+  @override
+  String get captureModeTextBody => '默认保持低摩擦本地记录。原始记录保存后，智能体再进行整理。';
+
+  @override
+  String get captureVoiceHint => '给语音草稿补充背景，转写内容需要复核后再保存...';
+
+  @override
+  String get captureVoiceDraftTitle => '语音草稿';
+
+  @override
+  String get captureVoiceDraftBody => '当前切片只使用转写草稿适配器，不会请求麦克风权限；复核后再保存。';
+
+  @override
+  String get captureVoiceDraftButton => '添加语音草稿';
+
+  @override
+  String get captureImportHint => '为导入的照片、链接或文件补充背景...';
+
+  @override
+  String get captureImportTitle => '导入材料';
+
+  @override
+  String get captureImportBody => '附加照片或分享内容，保留原始来源，再交给 WideNote 生成可溯源 Memory。';
+
+  @override
+  String get captureImportPhotoButton => '添加照片';
+
+  @override
+  String get captureImportShareButton => '导入项目';
+
+  @override
+  String get captureActionPhoto => '照片';
+
+  @override
+  String get captureActionVoice => '语音';
+
+  @override
+  String get captureActionImport => '导入';
+
+  @override
+  String get captureUseTranscriptButton => '使用转写';
+
+  @override
+  String get captureRemoveAttachmentTooltip => '移除';
+
+  @override
+  String captureAttachmentReady(String preview) {
+    return '已就绪 · $preview';
+  }
+
+  @override
+  String captureAttachmentNeedsReview(String preview) {
+    return '转写需要复核 · $preview';
+  }
+
+  @override
+  String captureAttachmentBlocked(String reason) {
+    return '附件已阻止 · $reason · 预览在复核前隐藏。';
+  }
 
   @override
   String get recordButton => '记录';

@@ -6,8 +6,53 @@
   "tabTodos": "Todos",
   "tabPlugins": "Packs",
   "homeSubtitle": "quick capture -> timeline -> memory -> insight",
+  "homeOpenTimelineTooltip": "Open Timeline",
+  "homeSearchTooltip": "Search",
   "quickCaptureTitle": "Quick Capture",
   "quickCaptureHint": "Drop a thought, meeting note, promise, or raw memory...",
+  "captureModeText": "Text",
+  "captureModeVoice": "Voice draft",
+  "captureModeImport": "Import",
+  "captureModeTextTitle": "Write first",
+  "captureModeTextBody": "Fast local capture stays the default. Agents organize it after the raw record is saved.",
+  "captureVoiceHint": "Add optional context while a voice draft waits for transcript review...",
+  "captureVoiceDraftTitle": "Voice draft",
+  "captureVoiceDraftBody": "This slice uses a transcript draft adapter. No microphone permission starts here; save only after review.",
+  "captureVoiceDraftButton": "Add voice draft",
+  "captureImportHint": "Add context for an imported photo, link, or file...",
+  "captureImportTitle": "Bring material in",
+  "captureImportBody": "Attach a photo or shared item, keep the raw source, then let WideNote create source-linked Memory.",
+  "captureImportPhotoButton": "Add photo",
+  "captureImportShareButton": "Import item",
+  "captureActionPhoto": "Photo",
+  "captureActionVoice": "Voice",
+  "captureActionImport": "Import",
+  "captureUseTranscriptButton": "Use transcript",
+  "captureRemoveAttachmentTooltip": "Remove",
+  "captureAttachmentReady": "Ready · {preview}",
+  "@captureAttachmentReady": {
+    "placeholders": {
+      "preview": {
+        "type": "String"
+      }
+    }
+  },
+  "captureAttachmentNeedsReview": "Transcript needs review · {preview}",
+  "@captureAttachmentNeedsReview": {
+    "placeholders": {
+      "preview": {
+        "type": "String"
+      }
+    }
+  },
+  "captureAttachmentBlocked": "Blocked attachment · {reason} · Preview hidden until review.",
+  "@captureAttachmentBlocked": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "recordButton": "Record",
   "recordButtonProcessing": "Processing",
   "stageProcessingTitle": "Processing",
