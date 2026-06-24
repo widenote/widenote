@@ -4,15 +4,24 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
+import 'package:widenote_local_db/widenote_local_db.dart';
+import 'package:widenote_model_providers/model_providers.dart';
 
+import 'local_database.dart';
 import '../shared/text_preview.dart';
 
 final modelClientProvider = Provider<runtime.ModelClient>((ref) {
   final qaClient = qaMimoModelClientFromEnvironment();
   if (qaClient is XiaomiMimoModelClient) {
     ref.onDispose(qaClient.close);
+    return qaClient;
   }
-  return qaClient ?? const LocalSummaryModelClient();
+
+  final providerClient = _defaultProviderClient(ref);
+  if (providerClient != null) {
+    return providerClient;
+  }
+  return const LocalSummaryModelClient();
 });
 
 runtime.ModelClient? qaMimoModelClientFromEnvironment() {
@@ -38,6 +47,156 @@ final class LocalSummaryModelClient implements runtime.ModelClient {
       '',
     );
     return runtime.ModelResponse(text: previewText(text));
+  }
+}
+
+runtime.ModelClient? _defaultProviderClient(Ref ref) {
+  final WideNoteLocalDatabase database;
+  try {
+    database = ref.watch(localDatabaseProvider);
+  } on Object {
+    return null;
+  }
+  final record = database.modelProviderConfigs.readDefault();
+  if (record == null || record.apiKey.trim().isEmpty) {
+    return null;
+  }
+  final config = _modelProviderConfigFromRecord(record);
+  if (config == null || !config.validate().isValid) {
+    return null;
+  }
+
+  final httpClient = _DartIoModelProviderHttpClient();
+  ref.onDispose(httpClient.close);
+  final provider = modelProviderFromConfig(
+    config: config,
+    httpClient: httpClient,
+  );
+  return _FallbackModelClient(
+    primary: RuntimeModelClientAdapter(provider: provider, model: config.model),
+    fallback: const LocalSummaryModelClient(),
+    providerId: config.id,
+  );
+}
+
+ModelProviderConfig? _modelProviderConfigFromRecord(
+  ModelProviderConfigRecord record,
+) {
+  final kind = _modelProviderKindFromName(record.providerKind);
+  if (kind == null) {
+    return null;
+  }
+  final endpoint = _safeUri(record.endpoint);
+  if (endpoint == null) {
+    return null;
+  }
+  return ModelProviderConfig(
+    id: record.id,
+    kind: kind,
+    displayName: record.displayName,
+    endpoint: endpoint,
+    model: record.model,
+    apiKey: record.apiKey,
+    capabilities: _modelCapabilitiesFromNames(record.capabilities),
+  );
+}
+
+Uri? _safeUri(String value) {
+  try {
+    return Uri.parse(value);
+  } on FormatException {
+    return null;
+  }
+}
+
+ModelProviderKind? _modelProviderKindFromName(String name) {
+  for (final kind in ModelProviderKind.values) {
+    if (kind.name == name) {
+      return kind;
+    }
+  }
+  return null;
+}
+
+Set<ModelCapability> _modelCapabilitiesFromNames(List<Object?> names) {
+  final capabilities = <ModelCapability>{};
+  for (final name in names.whereType<String>()) {
+    for (final capability in ModelCapability.values) {
+      if (capability.name == name) {
+        capabilities.add(capability);
+        break;
+      }
+    }
+  }
+  if (capabilities.isEmpty) {
+    return const <ModelCapability>{
+      ModelCapability.chat,
+      ModelCapability.completion,
+    };
+  }
+  return capabilities;
+}
+
+final class _FallbackModelClient implements runtime.ModelClient {
+  const _FallbackModelClient({
+    required this.primary,
+    required this.fallback,
+    required this.providerId,
+  });
+
+  final runtime.ModelClient primary;
+  final runtime.ModelClient fallback;
+  final String providerId;
+
+  @override
+  Future<runtime.ModelResponse> complete(runtime.ModelRequest request) async {
+    try {
+      return await primary.complete(request);
+    } catch (error) {
+      final response = await fallback.complete(request);
+      return runtime.ModelResponse(
+        text: response.text,
+        raw: <String, Object?>{
+          ...response.raw,
+          'model_fallback': true,
+          'model_fallback_provider_id': providerId,
+          'model_fallback_error_type': error.runtimeType.toString(),
+        },
+      );
+    }
+  }
+}
+
+final class _DartIoModelProviderHttpClient implements ModelProviderHttpClient {
+  _DartIoModelProviderHttpClient({HttpClient? httpClient})
+    : _httpClient = httpClient ?? HttpClient();
+
+  final HttpClient _httpClient;
+
+  void close() {
+    _httpClient.close(force: true);
+  }
+
+  @override
+  Future<ModelProviderHttpResponse> postJson(
+    Uri endpoint, {
+    required Map<String, String> headers,
+    required Map<String, Object?> body,
+    Duration timeout = const Duration(seconds: 30),
+  }) async {
+    final request = await _httpClient.postUrl(endpoint).timeout(timeout);
+    for (final entry in headers.entries) {
+      request.headers.set(entry.key, entry.value);
+    }
+    request.add(utf8.encode(jsonEncode(body)));
+
+    final response = await request.close().timeout(timeout);
+    final responseBody = await utf8.decodeStream(response);
+    return ModelProviderHttpResponse(
+      statusCode: response.statusCode,
+      headers: _responseHeaders(response),
+      body: _decodeResponseBody(responseBody),
+    );
   }
 }
 
@@ -174,4 +333,23 @@ String _extractText(Map<String, Object?> response) {
     }
   }
   return parts.join('\n');
+}
+
+Map<String, String> _responseHeaders(HttpClientResponse response) {
+  final headers = <String, String>{};
+  response.headers.forEach((name, values) {
+    headers[name] = values.join(',');
+  });
+  return headers;
+}
+
+Object? _decodeResponseBody(String body) {
+  if (body.trim().isEmpty) {
+    return null;
+  }
+  try {
+    return jsonDecode(body) as Object?;
+  } on FormatException {
+    return body;
+  }
 }

@@ -207,26 +207,6 @@ void main() {
     expect(_readCaptureState(tester).insights, isEmpty);
   });
 
-  testWidgets('photo attachment sample can be previewed and removed', (
-    tester,
-  ) async {
-    await _pumpApp(tester);
-
-    await tester.tap(find.byKey(const Key('add-photo-attachment-button')));
-    await tester.pumpAndSettle();
-
-    final attachment = _readCaptureInputState(tester).attachments.single;
-    expect(attachment.kind, CaptureAssetKind.photo);
-    expect(find.text('Field photo sample.jpg'), findsOneWidget);
-    expect(find.textContaining('Photo sample'), findsOneWidget);
-
-    await tester.tap(find.byKey(Key('remove-attachment-${attachment.id}')));
-    await tester.pumpAndSettle();
-
-    expect(_readCaptureInputState(tester).attachments, isEmpty);
-    expect(find.text('Field photo sample.jpg'), findsNothing);
-  });
-
   testWidgets('attachment-only capture falls back to attachment name', (
     tester,
   ) async {
@@ -277,39 +257,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text('Remove blocked attachments before recording.'),
+      find.text('Remove blocked attachments before saving.'),
       findsOneWidget,
     );
     expect(_readCaptureState(tester).records, isEmpty);
-  });
-
-  testWidgets('voice transcript sample requires review before capture', (
-    tester,
-  ) async {
-    await _pumpApp(tester);
-
-    await tester.tap(find.byKey(const Key('add-voice-attachment-button')));
-    await tester.pumpAndSettle();
-
-    final attachment = _readCaptureInputState(tester).attachments.single;
-    expect(attachment.kind, CaptureAssetKind.voice);
-    expect(find.text('Voice transcript sample.m4a'), findsOneWidget);
-    expect(find.textContaining('Transcript needs review'), findsOneWidget);
-
-    await tester.tap(find.byKey(const Key('record-capture-button')));
-    await tester.pumpAndSettle();
-    expect(find.text('Review attachments before recording.'), findsOneWidget);
-
-    await tester.tap(find.byKey(Key('review-attachment-${attachment.id}')));
-    await tester.pumpAndSettle();
-    expect(find.textContaining('Ready'), findsOneWidget);
-
-    await tester.tap(find.byKey(const Key('record-capture-button')));
-    await tester.pumpAndSettle();
-
-    final state = _readCaptureState(tester);
-    expect(state.records.single.body, contains('Transcript draft'));
-    expect(_readCaptureInputState(tester).attachments, isEmpty);
   });
 
   testWidgets('share import sample writes raw metadata to capture event', (
@@ -377,7 +328,7 @@ void main() {
     await _submitQuickCapture(tester, captureText);
 
     expect(find.textContaining('Capture failed:'), findsOneWidget);
-    expect(find.text('ready'), findsOneWidget);
+    expect(_readCaptureInputState(tester).isBusy, isFalse);
     await tester.scrollUntilVisible(
       find.text(captureText),
       120,
@@ -731,11 +682,8 @@ Future<void> _scrollHomeActionIntoView(
   WidgetTester tester,
   Finder finder,
 ) async {
-  await tester.scrollUntilVisible(
-    finder,
-    120,
-    scrollable: find.byType(Scrollable).first,
-  );
+  await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
 }
 
 CaptureState _readCaptureState(WidgetTester tester) {

@@ -17,13 +17,15 @@ Features may own presentation and temporary app-local controllers. Durable runti
 
 - `capture`: home/records tab, quick capture state, Memory review surface, and
   source-linked card/insight previews.
-- `chat`: local sessions, messages, deterministic assistant, source-linked
-  context, and retry UI.
+- `chat`: local sessions, messages, provider-backed assistant bridge with
+  deterministic fallback, source-linked context, and retry UI.
 - `todos`: source-linked todo list.
-- `backup`: local JSON backup export/import surface backed by local DB.
+- `backup`: local JSON backup export/import and human-readable Markdown export
+  surface backed by local DB.
 - `plugins`: pack, permission, model, backup, and trace control entries.
 - `model_providers`: provider setup, fake connection tests, and default-provider
   local state.
+- `traces`: read-only local Agent Runtime trace console.
 
 ## Generated Artifacts
 

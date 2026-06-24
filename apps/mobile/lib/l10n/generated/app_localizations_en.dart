@@ -27,11 +27,94 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeSubtitle => 'quick capture -> timeline -> memory -> insight';
 
   @override
+  String get homeOpenTimelineTooltip => 'Open Timeline';
+
+  @override
+  String get homeSearchTooltip => 'Search';
+
+  @override
   String get quickCaptureTitle => 'Quick Capture';
 
   @override
   String get quickCaptureHint =>
       'Drop a thought, meeting note, promise, or raw memory...';
+
+  @override
+  String get captureModeText => 'Text';
+
+  @override
+  String get captureModeVoice => 'Voice draft';
+
+  @override
+  String get captureModeImport => 'Import';
+
+  @override
+  String get captureModeTextTitle => 'Write first';
+
+  @override
+  String get captureModeTextBody =>
+      'Fast local capture stays the default. Agents organize it after the raw record is saved.';
+
+  @override
+  String get captureVoiceHint =>
+      'Add optional context while a voice draft waits for transcript review...';
+
+  @override
+  String get captureVoiceDraftTitle => 'Voice draft';
+
+  @override
+  String get captureVoiceDraftBody =>
+      'This slice uses a transcript draft adapter. No microphone permission starts here; save only after review.';
+
+  @override
+  String get captureVoiceDraftButton => 'Add voice draft';
+
+  @override
+  String get captureImportHint =>
+      'Add context for an imported photo, link, or file...';
+
+  @override
+  String get captureImportTitle => 'Bring material in';
+
+  @override
+  String get captureImportBody =>
+      'Attach a photo or shared item, keep the raw source, then let WideNote create source-linked Memory.';
+
+  @override
+  String get captureImportPhotoButton => 'Add photo';
+
+  @override
+  String get captureImportShareButton => 'Import item';
+
+  @override
+  String get captureActionPhoto => 'Photo';
+
+  @override
+  String get captureActionVoice => 'Voice';
+
+  @override
+  String get captureActionImport => 'Import';
+
+  @override
+  String get captureUseTranscriptButton => 'Use transcript';
+
+  @override
+  String get captureRemoveAttachmentTooltip => 'Remove';
+
+  @override
+  String captureAttachmentReady(String preview) {
+    return 'Ready · $preview';
+  }
+
+  @override
+  String captureAttachmentNeedsReview(String preview) {
+    return 'Transcript needs review · $preview';
+  }
+
+  @override
+  String captureAttachmentBlocked(String reason) {
+    return 'Blocked attachment · $reason · Preview hidden until review.';
+  }
 
   @override
   String get recordButton => 'Record';
@@ -477,6 +560,74 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pluginsTraceConsoleStatus => 'trace-ready';
 
   @override
+  String get agentPlatformTitle => 'Agent Observability';
+
+  @override
+  String get agentPlatformSubtitle =>
+      'Read-only local runtime evidence from real trace events.';
+
+  @override
+  String get traceConsoleTitle => 'Trace Console';
+
+  @override
+  String get traceConsoleSubtitle =>
+      'Inspect local Agent Runtime runs, permissions, and generated outputs.';
+
+  @override
+  String get traceConsoleSummaryTitle => 'Runtime summary';
+
+  @override
+  String traceConsoleEventCount(int count) {
+    return 'Trace events: $count';
+  }
+
+  @override
+  String traceConsoleRunCount(int count) {
+    return 'Runs: $count';
+  }
+
+  @override
+  String traceConsoleWarningCount(int count) {
+    return 'Warnings: $count';
+  }
+
+  @override
+  String get traceConsoleRefreshButton => 'Refresh';
+
+  @override
+  String get traceConsoleOpenButton => 'Open trace console';
+
+  @override
+  String get traceConsoleEventsTitle => 'Events';
+
+  @override
+  String get traceConsoleEmpty =>
+      'No runtime traces yet. Capture or pack runs will appear here.';
+
+  @override
+  String get traceConsoleNoMessage => 'No message recorded.';
+
+  @override
+  String traceConsoleRun(String runId) {
+    return 'run: $runId';
+  }
+
+  @override
+  String traceConsolePack(String packId) {
+    return 'pack: $packId';
+  }
+
+  @override
+  String traceConsoleAgent(String agentId) {
+    return 'agent: $agentId';
+  }
+
+  @override
+  String traceConsoleDuration(num duration) {
+    return 'duration: $duration ms';
+  }
+
+  @override
   String get providerSettingsTitle => 'Model Providers';
 
   @override
@@ -592,7 +743,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get backupCopyJsonButton => 'Copy JSON';
+
+  @override
+  String get backupCopyMarkdownButton => 'Copy Markdown';
+
+  @override
+  String get backupCopiedStatus => 'Export copied.';
+
+  @override
   String get backupExportJsonTitle => 'Backup JSON';
+
+  @override
+  String get backupExportMarkdownTitle => 'Readable Markdown';
 
   @override
   String get backupImportSectionTitle => 'Import';

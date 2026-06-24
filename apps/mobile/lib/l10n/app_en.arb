@@ -6,8 +6,53 @@
   "tabTodos": "Todos",
   "tabPlugins": "Packs",
   "homeSubtitle": "quick capture -> timeline -> memory -> insight",
+  "homeOpenTimelineTooltip": "Open Timeline",
+  "homeSearchTooltip": "Search",
   "quickCaptureTitle": "Quick Capture",
   "quickCaptureHint": "Drop a thought, meeting note, promise, or raw memory...",
+  "captureModeText": "Text",
+  "captureModeVoice": "Voice draft",
+  "captureModeImport": "Import",
+  "captureModeTextTitle": "Write first",
+  "captureModeTextBody": "Fast local capture stays the default. Agents organize it after the raw record is saved.",
+  "captureVoiceHint": "Add optional context while a voice draft waits for transcript review...",
+  "captureVoiceDraftTitle": "Voice draft",
+  "captureVoiceDraftBody": "This slice uses a transcript draft adapter. No microphone permission starts here; save only after review.",
+  "captureVoiceDraftButton": "Add voice draft",
+  "captureImportHint": "Add context for an imported photo, link, or file...",
+  "captureImportTitle": "Bring material in",
+  "captureImportBody": "Attach a photo or shared item, keep the raw source, then let WideNote create source-linked Memory.",
+  "captureImportPhotoButton": "Add photo",
+  "captureImportShareButton": "Import item",
+  "captureActionPhoto": "Photo",
+  "captureActionVoice": "Voice",
+  "captureActionImport": "Import",
+  "captureUseTranscriptButton": "Use transcript",
+  "captureRemoveAttachmentTooltip": "Remove",
+  "captureAttachmentReady": "Ready · {preview}",
+  "@captureAttachmentReady": {
+    "placeholders": {
+      "preview": {
+        "type": "String"
+      }
+    }
+  },
+  "captureAttachmentNeedsReview": "Transcript needs review · {preview}",
+  "@captureAttachmentNeedsReview": {
+    "placeholders": {
+      "preview": {
+        "type": "String"
+      }
+    }
+  },
+  "captureAttachmentBlocked": "Blocked attachment · {reason} · Preview hidden until review.",
+  "@captureAttachmentBlocked": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "recordButton": "Record",
   "recordButtonProcessing": "Processing",
   "stageProcessingTitle": "Processing",
@@ -238,6 +283,72 @@
   "pluginsTraceConsoleTitle": "Trace Console",
   "pluginsTraceConsoleSubtitle": "Inspect pack runs, permissions, and generated outputs.",
   "pluginsTraceConsoleStatus": "trace-ready",
+  "agentPlatformTitle": "Agent Observability",
+  "agentPlatformSubtitle": "Read-only local runtime evidence from real trace events.",
+  "traceConsoleTitle": "Trace Console",
+  "traceConsoleSubtitle": "Inspect local Agent Runtime runs, permissions, and generated outputs.",
+  "traceConsoleSummaryTitle": "Runtime summary",
+  "traceConsoleEventCount": "Trace events: {count}",
+  "@traceConsoleEventCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "traceConsoleRunCount": "Runs: {count}",
+  "@traceConsoleRunCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "traceConsoleWarningCount": "Warnings: {count}",
+  "@traceConsoleWarningCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "traceConsoleRefreshButton": "Refresh",
+  "traceConsoleOpenButton": "Open trace console",
+  "traceConsoleEventsTitle": "Events",
+  "traceConsoleEmpty": "No runtime traces yet. Capture or pack runs will appear here.",
+  "traceConsoleNoMessage": "No message recorded.",
+  "traceConsoleRun": "run: {runId}",
+  "@traceConsoleRun": {
+    "placeholders": {
+      "runId": {
+        "type": "String"
+      }
+    }
+  },
+  "traceConsolePack": "pack: {packId}",
+  "@traceConsolePack": {
+    "placeholders": {
+      "packId": {
+        "type": "String"
+      }
+    }
+  },
+  "traceConsoleAgent": "agent: {agentId}",
+  "@traceConsoleAgent": {
+    "placeholders": {
+      "agentId": {
+        "type": "String"
+      }
+    }
+  },
+  "traceConsoleDuration": "duration: {duration} ms",
+  "@traceConsoleDuration": {
+    "placeholders": {
+      "duration": {
+        "type": "num"
+      }
+    }
+  },
   "providerSettingsTitle": "Model Providers",
   "providerSettingsSubtitle": "Local provider setup for runtime and Agent Pack model access.",
   "providerSettingsAdd": "Add provider",
@@ -290,7 +401,11 @@
       }
     }
   },
+  "backupCopyJsonButton": "Copy JSON",
+  "backupCopyMarkdownButton": "Copy Markdown",
+  "backupCopiedStatus": "Export copied.",
   "backupExportJsonTitle": "Backup JSON",
+  "backupExportMarkdownTitle": "Readable Markdown",
   "backupImportSectionTitle": "Import",
   "backupImportHint": "Paste a WideNote local backup JSON...",
   "backupImportButton": "Import backup"

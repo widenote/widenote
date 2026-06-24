@@ -1,6 +1,7 @@
 import '../../../shared/text_preview.dart';
 import '../../../l10n/l10n.dart';
 import '../domain/chat_models.dart';
+import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
 
 abstract interface class ChatAssistant {
   Future<ChatAssistantReply> answer(ChatAssistantPrompt prompt);
@@ -42,6 +43,63 @@ final class DeterministicLocalChatAssistant implements ChatAssistant {
       'capture' => copy.captureLead(excerpt),
       _ => copy.genericLead(excerpt),
     };
+  }
+}
+
+final class ModelBackedChatAssistant implements ChatAssistant {
+  const ModelBackedChatAssistant({
+    required this.model,
+    required this.fallback,
+    this.maxSources = 6,
+  });
+
+  final runtime.ModelClient model;
+  final ChatAssistant fallback;
+  final int maxSources;
+
+  @override
+  Future<ChatAssistantReply> answer(ChatAssistantPrompt prompt) async {
+    if (prompt.sources.isEmpty) {
+      return fallback.answer(prompt);
+    }
+    try {
+      final response = await model.complete(
+        runtime.ModelRequest(
+          prompt: _prompt(prompt),
+          context: <String, Object?>{
+            'source_count': prompt.sources.length,
+            'chat_mode': 'source_cited_local_context',
+          },
+        ),
+      );
+      final body = response.text.trim();
+      if (body.isEmpty) {
+        return fallback.answer(prompt);
+      }
+      return ChatAssistantReply(body: body);
+    } catch (_) {
+      return fallback.answer(prompt);
+    }
+  }
+
+  String _prompt(ChatAssistantPrompt prompt) {
+    final sourceLines = prompt.sources
+        .take(maxSources)
+        .map(
+          (source) =>
+              '- ${source.kind}/${source.id}: ${previewText(source.excerpt)}',
+        )
+        .join('\n');
+    return '''
+Answer the user's WideNote question using only the local sources below.
+Be concise, cite the source kind/id in prose, and do not invent facts.
+
+Question:
+${prompt.question}
+
+Local sources:
+$sourceLines
+''';
   }
 }
 

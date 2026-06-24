@@ -16,6 +16,7 @@ enum BackupOutcome { idle, exported, imported, failed }
 final class BackupState {
   const BackupState({
     this.exportedJson,
+    this.exportedMarkdown,
     this.recordCounts = const <String, int>{},
     this.importDraft = '',
     this.outcome = BackupOutcome.idle,
@@ -23,6 +24,7 @@ final class BackupState {
   });
 
   final String? exportedJson;
+  final String? exportedMarkdown;
   final Map<String, int> recordCounts;
   final String importDraft;
   final BackupOutcome outcome;
@@ -32,6 +34,7 @@ final class BackupState {
 
   BackupState copyWith({
     String? exportedJson,
+    String? exportedMarkdown,
     Map<String, int>? recordCounts,
     String? importDraft,
     BackupOutcome? outcome,
@@ -40,6 +43,7 @@ final class BackupState {
   }) {
     return BackupState(
       exportedJson: exportedJson ?? this.exportedJson,
+      exportedMarkdown: exportedMarkdown ?? this.exportedMarkdown,
       recordCounts: recordCounts ?? this.recordCounts,
       importDraft: importDraft ?? this.importDraft,
       outcome: outcome ?? this.outcome,
@@ -67,6 +71,9 @@ final class BackupController extends Notifier<BackupState> {
       final backup = ref.read(backupServiceProvider).exportBackup();
       state = state.copyWith(
         exportedJson: LocalBackupCodec.encode(backup),
+        exportedMarkdown: const LocalMarkdownExportService().exportBackup(
+          backup,
+        ),
         recordCounts: backup.manifest.recordCounts,
         outcome: BackupOutcome.exported,
         clearError: true,

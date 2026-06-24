@@ -134,6 +134,18 @@ abstract class AppLocalizations {
   /// **'quick capture -> timeline -> memory -> insight'**
   String get homeSubtitle;
 
+  /// No description provided for @homeOpenTimelineTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Timeline'**
+  String get homeOpenTimelineTooltip;
+
+  /// No description provided for @homeSearchTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get homeSearchTooltip;
+
   /// No description provided for @quickCaptureTitle.
   ///
   /// In en, this message translates to:
@@ -145,6 +157,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Drop a thought, meeting note, promise, or raw memory...'**
   String get quickCaptureHint;
+
+  /// No description provided for @captureModeText.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get captureModeText;
+
+  /// No description provided for @captureModeVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice draft'**
+  String get captureModeVoice;
+
+  /// No description provided for @captureModeImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get captureModeImport;
+
+  /// No description provided for @captureModeTextTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Write first'**
+  String get captureModeTextTitle;
+
+  /// No description provided for @captureModeTextBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Fast local capture stays the default. Agents organize it after the raw record is saved.'**
+  String get captureModeTextBody;
+
+  /// No description provided for @captureVoiceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add optional context while a voice draft waits for transcript review...'**
+  String get captureVoiceHint;
+
+  /// No description provided for @captureVoiceDraftTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice draft'**
+  String get captureVoiceDraftTitle;
+
+  /// No description provided for @captureVoiceDraftBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This slice uses a transcript draft adapter. No microphone permission starts here; save only after review.'**
+  String get captureVoiceDraftBody;
+
+  /// No description provided for @captureVoiceDraftButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add voice draft'**
+  String get captureVoiceDraftButton;
+
+  /// No description provided for @captureImportHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add context for an imported photo, link, or file...'**
+  String get captureImportHint;
+
+  /// No description provided for @captureImportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bring material in'**
+  String get captureImportTitle;
+
+  /// No description provided for @captureImportBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach a photo or shared item, keep the raw source, then let WideNote create source-linked Memory.'**
+  String get captureImportBody;
+
+  /// No description provided for @captureImportPhotoButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add photo'**
+  String get captureImportPhotoButton;
+
+  /// No description provided for @captureImportShareButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Import item'**
+  String get captureImportShareButton;
+
+  /// No description provided for @captureActionPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo'**
+  String get captureActionPhoto;
+
+  /// No description provided for @captureActionVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice'**
+  String get captureActionVoice;
+
+  /// No description provided for @captureActionImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get captureActionImport;
+
+  /// No description provided for @captureUseTranscriptButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Use transcript'**
+  String get captureUseTranscriptButton;
+
+  /// No description provided for @captureRemoveAttachmentTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get captureRemoveAttachmentTooltip;
+
+  /// No description provided for @captureAttachmentReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready · {preview}'**
+  String captureAttachmentReady(String preview);
+
+  /// No description provided for @captureAttachmentNeedsReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcript needs review · {preview}'**
+  String captureAttachmentNeedsReview(String preview);
+
+  /// No description provided for @captureAttachmentBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked attachment · {reason} · Preview hidden until review.'**
+  String captureAttachmentBlocked(String reason);
 
   /// No description provided for @recordButton.
   ///
@@ -842,6 +986,108 @@ abstract class AppLocalizations {
   /// **'trace-ready'**
   String get pluginsTraceConsoleStatus;
 
+  /// No description provided for @agentPlatformTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent Observability'**
+  String get agentPlatformTitle;
+
+  /// No description provided for @agentPlatformSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Read-only local runtime evidence from real trace events.'**
+  String get agentPlatformSubtitle;
+
+  /// No description provided for @traceConsoleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trace Console'**
+  String get traceConsoleTitle;
+
+  /// No description provided for @traceConsoleSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspect local Agent Runtime runs, permissions, and generated outputs.'**
+  String get traceConsoleSubtitle;
+
+  /// No description provided for @traceConsoleSummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Runtime summary'**
+  String get traceConsoleSummaryTitle;
+
+  /// No description provided for @traceConsoleEventCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Trace events: {count}'**
+  String traceConsoleEventCount(int count);
+
+  /// No description provided for @traceConsoleRunCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs: {count}'**
+  String traceConsoleRunCount(int count);
+
+  /// No description provided for @traceConsoleWarningCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Warnings: {count}'**
+  String traceConsoleWarningCount(int count);
+
+  /// No description provided for @traceConsoleRefreshButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get traceConsoleRefreshButton;
+
+  /// No description provided for @traceConsoleOpenButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Open trace console'**
+  String get traceConsoleOpenButton;
+
+  /// No description provided for @traceConsoleEventsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Events'**
+  String get traceConsoleEventsTitle;
+
+  /// No description provided for @traceConsoleEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No runtime traces yet. Capture or pack runs will appear here.'**
+  String get traceConsoleEmpty;
+
+  /// No description provided for @traceConsoleNoMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No message recorded.'**
+  String get traceConsoleNoMessage;
+
+  /// No description provided for @traceConsoleRun.
+  ///
+  /// In en, this message translates to:
+  /// **'run: {runId}'**
+  String traceConsoleRun(String runId);
+
+  /// No description provided for @traceConsolePack.
+  ///
+  /// In en, this message translates to:
+  /// **'pack: {packId}'**
+  String traceConsolePack(String packId);
+
+  /// No description provided for @traceConsoleAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'agent: {agentId}'**
+  String traceConsoleAgent(String agentId);
+
+  /// No description provided for @traceConsoleDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'duration: {duration} ms'**
+  String traceConsoleDuration(num duration);
+
   /// No description provided for @providerSettingsTitle.
   ///
   /// In en, this message translates to:
@@ -1052,11 +1298,35 @@ abstract class AppLocalizations {
   /// **'{section}: {count}'**
   String backupCount(String section, int count);
 
+  /// No description provided for @backupCopyJsonButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy JSON'**
+  String get backupCopyJsonButton;
+
+  /// No description provided for @backupCopyMarkdownButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Markdown'**
+  String get backupCopyMarkdownButton;
+
+  /// No description provided for @backupCopiedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Export copied.'**
+  String get backupCopiedStatus;
+
   /// No description provided for @backupExportJsonTitle.
   ///
   /// In en, this message translates to:
   /// **'Backup JSON'**
   String get backupExportJsonTitle;
+
+  /// No description provided for @backupExportMarkdownTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Readable Markdown'**
+  String get backupExportMarkdownTitle;
 
   /// No description provided for @backupImportSectionTitle.
   ///

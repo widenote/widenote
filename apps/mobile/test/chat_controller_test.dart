@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
 import 'package:widenote_local_db/widenote_local_db.dart';
 import 'package:widenote_mobile/features/chat/application/chat_assistant.dart';
 import 'package:widenote_mobile/features/chat/application/chat_context.dart';
@@ -114,6 +115,61 @@ void main() {
     expect(reply.body, contains('Memory'));
   });
 
+  test(
+    'model-backed assistant uses local sources and falls back safely',
+    () async {
+      final source = ChatSource(
+        id: 'memory-1',
+        kind: 'memory',
+        title: 'Memory',
+        excerpt: 'Lin wants source-linked chat answers.',
+        sourceLabel: 'event: capture-1',
+        createdAt: DateTime.utc(2026, 6, 24, 2),
+      );
+      final model = _RecordingModelClient(
+        response: 'The answer cites memory/memory-1.',
+      );
+      final assistant = ModelBackedChatAssistant(
+        model: model,
+        fallback: const DeterministicLocalChatAssistant(),
+      );
+
+      final reply = await assistant.answer(
+        ChatAssistantPrompt(question: 'What does Lin want?', sources: [source]),
+      );
+
+      expect(reply.body, 'The answer cites memory/memory-1.');
+      expect(model.lastPrompt, contains('memory/memory-1'));
+
+      final fallback = ModelBackedChatAssistant(
+        model: _ThrowingModelClient(),
+        fallback: const DeterministicLocalChatAssistant(),
+      );
+      final fallbackReply = await fallback.answer(
+        ChatAssistantPrompt(question: 'What does Lin want?', sources: [source]),
+      );
+      expect(
+        fallbackReply.body,
+        contains('The closest match is a Memory item'),
+      );
+
+      final emptyModelReply =
+          await ModelBackedChatAssistant(
+            model: _RecordingModelClient(response: '   '),
+            fallback: const DeterministicLocalChatAssistant(),
+          ).answer(
+            ChatAssistantPrompt(
+              question: 'What does Lin want?',
+              sources: [source],
+            ),
+          );
+      expect(
+        emptyModelReply.body,
+        contains('The closest match is a Memory item'),
+      );
+    },
+  );
+
   test('controller marks user message failed when assistant throws', () async {
     final repository = InMemoryChatRepository();
     final container = ProviderContainer(
@@ -170,4 +226,24 @@ final class _FixedClock {
   final DateTime now;
 
   DateTime call() => now;
+}
+
+final class _RecordingModelClient implements runtime.ModelClient {
+  _RecordingModelClient({required this.response});
+
+  final String response;
+  String lastPrompt = '';
+
+  @override
+  Future<runtime.ModelResponse> complete(runtime.ModelRequest request) async {
+    lastPrompt = request.prompt;
+    return runtime.ModelResponse(text: response);
+  }
+}
+
+final class _ThrowingModelClient implements runtime.ModelClient {
+  @override
+  Future<runtime.ModelResponse> complete(runtime.ModelRequest request) {
+    throw StateError('model unavailable');
+  }
 }

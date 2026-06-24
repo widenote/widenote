@@ -27,10 +27,88 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeSubtitle => '快速记录 -> 时间线 -> 记忆 -> 洞察';
 
   @override
+  String get homeOpenTimelineTooltip => '打开时间线';
+
+  @override
+  String get homeSearchTooltip => '搜索';
+
+  @override
   String get quickCaptureTitle => '快速记录';
 
   @override
   String get quickCaptureHint => '写下一个想法、会议记录、承诺，或一段原始记忆...';
+
+  @override
+  String get captureModeText => '文字';
+
+  @override
+  String get captureModeVoice => '语音草稿';
+
+  @override
+  String get captureModeImport => '导入';
+
+  @override
+  String get captureModeTextTitle => '先记录下来';
+
+  @override
+  String get captureModeTextBody => '默认保持低摩擦本地记录。原始记录保存后，智能体再进行整理。';
+
+  @override
+  String get captureVoiceHint => '给语音草稿补充背景，转写内容需要复核后再保存...';
+
+  @override
+  String get captureVoiceDraftTitle => '语音草稿';
+
+  @override
+  String get captureVoiceDraftBody => '当前切片只使用转写草稿适配器，不会请求麦克风权限；复核后再保存。';
+
+  @override
+  String get captureVoiceDraftButton => '添加语音草稿';
+
+  @override
+  String get captureImportHint => '为导入的照片、链接或文件补充背景...';
+
+  @override
+  String get captureImportTitle => '导入材料';
+
+  @override
+  String get captureImportBody => '附加照片或分享内容，保留原始来源，再交给 WideNote 生成可溯源 Memory。';
+
+  @override
+  String get captureImportPhotoButton => '添加照片';
+
+  @override
+  String get captureImportShareButton => '导入项目';
+
+  @override
+  String get captureActionPhoto => '照片';
+
+  @override
+  String get captureActionVoice => '语音';
+
+  @override
+  String get captureActionImport => '导入';
+
+  @override
+  String get captureUseTranscriptButton => '使用转写';
+
+  @override
+  String get captureRemoveAttachmentTooltip => '移除';
+
+  @override
+  String captureAttachmentReady(String preview) {
+    return '已就绪 · $preview';
+  }
+
+  @override
+  String captureAttachmentNeedsReview(String preview) {
+    return '转写需要复核 · $preview';
+  }
+
+  @override
+  String captureAttachmentBlocked(String reason) {
+    return '附件已阻止 · $reason · 预览在复核前隐藏。';
+  }
 
   @override
   String get recordButton => '记录';
@@ -412,6 +490,71 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pluginsTraceConsoleStatus => '追踪就绪';
 
   @override
+  String get agentPlatformTitle => '智能体观测';
+
+  @override
+  String get agentPlatformSubtitle => '基于真实本地追踪事件的只读运行证据。';
+
+  @override
+  String get traceConsoleTitle => '追踪控制台';
+
+  @override
+  String get traceConsoleSubtitle => '检查本地 Agent Runtime 运行、权限和生成输出。';
+
+  @override
+  String get traceConsoleSummaryTitle => '运行摘要';
+
+  @override
+  String traceConsoleEventCount(int count) {
+    return '追踪事件：$count';
+  }
+
+  @override
+  String traceConsoleRunCount(int count) {
+    return '运行：$count';
+  }
+
+  @override
+  String traceConsoleWarningCount(int count) {
+    return '警告：$count';
+  }
+
+  @override
+  String get traceConsoleRefreshButton => '刷新';
+
+  @override
+  String get traceConsoleOpenButton => '打开追踪控制台';
+
+  @override
+  String get traceConsoleEventsTitle => '事件';
+
+  @override
+  String get traceConsoleEmpty => '还没有运行追踪。记录或插件运行后会显示在这里。';
+
+  @override
+  String get traceConsoleNoMessage => '没有记录消息。';
+
+  @override
+  String traceConsoleRun(String runId) {
+    return '运行：$runId';
+  }
+
+  @override
+  String traceConsolePack(String packId) {
+    return '插件：$packId';
+  }
+
+  @override
+  String traceConsoleAgent(String agentId) {
+    return '智能体：$agentId';
+  }
+
+  @override
+  String traceConsoleDuration(num duration) {
+    return '耗时：$duration ms';
+  }
+
+  @override
   String get providerSettingsTitle => '模型提供商';
 
   @override
@@ -521,7 +664,19 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get backupCopyJsonButton => '复制 JSON';
+
+  @override
+  String get backupCopyMarkdownButton => '复制 Markdown';
+
+  @override
+  String get backupCopiedStatus => '导出内容已复制。';
+
+  @override
   String get backupExportJsonTitle => '备份 JSON';
+
+  @override
+  String get backupExportMarkdownTitle => '可读 Markdown';
 
   @override
   String get backupImportSectionTitle => '导入';
