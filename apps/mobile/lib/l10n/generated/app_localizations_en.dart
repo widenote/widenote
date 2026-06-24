@@ -477,6 +477,74 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pluginsTraceConsoleStatus => 'trace-ready';
 
   @override
+  String get agentPlatformTitle => 'Agent Observability';
+
+  @override
+  String get agentPlatformSubtitle =>
+      'Read-only local runtime evidence from real trace events.';
+
+  @override
+  String get traceConsoleTitle => 'Trace Console';
+
+  @override
+  String get traceConsoleSubtitle =>
+      'Inspect local Agent Runtime runs, permissions, and generated outputs.';
+
+  @override
+  String get traceConsoleSummaryTitle => 'Runtime summary';
+
+  @override
+  String traceConsoleEventCount(int count) {
+    return 'Trace events: $count';
+  }
+
+  @override
+  String traceConsoleRunCount(int count) {
+    return 'Runs: $count';
+  }
+
+  @override
+  String traceConsoleWarningCount(int count) {
+    return 'Warnings: $count';
+  }
+
+  @override
+  String get traceConsoleRefreshButton => 'Refresh';
+
+  @override
+  String get traceConsoleOpenButton => 'Open trace console';
+
+  @override
+  String get traceConsoleEventsTitle => 'Events';
+
+  @override
+  String get traceConsoleEmpty =>
+      'No runtime traces yet. Capture or pack runs will appear here.';
+
+  @override
+  String get traceConsoleNoMessage => 'No message recorded.';
+
+  @override
+  String traceConsoleRun(String runId) {
+    return 'run: $runId';
+  }
+
+  @override
+  String traceConsolePack(String packId) {
+    return 'pack: $packId';
+  }
+
+  @override
+  String traceConsoleAgent(String agentId) {
+    return 'agent: $agentId';
+  }
+
+  @override
+  String traceConsoleDuration(num duration) {
+    return 'duration: $duration ms';
+  }
+
+  @override
   String get providerSettingsTitle => 'Model Providers';
 
   @override
@@ -592,7 +660,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get backupCopyJsonButton => 'Copy JSON';
+
+  @override
+  String get backupCopyMarkdownButton => 'Copy Markdown';
+
+  @override
+  String get backupCopiedStatus => 'Export copied.';
+
+  @override
   String get backupExportJsonTitle => 'Backup JSON';
+
+  @override
+  String get backupExportMarkdownTitle => 'Readable Markdown';
 
   @override
   String get backupImportSectionTitle => 'Import';

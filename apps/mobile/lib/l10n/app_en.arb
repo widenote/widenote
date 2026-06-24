@@ -238,6 +238,72 @@
   "pluginsTraceConsoleTitle": "Trace Console",
   "pluginsTraceConsoleSubtitle": "Inspect pack runs, permissions, and generated outputs.",
   "pluginsTraceConsoleStatus": "trace-ready",
+  "agentPlatformTitle": "Agent Observability",
+  "agentPlatformSubtitle": "Read-only local runtime evidence from real trace events.",
+  "traceConsoleTitle": "Trace Console",
+  "traceConsoleSubtitle": "Inspect local Agent Runtime runs, permissions, and generated outputs.",
+  "traceConsoleSummaryTitle": "Runtime summary",
+  "traceConsoleEventCount": "Trace events: {count}",
+  "@traceConsoleEventCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "traceConsoleRunCount": "Runs: {count}",
+  "@traceConsoleRunCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "traceConsoleWarningCount": "Warnings: {count}",
+  "@traceConsoleWarningCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "traceConsoleRefreshButton": "Refresh",
+  "traceConsoleOpenButton": "Open trace console",
+  "traceConsoleEventsTitle": "Events",
+  "traceConsoleEmpty": "No runtime traces yet. Capture or pack runs will appear here.",
+  "traceConsoleNoMessage": "No message recorded.",
+  "traceConsoleRun": "run: {runId}",
+  "@traceConsoleRun": {
+    "placeholders": {
+      "runId": {
+        "type": "String"
+      }
+    }
+  },
+  "traceConsolePack": "pack: {packId}",
+  "@traceConsolePack": {
+    "placeholders": {
+      "packId": {
+        "type": "String"
+      }
+    }
+  },
+  "traceConsoleAgent": "agent: {agentId}",
+  "@traceConsoleAgent": {
+    "placeholders": {
+      "agentId": {
+        "type": "String"
+      }
+    }
+  },
+  "traceConsoleDuration": "duration: {duration} ms",
+  "@traceConsoleDuration": {
+    "placeholders": {
+      "duration": {
+        "type": "num"
+      }
+    }
+  },
   "providerSettingsTitle": "Model Providers",
   "providerSettingsSubtitle": "Local provider setup for runtime and Agent Pack model access.",
   "providerSettingsAdd": "Add provider",
@@ -290,7 +356,11 @@
       }
     }
   },
+  "backupCopyJsonButton": "Copy JSON",
+  "backupCopyMarkdownButton": "Copy Markdown",
+  "backupCopiedStatus": "Export copied.",
   "backupExportJsonTitle": "Backup JSON",
+  "backupExportMarkdownTitle": "Readable Markdown",
   "backupImportSectionTitle": "Import",
   "backupImportHint": "Paste a WideNote local backup JSON...",
   "backupImportButton": "Import backup"

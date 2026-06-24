@@ -10,6 +10,7 @@ import '../features/timeline/presentation/card_detail_page.dart';
 import '../features/timeline/presentation/timeline_page.dart';
 import '../features/timeline/presentation/timeline_search_page.dart';
 import '../features/todos/presentation/todos_page.dart';
+import '../features/traces/presentation/trace_console_page.dart';
 import '../l10n/l10n.dart';
 
 GoRouter createAppRouter() {
@@ -66,6 +67,11 @@ GoRouter createAppRouter() {
             path: '/plugins/backup',
             name: 'backup',
             builder: (context, state) => const BackupPage(),
+          ),
+          GoRoute(
+            path: '/plugins/traces',
+            name: 'trace-console',
+            builder: (context, state) => const TraceConsolePage(),
           ),
         ],
       ),

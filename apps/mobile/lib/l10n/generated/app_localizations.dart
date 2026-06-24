@@ -842,6 +842,108 @@ abstract class AppLocalizations {
   /// **'trace-ready'**
   String get pluginsTraceConsoleStatus;
 
+  /// No description provided for @agentPlatformTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent Observability'**
+  String get agentPlatformTitle;
+
+  /// No description provided for @agentPlatformSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Read-only local runtime evidence from real trace events.'**
+  String get agentPlatformSubtitle;
+
+  /// No description provided for @traceConsoleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trace Console'**
+  String get traceConsoleTitle;
+
+  /// No description provided for @traceConsoleSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspect local Agent Runtime runs, permissions, and generated outputs.'**
+  String get traceConsoleSubtitle;
+
+  /// No description provided for @traceConsoleSummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Runtime summary'**
+  String get traceConsoleSummaryTitle;
+
+  /// No description provided for @traceConsoleEventCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Trace events: {count}'**
+  String traceConsoleEventCount(int count);
+
+  /// No description provided for @traceConsoleRunCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs: {count}'**
+  String traceConsoleRunCount(int count);
+
+  /// No description provided for @traceConsoleWarningCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Warnings: {count}'**
+  String traceConsoleWarningCount(int count);
+
+  /// No description provided for @traceConsoleRefreshButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get traceConsoleRefreshButton;
+
+  /// No description provided for @traceConsoleOpenButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Open trace console'**
+  String get traceConsoleOpenButton;
+
+  /// No description provided for @traceConsoleEventsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Events'**
+  String get traceConsoleEventsTitle;
+
+  /// No description provided for @traceConsoleEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No runtime traces yet. Capture or pack runs will appear here.'**
+  String get traceConsoleEmpty;
+
+  /// No description provided for @traceConsoleNoMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No message recorded.'**
+  String get traceConsoleNoMessage;
+
+  /// No description provided for @traceConsoleRun.
+  ///
+  /// In en, this message translates to:
+  /// **'run: {runId}'**
+  String traceConsoleRun(String runId);
+
+  /// No description provided for @traceConsolePack.
+  ///
+  /// In en, this message translates to:
+  /// **'pack: {packId}'**
+  String traceConsolePack(String packId);
+
+  /// No description provided for @traceConsoleAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'agent: {agentId}'**
+  String traceConsoleAgent(String agentId);
+
+  /// No description provided for @traceConsoleDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'duration: {duration} ms'**
+  String traceConsoleDuration(num duration);
+
   /// No description provided for @providerSettingsTitle.
   ///
   /// In en, this message translates to:
@@ -1052,11 +1154,35 @@ abstract class AppLocalizations {
   /// **'{section}: {count}'**
   String backupCount(String section, int count);
 
+  /// No description provided for @backupCopyJsonButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy JSON'**
+  String get backupCopyJsonButton;
+
+  /// No description provided for @backupCopyMarkdownButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Markdown'**
+  String get backupCopyMarkdownButton;
+
+  /// No description provided for @backupCopiedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Export copied.'**
+  String get backupCopiedStatus;
+
   /// No description provided for @backupExportJsonTitle.
   ///
   /// In en, this message translates to:
   /// **'Backup JSON'**
   String get backupExportJsonTitle;
+
+  /// No description provided for @backupExportMarkdownTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Readable Markdown'**
+  String get backupExportMarkdownTitle;
 
   /// No description provided for @backupImportSectionTitle.
   ///

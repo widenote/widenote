@@ -110,6 +110,90 @@ void main() {
       expect(trace.durationMs, 12.5);
     });
 
+    test('exports a human-readable Markdown projection without API keys', () {
+      final source = WideNoteLocalDatabase.inMemory();
+      addTearDown(source.close);
+      _seedBackupSource(source);
+
+      final backup = LocalBackupService(source).exportBackup();
+      final markdown = const LocalMarkdownExportService().exportBackup(backup);
+
+      expect(markdown, contains('# WideNote Local Export'));
+      expect(markdown, contains('## Records'));
+      expect(markdown, contains('Remember the backup demo.'));
+      expect(markdown, contains('## Memory'));
+      expect(markdown, contains('WideNote has a local backup demo.'));
+      expect(markdown, contains('## Model Providers'));
+      expect(markdown, contains('api_key_present: true'));
+      expect(markdown, isNot(contains(_backupCredential())));
+    });
+
+    test(
+      'exports empty Markdown sections without leaking absent provider keys',
+      () {
+        final source = WideNoteLocalDatabase.inMemory();
+        addTearDown(source.close);
+
+        final backup = LocalBackupService(source).exportBackup();
+        final markdown = const LocalMarkdownExportService().exportBackup(
+          backup,
+        );
+
+        expect(markdown, contains('_No local records exported._'));
+        expect(markdown, contains('_No Memory exported._'));
+        expect(markdown, contains('_No model providers exported._'));
+        expect(markdown, isNot(contains('apiKey')));
+      },
+    );
+
+    test(
+      'exports readable Markdown for multiline records and no-key providers',
+      () {
+        final source = WideNoteLocalDatabase.inMemory();
+        addTearDown(source.close);
+        final createdAt = DateTime.utc(2026, 6, 24, 10);
+        source.captures.insert(
+          CaptureRecord(
+            id: 'capture-multiline',
+            sourceType: 'manual',
+            payload: const <String, Object?>{
+              'text': 'First line\nSecond line with unicode 你好',
+            },
+            createdAt: createdAt,
+            updatedAt: createdAt,
+          ),
+        );
+        source.modelProviderConfigs.insert(
+          ModelProviderConfigRecord(
+            id: 'provider-no-key',
+            providerKind: 'openai_compatible',
+            displayName: 'No Key Provider',
+            endpoint: 'https://example.invalid/v1/chat/completions',
+            model: 'local-test',
+            isDefault: true,
+            hasApiKey: false,
+            apiKey: '',
+            createdAt: createdAt,
+            updatedAt: createdAt,
+          ),
+        );
+
+        final backup = LocalBackupService(source).exportBackup();
+        final markdown = const LocalMarkdownExportService().exportBackup(
+          backup,
+        );
+
+        expect(markdown, contains('### capture-multiline'));
+        expect(
+          markdown,
+          contains('> First line\n> Second line with unicode 你好'),
+        );
+        expect(markdown, contains('### No Key Provider'));
+        expect(markdown, contains('api_key_present: false'));
+        expect(markdown, isNot(contains('apiKey')));
+      },
+    );
+
     test('rejects a newer local DB schema during import', () {
       final source = WideNoteLocalDatabase.inMemory();
       final target = WideNoteLocalDatabase.inMemory();
@@ -165,16 +249,15 @@ void main() {
       addTearDown(target.close);
       _seedBackupSource(source);
 
-      final v1Json = _editBackupJson(
-        LocalBackupService(source).exportJson(),
-        (root) {
-          final manifest = root['manifest']! as Map<String, Object?>;
-          manifest['format_version'] = 1;
-          final counts = manifest['record_counts']! as Map<String, Object?>;
-          counts.remove('attachments');
-          root.remove('attachments');
-        },
-      );
+      final v1Json = _editBackupJson(LocalBackupService(source).exportJson(), (
+        root,
+      ) {
+        final manifest = root['manifest']! as Map<String, Object?>;
+        manifest['format_version'] = 1;
+        final counts = manifest['record_counts']! as Map<String, Object?>;
+        counts.remove('attachments');
+        root.remove('attachments');
+      });
       final backup = LocalBackupCodec.decode(v1Json);
 
       expect(backup.manifest.formatVersion, 1);

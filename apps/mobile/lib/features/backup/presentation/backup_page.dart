@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 
 import '../../../l10n/l10n.dart';
 import '../application/backup_controller.dart';
@@ -102,6 +105,24 @@ class _ExportSurface extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _CopyButton(
+                  buttonKey: const Key('backup-copy-json-button'),
+                  text: state.exportedJson!,
+                  label: l10n.backupCopyJsonButton,
+                ),
+                if (state.exportedMarkdown != null)
+                  _CopyButton(
+                    buttonKey: const Key('backup-copy-markdown-button'),
+                    text: state.exportedMarkdown!,
+                    label: l10n.backupCopyMarkdownButton,
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
             Text(
               l10n.backupExportJsonTitle,
               style: Theme.of(
@@ -110,6 +131,20 @@ class _ExportSurface extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             _JsonPreview(text: state.exportedJson!),
+            if (state.exportedMarkdown != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                l10n.backupExportMarkdownTitle,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              _TextPreview(
+                key: const Key('backup-export-markdown'),
+                text: state.exportedMarkdown!,
+              ),
+            ],
           ],
         ],
       ),
@@ -215,6 +250,36 @@ class _WarningLine extends StatelessWidget {
   }
 }
 
+class _CopyButton extends StatelessWidget {
+  const _CopyButton({
+    required this.buttonKey,
+    required this.text,
+    required this.label,
+  });
+
+  final Key buttonKey;
+  final String text;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return OutlinedButton.icon(
+      key: buttonKey,
+      onPressed: () {
+        unawaited(Clipboard.setData(ClipboardData(text: text)));
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(l10n.backupCopiedStatus)));
+        }
+      },
+      icon: const Icon(Icons.copy),
+      label: Text(label),
+    );
+  }
+}
+
 class _JsonPreview extends StatelessWidget {
   const _JsonPreview({required this.text});
 
@@ -239,6 +304,34 @@ class _JsonPreview extends StatelessWidget {
               context,
             ).textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TextPreview extends StatelessWidget {
+  const _TextPreview({required this.text, super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(maxHeight: 220),
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFD8DDE6)),
+      ),
+      child: SingleChildScrollView(
+        child: SelectableText(
+          text,
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
         ),
       ),
     );
