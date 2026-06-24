@@ -39,4 +39,10 @@ Validate phase-one official pack manifests with:
 node tools/pack_validator/validate.mjs packs/official/default/manifest.json packs/official/todo/manifest.json
 ```
 
+Validator self-tests:
+
+```sh
+node tools/pack_validator/validate_test.mjs
+```
+
 This is a lightweight validator, not a complete JSON Schema validator.

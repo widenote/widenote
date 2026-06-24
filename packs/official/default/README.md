@@ -27,6 +27,7 @@ The manifest declares:
 - Permission requests: `model.complete`, `card.write`, `memory.propose`, `insight.write`
 - Subscription: `wn.capture.created`
 - Native agent: `agent.capture_loop`
+- Retry policy: `max_attempts = 2`
 - Output events: `wn.card.created`, `wn.memory.proposed`, `wn.insight.created`
 
 Future public surfaces include prompt definitions, richer permission requests, and UI/output declarations.

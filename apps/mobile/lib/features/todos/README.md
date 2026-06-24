@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Owns the source-linked todo tab placeholder.
+Owns the source-linked todo tab.
 
 ## Ownership Boundary
 

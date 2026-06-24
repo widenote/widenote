@@ -1,0 +1,297 @@
+{
+  "@@locale": "en",
+  "appTitle": "WideNote / 广记",
+  "tabHome": "Home",
+  "tabChat": "Chat",
+  "tabTodos": "Todos",
+  "tabPlugins": "Packs",
+  "homeSubtitle": "quick capture -> timeline -> memory -> insight",
+  "quickCaptureTitle": "Quick Capture",
+  "quickCaptureHint": "Drop a thought, meeting note, promise, or raw memory...",
+  "recordButton": "Record",
+  "recordButtonProcessing": "Processing",
+  "stageProcessingTitle": "Processing",
+  "stageProcessingRunning": "running",
+  "stageProcessingIdle": "idle",
+  "stageProcessingProcessed": "{count, plural, =1{1 processed} other{{count} processed}}",
+  "@stageProcessingProcessed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stageMemoryTitle": "Memory",
+  "stageMemoryReady": "ready",
+  "stageMemoryAccepted": "{count, plural, =1{1 accepted} other{{count} accepted}}",
+  "@stageMemoryAccepted": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stageMemoryAcceptedReview": "{acceptedCount, plural, =1{1 accepted} other{{acceptedCount} accepted}} · {reviewCount, plural, =1{1 review} other{{reviewCount} review}}",
+  "@stageMemoryAcceptedReview": {
+    "placeholders": {
+      "acceptedCount": {
+        "type": "int"
+      },
+      "reviewCount": {
+        "type": "int"
+      }
+    }
+  },
+  "stageCardsTitle": "Cards",
+  "stageCardsWaiting": "waiting",
+  "stageCardsLinked": "{count, plural, =1{1 card} other{{count} cards}}",
+  "@stageCardsLinked": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stageInsightTitle": "Insight",
+  "stageInsightDraftLane": "draft lane",
+  "stageInsightWaiting": "waiting",
+  "stageInsightSourceLinked": "{count, plural, =1{1 source-linked} other{{count} source-linked}}",
+  "@stageInsightSourceLinked": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stageTodoTitle": "Todo",
+  "stageTodoLinked": "{count, plural, =1{1 linked} other{{count} linked}}",
+  "@stageTodoLinked": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cardsTitle": "Cards",
+  "cardsEmpty": "No source-linked cards yet.",
+  "insightsTitle": "Insights",
+  "insightsEmpty": "No source-linked insights yet.",
+  "recordsTitle": "Records",
+  "recordsEmpty": "No local records yet.",
+  "memoryReviewTitle": "Memory Review",
+  "memoryReviewEmpty": "No Memory candidates need review.",
+  "memoryReviewAccept": "Accept",
+  "memoryReviewEdit": "Edit",
+  "memoryReviewReject": "Reject",
+  "memoryEditTitle": "Edit Memory",
+  "cancelButton": "Cancel",
+  "saveButton": "Save",
+  "memoryTitle": "Memory",
+  "memoryEmpty": "Memory queue is waiting for first capture.",
+  "traceTitle": "Trace",
+  "traceEmpty": "Local runtime events appear here after captures or pack runs.",
+  "recordStatusSavedProcessing": "Saved locally, processing",
+  "recordStatusProcessed": "Processed locally",
+  "recordStatusAgentFailed": "Saved locally, agent failed",
+  "memoryAutoSavedTitle": "Memory saved automatically",
+  "memoryNeedsReviewTitle": "Memory needs review",
+  "memorySavedTitle": "Memory saved",
+  "statusAutoAccepted": "auto-accepted",
+  "statusNeedsReview": "needs review",
+  "statusAccepted": "accepted",
+  "confidenceLabel": "{confidence} confidence",
+  "@confidenceLabel": {
+    "placeholders": {
+      "confidence": {
+        "type": "String"
+      }
+    }
+  },
+  "confidenceHigh": "high",
+  "confidenceMedium": "medium",
+  "confidenceLow": "low",
+  "todoFollowUpTitle": "Follow up: {body}",
+  "@todoFollowUpTitle": {
+    "placeholders": {
+      "body": {
+        "type": "String"
+      }
+    }
+  },
+  "todoSeedReviewMemory": "Review generated Memory before export",
+  "todoSeedConfirmBackup": "Confirm backup permission boundary",
+  "todoSourceLabel": "source: {sourceId}",
+  "@todoSourceLabel": {
+    "placeholders": {
+      "sourceId": {
+        "type": "String"
+      }
+    }
+  },
+  "todoStatusNeedsExplicitPermission": "needs explicit permission",
+  "todoStatusSuggestedByAgent": "suggested by agent",
+  "chatTitle": "Chat",
+  "chatSubtitle": "Ask WideNote with local Memory, records, and todos as context.",
+  "chatSessionsTitle": "Sessions",
+  "chatDailyReviewTitle": "Daily review",
+  "chatDailyReviewSubtitle": "Ask about today, linked records, and pending todos.",
+  "chatMemoryQaTitle": "Memory QA",
+  "chatMemoryQaSubtitle": "Query editable local Memory with visible provenance.",
+  "chatAgentPackSandboxTitle": "Agent Pack sandbox",
+  "chatAgentPackSandboxSubtitle": "Try pack actions after permission review.",
+  "chatInputTitle": "Input",
+  "chatInputHint": "Ask WideNote about a record, Memory item, or pack run...",
+  "chatLoadErrorTitle": "Chat failed to load",
+  "chatLoadErrorBody": "The local chat could not be opened. Please try again.",
+  "chatHistoryTitle": "History",
+  "chatEmptySessions": "No local sessions yet.",
+  "chatSessionSwitchDisabled": "Wait for the current answer before switching sessions.",
+  "chatLocalConversationTitle": "Local chat",
+  "chatEmptyConversation": "Ask a question about records, Memory, or todos.",
+  "chatSendFailed": "Send failed",
+  "retryButton": "Retry",
+  "chatSourcesTitle": "Sources",
+  "chatTyping": "Answering with local context...",
+  "chatComposerTitle": "Ask",
+  "chatComposerHint": "Ask about local records, Memory, or todos...",
+  "chatSendButton": "Send",
+  "chatGeneratingButton": "Generating",
+  "chatAssistantEmptyReply": "I don't have local records to cite yet. Add captures first, then I can answer from Memory, records, and todos.",
+  "chatAssistantContextReply": "I found {count} local context item(s). {lead}\n\n{sources}",
+  "@chatAssistantContextReply": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "lead": {
+        "type": "String"
+      },
+      "sources": {
+        "type": "String"
+      }
+    }
+  },
+  "chatAssistantLeadTodo": "The closest match is a todo: {excerpt}",
+  "@chatAssistantLeadTodo": {
+    "placeholders": {
+      "excerpt": {
+        "type": "String"
+      }
+    }
+  },
+  "chatAssistantLeadMemory": "The closest match is a Memory item: {excerpt}",
+  "@chatAssistantLeadMemory": {
+    "placeholders": {
+      "excerpt": {
+        "type": "String"
+      }
+    }
+  },
+  "chatAssistantLeadCapture": "The closest match is a raw record: {excerpt}",
+  "@chatAssistantLeadCapture": {
+    "placeholders": {
+      "excerpt": {
+        "type": "String"
+      }
+    }
+  },
+  "chatAssistantLeadGeneric": "The closest match is: {excerpt}",
+  "@chatAssistantLeadGeneric": {
+    "placeholders": {
+      "excerpt": {
+        "type": "String"
+      }
+    }
+  },
+  "chatContextMemoryTitle": "Memory",
+  "chatContextRecordTitle": "Record",
+  "chatContextTodoTitle": "Todo",
+  "chatContextUntitledCapture": "Untitled local capture",
+  "chatContextUntitledTodo": "Untitled todo suggestion",
+  "todosTitle": "Todos",
+  "todosSubtitle": "Source-linked actions with visible record provenance.",
+  "todosSurfaceTitle": "Source-linked todos",
+  "todosEmpty": "No source-linked todos yet.",
+  "pluginsTitle": "Packs",
+  "pluginsSubtitle": "Pack controls for permissions, models, backup, and traces.",
+  "pluginsControlEntriesTitle": "Control entries",
+  "pluginsPackLibraryTitle": "Pack Library",
+  "pluginsPackLibrarySubtitle": "Install, inspect, and disable Agent Packs.",
+  "pluginsPackLibraryStatus": "available",
+  "pluginsPermissionGateTitle": "Permission Gate",
+  "pluginsPermissionGateSubtitle": "Review sensitive capabilities before a pack can run.",
+  "pluginsPermissionGateStatus": "explicit",
+  "pluginsModelProviderTitle": "Model Provider",
+  "pluginsModelProviderSubtitle": "Configure local or BYOK model access.",
+  "pluginsModelProviderStatus": "not connected",
+  "pluginsModelProviderConfigured": "{count, plural, =1{1 provider} other{{count} providers}}",
+  "@pluginsModelProviderConfigured": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pluginsBackupTitle": "Backup",
+  "pluginsBackupSubtitle": "Export or import the local WideNote backup.",
+  "pluginsBackupStatus": "local-first",
+  "pluginsTraceConsoleTitle": "Trace Console",
+  "pluginsTraceConsoleSubtitle": "Inspect pack runs, permissions, and generated outputs.",
+  "pluginsTraceConsoleStatus": "trace-ready",
+  "providerSettingsTitle": "Model Providers",
+  "providerSettingsSubtitle": "Local provider setup for runtime and Agent Pack model access.",
+  "providerSettingsAdd": "Add provider",
+  "providerSettingsListTitle": "Providers",
+  "providerSettingsEmpty": "No providers configured.",
+  "providerSettingsDefaultTag": "Default",
+  "providerConnectionUntested": "Untested",
+  "providerConnectionTesting": "Testing",
+  "providerConnectionConnected": "Connected",
+  "providerConnectionFailed": "Failed",
+  "providerActionSetDefault": "Set default",
+  "providerActionTestConnection": "Test connection",
+  "providerActionEdit": "Edit provider",
+  "providerDialogAddTitle": "Add provider",
+  "providerDialogEditTitle": "Edit provider",
+  "providerFieldProviderType": "Provider type",
+  "providerFieldDisplayName": "Display name",
+  "providerFieldEndpoint": "Endpoint",
+  "providerFieldModel": "Model",
+  "providerFieldApiKey": "API key",
+  "providerApiKeyKeepSessionHelper": "Leave blank to keep the session credential.",
+  "providerInvalidEndpoint": "Endpoint is not a valid URI.",
+  "providerSaveFailed": "Provider could not be saved.",
+  "backupTitle": "Backup",
+  "backupSubtitle": "Export and import local records, Memory, cards, chat, providers, todos, and trace data.",
+  "backupIdleStatus": "Local data stays on this device until you export or paste a backup.",
+  "backupExportReadyStatus": "Backup JSON is ready.",
+  "backupImportDoneStatus": "Backup imported into local storage.",
+  "backupFailedStatus": "Backup failed: {details}",
+  "@backupFailedStatus": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "backupExportSectionTitle": "Export",
+  "backupExportButton": "Export JSON",
+  "backupExportEmpty": "Export creates a versioned local backup JSON with manifest counts.",
+  "backupSecretWarning": "Backups include provider API keys. Keep exported JSON private.",
+  "backupManifestCountsTitle": "Manifest counts",
+  "backupCount": "{section}: {count}",
+  "@backupCount": {
+    "placeholders": {
+      "section": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupExportJsonTitle": "Backup JSON",
+  "backupImportSectionTitle": "Import",
+  "backupImportHint": "Paste a WideNote local backup JSON...",
+  "backupImportButton": "Import backup"
+}

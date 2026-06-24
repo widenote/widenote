@@ -48,11 +48,20 @@ void main() {
         WnEventTypes.todoSuggested,
       ]);
       expect(model.requests.single.prompt, contains('Ship the local runtime'));
-      expect(kernel.tasks.single.status, RuntimeTaskStatus.succeeded);
-      expect(kernel.runs.single.status, RuntimeRunStatus.succeeded);
-      expect(kernel.runs.single.outputEventIds, hasLength(4));
+      final task = kernel.tasks.single;
+      final run = kernel.runs.single;
+      expect(task.packId, 'pack.default');
+      expect(task.agentId, 'agent.capture');
+      expect(task.subscriptionId, 'sub.capture');
+      expect(task.triggerEventId, capture.id);
+      expect(task.status, RuntimeTaskStatus.succeeded);
+      expect(run.taskId, task.id);
+      expect(run.packId, task.packId);
+      expect(run.agentId, task.agentId);
+      expect(run.status, RuntimeRunStatus.succeeded);
 
       final outputs = events.skip(1).toList();
+      expect(run.outputEventIds, outputs.map((event) => event.id).toList());
       for (final output in outputs) {
         expect(output.actor, WnActor.agent);
         expect(output.packId, 'pack.default');
@@ -72,6 +81,38 @@ void main() {
         hasLength(4),
       );
       expect(traceNames, contains('runtime.run.completed'));
+
+      final taskTrace = traces.singleWhere(
+        (trace) => trace.name == 'runtime.task.created',
+      );
+      expect(taskTrace.eventId, capture.id);
+      expect(taskTrace.taskId, task.id);
+      expect(taskTrace.packId, task.packId);
+      expect(taskTrace.agentId, task.agentId);
+
+      final runStartedTrace = traces.singleWhere(
+        (trace) => trace.name == 'runtime.run.started',
+      );
+      expect(runStartedTrace.taskId, task.id);
+      expect(runStartedTrace.runId, run.id);
+
+      final outputTraces = traces
+          .where((trace) => trace.name == 'runtime.handler.output')
+          .toList();
+      expect(outputTraces.map((trace) => trace.eventId), run.outputEventIds);
+      expect(
+        outputTraces.map((trace) => trace.details['type']),
+        outputs.map((event) => event.type),
+      );
+      expect(outputTraces.map((trace) => trace.taskId), everyElement(task.id));
+      expect(outputTraces.map((trace) => trace.runId), everyElement(run.id));
+
+      final completedTrace = traces.singleWhere(
+        (trace) => trace.name == 'runtime.run.completed',
+      );
+      expect(completedTrace.taskId, task.id);
+      expect(completedTrace.runId, run.id);
+      expect(completedTrace.details['output_event_count'], 4);
     },
   );
 
@@ -171,6 +212,48 @@ void main() {
     );
     expect(insights.map((event) => event.packId), ['pack.alpha', 'pack.beta']);
     expect(insights.map((event) => event.payload['source']), ['alpha', 'beta']);
+  });
+
+  test('event and output privacy tiers are materialized from drafts', () async {
+    final store = InMemoryEventStore();
+    final traceSink = InMemoryTraceSink();
+    final kernel = _blankKernel(store: store, traceSink: traceSink);
+    kernel.registerPack(
+      const AgentPack(
+        id: 'pack.privacy',
+        name: 'Privacy pack',
+        version: '0.1.0',
+        subscriptions: <Subscription>[
+          Subscription(
+            id: 'sub.privacy',
+            agentId: 'agent.privacy',
+            eventTypes: <String>{WnEventTypes.captureCreated},
+          ),
+        ],
+        agents: <String, AgentHandler>{'agent.privacy': _PrivacyEchoHandler()},
+      ),
+    );
+
+    final capture = await kernel.publish(
+      const WnEventDraft(
+        type: WnEventTypes.captureCreated,
+        actor: WnActor.user,
+        privacy: WnPrivacy.encryptedSync,
+        payload: <String, Object?>{'text': 'Preserve privacy tier.'},
+      ),
+    );
+
+    final events = await store.readAll();
+    final output = events.singleWhere(
+      (event) => event.type == WnEventTypes.insightCreated,
+    );
+
+    expect(capture.privacy, WnPrivacy.encryptedSync);
+    expect(capture.toJson()['privacy'], WnPrivacy.encryptedSync.wireName);
+    expect(output.privacy, WnPrivacy.encryptedSync);
+    expect(output.toJson()['privacy'], WnPrivacy.encryptedSync.wireName);
+    expect(output.causationId, capture.id);
+    expect(output.correlationId, capture.id);
   });
 
   test('default and todo packs keep output ownership separated', () async {
@@ -303,6 +386,70 @@ void main() {
         traces.map((trace) => trace.name),
         contains('runtime.permission.denied'),
       );
+    },
+  );
+
+  test(
+    'missing declared model permission denies before the handler runs',
+    () async {
+      final store = InMemoryEventStore();
+      final traceSink = InMemoryTraceSink();
+      final model = FakeModel(responses: <String>['should not be called']);
+      final kernel =
+          _blankKernel(
+            store: store,
+            traceSink: traceSink,
+            permissions: InMemoryPermissionBroker(),
+            model: model,
+          )..registerPack(
+            const AgentPack(
+              id: 'pack.model',
+              name: 'Model pack',
+              version: '0.1.0',
+              requiredPermissions: <String>{ModelPermissions.complete},
+              subscriptions: <Subscription>[
+                Subscription(
+                  id: 'sub.model',
+                  agentId: 'agent.model',
+                  eventTypes: <String>{WnEventTypes.captureCreated},
+                ),
+              ],
+              agents: <String, AgentHandler>{
+                'agent.model': _ModelUsingHandler(),
+              },
+            ),
+          );
+
+      await kernel.publish(
+        const WnEventDraft(
+          type: WnEventTypes.captureCreated,
+          actor: WnActor.user,
+          payload: <String, Object?>{'text': 'No model grant.'},
+        ),
+      );
+
+      final events = await store.readAll();
+      final traces = await traceSink.readAll();
+      final traceNames = traces.map((trace) => trace.name).toList();
+
+      expect(events, hasLength(1));
+      expect(model.requests, isEmpty);
+      expect(kernel.tasks.single.status, RuntimeTaskStatus.denied);
+      expect(kernel.runs.single.status, RuntimeRunStatus.denied);
+      expect(traceNames, contains('runtime.task.created'));
+      expect(traceNames, contains('runtime.permission.denied'));
+      expect(traceNames, isNot(contains('runtime.run.started')));
+      expect(traceNames, isNot(contains('runtime.run.failed')));
+      expect(traceNames, isNot(contains('runtime.handler.output')));
+
+      final deniedTrace = traces.singleWhere(
+        (trace) => trace.name == 'runtime.permission.denied',
+      );
+      expect(deniedTrace.taskId, kernel.tasks.single.id);
+      expect(deniedTrace.runId, kernel.runs.single.id);
+      expect(deniedTrace.details['missing_permissions'], <String>[
+        ModelPermissions.complete,
+      ]);
     },
   );
 
@@ -618,6 +765,242 @@ void main() {
     );
     expect(await traceSink.readByRun('missing-run'), isEmpty);
   });
+
+  test('publish can enqueue tasks without draining immediately', () async {
+    final store = InMemoryEventStore();
+    final traceSink = InMemoryTraceSink();
+    final kernel =
+        _blankKernel(store: store, traceSink: traceSink, autoDrain: false)
+          ..registerPack(
+            const AgentPack(
+              id: 'pack.queue',
+              name: 'Queued pack',
+              version: '0.1.0',
+              subscriptions: <Subscription>[
+                Subscription(
+                  id: 'sub.queue',
+                  agentId: 'agent.queue',
+                  eventTypes: <String>{WnEventTypes.captureCreated},
+                ),
+              ],
+              agents: <String, AgentHandler>{
+                'agent.queue': _NamedInsightHandler('queue'),
+              },
+            ),
+          );
+
+    await kernel.publish(
+      const WnEventDraft(
+        type: WnEventTypes.captureCreated,
+        actor: WnActor.user,
+      ),
+    );
+
+    expect((await store.readAll()).map((event) => event.type), <String>[
+      WnEventTypes.captureCreated,
+    ]);
+    expect(kernel.tasks.single.status, RuntimeTaskStatus.queued);
+    expect(kernel.runs, isEmpty);
+    expect(kernel.packStatuses.single.status, RuntimePackStatusKind.queued);
+
+    expect(await kernel.drainQueue(), 1);
+
+    expect(kernel.tasks.single.status, RuntimeTaskStatus.succeeded);
+    expect(kernel.runs.single.status, RuntimeRunStatus.succeeded);
+    expect(kernel.packStatuses.single.status, RuntimePackStatusKind.succeeded);
+    expect(await store.readByType(WnEventTypes.insightCreated), hasLength(1));
+  });
+
+  test(
+    'dependencies run after prerequisite subscriptions even when listed first',
+    () async {
+      final store = InMemoryEventStore();
+      final traceSink = InMemoryTraceSink();
+      final order = <String>[];
+      final kernel = _blankKernel(store: store, traceSink: traceSink)
+        ..registerPack(
+          AgentPack(
+            id: 'pack.deps',
+            name: 'Dependency pack',
+            version: '0.1.0',
+            subscriptions: const <Subscription>[
+              Subscription(
+                id: 'sub.finalize',
+                agentId: 'agent.finalize',
+                eventTypes: <String>{WnEventTypes.captureCreated},
+                dependsOn: <String>{'sub.prepare'},
+              ),
+              Subscription(
+                id: 'sub.prepare',
+                agentId: 'agent.prepare',
+                eventTypes: <String>{WnEventTypes.captureCreated},
+              ),
+            ],
+            agents: <String, AgentHandler>{
+              'agent.finalize': _OrderRecordingHandler('finalize', order),
+              'agent.prepare': _OrderRecordingHandler('prepare', order),
+            },
+          ),
+        );
+
+      await kernel.publish(
+        const WnEventDraft(
+          type: WnEventTypes.captureCreated,
+          actor: WnActor.user,
+        ),
+      );
+
+      expect(order, <String>['prepare', 'finalize']);
+      expect(
+        kernel.tasks.map((task) => task.status),
+        everyElement(RuntimeTaskStatus.succeeded),
+      );
+      expect(kernel.tasks.first.dependencyTaskIds, <String>[
+        kernel.tasks.last.id,
+      ]);
+      final traces = await traceSink.readAll();
+      expect(
+        traces.map((trace) => trace.name),
+        contains('runtime.task.waiting'),
+      );
+    },
+  );
+
+  test(
+    'failed task retries with a fake executor until retry policy is exhausted',
+    () async {
+      final store = InMemoryEventStore();
+      final traceSink = InMemoryTraceSink();
+      final handler = _FailsOnceHandler();
+      final kernel = _blankKernel(store: store, traceSink: traceSink)
+        ..registerPack(
+          AgentPack(
+            id: 'pack.retry',
+            name: 'Retry pack',
+            version: '0.1.0',
+            subscriptions: const <Subscription>[
+              Subscription(
+                id: 'sub.retry',
+                agentId: 'agent.retry',
+                eventTypes: <String>{WnEventTypes.captureCreated},
+              ),
+            ],
+            agentDefinitions: const <String, AgentDefinition>{
+              'agent.retry': AgentDefinition(
+                id: 'agent.retry',
+                retryPolicy: RetryPolicy(maxAttempts: 2),
+              ),
+            },
+            agents: <String, AgentHandler>{'agent.retry': handler},
+          ),
+        );
+
+      await kernel.publish(
+        const WnEventDraft(
+          type: WnEventTypes.captureCreated,
+          actor: WnActor.user,
+        ),
+      );
+
+      expect(handler.calls, 2);
+      expect(kernel.tasks.single.status, RuntimeTaskStatus.succeeded);
+      expect(kernel.tasks.single.attempts, 2);
+      expect(kernel.runs.map((run) => run.status), <RuntimeRunStatus>[
+        RuntimeRunStatus.failed,
+        RuntimeRunStatus.succeeded,
+      ]);
+      final traces = await traceSink.readAll();
+      expect(
+        traces.map((trace) => trace.name),
+        contains('runtime.task.retry_queued'),
+      );
+    },
+  );
+
+  test('queued task can be canceled before the fake executor runs', () async {
+    final store = InMemoryEventStore();
+    final traceSink = InMemoryTraceSink();
+    final handler = _CountingHandler();
+    final kernel =
+        _blankKernel(store: store, traceSink: traceSink, autoDrain: false)
+          ..registerPack(
+            AgentPack(
+              id: 'pack.cancel',
+              name: 'Cancelable pack',
+              version: '0.1.0',
+              subscriptions: const <Subscription>[
+                Subscription(
+                  id: 'sub.cancel',
+                  agentId: 'agent.cancel',
+                  eventTypes: <String>{WnEventTypes.captureCreated},
+                ),
+              ],
+              agents: <String, AgentHandler>{'agent.cancel': handler},
+            ),
+          );
+
+    await kernel.publish(
+      const WnEventDraft(
+        type: WnEventTypes.captureCreated,
+        actor: WnActor.user,
+      ),
+    );
+
+    expect(await kernel.cancelTask(kernel.tasks.single.id), isTrue);
+    expect(await kernel.drainQueue(), 0);
+    expect(handler.calls, 0);
+    expect(kernel.tasks.single.status, RuntimeTaskStatus.canceled);
+    expect(kernel.runs, isEmpty);
+    expect(kernel.packStatuses.single.status, RuntimePackStatusKind.canceled);
+    final traces = await traceSink.readAll();
+    expect(
+      traces.map((trace) => trace.name),
+      contains('runtime.task.canceled'),
+    );
+  });
+
+  test('script runtime is denied without adding script execution', () async {
+    final store = InMemoryEventStore();
+    final traceSink = InMemoryTraceSink();
+    final kernel = _blankKernel(store: store, traceSink: traceSink)
+      ..registerPack(
+        const AgentPack(
+          id: 'pack.script',
+          name: 'Script pack',
+          version: '0.1.0',
+          subscriptions: <Subscription>[
+            Subscription(
+              id: 'sub.script',
+              agentId: 'agent.script',
+              eventTypes: <String>{WnEventTypes.captureCreated},
+            ),
+          ],
+          agentDefinitions: <String, AgentDefinition>{
+            'agent.script': AgentDefinition(
+              id: 'agent.script',
+              runtimeKind: AgentRuntimeKind.script,
+            ),
+          },
+          agents: <String, AgentHandler>{},
+        ),
+      );
+
+    await kernel.publish(
+      const WnEventDraft(
+        type: WnEventTypes.captureCreated,
+        actor: WnActor.user,
+      ),
+    );
+
+    expect(kernel.tasks.single.status, RuntimeTaskStatus.denied);
+    expect(kernel.runs.single.status, RuntimeRunStatus.denied);
+    expect((await store.readAll()), hasLength(1));
+    final traces = await traceSink.readAll();
+    expect(
+      traces.map((trace) => trace.name),
+      contains('runtime.agent.unsupported_runtime'),
+    );
+  });
 }
 
 RuntimeKernel _kernel({
@@ -668,6 +1051,7 @@ RuntimeKernel _blankKernel({
   required TraceSink traceSink,
   ModelClient? model,
   PermissionBroker? permissions,
+  bool autoDrain = true,
 }) {
   return RuntimeKernel(
     eventStore: store,
@@ -678,6 +1062,7 @@ RuntimeKernel _blankKernel({
     clock: TickingWnClock(DateTime.utc(2026, 6, 23, 1)),
     model: model ?? FakeModel(),
     deviceId: 'device-local',
+    autoDrain: autoDrain,
   );
 }
 
@@ -762,6 +1147,46 @@ final class _NamedInsightHandler implements AgentHandler {
   }
 }
 
+final class _OrderRecordingHandler implements AgentHandler {
+  const _OrderRecordingHandler(this.step, this.order);
+
+  final String step;
+  final List<String> order;
+
+  @override
+  Future<AgentHandlerResult> handle(AgentContext context, WnEvent event) async {
+    order.add(step);
+    return AgentHandlerResult(
+      events: <WnEventDraft>[
+        context.emit(
+          type: WnEventTypes.insightCreated,
+          payload: <String, Object?>{'step': step},
+        ),
+      ],
+    );
+  }
+}
+
+final class _FailsOnceHandler implements AgentHandler {
+  int calls = 0;
+
+  @override
+  Future<AgentHandlerResult> handle(AgentContext context, WnEvent event) async {
+    calls += 1;
+    if (calls == 1) {
+      throw StateError('transient fake executor failure');
+    }
+    return AgentHandlerResult(
+      events: <WnEventDraft>[
+        context.emit(
+          type: WnEventTypes.insightCreated,
+          payload: const <String, Object?>{'retry': 'succeeded'},
+        ),
+      ],
+    );
+  }
+}
+
 final class _DefaultPackHandler implements AgentHandler {
   const _DefaultPackHandler();
 
@@ -803,6 +1228,23 @@ final class _TodoPackHandler implements AgentHandler {
           type: WnEventTypes.todoSuggested,
           subjectRef: event.subjectRef,
           payload: const <String, Object?>{'text': 'Review capture.'},
+        ),
+      ],
+    );
+  }
+}
+
+final class _PrivacyEchoHandler implements AgentHandler {
+  const _PrivacyEchoHandler();
+
+  @override
+  Future<AgentHandlerResult> handle(AgentContext context, WnEvent event) async {
+    return AgentHandlerResult(
+      events: <WnEventDraft>[
+        context.emit(
+          type: WnEventTypes.insightCreated,
+          payload: const <String, Object?>{'kind': 'privacy_echo'},
+          privacy: event.privacy,
         ),
       ],
     );

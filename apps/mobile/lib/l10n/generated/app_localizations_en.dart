@@ -1,0 +1,605 @@
+// ignore: unused_import
+import 'package:intl/intl.dart' as intl;
+import 'app_localizations.dart';
+
+// ignore_for_file: type=lint
+
+/// The translations for English (`en`).
+class AppLocalizationsEn extends AppLocalizations {
+  AppLocalizationsEn([String locale = 'en']) : super(locale);
+
+  @override
+  String get appTitle => 'WideNote / 广记';
+
+  @override
+  String get tabHome => 'Home';
+
+  @override
+  String get tabChat => 'Chat';
+
+  @override
+  String get tabTodos => 'Todos';
+
+  @override
+  String get tabPlugins => 'Packs';
+
+  @override
+  String get homeSubtitle => 'quick capture -> timeline -> memory -> insight';
+
+  @override
+  String get quickCaptureTitle => 'Quick Capture';
+
+  @override
+  String get quickCaptureHint =>
+      'Drop a thought, meeting note, promise, or raw memory...';
+
+  @override
+  String get recordButton => 'Record';
+
+  @override
+  String get recordButtonProcessing => 'Processing';
+
+  @override
+  String get stageProcessingTitle => 'Processing';
+
+  @override
+  String get stageProcessingRunning => 'running';
+
+  @override
+  String get stageProcessingIdle => 'idle';
+
+  @override
+  String stageProcessingProcessed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count processed',
+      one: '1 processed',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get stageMemoryTitle => 'Memory';
+
+  @override
+  String get stageMemoryReady => 'ready';
+
+  @override
+  String stageMemoryAccepted(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count accepted',
+      one: '1 accepted',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String stageMemoryAcceptedReview(int acceptedCount, int reviewCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      acceptedCount,
+      locale: localeName,
+      other: '$acceptedCount accepted',
+      one: '1 accepted',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      reviewCount,
+      locale: localeName,
+      other: '$reviewCount review',
+      one: '1 review',
+    );
+    return '$_temp0 · $_temp1';
+  }
+
+  @override
+  String get stageCardsTitle => 'Cards';
+
+  @override
+  String get stageCardsWaiting => 'waiting';
+
+  @override
+  String stageCardsLinked(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count cards',
+      one: '1 card',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get stageInsightTitle => 'Insight';
+
+  @override
+  String get stageInsightDraftLane => 'draft lane';
+
+  @override
+  String get stageInsightWaiting => 'waiting';
+
+  @override
+  String stageInsightSourceLinked(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count source-linked',
+      one: '1 source-linked',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get stageTodoTitle => 'Todo';
+
+  @override
+  String stageTodoLinked(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count linked',
+      one: '1 linked',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get cardsTitle => 'Cards';
+
+  @override
+  String get cardsEmpty => 'No source-linked cards yet.';
+
+  @override
+  String get insightsTitle => 'Insights';
+
+  @override
+  String get insightsEmpty => 'No source-linked insights yet.';
+
+  @override
+  String get recordsTitle => 'Records';
+
+  @override
+  String get recordsEmpty => 'No local records yet.';
+
+  @override
+  String get memoryReviewTitle => 'Memory Review';
+
+  @override
+  String get memoryReviewEmpty => 'No Memory candidates need review.';
+
+  @override
+  String get memoryReviewAccept => 'Accept';
+
+  @override
+  String get memoryReviewEdit => 'Edit';
+
+  @override
+  String get memoryReviewReject => 'Reject';
+
+  @override
+  String get memoryEditTitle => 'Edit Memory';
+
+  @override
+  String get cancelButton => 'Cancel';
+
+  @override
+  String get saveButton => 'Save';
+
+  @override
+  String get memoryTitle => 'Memory';
+
+  @override
+  String get memoryEmpty => 'Memory queue is waiting for first capture.';
+
+  @override
+  String get traceTitle => 'Trace';
+
+  @override
+  String get traceEmpty =>
+      'Local runtime events appear here after captures or pack runs.';
+
+  @override
+  String get recordStatusSavedProcessing => 'Saved locally, processing';
+
+  @override
+  String get recordStatusProcessed => 'Processed locally';
+
+  @override
+  String get recordStatusAgentFailed => 'Saved locally, agent failed';
+
+  @override
+  String get memoryAutoSavedTitle => 'Memory saved automatically';
+
+  @override
+  String get memoryNeedsReviewTitle => 'Memory needs review';
+
+  @override
+  String get memorySavedTitle => 'Memory saved';
+
+  @override
+  String get statusAutoAccepted => 'auto-accepted';
+
+  @override
+  String get statusNeedsReview => 'needs review';
+
+  @override
+  String get statusAccepted => 'accepted';
+
+  @override
+  String confidenceLabel(String confidence) {
+    return '$confidence confidence';
+  }
+
+  @override
+  String get confidenceHigh => 'high';
+
+  @override
+  String get confidenceMedium => 'medium';
+
+  @override
+  String get confidenceLow => 'low';
+
+  @override
+  String todoFollowUpTitle(String body) {
+    return 'Follow up: $body';
+  }
+
+  @override
+  String get todoSeedReviewMemory => 'Review generated Memory before export';
+
+  @override
+  String get todoSeedConfirmBackup => 'Confirm backup permission boundary';
+
+  @override
+  String todoSourceLabel(String sourceId) {
+    return 'source: $sourceId';
+  }
+
+  @override
+  String get todoStatusNeedsExplicitPermission => 'needs explicit permission';
+
+  @override
+  String get todoStatusSuggestedByAgent => 'suggested by agent';
+
+  @override
+  String get chatTitle => 'Chat';
+
+  @override
+  String get chatSubtitle =>
+      'Ask WideNote with local Memory, records, and todos as context.';
+
+  @override
+  String get chatSessionsTitle => 'Sessions';
+
+  @override
+  String get chatDailyReviewTitle => 'Daily review';
+
+  @override
+  String get chatDailyReviewSubtitle =>
+      'Ask about today, linked records, and pending todos.';
+
+  @override
+  String get chatMemoryQaTitle => 'Memory QA';
+
+  @override
+  String get chatMemoryQaSubtitle =>
+      'Query editable local Memory with visible provenance.';
+
+  @override
+  String get chatAgentPackSandboxTitle => 'Agent Pack sandbox';
+
+  @override
+  String get chatAgentPackSandboxSubtitle =>
+      'Try pack actions after permission review.';
+
+  @override
+  String get chatInputTitle => 'Input';
+
+  @override
+  String get chatInputHint =>
+      'Ask WideNote about a record, Memory item, or pack run...';
+
+  @override
+  String get chatLoadErrorTitle => 'Chat failed to load';
+
+  @override
+  String get chatLoadErrorBody =>
+      'The local chat could not be opened. Please try again.';
+
+  @override
+  String get chatHistoryTitle => 'History';
+
+  @override
+  String get chatEmptySessions => 'No local sessions yet.';
+
+  @override
+  String get chatSessionSwitchDisabled =>
+      'Wait for the current answer before switching sessions.';
+
+  @override
+  String get chatLocalConversationTitle => 'Local chat';
+
+  @override
+  String get chatEmptyConversation =>
+      'Ask a question about records, Memory, or todos.';
+
+  @override
+  String get chatSendFailed => 'Send failed';
+
+  @override
+  String get retryButton => 'Retry';
+
+  @override
+  String get chatSourcesTitle => 'Sources';
+
+  @override
+  String get chatTyping => 'Answering with local context...';
+
+  @override
+  String get chatComposerTitle => 'Ask';
+
+  @override
+  String get chatComposerHint => 'Ask about local records, Memory, or todos...';
+
+  @override
+  String get chatSendButton => 'Send';
+
+  @override
+  String get chatGeneratingButton => 'Generating';
+
+  @override
+  String get chatAssistantEmptyReply =>
+      'I don\'t have local records to cite yet. Add captures first, then I can answer from Memory, records, and todos.';
+
+  @override
+  String chatAssistantContextReply(int count, String lead, String sources) {
+    return 'I found $count local context item(s). $lead\n\n$sources';
+  }
+
+  @override
+  String chatAssistantLeadTodo(String excerpt) {
+    return 'The closest match is a todo: $excerpt';
+  }
+
+  @override
+  String chatAssistantLeadMemory(String excerpt) {
+    return 'The closest match is a Memory item: $excerpt';
+  }
+
+  @override
+  String chatAssistantLeadCapture(String excerpt) {
+    return 'The closest match is a raw record: $excerpt';
+  }
+
+  @override
+  String chatAssistantLeadGeneric(String excerpt) {
+    return 'The closest match is: $excerpt';
+  }
+
+  @override
+  String get chatContextMemoryTitle => 'Memory';
+
+  @override
+  String get chatContextRecordTitle => 'Record';
+
+  @override
+  String get chatContextTodoTitle => 'Todo';
+
+  @override
+  String get chatContextUntitledCapture => 'Untitled local capture';
+
+  @override
+  String get chatContextUntitledTodo => 'Untitled todo suggestion';
+
+  @override
+  String get todosTitle => 'Todos';
+
+  @override
+  String get todosSubtitle =>
+      'Source-linked actions with visible record provenance.';
+
+  @override
+  String get todosSurfaceTitle => 'Source-linked todos';
+
+  @override
+  String get todosEmpty => 'No source-linked todos yet.';
+
+  @override
+  String get pluginsTitle => 'Packs';
+
+  @override
+  String get pluginsSubtitle =>
+      'Pack controls for permissions, models, backup, and traces.';
+
+  @override
+  String get pluginsControlEntriesTitle => 'Control entries';
+
+  @override
+  String get pluginsPackLibraryTitle => 'Pack Library';
+
+  @override
+  String get pluginsPackLibrarySubtitle =>
+      'Install, inspect, and disable Agent Packs.';
+
+  @override
+  String get pluginsPackLibraryStatus => 'available';
+
+  @override
+  String get pluginsPermissionGateTitle => 'Permission Gate';
+
+  @override
+  String get pluginsPermissionGateSubtitle =>
+      'Review sensitive capabilities before a pack can run.';
+
+  @override
+  String get pluginsPermissionGateStatus => 'explicit';
+
+  @override
+  String get pluginsModelProviderTitle => 'Model Provider';
+
+  @override
+  String get pluginsModelProviderSubtitle =>
+      'Configure local or BYOK model access.';
+
+  @override
+  String get pluginsModelProviderStatus => 'not connected';
+
+  @override
+  String pluginsModelProviderConfigured(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count providers',
+      one: '1 provider',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get pluginsBackupTitle => 'Backup';
+
+  @override
+  String get pluginsBackupSubtitle =>
+      'Export or import the local WideNote backup.';
+
+  @override
+  String get pluginsBackupStatus => 'local-first';
+
+  @override
+  String get pluginsTraceConsoleTitle => 'Trace Console';
+
+  @override
+  String get pluginsTraceConsoleSubtitle =>
+      'Inspect pack runs, permissions, and generated outputs.';
+
+  @override
+  String get pluginsTraceConsoleStatus => 'trace-ready';
+
+  @override
+  String get providerSettingsTitle => 'Model Providers';
+
+  @override
+  String get providerSettingsSubtitle =>
+      'Local provider setup for runtime and Agent Pack model access.';
+
+  @override
+  String get providerSettingsAdd => 'Add provider';
+
+  @override
+  String get providerSettingsListTitle => 'Providers';
+
+  @override
+  String get providerSettingsEmpty => 'No providers configured.';
+
+  @override
+  String get providerSettingsDefaultTag => 'Default';
+
+  @override
+  String get providerConnectionUntested => 'Untested';
+
+  @override
+  String get providerConnectionTesting => 'Testing';
+
+  @override
+  String get providerConnectionConnected => 'Connected';
+
+  @override
+  String get providerConnectionFailed => 'Failed';
+
+  @override
+  String get providerActionSetDefault => 'Set default';
+
+  @override
+  String get providerActionTestConnection => 'Test connection';
+
+  @override
+  String get providerActionEdit => 'Edit provider';
+
+  @override
+  String get providerDialogAddTitle => 'Add provider';
+
+  @override
+  String get providerDialogEditTitle => 'Edit provider';
+
+  @override
+  String get providerFieldProviderType => 'Provider type';
+
+  @override
+  String get providerFieldDisplayName => 'Display name';
+
+  @override
+  String get providerFieldEndpoint => 'Endpoint';
+
+  @override
+  String get providerFieldModel => 'Model';
+
+  @override
+  String get providerFieldApiKey => 'API key';
+
+  @override
+  String get providerApiKeyKeepSessionHelper =>
+      'Leave blank to keep the session credential.';
+
+  @override
+  String get providerInvalidEndpoint => 'Endpoint is not a valid URI.';
+
+  @override
+  String get providerSaveFailed => 'Provider could not be saved.';
+
+  @override
+  String get backupTitle => 'Backup';
+
+  @override
+  String get backupSubtitle =>
+      'Export and import local records, Memory, cards, chat, providers, todos, and trace data.';
+
+  @override
+  String get backupIdleStatus =>
+      'Local data stays on this device until you export or paste a backup.';
+
+  @override
+  String get backupExportReadyStatus => 'Backup JSON is ready.';
+
+  @override
+  String get backupImportDoneStatus => 'Backup imported into local storage.';
+
+  @override
+  String backupFailedStatus(String details) {
+    return 'Backup failed: $details';
+  }
+
+  @override
+  String get backupExportSectionTitle => 'Export';
+
+  @override
+  String get backupExportButton => 'Export JSON';
+
+  @override
+  String get backupExportEmpty =>
+      'Export creates a versioned local backup JSON with manifest counts.';
+
+  @override
+  String get backupSecretWarning =>
+      'Backups include provider API keys. Keep exported JSON private.';
+
+  @override
+  String get backupManifestCountsTitle => 'Manifest counts';
+
+  @override
+  String backupCount(String section, int count) {
+    return '$section: $count';
+  }
+
+  @override
+  String get backupExportJsonTitle => 'Backup JSON';
+
+  @override
+  String get backupImportSectionTitle => 'Import';
+
+  @override
+  String get backupImportHint => 'Paste a WideNote local backup JSON...';
+
+  @override
+  String get backupImportButton => 'Import backup';
+}

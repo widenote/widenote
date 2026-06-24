@@ -1,0 +1,81 @@
+import 'package:widenote_cards/widenote_cards.dart' as cards;
+import 'package:widenote_local_db/widenote_local_db.dart';
+
+import 'capture_orchestrator.dart';
+
+final class LocalDbCaptureKnowledgeSink implements CaptureKnowledgeSink {
+  const LocalDbCaptureKnowledgeSink(this._database);
+
+  final WideNoteLocalDatabase _database;
+
+  @override
+  Future<void> save(cards.MemoryFirstCardBundle bundle) async {
+    final savedAt = _savedAt(bundle);
+    for (final card in bundle.cards) {
+      _database.cards.save(_cardRecord(card, savedAt));
+    }
+    for (final insight in bundle.insights) {
+      _database.insights.save(_insightRecord(insight, savedAt));
+    }
+  }
+}
+
+CardRecord _cardRecord(cards.MemoryFirstCard card, DateTime savedAt) {
+  return CardRecord(
+    id: card.id,
+    cardKind: _cardKindName(card.kind),
+    title: card.title,
+    body: card.body,
+    sourceRefs: _sourceRefs(card.sourceLinks),
+    payload: card.metadata,
+    createdAt: card.createdAt,
+    updatedAt: savedAt,
+  );
+}
+
+InsightRecord _insightRecord(
+  cards.MemoryFirstInsight insight,
+  DateTime savedAt,
+) {
+  return InsightRecord(
+    id: insight.id,
+    insightKind: _insightKindName(insight.kind),
+    title: insight.title,
+    summary: insight.summary,
+    sourceRefs: _sourceRefs(insight.sourceLinks),
+    metricLabel: insight.metricLabel,
+    metricValue: insight.metricValue,
+    payload: insight.metadata,
+    createdAt: insight.createdAt,
+    updatedAt: savedAt,
+  );
+}
+
+List<Object?> _sourceRefs(List<cards.SourceLink> links) {
+  return links.map((link) => link.toJson()).toList(growable: false);
+}
+
+DateTime _savedAt(cards.MemoryFirstCardBundle bundle) {
+  if (bundle.insights.isNotEmpty) {
+    return bundle.insights.first.createdAt;
+  }
+  if (bundle.cards.isNotEmpty) {
+    return bundle.cards.first.createdAt;
+  }
+  return DateTime.now().toUtc();
+}
+
+String _cardKindName(cards.MemoryFirstCardKind kind) {
+  return switch (kind) {
+    cards.MemoryFirstCardKind.captureSummary => 'capture_summary',
+    cards.MemoryFirstCardKind.memorySummary => 'memory_summary',
+  };
+}
+
+String _insightKindName(cards.MemoryFirstInsightKind kind) {
+  return switch (kind) {
+    cards.MemoryFirstInsightKind.summary => 'summary',
+    cards.MemoryFirstInsightKind.count => 'count',
+    cards.MemoryFirstInsightKind.trend => 'trend',
+  };
+}

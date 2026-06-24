@@ -1,7 +1,7 @@
 import 'package:sqlite3/sqlite3.dart';
 
 abstract final class LocalDbSchema {
-  static const currentVersion = 3;
+  static const currentVersion = 7;
 }
 
 final class LocalDbMigrator {
@@ -44,6 +44,22 @@ final class LocalDbMigrator {
       if (currentVersion < 3 && targetVersion >= 3) {
         _migrateToV3(database);
         database.execute('PRAGMA user_version = 3;');
+      }
+      if (currentVersion < 4 && targetVersion >= 4) {
+        _migrateToV4(database);
+        database.execute('PRAGMA user_version = 4;');
+      }
+      if (currentVersion < 5 && targetVersion >= 5) {
+        _migrateToV5(database);
+        database.execute('PRAGMA user_version = 5;');
+      }
+      if (currentVersion < 6 && targetVersion >= 6) {
+        _migrateToV6(database);
+        database.execute('PRAGMA user_version = 6;');
+      }
+      if (currentVersion < 7 && targetVersion >= 7) {
+        _migrateToV7(database);
+        database.execute('PRAGMA user_version = 7;');
       }
       database.execute('COMMIT;');
     } catch (_) {
@@ -305,6 +321,160 @@ ADD COLUMN duration_ms REAL;
       ..execute('''
 CREATE INDEX IF NOT EXISTS trace_events_pack_agent_idx
 ON trace_events(pack_id, agent_id, created_at);
+''');
+  }
+
+  static void _migrateToV4(Database database) {
+    database
+      ..execute('''
+CREATE TABLE IF NOT EXISTS cards (
+  id TEXT PRIMARY KEY,
+  schema_version INTEGER NOT NULL,
+  card_kind TEXT NOT NULL,
+  status TEXT NOT NULL,
+  title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  source_refs_json TEXT NOT NULL,
+  payload_json TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS cards_kind_created_at_idx
+ON cards(card_kind, created_at);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS cards_status_idx
+ON cards(status);
+''')
+      ..execute('''
+CREATE TABLE IF NOT EXISTS insights (
+  id TEXT PRIMARY KEY,
+  schema_version INTEGER NOT NULL,
+  insight_kind TEXT NOT NULL,
+  status TEXT NOT NULL,
+  title TEXT NOT NULL,
+  summary TEXT NOT NULL,
+  source_refs_json TEXT NOT NULL,
+  metric_label TEXT,
+  metric_value REAL,
+  payload_json TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS insights_kind_created_at_idx
+ON insights(insight_kind, created_at);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS insights_status_idx
+ON insights(status);
+''');
+  }
+
+  static void _migrateToV5(Database database) {
+    database
+      ..execute('''
+CREATE TABLE IF NOT EXISTS chat_sessions (
+  id TEXT PRIMARY KEY,
+  schema_version INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  status TEXT NOT NULL,
+  payload_json TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS chat_sessions_updated_at_idx
+ON chat_sessions(updated_at);
+''')
+      ..execute('''
+CREATE TABLE IF NOT EXISTS chat_messages (
+  id TEXT PRIMARY KEY,
+  schema_version INTEGER NOT NULL,
+  session_id TEXT NOT NULL,
+  role TEXT NOT NULL,
+  status TEXT NOT NULL,
+  body TEXT NOT NULL,
+  source_refs_json TEXT NOT NULL,
+  payload_json TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  FOREIGN KEY(session_id) REFERENCES chat_sessions(id) ON DELETE CASCADE
+);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS chat_messages_session_created_at_idx
+ON chat_messages(session_id, created_at);
+''')
+      ..execute('''
+CREATE TABLE IF NOT EXISTS model_provider_configs (
+  id TEXT PRIMARY KEY,
+  schema_version INTEGER NOT NULL,
+  provider_kind TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  endpoint TEXT NOT NULL,
+  model TEXT NOT NULL,
+  status TEXT NOT NULL,
+  is_default INTEGER NOT NULL,
+  has_api_key INTEGER NOT NULL,
+  capabilities_json TEXT NOT NULL,
+  payload_json TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS model_provider_configs_default_idx
+ON model_provider_configs(is_default);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS model_provider_configs_kind_idx
+ON model_provider_configs(provider_kind);
+''');
+  }
+
+  static void _migrateToV6(Database database) {
+    database.execute('''
+ALTER TABLE model_provider_configs
+ADD COLUMN api_key TEXT NOT NULL DEFAULT '';
+''');
+  }
+
+  static void _migrateToV7(Database database) {
+    database
+      ..execute('''
+CREATE TABLE IF NOT EXISTS attachments (
+  id TEXT PRIMARY KEY,
+  schema_version INTEGER NOT NULL,
+  capture_id TEXT NOT NULL,
+  source_event_id TEXT,
+  asset_kind TEXT NOT NULL,
+  mime_type TEXT,
+  storage_path TEXT NOT NULL,
+  original_file_name TEXT,
+  sha256 TEXT,
+  byte_length INTEGER,
+  status TEXT NOT NULL,
+  payload_json TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY(capture_id) REFERENCES captures(id) ON DELETE CASCADE
+);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS attachments_capture_idx
+ON attachments(capture_id, created_at);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS attachments_status_idx
+ON attachments(status);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS attachments_sha256_idx
+ON attachments(sha256);
 ''');
   }
 }

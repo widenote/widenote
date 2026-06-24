@@ -36,10 +36,13 @@ subscriptions:
     event_types:
       - wn.capture.created
     agent_id: agent.capture_loop
+    depends_on: []
 agents:
   - id: agent.capture_loop
     runtime: native
     prompt_ref: null
+    retry_policy:
+      max_attempts: 2
     output_events:
       - wn.memory.proposed
       - wn.card.created
@@ -84,7 +87,7 @@ Phase-one official manifests are checked with the lightweight validator:
 node tools/pack_validator/validate.mjs packs/official/default/manifest.json packs/official/todo/manifest.json
 ```
 
-This is a lightweight validator, not a complete JSON Schema validator. It currently checks JSON parse, required manifest shape, intra-manifest references, agent permission subsets, non-empty output events, and the `pack.default` / `pack.todo` phase-one guardrails.
+This is a lightweight validator, not a complete JSON Schema validator. It currently checks JSON parse, required manifest shape, intra-manifest references, subscription dependency references and cycles, agent permission subsets, non-empty output events, retry policy bounds, script-execution rejection, and the `pack.default` / `pack.todo` phase-one guardrails.
 
 ## Subscription Contract
 
@@ -92,8 +95,20 @@ Subscriptions are declarative:
 
 - `event_types[]` match append-only runtime event names.
 - `agent_id` must point to an agent declared in the same pack.
+- `depends_on[]` points to prerequisite subscription ids in the same pack.
 - One event may trigger multiple packs.
 - Runtime traces must include pack id, agent id, task id, and run id.
+
+## Queue and Retry Contract
+
+Phase-one local execution is task-queue based:
+
+- Matching subscriptions create queued tasks.
+- Tasks run only after every `depends_on[]` prerequisite task succeeds.
+- Failed, denied, canceled, or missing prerequisite tasks block dependent tasks.
+- `retry_policy.max_attempts` controls deterministic fake/native executor retries.
+- Permission denied, unsupported script runtime, and user cancellation are terminal states and are not auto-retried.
+- Pack status surfaces derive from queued task/run state, not from private app tables.
 
 ## Permission Model
 
@@ -167,7 +182,7 @@ Pack prompts should follow progressive context disclosure:
 
 ## Deferred
 
-- Script pack runtime.
+- Script pack runtime. Manifest fields may describe it, but phase-one validators and the local runtime reject execution until a sandbox RFC is accepted.
 - Community pack store.
 - Remote runner execution.
 - Dynamic UI block scripting.

@@ -25,11 +25,21 @@ Current checks include:
 - JSON parse
 - Required manifest shape
 - Unique agent ids
+- Unique subscription ids
 - Subscription agent references
+- Subscription dependency references and dependency cycles
 - Agent permission subset of pack permissions
 - Model profile references
 - Non-empty agent output events
+- Agent retry policy bounds
+- Phase-one script runtime and script side-effect rejection
 - `pack.default` and `pack.todo` phase-one guardrails
+
+Validator self-tests:
+
+```sh
+node tools/pack_validator/validate_test.mjs
+```
 
 ## Generated Artifacts
 
