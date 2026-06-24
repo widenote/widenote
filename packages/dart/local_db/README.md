@@ -24,6 +24,7 @@ rendering.
 - `LocalBackupCodec`
 - `LocalBackupManifest`
 - `LocalDataBackup`
+- `LocalMarkdownExportService`
 - `EventLogDao`
 - `CapturesDao`
 - `AttachmentsDao`
@@ -91,6 +92,10 @@ provider API keys as part of user-managed backup/restore portability. Backup
 callers must treat exported JSON as secret-bearing user data and keep keys out
 of logs, generated docs, test output, and automated review prompts.
 
+`LocalMarkdownExportService` is a human-readable projection of a decoded
+backup. It is not restorable and intentionally reports only whether provider
+API keys are present; it does not include key values.
+
 ## Generated Artifacts
 
 None. If Drift-generated files are introduced later, document their source
@@ -110,7 +115,9 @@ messages, provider metadata, attachment metadata, Memory review
 accept/edit/reject transitions, the SQLite-backed Memory repository adapter,
 todo status updates, trace reads, in-memory schema bootstrap, file-path reopen
 persistence, v1-to-current migrations, pagination, backup import/export, and
-runtime EventStore/TraceSink adapters.
+runtime EventStore/TraceSink adapters. Backup tests also cover the Markdown
+projection and verify that provider API key values stay out of the readable
+export.
 
 ## Related Context
 

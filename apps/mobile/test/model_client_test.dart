@@ -5,6 +5,8 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
+import 'package:widenote_local_db/widenote_local_db.dart';
+import 'package:widenote_mobile/app/local_database.dart';
 import 'package:widenote_mobile/app/model_client.dart';
 
 void main() {
@@ -35,6 +37,84 @@ void main() {
 
     expect(container.read(modelClientProvider), isA<LocalSummaryModelClient>());
   });
+
+  test('modelClientProvider routes through saved default provider', () async {
+    late String? authorizationHeader;
+    final endpoint = await _serve((request) async {
+      authorizationHeader = request.headers.value('authorization');
+      await utf8.decodeStream(request);
+      request.response
+        ..statusCode = HttpStatus.ok
+        ..headers.contentType = ContentType.json
+        ..write(
+          jsonEncode(<String, Object?>{
+            'id': 'provider-test',
+            'model': 'local-provider-model',
+            'choices': <Map<String, Object?>>[
+              <String, Object?>{
+                'message': <String, Object?>{
+                  'role': 'assistant',
+                  'content': 'Provider-backed memory.',
+                },
+              },
+            ],
+          }),
+        );
+      await request.response.close();
+    });
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    _insertProvider(database, endpoint: endpoint);
+    final container = ProviderContainer(
+      overrides: [localDatabaseProvider.overrideWithValue(database)],
+    );
+    addTearDown(container.dispose);
+
+    final response = await container
+        .read(modelClientProvider)
+        .complete(
+          const runtime.ModelRequest(
+            prompt: 'Summarize capture for Memory: provider test',
+          ),
+        );
+
+    expect(authorizationHeader, 'Bearer provider-secret');
+    expect(response.text, 'Provider-backed memory.');
+    expect(response.raw['provider_id'], 'provider-default');
+  });
+
+  test(
+    'modelClientProvider falls back locally when default provider fails',
+    () async {
+      final endpoint = await _serve((request) async {
+        await utf8.decodeStream(request);
+        request.response
+          ..statusCode = HttpStatus.internalServerError
+          ..write('server failed');
+        await request.response.close();
+      });
+      final database = WideNoteLocalDatabase.inMemory();
+      addTearDown(database.close);
+      _insertProvider(database, endpoint: endpoint);
+      final container = ProviderContainer(
+        overrides: [localDatabaseProvider.overrideWithValue(database)],
+      );
+      addTearDown(container.dispose);
+
+      final response = await container
+          .read(modelClientProvider)
+          .complete(
+            const runtime.ModelRequest(
+              prompt: 'Summarize capture for Memory: Provider fallback note.',
+            ),
+          );
+
+      expect(response.text, 'Provider fallback note.');
+      expect(response.raw['model_fallback'], isTrue);
+      expect(response.raw['model_fallback_provider_id'], 'provider-default');
+      expect(response.raw.toString(), isNot(contains('provider-secret')));
+    },
+  );
 
   test('qaMimoModelClientFromKey ignores blank keys and trims valid keys', () {
     expect(qaMimoModelClientFromKey(''), isNull);
@@ -266,4 +346,23 @@ Future<Uri> _serve(_RequestHandler handler) async {
     }
   }());
   return Uri.parse('http://${server.address.host}:${server.port}/messages');
+}
+
+void _insertProvider(WideNoteLocalDatabase database, {required Uri endpoint}) {
+  final now = DateTime.utc(2026, 6, 24, 12);
+  database.modelProviderConfigs.insert(
+    ModelProviderConfigRecord(
+      id: 'provider-default',
+      providerKind: 'openAiCompatible',
+      displayName: 'Provider default',
+      endpoint: endpoint.toString(),
+      model: 'local-provider-model',
+      isDefault: true,
+      hasApiKey: true,
+      apiKey: 'provider-secret',
+      capabilities: const <Object?>['chat', 'completion'],
+      createdAt: now,
+      updatedAt: now,
+    ),
+  );
 }

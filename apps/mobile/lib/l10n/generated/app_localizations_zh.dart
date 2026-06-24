@@ -412,6 +412,71 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pluginsTraceConsoleStatus => '追踪就绪';
 
   @override
+  String get agentPlatformTitle => '智能体观测';
+
+  @override
+  String get agentPlatformSubtitle => '基于真实本地追踪事件的只读运行证据。';
+
+  @override
+  String get traceConsoleTitle => '追踪控制台';
+
+  @override
+  String get traceConsoleSubtitle => '检查本地 Agent Runtime 运行、权限和生成输出。';
+
+  @override
+  String get traceConsoleSummaryTitle => '运行摘要';
+
+  @override
+  String traceConsoleEventCount(int count) {
+    return '追踪事件：$count';
+  }
+
+  @override
+  String traceConsoleRunCount(int count) {
+    return '运行：$count';
+  }
+
+  @override
+  String traceConsoleWarningCount(int count) {
+    return '警告：$count';
+  }
+
+  @override
+  String get traceConsoleRefreshButton => '刷新';
+
+  @override
+  String get traceConsoleOpenButton => '打开追踪控制台';
+
+  @override
+  String get traceConsoleEventsTitle => '事件';
+
+  @override
+  String get traceConsoleEmpty => '还没有运行追踪。记录或插件运行后会显示在这里。';
+
+  @override
+  String get traceConsoleNoMessage => '没有记录消息。';
+
+  @override
+  String traceConsoleRun(String runId) {
+    return '运行：$runId';
+  }
+
+  @override
+  String traceConsolePack(String packId) {
+    return '插件：$packId';
+  }
+
+  @override
+  String traceConsoleAgent(String agentId) {
+    return '智能体：$agentId';
+  }
+
+  @override
+  String traceConsoleDuration(num duration) {
+    return '耗时：$duration ms';
+  }
+
+  @override
   String get providerSettingsTitle => '模型提供商';
 
   @override
@@ -521,7 +586,19 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get backupCopyJsonButton => '复制 JSON';
+
+  @override
+  String get backupCopyMarkdownButton => '复制 Markdown';
+
+  @override
+  String get backupCopiedStatus => '导出内容已复制。';
+
+  @override
   String get backupExportJsonTitle => '备份 JSON';
+
+  @override
+  String get backupExportMarkdownTitle => '可读 Markdown';
 
   @override
   String get backupImportSectionTitle => '导入';

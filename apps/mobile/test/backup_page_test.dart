@@ -47,6 +47,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Backup JSON'), findsOneWidget);
+    expect(find.text('Readable Markdown'), findsOneWidget);
     expect(find.text('captures: 1'), findsOneWidget);
     expect(find.text('todos: 1'), findsOneWidget);
     expect(find.text('model_provider_configs: 1'), findsOneWidget);
@@ -57,6 +58,41 @@ void main() {
     expect(find.textContaining('"local_db_schema_version"'), findsOneWidget);
     expect(
       find.textContaining('"api_key": "${_backupPageCredential()}"'),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('backup-export-markdown')), findsOneWidget);
+    expect(
+      find.textContaining('Portable local backup from widget test.'),
+      findsWidgets,
+    );
+    expect(find.textContaining(_backupPageCredential()), findsOneWidget);
+  });
+
+  testWidgets('backup copy actions expose explicit JSON and Markdown exports', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    _seedLocalData(database);
+    await _pumpBackupPage(tester, database: database);
+
+    await tester.tap(find.byKey(const Key('backup-export-button')));
+    await tester.pumpAndSettle();
+    await tester.drag(
+      find.byKey(const Key('backup-page')),
+      const Offset(0, -400),
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const Key('backup-copy-markdown-button')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('backup-copy-markdown-button')));
+    await tester.pump(const Duration(milliseconds: 250));
+
+    expect(find.text('Export copied.'), findsOneWidget);
+    expect(find.byKey(const Key('backup-copy-json-button')), findsOneWidget);
+    expect(
+      find.byKey(const Key('backup-copy-markdown-button')),
       findsOneWidget,
     );
   });
@@ -70,11 +106,11 @@ void main() {
 
     await tester.tap(find.byKey(const Key('backup-export-button')));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(
-      find.byKey(const Key('backup-import-button')),
-      120,
-      scrollable: find.byType(Scrollable).first,
+    await tester.drag(
+      find.byKey(const Key('backup-page')),
+      const Offset(0, -900),
     );
+    await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('backup-import-field')), findsOneWidget);
     expect(find.byKey(const Key('backup-import-button')), findsOneWidget);

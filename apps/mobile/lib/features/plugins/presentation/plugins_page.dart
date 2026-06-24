@@ -73,10 +73,12 @@ class _ControlList extends ConsumerWidget {
           ),
           const Divider(height: 20),
           _ControlRow(
+            key: const Key('trace-console-entry'),
             icon: Icons.account_tree_outlined,
             title: l10n.pluginsTraceConsoleTitle,
             subtitle: l10n.pluginsTraceConsoleSubtitle,
             status: l10n.pluginsTraceConsoleStatus,
+            onTap: () => context.go('/plugins/traces'),
           ),
         ],
       ),

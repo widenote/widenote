@@ -31,7 +31,9 @@ It should stay short. It points to the right local context instead of duplicatin
 - `docs/research/2026-06-23-memex-design-critique.md`
 - `docs/research/2026-06-23-kimi-review-followup.md`
 - `docs/research/2026-06-24-external-review-followup.md`
+- `docs/research/2026-06-24-external-review-round-gap-closeout.md`
 - `docs/research/2026-06-24-android-emulator-qa.md`
+- `docs/research/2026-06-24-android-followup-qa.md`
 - `docs/research/2026-06-24-memex-phase-one-gap-audit.md`
 
 ## RFCs
@@ -66,6 +68,7 @@ It should stay short. It points to the right local context instead of duplicatin
 | Mobile app | `apps/mobile/README.md` | Flutter client and local runtime host |
 | Mobile backup | `apps/mobile/lib/features/backup/README.md` | Local JSON backup export/import UI |
 | Mobile model providers | `apps/mobile/lib/features/model_providers/README.md` | Provider settings UI and local state |
+| Mobile traces | `apps/mobile/lib/features/traces/README.md` | Read-only local Agent Runtime trace console |
 | API service | `apps/api/README.md` | Optional backend API |
 | TypeScript runner | `apps/runner-ts/README.md` | Self-hosted or cloud runner |
 | Schemas | `packages/schemas/README.md` | Shared runtime contracts and generated types |

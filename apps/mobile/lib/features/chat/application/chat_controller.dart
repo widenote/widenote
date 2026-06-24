@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/local_database.dart';
+import '../../../app/model_client.dart';
 import '../../../shared/text_preview.dart';
 import '../domain/chat_models.dart';
 import 'chat_assistant.dart';
@@ -29,9 +30,14 @@ final chatContextSelectorProvider = Provider<ChatContextSelector>((ref) {
 });
 
 final chatAssistantProvider = Provider<ChatAssistant>((ref) {
-  return DeterministicLocalChatAssistant(
+  final fallback = DeterministicLocalChatAssistant(
     copy: ref.watch(chatAssistantCopyProvider),
   );
+  final model = ref.watch(modelClientProvider);
+  if (model is LocalSummaryModelClient) {
+    return fallback;
+  }
+  return ModelBackedChatAssistant(model: model, fallback: fallback);
 });
 
 final chatAssistantCopyProvider = Provider<ChatAssistantCopy>((ref) {
