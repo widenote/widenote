@@ -10,6 +10,31 @@ import 'package:widenote_mobile/features/capture/domain/capture_models.dart';
 import 'package:widenote_mobile/features/capture/media/capture_media.dart';
 
 void main() {
+  testWidgets('record button shows empty and saved feedback', (tester) async {
+    await _pumpApp(tester);
+
+    await tester.tap(find.byKey(const Key('record-capture-button')));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Add text or an attachment before saving.'),
+      findsOneWidget,
+    );
+
+    await tester.enterText(
+      find.byKey(const Key('quick-capture-field')),
+      'Feedback should confirm this capture.',
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Add text or an attachment before saving.'), findsNothing);
+
+    await tester.tap(find.byKey(const Key('record-capture-button')));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Record saved. Local agents are organizing it now.'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('photo attachment sample can be previewed and removed', (
     tester,
   ) async {
@@ -22,6 +47,10 @@ void main() {
     expect(attachment.kind, CaptureAssetKind.photo);
     expect(find.text('Field photo sample.jpg'), findsOneWidget);
     expect(find.textContaining('Photo sample'), findsOneWidget);
+    expect(
+      find.text('Photo attached. Review it, then save the record.'),
+      findsOneWidget,
+    );
 
     final semantics = tester.ensureSemantics();
     try {
@@ -56,6 +85,10 @@ void main() {
     expect(attachment.kind, CaptureAssetKind.voice);
     expect(find.text('Voice transcript sample.m4a'), findsOneWidget);
     expect(find.textContaining('Transcript needs review'), findsOneWidget);
+    expect(
+      find.text('Voice draft attached. Review the transcript before saving.'),
+      findsOneWidget,
+    );
 
     await tester.tap(find.byKey(const Key('record-capture-button')));
     await tester.pumpAndSettle();
@@ -132,6 +165,10 @@ void main() {
     inputState = _readCaptureInputState(tester);
     expect(inputState.attachments.single.kind, CaptureAssetKind.share);
     expect(find.text('Shared web note sample'), findsOneWidget);
+    expect(
+      find.text('Imported item attached. Review it, then save the record.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('capture console renders localized Chinese mode labels', (

@@ -9,7 +9,7 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
-  String get appTitle => 'WideNote / 广记';
+  String get appTitle => '广记';
 
   @override
   String get tabHome => '首页/记录';
@@ -112,6 +112,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String captureAttachmentBlocked(String reason) {
     return '附件已阻止 · $reason · 预览在复核前隐藏。';
   }
+
+  @override
+  String get captureEmptyMessage => '先输入文字或添加一个附件，再保存记录。';
+
+  @override
+  String get capturePhotoAttachedMessage => '照片已添加，复核后可以保存记录。';
+
+  @override
+  String get captureVoiceAttachedMessage => '语音草稿已添加，请先复核转写再保存。';
+
+  @override
+  String get captureShareAttachedMessage => '导入项目已添加，复核后可以保存记录。';
+
+  @override
+  String get captureSavedMessage => '记录已保存，本地智能体正在整理。';
+
+  @override
+  String get captureOpenTimelineAction => '时间线';
 
   @override
   String get recordButton => '记录';
@@ -644,7 +662,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get providerSettingsTitle => '模型提供商';
 
   @override
-  String get providerSettingsSubtitle => '为运行时和 Agent Pack 配置本地模型访问。';
+  String get providerSettingsSubtitle =>
+      '选择 WideNote 智能体如何访问模型、默认运行时模型是谁，以及哪些能力可以安全使用。';
 
   @override
   String get providerSettingsAdd => '添加提供商';
@@ -657,6 +676,78 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get providerSettingsDefaultTag => '默认';
+
+  @override
+  String get providerSettingsStatusTitle => '运行时模型访问';
+
+  @override
+  String providerSettingsStatusConfigured(String provider) {
+    return '正在使用 $provider';
+  }
+
+  @override
+  String get providerSettingsStatusNotConfigured => '离线兜底已启用';
+
+  @override
+  String get providerSettingsStatusDescriptionConfigured =>
+      '当前切片中，捕获、对话和内置 Agent Pack 默认使用这个模型；后续角色覆盖会在这里接入。';
+
+  @override
+  String get providerSettingsStatusDescriptionOffline =>
+      '核心记录仍可用本地确定性摘要离线运行。需要真实模型调用时，再添加自带密钥的提供商。';
+
+  @override
+  String providerSettingsProviderCount(int count) {
+    return '$count 个提供商';
+  }
+
+  @override
+  String get providerSettingsRolesTitle => '模型角色';
+
+  @override
+  String get providerSettingsRolesDescription =>
+      'WideNote 把提供商凭据和运行时角色分开，方便后续 Agent Pack 安全路由。';
+
+  @override
+  String get providerSettingsTextRoleTitle => '默认文本模型';
+
+  @override
+  String get providerSettingsTextRoleDescription =>
+      '当前用于捕获摘要、对话回答、Memory 提取和内置 Agent Pack。';
+
+  @override
+  String get providerSettingsAgentRoleTitle => '按智能体覆盖';
+
+  @override
+  String get providerSettingsAgentRoleDescription => '暂未启用。当前所有内置智能体继承默认模型。';
+
+  @override
+  String get providerSettingsRoleFallback => '本地确定性兜底';
+
+  @override
+  String get providerSettingsCapabilitiesTitle => '能力与隐私';
+
+  @override
+  String get providerSettingsCapabilitiesDescription =>
+      '连接测试只在用户主动触发时运行。API Key 保留在本地，只会出现在用户自己导出的备份里。';
+
+  @override
+  String get providerSettingsCapabilityChat => '对话';
+
+  @override
+  String get providerSettingsCapabilityCompletion => '补全';
+
+  @override
+  String get providerSettingsCapabilityOfflineFallback => '离线兜底';
+
+  @override
+  String get providerSettingsCapabilityByok => '自带密钥本地存储';
+
+  @override
+  String get providerClearKeyTitle => '清除已保存的 API Key';
+
+  @override
+  String get providerClearKeySubtitle => '不勾选且输入框留空时，会继续保留已保存的密钥。';
 
   @override
   String get providerConnectionUntested => '未测试';

@@ -40,6 +40,7 @@ It should stay short. It points to the right local context instead of duplicatin
 - `docs/research/2026-06-25-mobile-entry-closure-android-qa.md`
 - `docs/research/2026-06-25-live-model-user-journey-qa.md`
 - `docs/research/2026-06-25-mobile-ui-style-trends.md`
+- `docs/research/2026-06-25-capture-provider-orchestration-ux.md`
 - `docs/research/2026-06-24-omi-clean-room-plan.md`
 - `docs/research/2026-06-24-omi-android-qa.md`
 

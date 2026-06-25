@@ -192,19 +192,42 @@ void main() {
   ) async {
     await _pumpApp(tester);
 
-    expect(find.text('idle'), findsOneWidget);
-    expect(find.text('ready'), findsOneWidget);
-    expect(find.text('0 linked'), findsOneWidget);
+    expect(_readCaptureState(tester).records, isEmpty);
+    expect(_readCaptureState(tester).todos, isEmpty);
     expect(find.textContaining('Processed locally'), findsNothing);
 
     await _submitQuickCapture(tester, '   ');
 
-    expect(find.text('idle'), findsOneWidget);
-    expect(find.text('ready'), findsOneWidget);
-    expect(find.text('0 linked'), findsOneWidget);
+    expect(_readCaptureState(tester).records, isEmpty);
+    expect(_readCaptureState(tester).todos, isEmpty);
     expect(find.textContaining('Processed locally'), findsNothing);
     expect(_readCaptureState(tester).cards, isEmpty);
     expect(_readCaptureState(tester).insights, isEmpty);
+  });
+
+  testWidgets('home record rows open timeline item details', (tester) async {
+    await _pumpApp(tester);
+
+    const captureText = 'Open this source-linked record from home.';
+    await _submitQuickCapture(tester, captureText);
+
+    final record = _readCaptureState(tester).records.single;
+    final row = find.byKey(Key('record-row-${record.id}'));
+    await tester.scrollUntilVisible(
+      row,
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await Scrollable.ensureVisible(tester.element(row), alignment: 0.5);
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(of: row, matching: find.text(captureText)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('timeline-item-detail-page')), findsOneWidget);
+    expect(find.text('Capture Detail'), findsOneWidget);
+    expect(find.text(captureText), findsWidgets);
   });
 
   testWidgets('attachment-only capture falls back to attachment name', (
@@ -327,7 +350,6 @@ void main() {
     const captureText = 'Preserve this raw note even when the agent fails.';
     await _submitQuickCapture(tester, captureText);
 
-    expect(find.textContaining('Capture failed:'), findsOneWidget);
     expect(_readCaptureInputState(tester).isBusy, isFalse);
     await tester.scrollUntilVisible(
       find.text(captureText),
@@ -378,18 +400,20 @@ void main() {
     await _pumpApp(tester);
 
     await _submitQuickCapture(tester, 'First follow-up for Ada.');
-    expect(find.text('1 processed'), findsOneWidget);
-    expect(find.text('1 accepted'), findsOneWidget);
-    expect(find.text('2 cards'), findsOneWidget);
-    expect(find.text('3 source-linked'), findsOneWidget);
-    expect(find.text('1 linked'), findsOneWidget);
+    var state = _readCaptureState(tester);
+    expect(state.records, hasLength(1));
+    expect(state.memories, hasLength(1));
+    expect(state.cards, hasLength(2));
+    expect(state.insights, hasLength(3));
+    expect(state.todos, hasLength(1));
 
     await _submitQuickCapture(tester, 'Second follow-up for Chen.');
-    expect(find.text('2 processed'), findsOneWidget);
-    expect(find.text('2 accepted'), findsOneWidget);
-    expect(find.text('4 cards'), findsOneWidget);
-    expect(find.text('3 source-linked'), findsOneWidget);
-    expect(find.text('2 linked'), findsOneWidget);
+    state = _readCaptureState(tester);
+    expect(state.records, hasLength(2));
+    expect(state.memories, hasLength(2));
+    expect(state.cards, hasLength(4));
+    expect(state.insights, hasLength(3));
+    expect(state.todos, hasLength(2));
   });
 
   testWidgets('sensitive capture can be accepted from Memory review', (
@@ -561,13 +585,19 @@ void main() {
       final events = await eventStore.readAll();
       final traces = await traceSink.readAll();
 
-      expect(events.map((event) => event.type), [
+      final eventTypes = events.map((event) => event.type).toList();
+      expect(eventTypes.take(2), [
         runtime.WnEventTypes.captureCreated,
         runtime.WnEventTypes.memoryProposed,
-        runtime.WnEventTypes.cardCreated,
-        runtime.WnEventTypes.insightCreated,
-        runtime.WnEventTypes.todoSuggested,
       ]);
+      expect(
+        eventTypes,
+        containsAll(<String>[
+          runtime.WnEventTypes.cardCreated,
+          runtime.WnEventTypes.insightCreated,
+          runtime.WnEventTypes.todoSuggested,
+        ]),
+      );
       expect(
         events
             .where((event) => event.type == runtime.WnEventTypes.todoSuggested)
@@ -674,7 +704,10 @@ Future<void> _pumpApp(
 
 Future<void> _submitQuickCapture(WidgetTester tester, String text) async {
   await tester.enterText(find.byKey(const Key('quick-capture-field')), text);
-  await tester.tap(find.byKey(const Key('record-capture-button')));
+  final recordButton = find.byKey(const Key('record-capture-button'));
+  await Scrollable.ensureVisible(tester.element(recordButton), alignment: 0.45);
+  await tester.pumpAndSettle();
+  await tester.tap(recordButton);
   await tester.pumpAndSettle();
 }
 

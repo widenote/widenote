@@ -9,7 +9,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'WideNote / 广记';
+  String get appTitle => 'WideNote';
 
   @override
   String get tabHome => 'Home';
@@ -118,6 +118,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String captureAttachmentBlocked(String reason) {
     return 'Blocked attachment · $reason · Preview hidden until review.';
   }
+
+  @override
+  String get captureEmptyMessage => 'Add text or an attachment before saving.';
+
+  @override
+  String get capturePhotoAttachedMessage =>
+      'Photo attached. Review it, then save the record.';
+
+  @override
+  String get captureVoiceAttachedMessage =>
+      'Voice draft attached. Review the transcript before saving.';
+
+  @override
+  String get captureShareAttachedMessage =>
+      'Imported item attached. Review it, then save the record.';
+
+  @override
+  String get captureSavedMessage =>
+      'Record saved. Local agents are organizing it now.';
+
+  @override
+  String get captureOpenTimelineAction => 'Timeline';
 
   @override
   String get recordButton => 'Record';
@@ -734,7 +756,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get providerSettingsSubtitle =>
-      'Local provider setup for runtime and Agent Pack model access.';
+      'Choose how WideNote agents reach models, what the default runtime model is, and which capabilities are safe to use.';
 
   @override
   String get providerSettingsAdd => 'Add provider';
@@ -747,6 +769,86 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get providerSettingsDefaultTag => 'Default';
+
+  @override
+  String get providerSettingsStatusTitle => 'Runtime model access';
+
+  @override
+  String providerSettingsStatusConfigured(String provider) {
+    return 'Using $provider';
+  }
+
+  @override
+  String get providerSettingsStatusNotConfigured => 'Offline fallback active';
+
+  @override
+  String get providerSettingsStatusDescriptionConfigured =>
+      'Capture, chat, and Agent Packs use this default unless a later role override says otherwise.';
+
+  @override
+  String get providerSettingsStatusDescriptionOffline =>
+      'Core capture still works locally with deterministic summaries. Add a BYOK provider when you want live model calls.';
+
+  @override
+  String providerSettingsProviderCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count providers',
+      one: '1 provider',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get providerSettingsRolesTitle => 'Model roles';
+
+  @override
+  String get providerSettingsRolesDescription =>
+      'WideNote keeps provider credentials separate from runtime roles so future Agent Packs can route safely.';
+
+  @override
+  String get providerSettingsTextRoleTitle => 'Default text model';
+
+  @override
+  String get providerSettingsTextRoleDescription =>
+      'Used by capture summaries, chat answers, Memory extraction, and built-in Agent Packs in this slice.';
+
+  @override
+  String get providerSettingsAgentRoleTitle => 'Per-Agent overrides';
+
+  @override
+  String get providerSettingsAgentRoleDescription =>
+      'Not enabled yet. For now, all built-in agents inherit the default model.';
+
+  @override
+  String get providerSettingsRoleFallback => 'Local deterministic fallback';
+
+  @override
+  String get providerSettingsCapabilitiesTitle => 'Capabilities and privacy';
+
+  @override
+  String get providerSettingsCapabilitiesDescription =>
+      'Connection tests are user-initiated. API keys stay local and are included only in user-managed backups.';
+
+  @override
+  String get providerSettingsCapabilityChat => 'Chat';
+
+  @override
+  String get providerSettingsCapabilityCompletion => 'Completion';
+
+  @override
+  String get providerSettingsCapabilityOfflineFallback => 'Offline fallback';
+
+  @override
+  String get providerSettingsCapabilityByok => 'BYOK local storage';
+
+  @override
+  String get providerClearKeyTitle => 'Clear saved API key';
+
+  @override
+  String get providerClearKeySubtitle =>
+      'Leave unchecked and keep this field blank to keep the saved key.';
 
   @override
   String get providerConnectionUntested => 'Untested';
