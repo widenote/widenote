@@ -167,7 +167,8 @@ void main() {
 
       final response = await client.complete(
         const runtime.ModelRequest(
-          prompt: 'Summarize capture for Memory: Save raw notes locally.',
+          prompt:
+              'Summarize capture for Memory: Save raw notes locally. 广记保留原文。',
         ),
       );
 
@@ -183,7 +184,9 @@ void main() {
         message['content'],
         allOf(
           contains('WideNote Android QA model adapter'),
-          contains('Summarize capture for Memory: Save raw notes locally.'),
+          contains(
+            'Summarize capture for Memory: Save raw notes locally. 广记保留原文。',
+          ),
         ),
       );
       expect(response.text, 'First memory.\nSecond memory.');

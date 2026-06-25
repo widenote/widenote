@@ -71,9 +71,14 @@ class CaptureController extends Notifier<CaptureState> {
             attachments: attachments,
             captureId: pendingRecord.id,
           );
-      _readModelStore()
-        ..saveCapture(result.record, attachments: attachments)
-        ..saveTodo(result.todo);
+      final readModel = _readModelStore()
+        ..saveCapture(result.record, attachments: attachments);
+      if (result.todo.isSuggested) {
+        readModel.saveTodo(result.todo);
+      }
+      final nextTodos = result.todo.isSuggested
+          ? [result.todo, ...state.todos]
+          : state.todos;
 
       state = state.copyWith(
         records: _replaceRecord(state.records, pendingRecord.id, result.record),
@@ -85,7 +90,7 @@ class CaptureController extends Notifier<CaptureState> {
             : [result.reviewCandidate!, ...state.reviewCandidates],
         cards: result.cards,
         insights: result.insights,
-        todos: [result.todo, ...state.todos],
+        todos: nextTodos,
         traces: [...result.traces, ...state.traces],
         isProcessing: false,
         clearError: true,

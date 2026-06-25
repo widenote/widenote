@@ -118,6 +118,13 @@ void main() {
       expect(result.memoryItem.confidenceLabel, contains('review_only_type'));
       expect(result.cards.map((card) => card.kindLabel), ['capture card']);
       expect(result.insights, hasLength(3));
+      expect(result.todo.isSuggested, isFalse);
+      expect(result.todo.statusLabel, 'skipped for sensitive capture');
+      expect(result.todo.title, 'No todo suggested');
+      expect(
+        result.eventTypes,
+        isNot(contains(runtime.WnEventTypes.todoSuggested)),
+      );
       expect(result.reviewCandidate, isNotNull);
       expect(result.reviewCandidate!.reasonLabel, contains('review_only_type'));
     },

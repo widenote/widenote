@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:widenote_local_db/widenote_local_db.dart';
 import 'package:widenote_mobile/app/local_database.dart';
+import 'package:widenote_mobile/features/backup/application/backup_controller.dart';
 import 'package:widenote_mobile/app/widenote_app.dart';
 import 'package:widenote_mobile/features/backup/presentation/backup_page.dart';
 import 'package:widenote_mobile/l10n/l10n.dart';
@@ -97,6 +98,36 @@ void main() {
     );
   });
 
+  testWidgets(
+    'backup page saves exported JSON and Markdown through file store',
+    (tester) async {
+      final database = WideNoteLocalDatabase.inMemory();
+      _seedLocalData(database);
+      final fileStore = _MemoryBackupFileStore();
+      await _pumpBackupPage(
+        tester,
+        database: database,
+        overrides: [backupFileStoreProvider.overrideWithValue(fileStore)],
+      );
+
+      await tester.tap(find.byKey(const Key('backup-export-button')));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(
+        find.byKey(const Key('backup-save-files-button')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('backup-save-files-button')));
+      await tester.pumpAndSettle();
+
+      expect(
+        fileStore.savedJson,
+        contains('"format": "widenote.local_data_backup"'),
+      );
+      expect(fileStore.savedMarkdown, contains('Portable local backup'));
+      expect(find.textContaining('/tmp/widenote-backup.json'), findsOneWidget);
+    },
+  );
+
   testWidgets('import controls stay reachable after exporting JSON', (
     tester,
   ) async {
@@ -151,6 +182,41 @@ void main() {
     expect(todo.payload['title'], 'Review portable local backup');
     final provider = target.modelProviderConfigs.readDefault()!;
     expect(provider.apiKey, _backupPageCredential());
+    expect(find.text('Backup imported into local storage.'), findsOneWidget);
+  });
+
+  testWidgets('backup page imports latest saved JSON file into local DB', (
+    tester,
+  ) async {
+    final source = WideNoteLocalDatabase.inMemory();
+    addTearDown(source.close);
+    _seedLocalData(source);
+    final fileStore = _MemoryBackupFileStore()
+      ..latestJson = LocalBackupService(source).exportJson();
+
+    final target = WideNoteLocalDatabase.inMemory();
+    await _pumpBackupPage(
+      tester,
+      database: target,
+      overrides: [backupFileStoreProvider.overrideWithValue(fileStore)],
+    );
+
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('backup-import-latest-file-button')),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.ensureVisible(
+      find.byKey(const Key('backup-import-latest-file-button')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('backup-import-latest-file-button')));
+    await tester.pumpAndSettle();
+
+    expect(
+      target.captures.readById('capture-backup-page')!.payload['text'],
+      'Portable local backup from widget test.',
+    );
     expect(find.text('Backup imported into local storage.'), findsOneWidget);
   });
 
@@ -218,11 +284,15 @@ Future<void> _pumpBackupPage(
   WidgetTester tester, {
   required WideNoteLocalDatabase database,
   Locale locale = const Locale('en'),
+  List<Override> overrides = const <Override>[],
 }) async {
   addTearDown(database.close);
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [localDatabaseProvider.overrideWithValue(database)],
+      overrides: [
+        localDatabaseProvider.overrideWithValue(database),
+        ...overrides,
+      ],
       child: MaterialApp(
         locale: locale,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -232,6 +302,36 @@ Future<void> _pumpBackupPage(
     ),
   );
   await tester.pumpAndSettle();
+}
+
+final class _MemoryBackupFileStore implements BackupFileStore {
+  String? latestJson;
+  String? savedJson;
+  String? savedMarkdown;
+
+  @override
+  Future<BackupFileResult> saveExport({
+    required String json,
+    required String markdown,
+    required DateTime createdAt,
+  }) async {
+    savedJson = json;
+    savedMarkdown = markdown;
+    latestJson = json;
+    return const BackupFileResult(
+      jsonPath: '/tmp/widenote-backup.json',
+      markdownPath: '/tmp/widenote-backup.md',
+    );
+  }
+
+  @override
+  Future<String> readLatestJson() async {
+    final json = latestJson;
+    if (json == null) {
+      throw StateError('No backup JSON seeded.');
+    }
+    return json;
+  }
 }
 
 void _seedLocalData(WideNoteLocalDatabase database) {

@@ -6,10 +6,10 @@ Owns the Agent Pack and runtime control-entry tab.
 
 ## Ownership Boundary
 
-This feature presents pack, Agent Platform queue/status, permission, model, backup, and trace entry points.
-It routes backup and model-provider rows to their dedicated settings pages, but
-does not grant permissions. Agent Platform status uses a local preview
-controller until persistent runtime task/run storage is wired in.
+This feature presents pack, Agent Platform queue/status, permission, model,
+backup, and trace entry points. It routes pack, permission, backup, trace, and
+model-provider rows to dedicated pages, but does not dynamically install packs
+or grant high-risk permissions. Agent Platform status reads local trace events.
 
 ## Dependencies
 
@@ -20,8 +20,11 @@ controller until persistent runtime task/run storage is wired in.
 ## Public Surface
 
 - `application/AgentPlatformController`
+- `application/pack_catalog.dart`
 - `presentation/AgentPlatformPanel`
 - `presentation/PluginsPage`
+- `presentation/PackLibraryPage`
+- `presentation/PermissionGatePage`
 
 ## Generated Artifacts
 

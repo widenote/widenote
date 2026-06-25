@@ -51,6 +51,9 @@ final class LocalCaptureReadModelStore {
   }
 
   void saveTodo(SourceTodo todo) {
+    if (!todo.isSuggested) {
+      return;
+    }
     _database.todos.save(
       localdb.TodoRecord(
         id: todo.id,

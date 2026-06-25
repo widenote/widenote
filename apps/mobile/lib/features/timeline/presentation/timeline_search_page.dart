@@ -173,7 +173,7 @@ class _SearchResults extends StatelessWidget {
       title: '${results.length} result(s)',
       child: TimelineItemRows(
         items: results,
-        onOpenCard: (item) => context.go('/timeline/cards/${item.id}'),
+        onOpenItem: (item) => _openTimelineItem(context, item),
       ),
     );
   }
@@ -181,6 +181,7 @@ class _SearchResults extends StatelessWidget {
 
 const _filterKinds = <MemoryFirstTimelineItemKind>[
   MemoryFirstTimelineItemKind.card,
+  MemoryFirstTimelineItemKind.insight,
   MemoryFirstTimelineItemKind.memory,
   MemoryFirstTimelineItemKind.capture,
   MemoryFirstTimelineItemKind.todo,
@@ -194,4 +195,12 @@ String _filterLabel(MemoryFirstTimelineItemKind kind) {
     MemoryFirstTimelineItemKind.todo => 'Todos',
     MemoryFirstTimelineItemKind.insight => 'Insights',
   };
+}
+
+void _openTimelineItem(BuildContext context, MemoryFirstTimelineItem item) {
+  if (item.kind == MemoryFirstTimelineItemKind.card) {
+    context.go('/timeline/cards/${item.id}');
+    return;
+  }
+  context.go('/timeline/items/${Uri.encodeComponent(item.id)}');
 }

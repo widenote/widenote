@@ -11,3 +11,8 @@
 | [ADR-0006](./0006-use-clean-room-parity-specs.md) | Use clean-room parity specs for MemeX-like behavior | accepted | 2026-06-23 |
 | [ADR-0007](./0007-defer-cloud-sync-from-core-phase-one.md) | Defer cloud sync from the core phase-one implementation | accepted | 2026-06-23 |
 | [ADR-0008](./0008-use-dev-and-prod-mobile-flavors.md) | Use dev and prod mobile flavors first | accepted | 2026-06-25 |
+
+## RFCs
+
+- [Mobile Entry Closure](../rfcs/mobile-entry-closure.md)
+- [Mobile Visual Style](../rfcs/mobile-visual-style.md)

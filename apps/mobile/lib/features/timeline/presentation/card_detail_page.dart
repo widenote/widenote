@@ -75,7 +75,10 @@ class _CardDetailContent extends StatelessWidget {
           TimelineSurface(
             icon: Icons.link,
             title: 'Source refs',
-            child: TimelineSourceRefList(links: card.sourceLinks),
+            child: TimelineSourceRefList(
+              links: card.sourceLinks,
+              onOpenLink: (link) => _openSourceLink(context, link),
+            ),
           ),
           const SizedBox(height: 12),
           _RelatedSection(
@@ -153,9 +156,24 @@ class _RelatedSection extends StatelessWidget {
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             )
-          : TimelineItemRows(items: items, onOpenCard: (_) {}),
+          : TimelineItemRows(
+              items: items,
+              onOpenItem: (item) => _openTimelineItem(context, item),
+            ),
     );
   }
+}
+
+void _openTimelineItem(BuildContext context, MemoryFirstTimelineItem item) {
+  if (item.kind == MemoryFirstTimelineItemKind.card) {
+    context.go('/timeline/cards/${item.id}');
+    return;
+  }
+  context.go('/timeline/items/${Uri.encodeComponent(item.id)}');
+}
+
+void _openSourceLink(BuildContext context, SourceLink link) {
+  context.go('/timeline/items/${Uri.encodeComponent(link.id)}');
 }
 
 void _goBack(BuildContext context) {

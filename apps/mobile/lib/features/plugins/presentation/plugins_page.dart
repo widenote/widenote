@@ -41,17 +41,21 @@ class _ControlList extends ConsumerWidget {
       child: Column(
         children: [
           _ControlRow(
+            key: const Key('pack-library-entry'),
             icon: Icons.inventory_2_outlined,
             title: l10n.pluginsPackLibraryTitle,
             subtitle: l10n.pluginsPackLibrarySubtitle,
             status: l10n.pluginsPackLibraryStatus,
+            onTap: () => context.go('/plugins/packs'),
           ),
           const Divider(height: 20),
           _ControlRow(
+            key: const Key('permission-gate-entry'),
             icon: Icons.verified_user_outlined,
             title: l10n.pluginsPermissionGateTitle,
             subtitle: l10n.pluginsPermissionGateSubtitle,
             status: l10n.pluginsPermissionGateStatus,
+            onTap: () => context.go('/plugins/permissions'),
           ),
           const Divider(height: 20),
           _ControlRow(

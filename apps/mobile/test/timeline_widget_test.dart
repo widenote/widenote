@@ -83,7 +83,33 @@ void main() {
     expect(find.byKey(const Key('timeline-item-memory-1')), findsOneWidget);
     expect(find.byKey(const Key('timeline-item-todo-1')), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('card-detail-back')));
+    await tester.ensureVisible(find.byKey(const Key('timeline-item-memory-1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('timeline-item-memory-1')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('timeline-item-detail-page')), findsOneWidget);
+    expect(find.text('Memory Detail'), findsOneWidget);
+    expect(find.text('Lin prefers source-linked cards.'), findsWidgets);
+
+    await tester.tap(find.byKey(const Key('timeline-item-detail-back')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('timeline-item-card-1')));
+    await tester.pumpAndSettle();
+
+    final sourceRefButton = find.byKey(
+      const Key('open-source-ref-capture-capture-1'),
+    );
+    await tester.ensureVisible(sourceRefButton);
+    await tester.pumpAndSettle();
+    await tester.tap(sourceRefButton);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('timeline-item-detail-page')), findsOneWidget);
+    expect(find.text('Capture Detail'), findsOneWidget);
+    expect(find.text('Project Alpha kickoff notes.'), findsWidgets);
+
+    await tester.tap(find.byKey(const Key('timeline-item-detail-back')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('timeline-page')), findsOneWidget);
   });
@@ -110,6 +136,16 @@ void main() {
 
     expect(find.byKey(const Key('timeline-item-todo-1')), findsOneWidget);
     expect(find.byKey(const Key('timeline-item-card-1')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('timeline-filter-insight')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('timeline-search-field')),
+      'source summary',
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('timeline-item-insight-1')), findsOneWidget);
 
     await tester.enterText(
       find.byKey(const Key('timeline-search-field')),

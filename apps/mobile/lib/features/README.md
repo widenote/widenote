@@ -17,6 +17,8 @@ Features may own presentation and temporary app-local controllers. Durable runti
 
 - `capture`: home/records tab, quick capture state, Memory review surface, and
   source-linked card/insight previews.
+- `memory`: accepted Memory list, edit, tombstone delete, restore, and source
+  metadata.
 - `chat`: local sessions, messages, provider-backed assistant bridge with
   deterministic fallback, source-linked context, and retry UI.
 - `todos`: source-linked todo list.

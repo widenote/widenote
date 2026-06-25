@@ -207,9 +207,8 @@ final class XiaomiMimoModelClient implements runtime.ModelClient {
     Uri? endpoint,
     HttpClient? httpClient,
     this.retryDelays = const <Duration>[
-      Duration(seconds: 4),
-      Duration(seconds: 12),
-      Duration(seconds: 24),
+      Duration(seconds: 1),
+      Duration(seconds: 3),
     ],
   }) : endpoint =
            endpoint ??
@@ -260,7 +259,7 @@ final class XiaomiMimoModelClient implements runtime.ModelClient {
         <String, Object?>{'role': 'user', 'content': _qaPrompt(request.prompt)},
       ],
     });
-    httpRequest.write(body);
+    httpRequest.add(utf8.encode(body));
 
     final response = await httpRequest.close().timeout(
       const Duration(seconds: 30),

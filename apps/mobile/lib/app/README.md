@@ -23,6 +23,7 @@ orchestration behavior.
 ## Public Surface
 
 - `WideNoteApp`
+- `WideNoteAppTheme`
 - `appRouter`
 - `WideNoteShell`
 - `WideNoteMobileBootstrap`

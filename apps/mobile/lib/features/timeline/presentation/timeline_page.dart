@@ -80,10 +80,18 @@ class _TimelineDaySection extends StatelessWidget {
       title: day.label,
       child: TimelineItemRows(
         items: day.items,
-        onOpenCard: (item) => context.go('/timeline/cards/${item.id}'),
+        onOpenItem: (item) => _openTimelineItem(context, item),
       ),
     );
   }
+}
+
+void _openTimelineItem(BuildContext context, MemoryFirstTimelineItem item) {
+  if (item.kind == MemoryFirstTimelineItemKind.card) {
+    context.go('/timeline/cards/${item.id}');
+    return;
+  }
+  context.go('/timeline/items/${Uri.encodeComponent(item.id)}');
 }
 
 class _TimelineLoading extends StatelessWidget {
