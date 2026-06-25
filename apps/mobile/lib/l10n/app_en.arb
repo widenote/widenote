@@ -1,6 +1,6 @@
 {
   "@@locale": "en",
-  "appTitle": "WideNote / 广记",
+  "appTitle": "WideNote",
   "tabHome": "Home",
   "tabChat": "Chat",
   "tabTodos": "Todos",
@@ -54,6 +54,12 @@
       }
     }
   },
+  "captureEmptyMessage": "Add text or an attachment before saving.",
+  "capturePhotoAttachedMessage": "Photo attached. Review it, then save the record.",
+  "captureVoiceAttachedMessage": "Voice draft attached. Review the transcript before saving.",
+  "captureShareAttachedMessage": "Imported item attached. Review it, then save the record.",
+  "captureSavedMessage": "Record saved. Local agents are organizing it now.",
+  "captureOpenTimelineAction": "Timeline",
   "recordButton": "Record",
   "recordButtonProcessing": "Processing",
   "stageProcessingTitle": "Processing",
@@ -404,11 +410,46 @@
     }
   },
   "providerSettingsTitle": "Model Providers",
-  "providerSettingsSubtitle": "Local provider setup for runtime and Agent Pack model access.",
+  "providerSettingsSubtitle": "Choose how WideNote agents reach models, what the default runtime model is, and which capabilities are safe to use.",
   "providerSettingsAdd": "Add provider",
   "providerSettingsListTitle": "Providers",
   "providerSettingsEmpty": "No providers configured.",
   "providerSettingsDefaultTag": "Default",
+  "providerSettingsStatusTitle": "Runtime model access",
+  "providerSettingsStatusConfigured": "Using {provider}",
+  "@providerSettingsStatusConfigured": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "providerSettingsStatusNotConfigured": "Offline fallback active",
+  "providerSettingsStatusDescriptionConfigured": "Capture, chat, and Agent Packs use this default unless a later role override says otherwise.",
+  "providerSettingsStatusDescriptionOffline": "Core capture still works locally with deterministic summaries. Add a BYOK provider when you want live model calls.",
+  "providerSettingsProviderCount": "{count, plural, =1{1 provider} other{{count} providers}}",
+  "@providerSettingsProviderCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "providerSettingsRolesTitle": "Model roles",
+  "providerSettingsRolesDescription": "WideNote keeps provider credentials separate from runtime roles so future Agent Packs can route safely.",
+  "providerSettingsTextRoleTitle": "Default text model",
+  "providerSettingsTextRoleDescription": "Used by capture summaries, chat answers, Memory extraction, and built-in Agent Packs in this slice.",
+  "providerSettingsAgentRoleTitle": "Per-Agent overrides",
+  "providerSettingsAgentRoleDescription": "Not enabled yet. For now, all built-in agents inherit the default model.",
+  "providerSettingsRoleFallback": "Local deterministic fallback",
+  "providerSettingsCapabilitiesTitle": "Capabilities and privacy",
+  "providerSettingsCapabilitiesDescription": "Connection tests are user-initiated. API keys stay local and are included only in user-managed backups.",
+  "providerSettingsCapabilityChat": "Chat",
+  "providerSettingsCapabilityCompletion": "Completion",
+  "providerSettingsCapabilityOfflineFallback": "Offline fallback",
+  "providerSettingsCapabilityByok": "BYOK local storage",
+  "providerClearKeyTitle": "Clear saved API key",
+  "providerClearKeySubtitle": "Leave unchecked and keep this field blank to keep the saved key.",
   "providerConnectionUntested": "Untested",
   "providerConnectionTesting": "Testing",
   "providerConnectionConnected": "Connected",

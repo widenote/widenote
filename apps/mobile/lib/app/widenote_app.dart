@@ -29,7 +29,7 @@ class _WideNoteAppState extends State<WideNoteApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'WideNote / 广记',
+      title: 'WideNote',
       onGenerateTitle: (context) => context.l10n.appTitle,
       debugShowCheckedModeBanner: false,
       locale: widget.locale,

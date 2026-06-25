@@ -13,6 +13,8 @@ void main() {
     expect(find.text('Chat'), findsOneWidget);
     expect(find.text('Todos'), findsOneWidget);
     expect(find.text('Packs'), findsOneWidget);
+    expect(find.text('WideNote'), findsOneWidget);
+    expect(find.text('WideNote / 广记'), findsNothing);
     expect(find.text('Quick Capture'), findsOneWidget);
     expect(find.text('Record'), findsOneWidget);
 
@@ -36,6 +38,8 @@ void main() {
     expect(find.text('对话'), findsOneWidget);
     expect(find.text('待办'), findsWidgets);
     expect(find.text('插件'), findsOneWidget);
+    expect(find.text('广记'), findsOneWidget);
+    expect(find.text('WideNote / 广记'), findsNothing);
     expect(find.text('快速记录'), findsOneWidget);
     expect(find.text('记录'), findsWidgets);
     expect(find.text('0 条已关联'), findsOneWidget);
@@ -56,7 +60,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('模型提供商'), findsWidgets);
     expect(find.text('添加提供商'), findsOneWidget);
-    expect(find.text('还没有配置模型提供商。'), findsOneWidget);
+    expect(find.text('离线兜底已启用'), findsOneWidget);
 
     await _openTab(tester, const Key('tab-plugins'));
     await tester.tap(find.byKey(const Key('backup-entry')));

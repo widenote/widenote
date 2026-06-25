@@ -2,9 +2,9 @@
 
 ## Purpose
 
-Owns the home/records tab, Capture Console UI, app-local capture/card/insight
-read models, fake-adapter media/share/voice capture inputs, and Memory review
-surface.
+Owns the home/records tab, Capture Console UI, visible capture feedback,
+source-linked home-row navigation, app-local capture/card/insight read models,
+fake-adapter media/share/voice capture inputs, and Memory review surface.
 
 ## Ownership Boundary
 

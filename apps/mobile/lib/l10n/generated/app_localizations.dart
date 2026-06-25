@@ -101,7 +101,7 @@ abstract class AppLocalizations {
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:
-  /// **'WideNote / 广记'**
+  /// **'WideNote'**
   String get appTitle;
 
   /// No description provided for @tabHome.
@@ -295,6 +295,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Blocked attachment · {reason} · Preview hidden until review.'**
   String captureAttachmentBlocked(String reason);
+
+  /// No description provided for @captureEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Add text or an attachment before saving.'**
+  String get captureEmptyMessage;
+
+  /// No description provided for @capturePhotoAttachedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo attached. Review it, then save the record.'**
+  String get capturePhotoAttachedMessage;
+
+  /// No description provided for @captureVoiceAttachedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice draft attached. Review the transcript before saving.'**
+  String get captureVoiceAttachedMessage;
+
+  /// No description provided for @captureShareAttachedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported item attached. Review it, then save the record.'**
+  String get captureShareAttachedMessage;
+
+  /// No description provided for @captureSavedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Record saved. Local agents are organizing it now.'**
+  String get captureSavedMessage;
+
+  /// No description provided for @captureOpenTimelineAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline'**
+  String get captureOpenTimelineAction;
 
   /// No description provided for @recordButton.
   ///
@@ -1253,7 +1289,7 @@ abstract class AppLocalizations {
   /// No description provided for @providerSettingsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Local provider setup for runtime and Agent Pack model access.'**
+  /// **'Choose how WideNote agents reach models, what the default runtime model is, and which capabilities are safe to use.'**
   String get providerSettingsSubtitle;
 
   /// No description provided for @providerSettingsAdd.
@@ -1279,6 +1315,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Default'**
   String get providerSettingsDefaultTag;
+
+  /// No description provided for @providerSettingsStatusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Runtime model access'**
+  String get providerSettingsStatusTitle;
+
+  /// No description provided for @providerSettingsStatusConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'Using {provider}'**
+  String providerSettingsStatusConfigured(String provider);
+
+  /// No description provided for @providerSettingsStatusNotConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline fallback active'**
+  String get providerSettingsStatusNotConfigured;
+
+  /// No description provided for @providerSettingsStatusDescriptionConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture, chat, and Agent Packs use this default unless a later role override says otherwise.'**
+  String get providerSettingsStatusDescriptionConfigured;
+
+  /// No description provided for @providerSettingsStatusDescriptionOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Core capture still works locally with deterministic summaries. Add a BYOK provider when you want live model calls.'**
+  String get providerSettingsStatusDescriptionOffline;
+
+  /// No description provided for @providerSettingsProviderCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 provider} other{{count} providers}}'**
+  String providerSettingsProviderCount(int count);
+
+  /// No description provided for @providerSettingsRolesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Model roles'**
+  String get providerSettingsRolesTitle;
+
+  /// No description provided for @providerSettingsRolesDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'WideNote keeps provider credentials separate from runtime roles so future Agent Packs can route safely.'**
+  String get providerSettingsRolesDescription;
+
+  /// No description provided for @providerSettingsTextRoleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Default text model'**
+  String get providerSettingsTextRoleTitle;
+
+  /// No description provided for @providerSettingsTextRoleDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Used by capture summaries, chat answers, Memory extraction, and built-in Agent Packs in this slice.'**
+  String get providerSettingsTextRoleDescription;
+
+  /// No description provided for @providerSettingsAgentRoleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Per-Agent overrides'**
+  String get providerSettingsAgentRoleTitle;
+
+  /// No description provided for @providerSettingsAgentRoleDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enabled yet. For now, all built-in agents inherit the default model.'**
+  String get providerSettingsAgentRoleDescription;
+
+  /// No description provided for @providerSettingsRoleFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Local deterministic fallback'**
+  String get providerSettingsRoleFallback;
+
+  /// No description provided for @providerSettingsCapabilitiesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Capabilities and privacy'**
+  String get providerSettingsCapabilitiesTitle;
+
+  /// No description provided for @providerSettingsCapabilitiesDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection tests are user-initiated. API keys stay local and are included only in user-managed backups.'**
+  String get providerSettingsCapabilitiesDescription;
+
+  /// No description provided for @providerSettingsCapabilityChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat'**
+  String get providerSettingsCapabilityChat;
+
+  /// No description provided for @providerSettingsCapabilityCompletion.
+  ///
+  /// In en, this message translates to:
+  /// **'Completion'**
+  String get providerSettingsCapabilityCompletion;
+
+  /// No description provided for @providerSettingsCapabilityOfflineFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline fallback'**
+  String get providerSettingsCapabilityOfflineFallback;
+
+  /// No description provided for @providerSettingsCapabilityByok.
+  ///
+  /// In en, this message translates to:
+  /// **'BYOK local storage'**
+  String get providerSettingsCapabilityByok;
+
+  /// No description provided for @providerClearKeyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear saved API key'**
+  String get providerClearKeyTitle;
+
+  /// No description provided for @providerClearKeySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave unchecked and keep this field blank to keep the saved key.'**
+  String get providerClearKeySubtitle;
 
   /// No description provided for @providerConnectionUntested.
   ///

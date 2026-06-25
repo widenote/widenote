@@ -45,7 +45,13 @@ class ModelProviderSettingsPage extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 16),
+          _RuntimeStatusSurface(state: state),
+          const SizedBox(height: 12),
           _ProviderList(state: state),
+          const SizedBox(height: 12),
+          _ModelRolesSurface(state: state),
+          const SizedBox(height: 12),
+          _CapabilitiesSurface(state: state),
         ],
       ),
     );
@@ -99,6 +105,171 @@ class _ProviderList extends ConsumerWidget {
   }
 }
 
+class _RuntimeStatusSurface extends StatelessWidget {
+  const _RuntimeStatusSurface({required this.state});
+
+  final ModelProviderSettingsState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final provider = state.defaultProvider;
+    return _Surface(
+      icon: Icons.radio_button_checked,
+      title: l10n.providerSettingsStatusTitle,
+      description: provider == null
+          ? l10n.providerSettingsStatusDescriptionOffline
+          : l10n.providerSettingsStatusDescriptionConfigured,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            provider == null
+                ? l10n.providerSettingsStatusNotConfigured
+                : l10n.providerSettingsStatusConfigured(provider.displayName),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              _Tag(
+                label: l10n.providerSettingsProviderCount(
+                  state.providers.length,
+                ),
+              ),
+              if (provider != null) _Tag(label: provider.model),
+              if (provider == null)
+                _Tag(label: l10n.providerSettingsCapabilityOfflineFallback),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ModelRolesSurface extends StatelessWidget {
+  const _ModelRolesSurface({required this.state});
+
+  final ModelProviderSettingsState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final provider = state.defaultProvider;
+    final roleValue = provider == null
+        ? l10n.providerSettingsRoleFallback
+        : '${provider.displayName} / ${provider.model}';
+    return _Surface(
+      icon: Icons.tune_outlined,
+      title: l10n.providerSettingsRolesTitle,
+      description: l10n.providerSettingsRolesDescription,
+      child: Column(
+        children: [
+          _RoleTile(
+            icon: Icons.notes_outlined,
+            title: l10n.providerSettingsTextRoleTitle,
+            description: l10n.providerSettingsTextRoleDescription,
+            value: roleValue,
+          ),
+          const Divider(height: 20),
+          _RoleTile(
+            icon: Icons.account_tree_outlined,
+            title: l10n.providerSettingsAgentRoleTitle,
+            description: l10n.providerSettingsAgentRoleDescription,
+            value: provider == null
+                ? l10n.providerSettingsRoleFallback
+                : l10n.providerSettingsDefaultTag,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CapabilitiesSurface extends StatelessWidget {
+  const _CapabilitiesSurface({required this.state});
+
+  final ModelProviderSettingsState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final provider = state.defaultProvider;
+    final capabilityLabels = provider == null
+        ? <String>[l10n.providerSettingsCapabilityOfflineFallback]
+        : provider.capabilities
+              .map((capability) {
+                return _capabilityLabel(l10n, capability);
+              })
+              .toList(growable: false);
+    return _Surface(
+      icon: Icons.privacy_tip_outlined,
+      title: l10n.providerSettingsCapabilitiesTitle,
+      description: l10n.providerSettingsCapabilitiesDescription,
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 6,
+        children: [
+          for (final label in capabilityLabels) _Tag(label: label),
+          _Tag(label: l10n.providerSettingsCapabilityByok),
+        ],
+      ),
+    );
+  }
+}
+
+class _RoleTile extends StatelessWidget {
+  const _RoleTile({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                description,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(spacing: 8, runSpacing: 6, children: [_Tag(label: value)]),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _ProviderRow extends ConsumerWidget {
   const _ProviderRow({
     required this.provider,
@@ -131,7 +302,7 @@ class _ProviderRow extends ConsumerWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                provider.model,
+                '${provider.model} · ${_endpointLabel(provider.endpoint)}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -143,6 +314,8 @@ class _ProviderRow extends ConsumerWidget {
                 children: [
                   _Tag(label: provider.kind.label),
                   if (isDefault) _Tag(label: l10n.providerSettingsDefaultTag),
+                  for (final capability in provider.capabilities)
+                    _Tag(label: _capabilityLabel(l10n, capability)),
                   _Tag(label: _connectionLabel(l10n, connection)),
                 ],
               ),
@@ -336,10 +509,8 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
                   contentPadding: EdgeInsets.zero,
                   controlAffinity: ListTileControlAffinity.leading,
                   value: _clearSavedKey,
-                  title: const Text('Clear saved API key'),
-                  subtitle: const Text(
-                    'Leave unchecked and keep this field blank to keep the saved key.',
-                  ),
+                  title: Text(l10n.providerClearKeyTitle),
+                  subtitle: Text(l10n.providerClearKeySubtitle),
                   onChanged: (value) {
                     setState(() {
                       _clearSavedKey = value ?? false;
@@ -487,11 +658,13 @@ class _Surface extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.child,
+    this.description,
   });
 
   final IconData icon;
   final String title;
   final Widget child;
+  final String? description;
 
   @override
   Widget build(BuildContext context) {
@@ -510,14 +683,25 @@ class _Surface extends StatelessWidget {
               children: [
                 Icon(icon, size: 20),
                 const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+                Expanded(
+                  child: Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ],
             ),
+            if (description != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                description!,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             child,
           ],
@@ -525,6 +709,21 @@ class _Surface extends StatelessWidget {
       ),
     );
   }
+}
+
+String _endpointLabel(Uri endpoint) {
+  if (endpoint.host.isNotEmpty) {
+    return endpoint.host;
+  }
+  return endpoint.toString();
+}
+
+String _capabilityLabel(AppLocalizations l10n, ModelCapability capability) {
+  return switch (capability) {
+    ModelCapability.chat => l10n.providerSettingsCapabilityChat,
+    ModelCapability.completion => l10n.providerSettingsCapabilityCompletion,
+    _ => capability.name,
+  };
 }
 
 class _Tag extends StatelessWidget {
@@ -541,7 +740,15 @@ class _Tag extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Text(label, style: Theme.of(context).textTheme.labelSmall),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 280),
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelSmall,
+          ),
+        ),
       ),
     );
   }

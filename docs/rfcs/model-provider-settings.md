@@ -50,6 +50,21 @@ The plugin control page links to the settings page. A later settings-home
 integration can move or duplicate this entry without changing provider package
 contracts.
 
+The mobile settings page is organized as:
+
+1. Runtime model access status, showing whether a default provider is active or
+   whether the local deterministic fallback is in use.
+2. Model roles, showing the default text-model role and making clear that
+   per-Agent overrides are deferred.
+3. Capabilities and privacy, explaining BYOK local storage, user-initiated
+   connection tests, and offline fallback.
+4. Provider management, preserving add, edit, default selection, and connection
+   test actions.
+
+This hierarchy is based on clean-room product-flow review of public model setup
+patterns, including `memex-lab/memex`, but the implementation, labels, storage
+model, and runtime semantics remain WideNote-owned.
+
 ## Data Model / API / UX
 
 The package-level config includes:
@@ -85,6 +100,10 @@ devices can continue using configured providers without manual re-entry.
 This RFC creates the provider settings foundation for Agent Pack model access.
 Per-agent role selection and model routing remain follow-up work and should use
 public schemas rather than app-private tables.
+
+Until per-agent routing lands, built-in capture, chat, Memory, and Agent Pack
+execution inherit the default provider when one is configured and otherwise use
+the local deterministic fallback.
 
 ## Alternatives
 

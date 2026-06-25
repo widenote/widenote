@@ -78,6 +78,8 @@ void main() {
       find.byKey(const Key('model-provider-settings-page')),
       findsOneWidget,
     );
+    expect(find.text('Runtime model access'), findsOneWidget);
+    expect(find.text('Using MIMO Main'), findsOneWidget);
   });
 
   testWidgets(
@@ -87,7 +89,9 @@ void main() {
       addTearDown(database.close);
       await _pumpSettings(tester, database: database);
 
-      expect(find.text('No providers configured.'), findsOneWidget);
+      expect(find.text('Offline fallback active'), findsOneWidget);
+      expect(find.text('Model roles'), findsOneWidget);
+      expect(find.text('Local deterministic fallback'), findsWidgets);
 
       await _addProvider(
         tester,
@@ -98,7 +102,10 @@ void main() {
 
       expect(find.byKey(const Key('provider-row-team-openai')), findsOneWidget);
       expect(find.text('Team OpenAI'), findsOneWidget);
-      expect(find.text('Default'), findsOneWidget);
+      expect(find.text('Default'), findsWidgets);
+      expect(find.text('Using Team OpenAI'), findsOneWidget);
+      expect(find.text('Chat'), findsWidgets);
+      expect(find.text('Completion'), findsWidgets);
 
       await _addProvider(
         tester,
@@ -140,7 +147,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Team OpenAI Edited'), findsOneWidget);
-      expect(find.text('edited-chat'), findsOneWidget);
+      expect(find.textContaining('edited-chat'), findsOneWidget);
       expect(find.byKey(const Key('provider-row-team-openai')), findsOneWidget);
       expect(
         find.text('Connection test has not run for these saved settings.'),
@@ -171,7 +178,12 @@ void main() {
     await tester.tap(find.byKey(const Key('provider-edit-team-openai')));
     await tester.pumpAndSettle();
     expect(find.text('Clear saved API key'), findsOneWidget);
-    expect(find.textContaining('Leave blank'), findsWidgets);
+    expect(
+      find.text(
+        'Leave unchecked and keep this field blank to keep the saved key.',
+      ),
+      findsOneWidget,
+    );
 
     await tester.ensureVisible(
       find.byKey(const Key('provider-clear-key-checkbox')),

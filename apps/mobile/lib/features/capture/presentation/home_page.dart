@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../l10n/l10n.dart';
 import '../application/capture_controller.dart';
@@ -10,6 +11,7 @@ import '../domain/capture_models.dart';
 import '../media/capture_media.dart';
 import 'capture_console.dart';
 import 'home_header.dart';
+import 'home_section_widgets.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -20,11 +22,33 @@ class HomePage extends ConsumerStatefulWidget {
 
 class _HomePageState extends ConsumerState<HomePage> {
   final _captureTextController = TextEditingController();
+  String? _feedbackMessage;
+  String? _feedbackActionLabel;
+  VoidCallback? _feedbackAction;
+
+  @override
+  void initState() {
+    super.initState();
+    _captureTextController.addListener(_clearFeedbackAfterNewInput);
+  }
 
   @override
   void dispose() {
+    _captureTextController.removeListener(_clearFeedbackAfterNewInput);
     _captureTextController.dispose();
     super.dispose();
+  }
+
+  void _clearFeedbackAfterNewInput() {
+    if (_feedbackMessage == null ||
+        _captureTextController.text.trim().isEmpty) {
+      return;
+    }
+    setState(() {
+      _feedbackMessage = null;
+      _feedbackActionLabel = null;
+      _feedbackAction = null;
+    });
   }
 
   @override
@@ -38,6 +62,18 @@ class _HomePageState extends ConsumerState<HomePage> {
       children: [
         const HomeHeader(),
         const SizedBox(height: 16),
+        if (_feedbackMessage != null) ...[
+          HomeFeedbackLine(
+            message: _feedbackMessage!,
+            actionLabel: _feedbackActionLabel,
+            onAction: _feedbackAction,
+          ),
+          const SizedBox(height: 12),
+        ],
+        if (captureState.errorMessage != null) ...[
+          HomeErrorLine(text: captureState.errorMessage!),
+          const SizedBox(height: 12),
+        ],
         CaptureConsole(
           controller: _captureTextController,
           onSubmit: _submitCapture,
@@ -50,10 +86,6 @@ class _HomePageState extends ConsumerState<HomePage> {
           isProcessing: captureState.isProcessing,
           inputState: inputState,
         ),
-        if (captureState.errorMessage != null) ...[
-          const SizedBox(height: 12),
-          _ErrorLine(text: captureState.errorMessage!),
-        ],
         if (captureState.reviewCandidates.isNotEmpty) ...[
           const SizedBox(height: 16),
           _MemoryReviewSection(
@@ -81,6 +113,11 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   void _submitCapture() {
     final inputState = ref.read(captureInputControllerProvider);
+    final hasText = _captureTextController.text.trim().isNotEmpty;
+    if (!hasText && !inputState.hasAttachments) {
+      _showFeedback(context.l10n.captureEmptyMessage);
+      return;
+    }
     if (!inputState.canSubmit) {
       ref.read(captureInputControllerProvider.notifier).markSubmitBlocked();
       return;
@@ -91,17 +128,26 @@ class _HomePageState extends ConsumerState<HomePage> {
     final future = ref
         .read(captureControllerProvider.notifier)
         .submitCapture(_captureTextController.text, attachments: attachments);
-    if (_captureTextController.text.trim().isNotEmpty ||
-        attachments.isNotEmpty) {
+    if (hasText || attachments.isNotEmpty) {
       _captureTextController.clear();
       ref.read(captureInputControllerProvider.notifier).clear();
     }
     unawaited(future);
+    _showFeedback(
+      context.l10n.captureSavedMessage,
+      actionLabel: context.l10n.captureOpenTimelineAction,
+      onAction: () => context.go('/timeline'),
+    );
     FocusScope.of(context).unfocus();
   }
 
   void _addPhoto() {
-    unawaited(ref.read(captureInputControllerProvider.notifier).addPhoto());
+    unawaited(
+      _addAttachment(
+        () => ref.read(captureInputControllerProvider.notifier).addPhoto(),
+        (l10n) => l10n.capturePhotoAttachedMessage,
+      ),
+    );
   }
 
   void _setCaptureMode(CaptureMode mode) {
@@ -110,14 +156,56 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   void _addVoice() {
     unawaited(
-      ref.read(captureInputControllerProvider.notifier).addVoiceTranscript(),
+      _addAttachment(
+        () => ref
+            .read(captureInputControllerProvider.notifier)
+            .addVoiceTranscript(),
+        (l10n) => l10n.captureVoiceAttachedMessage,
+      ),
     );
   }
 
   void _addShare() {
     unawaited(
-      ref.read(captureInputControllerProvider.notifier).addShareImport(),
+      _addAttachment(
+        () =>
+            ref.read(captureInputControllerProvider.notifier).addShareImport(),
+        (l10n) => l10n.captureShareAttachedMessage,
+      ),
     );
+  }
+
+  Future<void> _addAttachment(
+    Future<void> Function() action,
+    String Function(AppLocalizations l10n) successMessage,
+  ) async {
+    final beforeCount = ref
+        .read(captureInputControllerProvider)
+        .attachments
+        .length;
+    await action();
+    if (!mounted) {
+      return;
+    }
+    final afterCount = ref
+        .read(captureInputControllerProvider)
+        .attachments
+        .length;
+    if (afterCount > beforeCount) {
+      _showFeedback(successMessage(context.l10n));
+    }
+  }
+
+  void _showFeedback(
+    String message, {
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
+    setState(() {
+      _feedbackMessage = message;
+      _feedbackActionLabel = actionLabel;
+      _feedbackAction = onAction;
+    });
   }
 
   void _removeAttachment(String id) {
@@ -334,21 +422,22 @@ class _CardsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return _Surface(
+    return HomeSurface(
       icon: Icons.dashboard_customize_outlined,
       title: l10n.cardsTitle,
       child: cards.isEmpty
-          ? _EmptyLine(text: l10n.cardsEmpty)
-          : _Rows(
+          ? HomeEmptyLine(text: l10n.cardsEmpty)
+          : HomeRows(
               children: [
                 for (final card in cards)
-                  _RecordRow(
+                  HomeRecordRow(
                     key: Key('card-row-${card.id}'),
                     title: card.title,
                     subtitle:
                         '${card.summary} · ${card.sourceLabel} · '
                         '${card.kindLabel} · ${card.statusLabel}',
                     icon: Icons.view_agenda_outlined,
+                    onTap: () => context.go('/timeline/cards/${card.id}'),
                   ),
               ],
             ),
@@ -364,21 +453,22 @@ class _InsightsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return _Surface(
+    return HomeSurface(
       icon: Icons.lightbulb_outline,
       title: l10n.insightsTitle,
       child: insights.isEmpty
-          ? _EmptyLine(text: l10n.insightsEmpty)
-          : _Rows(
+          ? HomeEmptyLine(text: l10n.insightsEmpty)
+          : HomeRows(
               children: [
                 for (final insight in insights)
-                  _RecordRow(
+                  HomeRecordRow(
                     key: Key('insight-row-${insight.id}'),
                     title: insight.title,
                     subtitle:
                         '${insight.summary} · ${insight.sourceLabel} · '
                         '${insight.kindLabel} · ${insight.metricLabel}',
                     icon: Icons.insights_outlined,
+                    onTap: () => context.go('/timeline/items/${insight.id}'),
                   ),
               ],
             ),
@@ -394,20 +484,23 @@ class _RecordsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return _Surface(
+    return HomeSurface(
       icon: Icons.article_outlined,
       title: l10n.recordsTitle,
       child: records.isEmpty
-          ? _EmptyLine(text: l10n.recordsEmpty)
-          : _Rows(
+          ? HomeEmptyLine(text: l10n.recordsEmpty)
+          : HomeRows(
               children: [
                 for (final record in records)
-                  _RecordRow(
+                  HomeRecordRow(
                     key: Key('record-row-${record.id}'),
                     title: record.body,
                     subtitle:
                         '${record.id} · ${_localizedRecordStatus(l10n, record.status)}',
                     icon: Icons.notes_outlined,
+                    onTap: () => context.go(
+                      '/timeline/items/${Uri.encodeComponent(record.sourceEventId ?? record.id)}',
+                    ),
                   ),
               ],
             ),
@@ -431,12 +524,12 @@ class _MemoryReviewSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return _Surface(
+    return HomeSurface(
       icon: Icons.rate_review_outlined,
       title: l10n.memoryReviewTitle,
       child: candidates.isEmpty
-          ? _EmptyLine(text: l10n.memoryReviewEmpty)
-          : _Rows(
+          ? HomeEmptyLine(text: l10n.memoryReviewEmpty)
+          : HomeRows(
               children: [
                 for (final candidate in candidates)
                   _ReviewCandidateRow(
@@ -538,15 +631,15 @@ class _MemorySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return _Surface(
+    return HomeSurface(
       icon: Icons.psychology_alt_outlined,
       title: l10n.memoryTitle,
       child: memories.isEmpty
-          ? _EmptyLine(text: l10n.memoryEmpty)
-          : _Rows(
+          ? HomeEmptyLine(text: l10n.memoryEmpty)
+          : HomeRows(
               children: [
                 for (final memory in memories)
-                  _RecordRow(
+                  HomeRecordRow(
                     key: Key('memory-row-${memory.id}'),
                     title: _localizedMemoryTitle(l10n, memory.title),
                     subtitle:
@@ -554,6 +647,7 @@ class _MemorySection extends StatelessWidget {
                         '${_localizedConfidenceLabel(l10n, memory.confidenceLabel)} · '
                         '${_localizedStatusLabel(l10n, memory.statusLabel)}',
                     icon: Icons.auto_awesome_outlined,
+                    onTap: () => context.go('/timeline/items/${memory.id}'),
                   ),
               ],
             ),
@@ -569,20 +663,21 @@ class _TraceSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return _Surface(
+    return HomeSurface(
       icon: Icons.account_tree_outlined,
       title: l10n.traceTitle,
       child: traces.isEmpty
-          ? _EmptyLine(text: l10n.traceEmpty)
-          : _Rows(
+          ? HomeEmptyLine(text: l10n.traceEmpty)
+          : HomeRows(
               children: [
                 for (final trace in traces)
-                  _RecordRow(
+                  HomeRecordRow(
                     key: Key('trace-row-${trace.id}'),
                     title: trace.label,
                     subtitle:
                         '${trace.detail} · ${_traceOrigin(trace)} · ${trace.timeLabel}',
                     icon: Icons.route_outlined,
+                    onTap: () => context.go('/plugins/traces'),
                   ),
               ],
             ),
@@ -632,149 +727,6 @@ String _localizedConfidenceLabel(AppLocalizations l10n, String label) {
     _ => null,
   };
   return confidence == null ? label : l10n.confidenceLabel(confidence);
-}
-
-class _Surface extends StatelessWidget {
-  const _Surface({
-    required this.icon,
-    required this.title,
-    required this.child,
-  });
-
-  final IconData icon;
-  final String title;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFD8DDE6)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            child,
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Rows extends StatelessWidget {
-  const _Rows({required this.children});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        for (var index = 0; index < children.length; index++) ...[
-          if (index > 0) const Divider(height: 20),
-          children[index],
-        ],
-      ],
-    );
-  }
-}
-
-class _RecordRow extends StatelessWidget {
-  const _RecordRow({
-    super.key,
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-  });
-
-  final String title;
-  final String subtitle;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _EmptyLine extends StatelessWidget {
-  const _EmptyLine({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-        color: Theme.of(context).colorScheme.onSurfaceVariant,
-      ),
-    );
-  }
-}
-
-class _ErrorLine extends StatelessWidget {
-  const _ErrorLine({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-        color: Theme.of(context).colorScheme.error,
-      ),
-    );
-  }
 }
 
 class _StageData {
