@@ -1,4 +1,4 @@
-package app.widenote.widenote_mobile
+package app.widenote
 
 import io.flutter.embedding.android.FlutterActivity
 

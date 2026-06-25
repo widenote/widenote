@@ -51,6 +51,26 @@ Allowed dependencies:
 - `packages/dart/model_providers`
 - `packages/schemas`
 
+## Android Build Flavors
+
+The Android app uses one release-channel flavor axis:
+
+| Flavor | Android package | App label | Intended use |
+| --- | --- | --- | --- |
+| `dev` | `app.widenote.dev` | `WideNote Dev` | Local development and QA builds that can coexist with production. |
+| `prod` | `app.widenote` | `WideNote` | Formal release builds. |
+
+Run or build with an explicit flavor:
+
+```sh
+flutter run --flavor dev
+flutter build apk --flavor prod --release
+```
+
+China/global market flavors are intentionally deferred. Add a market axis only
+after store requirements, provider defaults, compliance, or distribution policy
+make the split real.
+
 Flutter plugin dependencies used by the app bootstrap:
 
 - `path_provider`

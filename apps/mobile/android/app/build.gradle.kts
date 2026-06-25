@@ -6,9 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "app.widenote.widenote_mobile"
+    namespace = "app.widenote"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
+
+    val productionApplicationId = "app.widenote"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -20,14 +22,27 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "app.widenote.widenote_mobile"
+        applicationId = productionApplicationId
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+    }
+
+    flavorDimensions += "releaseChannel"
+    productFlavors {
+        create("prod") {
+            dimension = "releaseChannel"
+            applicationId = productionApplicationId
+            manifestPlaceholders["appLabel"] = "WideNote"
+        }
+        create("dev") {
+            dimension = "releaseChannel"
+            applicationId = "$productionApplicationId.dev"
+            manifestPlaceholders["appLabel"] = "WideNote Dev"
+        }
     }
 
     buildTypes {
