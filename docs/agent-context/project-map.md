@@ -35,6 +35,11 @@ It should stay short. It points to the right local context instead of duplicatin
 - `docs/research/2026-06-24-android-emulator-qa.md`
 - `docs/research/2026-06-24-android-followup-qa.md`
 - `docs/research/2026-06-24-memex-phase-one-gap-audit.md`
+- `docs/research/2026-06-25-mobile-entry-gap-audit.md`
+- `docs/research/2026-06-25-mobile-entry-closure-review.md`
+- `docs/research/2026-06-25-mobile-entry-closure-android-qa.md`
+- `docs/research/2026-06-25-live-model-user-journey-qa.md`
+- `docs/research/2026-06-25-mobile-ui-style-trends.md`
 - `docs/research/2026-06-24-omi-clean-room-plan.md`
 - `docs/research/2026-06-24-omi-android-qa.md`
 
@@ -44,6 +49,8 @@ It should stay short. It points to the right local context instead of duplicatin
 - `docs/rfcs/agent-pack-schema.md`
 - `docs/rfcs/model-provider-settings.md`
 - `docs/rfcs/phase-one-product-scope.md`
+- `docs/rfcs/mobile-entry-closure.md`
+- `docs/rfcs/mobile-visual-style.md`
 
 ## Contract Sources
 
@@ -69,6 +76,7 @@ It should stay short. It points to the right local context instead of duplicatin
 | --- | --- | --- |
 | Mobile app | `apps/mobile/README.md` | Flutter client and local runtime host |
 | Mobile backup | `apps/mobile/lib/features/backup/README.md` | Local JSON backup export/import UI |
+| Mobile Memory | `apps/mobile/lib/features/memory/README.md` | Accepted Memory list, edit, tombstone delete, and restore UI |
 | Mobile model providers | `apps/mobile/lib/features/model_providers/README.md` | Provider settings UI and local state |
 | Mobile traces | `apps/mobile/lib/features/traces/README.md` | Read-only local Agent Runtime trace console |
 | API service | `apps/api/README.md` | Optional backend API |

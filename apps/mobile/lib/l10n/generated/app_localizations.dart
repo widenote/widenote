@@ -146,6 +146,12 @@ abstract class AppLocalizations {
   /// **'Search'**
   String get homeSearchTooltip;
 
+  /// No description provided for @homeOpenMemoryTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Memory'**
+  String get homeOpenMemoryTooltip;
+
   /// No description provided for @quickCaptureTitle.
   ///
   /// In en, this message translates to:
@@ -500,6 +506,72 @@ abstract class AppLocalizations {
   /// **'Memory queue is waiting for first capture.'**
   String get memoryEmpty;
 
+  /// No description provided for @memoryPageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory'**
+  String get memoryPageTitle;
+
+  /// No description provided for @memoryPageSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit, tombstone, restore, and inspect local Memory with source links.'**
+  String get memoryPageSubtitle;
+
+  /// No description provided for @memorySearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Memory body, type, status, or source...'**
+  String get memorySearchHint;
+
+  /// No description provided for @memoryActiveSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Memory'**
+  String get memoryActiveSectionTitle;
+
+  /// No description provided for @memoryActiveEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No active Memory yet.'**
+  String get memoryActiveEmpty;
+
+  /// No description provided for @memoryDeletedSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted Memory'**
+  String get memoryDeletedSectionTitle;
+
+  /// No description provided for @memoryDeletedEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No tombstoned Memory.'**
+  String get memoryDeletedEmpty;
+
+  /// No description provided for @memoryActionEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get memoryActionEdit;
+
+  /// No description provided for @memoryActionDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get memoryActionDelete;
+
+  /// No description provided for @memoryActionRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get memoryActionRestore;
+
+  /// No description provided for @memoryRevisionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'rev {revision}'**
+  String memoryRevisionLabel(int revision);
+
   /// No description provided for @traceTitle.
   ///
   /// In en, this message translates to:
@@ -625,6 +697,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'suggested by agent'**
   String get todoStatusSuggestedByAgent;
+
+  /// No description provided for @todoStatusOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'open'**
+  String get todoStatusOpen;
+
+  /// No description provided for @todoStatusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'completed'**
+  String get todoStatusCompleted;
+
+  /// No description provided for @todoActionComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete'**
+  String get todoActionComplete;
+
+  /// No description provided for @todoActionReopen.
+  ///
+  /// In en, this message translates to:
+  /// **'Reopen'**
+  String get todoActionReopen;
 
   /// No description provided for @chatTitle.
   ///
@@ -986,6 +1082,66 @@ abstract class AppLocalizations {
   /// **'trace-ready'**
   String get pluginsTraceConsoleStatus;
 
+  /// No description provided for @packLibraryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pack Library'**
+  String get packLibraryTitle;
+
+  /// No description provided for @packLibrarySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspect built-in official Agent Packs before dynamic installs exist.'**
+  String get packLibrarySubtitle;
+
+  /// No description provided for @packLibraryInstalledTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed official packs'**
+  String get packLibraryInstalledTitle;
+
+  /// No description provided for @packLibraryVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'v{version}'**
+  String packLibraryVersion(String version);
+
+  /// No description provided for @packLibraryPermissionCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 permission} other{{count} permissions}}'**
+  String packLibraryPermissionCount(int count);
+
+  /// No description provided for @packLibraryOutputCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 output} other{{count} outputs}}'**
+  String packLibraryOutputCount(int count);
+
+  /// No description provided for @permissionGateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission Gate'**
+  String get permissionGateTitle;
+
+  /// No description provided for @permissionGateSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review built-in pack permissions and deferred high-risk capabilities.'**
+  String get permissionGateSubtitle;
+
+  /// No description provided for @permissionGateGrantedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Granted built-in permissions'**
+  String get permissionGateGrantedTitle;
+
+  /// No description provided for @permissionGateDeferredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Deferred high-risk permissions'**
+  String get permissionGateDeferredTitle;
+
   /// No description provided for @agentPlatformTitle.
   ///
   /// In en, this message translates to:
@@ -1250,6 +1406,12 @@ abstract class AppLocalizations {
   /// **'Backup JSON is ready.'**
   String get backupExportReadyStatus;
 
+  /// No description provided for @backupSavedFileStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup files saved locally.'**
+  String get backupSavedFileStatus;
+
   /// No description provided for @backupImportDoneStatus.
   ///
   /// In en, this message translates to:
@@ -1310,6 +1472,24 @@ abstract class AppLocalizations {
   /// **'Copy Markdown'**
   String get backupCopyMarkdownButton;
 
+  /// No description provided for @backupSaveFilesButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save files'**
+  String get backupSaveFilesButton;
+
+  /// No description provided for @backupSavedJsonPath.
+  ///
+  /// In en, this message translates to:
+  /// **'JSON file'**
+  String get backupSavedJsonPath;
+
+  /// No description provided for @backupSavedMarkdownPath.
+  ///
+  /// In en, this message translates to:
+  /// **'Markdown file'**
+  String get backupSavedMarkdownPath;
+
   /// No description provided for @backupCopiedStatus.
   ///
   /// In en, this message translates to:
@@ -1345,6 +1525,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Import backup'**
   String get backupImportButton;
+
+  /// No description provided for @backupImportLatestFileButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Import latest saved file'**
+  String get backupImportLatestFileButton;
 }
 
 class _AppLocalizationsDelegate

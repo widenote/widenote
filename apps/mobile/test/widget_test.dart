@@ -512,6 +512,11 @@ void main() {
 
     expect(find.text('Memory Review'), findsNothing);
     expect(find.text('Memory saved'), findsNothing);
+    expect(_readCaptureState(tester).todos, isEmpty);
+
+    await _openTab(tester, const Key('tab-todos'));
+    expect(find.byKey(const Key('todos-page')), findsOneWidget);
+    expect(find.textContaining('Salary and bank details'), findsNothing);
   });
 
   testWidgets('generated todo appears on Todos tab with source link', (

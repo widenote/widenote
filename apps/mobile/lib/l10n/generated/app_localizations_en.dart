@@ -33,6 +33,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeSearchTooltip => 'Search';
 
   @override
+  String get homeOpenMemoryTooltip => 'Open Memory';
+
+  @override
   String get quickCaptureTitle => 'Quick Capture';
 
   @override
@@ -276,6 +279,43 @@ class AppLocalizationsEn extends AppLocalizations {
   String get memoryEmpty => 'Memory queue is waiting for first capture.';
 
   @override
+  String get memoryPageTitle => 'Memory';
+
+  @override
+  String get memoryPageSubtitle =>
+      'Edit, tombstone, restore, and inspect local Memory with source links.';
+
+  @override
+  String get memorySearchHint =>
+      'Search Memory body, type, status, or source...';
+
+  @override
+  String get memoryActiveSectionTitle => 'Active Memory';
+
+  @override
+  String get memoryActiveEmpty => 'No active Memory yet.';
+
+  @override
+  String get memoryDeletedSectionTitle => 'Deleted Memory';
+
+  @override
+  String get memoryDeletedEmpty => 'No tombstoned Memory.';
+
+  @override
+  String get memoryActionEdit => 'Edit';
+
+  @override
+  String get memoryActionDelete => 'Delete';
+
+  @override
+  String get memoryActionRestore => 'Restore';
+
+  @override
+  String memoryRevisionLabel(int revision) {
+    return 'rev $revision';
+  }
+
+  @override
   String get traceTitle => 'Trace';
 
   @override
@@ -344,6 +384,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get todoStatusSuggestedByAgent => 'suggested by agent';
+
+  @override
+  String get todoStatusOpen => 'open';
+
+  @override
+  String get todoStatusCompleted => 'completed';
+
+  @override
+  String get todoActionComplete => 'Complete';
+
+  @override
+  String get todoActionReopen => 'Reopen';
 
   @override
   String get chatTitle => 'Chat';
@@ -560,6 +612,56 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pluginsTraceConsoleStatus => 'trace-ready';
 
   @override
+  String get packLibraryTitle => 'Pack Library';
+
+  @override
+  String get packLibrarySubtitle =>
+      'Inspect built-in official Agent Packs before dynamic installs exist.';
+
+  @override
+  String get packLibraryInstalledTitle => 'Installed official packs';
+
+  @override
+  String packLibraryVersion(String version) {
+    return 'v$version';
+  }
+
+  @override
+  String packLibraryPermissionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count permissions',
+      one: '1 permission',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String packLibraryOutputCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count outputs',
+      one: '1 output',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get permissionGateTitle => 'Permission Gate';
+
+  @override
+  String get permissionGateSubtitle =>
+      'Review built-in pack permissions and deferred high-risk capabilities.';
+
+  @override
+  String get permissionGateGrantedTitle => 'Granted built-in permissions';
+
+  @override
+  String get permissionGateDeferredTitle => 'Deferred high-risk permissions';
+
+  @override
   String get agentPlatformTitle => 'Agent Observability';
 
   @override
@@ -713,6 +815,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backupExportReadyStatus => 'Backup JSON is ready.';
 
   @override
+  String get backupSavedFileStatus => 'Backup files saved locally.';
+
+  @override
   String get backupImportDoneStatus => 'Backup imported into local storage.';
 
   @override
@@ -749,6 +854,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backupCopyMarkdownButton => 'Copy Markdown';
 
   @override
+  String get backupSaveFilesButton => 'Save files';
+
+  @override
+  String get backupSavedJsonPath => 'JSON file';
+
+  @override
+  String get backupSavedMarkdownPath => 'Markdown file';
+
+  @override
   String get backupCopiedStatus => 'Export copied.';
 
   @override
@@ -765,4 +879,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backupImportButton => 'Import backup';
+
+  @override
+  String get backupImportLatestFileButton => 'Import latest saved file';
 }

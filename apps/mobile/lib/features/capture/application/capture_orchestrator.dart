@@ -394,8 +394,15 @@ final class CaptureOrchestrator {
       runtime.WnEventTypes.todoSuggested,
     );
     if (todoEvent == null) {
-      throw const CapturePipelineException(
-        'Todo pack did not emit a Todo suggestion.',
+      final sourceCaptureId = capture.subjectRef?.id ?? capture.id;
+      return SourceTodo(
+        id: 'todo.skipped.$sourceCaptureId',
+        title: 'No todo suggested',
+        sourceLabel: 'source: $sourceCaptureId',
+        statusLabel: 'skipped for sensitive capture',
+        sourceCaptureId: sourceCaptureId,
+        sourceEventId: capture.id,
+        isSuggested: false,
       );
     }
     return SourceTodo(
@@ -751,6 +758,10 @@ final class _CaptureAgent implements runtime.AgentHandler {
   }
 }
 
+bool _shouldSkipTodoSuggestion(_MemoryPolicyFields policy) {
+  return policy.sensitivity == 'high';
+}
+
 Future<runtime.ModelResponse> _summarizeCapture(
   runtime.ModelClient model, {
   required String text,
@@ -809,6 +820,10 @@ final class _TodoAgent implements runtime.AgentHandler {
     runtime.WnEvent event,
   ) async {
     final text = _captureTextFromPayload(event.payload);
+    final policy = _policyForCaptureText(text);
+    if (_shouldSkipTodoSuggestion(policy)) {
+      return const runtime.AgentHandlerResult.empty();
+    }
     final subject =
         event.subjectRef ?? runtime.SubjectRef(kind: 'capture', id: event.id);
 

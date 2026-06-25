@@ -5,6 +5,7 @@ import '../features/chat/application/chat_assistant.dart';
 import '../features/chat/application/chat_controller.dart';
 import '../features/chat/application/local_chat_context_source.dart';
 import '../l10n/l10n.dart';
+import 'app_theme.dart';
 import 'app_router.dart';
 
 class WideNoteApp extends StatefulWidget {
@@ -34,7 +35,7 @@ class _WideNoteAppState extends State<WideNoteApp> {
       locale: widget.locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      theme: _buildTheme(),
+      theme: WideNoteAppTheme.light(),
       routerConfig: _router,
       builder: (context, child) {
         final l10n = context.l10n;
@@ -56,42 +57,6 @@ class _WideNoteAppState extends State<WideNoteApp> {
           child: child ?? const SizedBox.shrink(),
         );
       },
-    );
-  }
-
-  ThemeData _buildTheme() {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: const Color(0xFF2367C9),
-      surface: Colors.white,
-      brightness: Brightness.light,
-    );
-
-    return ThemeData(
-      useMaterial3: true,
-      colorScheme: colorScheme,
-      scaffoldBackgroundColor: const Color(0xFFF6F7F9),
-      appBarTheme: const AppBarTheme(
-        centerTitle: false,
-        elevation: 0,
-        backgroundColor: Color(0xFFF6F7F9),
-      ),
-      navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: Colors.white,
-        indicatorColor: colorScheme.primaryContainer,
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFFD8DDE6)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFFD8DDE6)),
-        ),
-      ),
     );
   }
 }

@@ -4,9 +4,13 @@ import 'package:go_router/go_router.dart';
 import '../features/backup/presentation/backup_page.dart';
 import '../features/capture/presentation/home_page.dart';
 import '../features/chat/presentation/chat_page.dart';
+import '../features/memory/presentation/memory_page.dart';
 import '../features/model_providers/presentation/model_provider_settings_page.dart';
+import '../features/plugins/presentation/pack_library_page.dart';
+import '../features/plugins/presentation/permission_gate_page.dart';
 import '../features/plugins/presentation/plugins_page.dart';
 import '../features/timeline/presentation/card_detail_page.dart';
+import '../features/timeline/presentation/timeline_item_detail_page.dart';
 import '../features/timeline/presentation/timeline_page.dart';
 import '../features/timeline/presentation/timeline_search_page.dart';
 import '../features/todos/presentation/todos_page.dart';
@@ -44,9 +48,21 @@ GoRouter createAppRouter() {
                 CardDetailPage(cardId: state.pathParameters['cardId'] ?? ''),
           ),
           GoRoute(
+            path: '/timeline/items/:itemId',
+            name: 'timeline-item-detail',
+            builder: (context, state) => TimelineItemDetailPage(
+              itemId: state.pathParameters['itemId'] ?? '',
+            ),
+          ),
+          GoRoute(
             path: '/chat',
             name: 'chat',
             builder: (context, state) => const ChatPage(),
+          ),
+          GoRoute(
+            path: '/memory',
+            name: 'memory',
+            builder: (context, state) => const MemoryPage(),
           ),
           GoRoute(
             path: '/todos',
@@ -57,6 +73,16 @@ GoRouter createAppRouter() {
             path: '/plugins',
             name: 'plugins',
             builder: (context, state) => const PluginsPage(),
+          ),
+          GoRoute(
+            path: '/plugins/packs',
+            name: 'pack-library',
+            builder: (context, state) => const PackLibraryPage(),
+          ),
+          GoRoute(
+            path: '/plugins/permissions',
+            name: 'permission-gate',
+            builder: (context, state) => const PermissionGatePage(),
           ),
           GoRoute(
             path: '/plugins/model-providers',

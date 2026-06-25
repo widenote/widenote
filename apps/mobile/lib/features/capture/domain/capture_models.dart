@@ -80,6 +80,7 @@ class SourceTodo {
     required this.statusLabel,
     this.sourceCaptureId,
     this.sourceEventId,
+    this.isSuggested = true,
   });
 
   final String id;
@@ -88,6 +89,7 @@ class SourceTodo {
   final String statusLabel;
   final String? sourceCaptureId;
   final String? sourceEventId;
+  final bool isSuggested;
 }
 
 @immutable

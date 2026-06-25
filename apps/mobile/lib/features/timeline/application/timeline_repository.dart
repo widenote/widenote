@@ -23,6 +23,14 @@ final timelineCardDetailProvider = FutureProvider.autoDispose
       return snapshot.cardDetail(cardId);
     });
 
+final timelineItemDetailProvider = FutureProvider.autoDispose
+    .family<MemoryFirstTimelineItem?, String>((ref, itemId) async {
+      final snapshot = await ref
+          .watch(timelineRepositoryProvider)
+          .loadSnapshot();
+      return snapshot.itemById(itemId);
+    });
+
 abstract interface class TimelineRepository {
   Future<TimelineSnapshot> loadSnapshot();
 }
@@ -48,6 +56,10 @@ final class TimelineSnapshot {
     MemoryFirstTimelineFilter filter = const MemoryFirstTimelineFilter(),
   ]) {
     return index.search(filter);
+  }
+
+  MemoryFirstTimelineItem? itemById(String itemId) {
+    return index.itemById(itemId);
   }
 
   MemoryFirstCardDetail? cardDetail(String cardId) {

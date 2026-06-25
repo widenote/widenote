@@ -48,6 +48,12 @@ class HomeHeader extends StatelessWidget {
               onPressed: () => context.go('/timeline/search'),
               icon: const Icon(Icons.search),
             ),
+            IconButton.outlined(
+              key: const Key('open-memory-button'),
+              tooltip: l10n.homeOpenMemoryTooltip,
+              onPressed: () => context.go('/memory'),
+              icon: const Icon(Icons.psychology_alt_outlined),
+            ),
           ],
         ),
       ],

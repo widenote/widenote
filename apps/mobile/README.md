@@ -85,6 +85,10 @@ Model access:
 - Android QA builds may opt into Xiaomi MIMO through
   `--dart-define=WIDENOTE_QA_MIMO_API_KEY=...`. The key must never be committed,
   logged, or written into test fixtures.
+- Opt-in live model QA can be run with
+  `flutter test test/model_client_live_test.dart --dart-define=WIDENOTE_QA_MIMO_API_KEY=<key>`.
+  The live test is skipped when the key is absent or when the remote endpoint
+  returns HTTP 429.
 
 ## Generated Artifacts
 

@@ -33,6 +33,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeSearchTooltip => '搜索';
 
   @override
+  String get homeOpenMemoryTooltip => '打开记忆';
+
+  @override
   String get quickCaptureTitle => '快速记录';
 
   @override
@@ -228,6 +231,41 @@ class AppLocalizationsZh extends AppLocalizations {
   String get memoryEmpty => '记忆队列正在等待第一次记录。';
 
   @override
+  String get memoryPageTitle => '记忆';
+
+  @override
+  String get memoryPageSubtitle => '编辑、删除留痕、恢复并检查带来源的本地记忆。';
+
+  @override
+  String get memorySearchHint => '搜索记忆正文、类型、状态或来源...';
+
+  @override
+  String get memoryActiveSectionTitle => '活跃记忆';
+
+  @override
+  String get memoryActiveEmpty => '还没有活跃记忆。';
+
+  @override
+  String get memoryDeletedSectionTitle => '已删除记忆';
+
+  @override
+  String get memoryDeletedEmpty => '还没有删除留痕的记忆。';
+
+  @override
+  String get memoryActionEdit => '编辑';
+
+  @override
+  String get memoryActionDelete => '删除';
+
+  @override
+  String get memoryActionRestore => '恢复';
+
+  @override
+  String memoryRevisionLabel(int revision) {
+    return '第 $revision 版';
+  }
+
+  @override
   String get traceTitle => '追踪';
 
   @override
@@ -295,6 +333,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get todoStatusSuggestedByAgent => '智能体建议';
+
+  @override
+  String get todoStatusOpen => '未完成';
+
+  @override
+  String get todoStatusCompleted => '已完成';
+
+  @override
+  String get todoActionComplete => '完成';
+
+  @override
+  String get todoActionReopen => '重新打开';
 
   @override
   String get chatTitle => '对话';
@@ -490,6 +540,42 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pluginsTraceConsoleStatus => '追踪就绪';
 
   @override
+  String get packLibraryTitle => '插件库';
+
+  @override
+  String get packLibrarySubtitle => '在动态安装能力就绪前，检查内置官方 Agent Pack。';
+
+  @override
+  String get packLibraryInstalledTitle => '已安装官方插件';
+
+  @override
+  String packLibraryVersion(String version) {
+    return 'v$version';
+  }
+
+  @override
+  String packLibraryPermissionCount(int count) {
+    return '$count 个权限';
+  }
+
+  @override
+  String packLibraryOutputCount(int count) {
+    return '$count 个输出';
+  }
+
+  @override
+  String get permissionGateTitle => '权限门禁';
+
+  @override
+  String get permissionGateSubtitle => '复核内置插件权限和延期的高风险能力。';
+
+  @override
+  String get permissionGateGrantedTitle => '已授予的内置权限';
+
+  @override
+  String get permissionGateDeferredTitle => '延期的高风险权限';
+
+  @override
   String get agentPlatformTitle => '智能体观测';
 
   @override
@@ -636,6 +722,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get backupExportReadyStatus => '备份 JSON 已准备好。';
 
   @override
+  String get backupSavedFileStatus => '备份文件已保存到本地。';
+
+  @override
   String get backupImportDoneStatus => '备份已导入本地存储。';
 
   @override
@@ -670,6 +759,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get backupCopyMarkdownButton => '复制 Markdown';
 
   @override
+  String get backupSaveFilesButton => '保存文件';
+
+  @override
+  String get backupSavedJsonPath => 'JSON 文件';
+
+  @override
+  String get backupSavedMarkdownPath => 'Markdown 文件';
+
+  @override
   String get backupCopiedStatus => '导出内容已复制。';
 
   @override
@@ -686,4 +784,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get backupImportButton => '导入备份';
+
+  @override
+  String get backupImportLatestFileButton => '导入最近保存的文件';
 }

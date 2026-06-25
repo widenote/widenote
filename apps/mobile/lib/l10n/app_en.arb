@@ -8,6 +8,7 @@
   "homeSubtitle": "quick capture -> timeline -> memory -> insight",
   "homeOpenTimelineTooltip": "Open Timeline",
   "homeSearchTooltip": "Search",
+  "homeOpenMemoryTooltip": "Open Memory",
   "quickCaptureTitle": "Quick Capture",
   "quickCaptureHint": "Drop a thought, meeting note, promise, or raw memory...",
   "captureModeText": "Text",
@@ -133,6 +134,24 @@
   "saveButton": "Save",
   "memoryTitle": "Memory",
   "memoryEmpty": "Memory queue is waiting for first capture.",
+  "memoryPageTitle": "Memory",
+  "memoryPageSubtitle": "Edit, tombstone, restore, and inspect local Memory with source links.",
+  "memorySearchHint": "Search Memory body, type, status, or source...",
+  "memoryActiveSectionTitle": "Active Memory",
+  "memoryActiveEmpty": "No active Memory yet.",
+  "memoryDeletedSectionTitle": "Deleted Memory",
+  "memoryDeletedEmpty": "No tombstoned Memory.",
+  "memoryActionEdit": "Edit",
+  "memoryActionDelete": "Delete",
+  "memoryActionRestore": "Restore",
+  "memoryRevisionLabel": "rev {revision}",
+  "@memoryRevisionLabel": {
+    "placeholders": {
+      "revision": {
+        "type": "int"
+      }
+    }
+  },
   "traceTitle": "Trace",
   "traceEmpty": "Local runtime events appear here after captures or pack runs.",
   "recordStatusSavedProcessing": "Saved locally, processing",
@@ -175,6 +194,10 @@
   },
   "todoStatusNeedsExplicitPermission": "needs explicit permission",
   "todoStatusSuggestedByAgent": "suggested by agent",
+  "todoStatusOpen": "open",
+  "todoStatusCompleted": "completed",
+  "todoActionComplete": "Complete",
+  "todoActionReopen": "Reopen",
   "chatTitle": "Chat",
   "chatSubtitle": "Ask WideNote with local Memory, records, and todos as context.",
   "chatSessionsTitle": "Sessions",
@@ -283,6 +306,37 @@
   "pluginsTraceConsoleTitle": "Trace Console",
   "pluginsTraceConsoleSubtitle": "Inspect pack runs, permissions, and generated outputs.",
   "pluginsTraceConsoleStatus": "trace-ready",
+  "packLibraryTitle": "Pack Library",
+  "packLibrarySubtitle": "Inspect built-in official Agent Packs before dynamic installs exist.",
+  "packLibraryInstalledTitle": "Installed official packs",
+  "packLibraryVersion": "v{version}",
+  "@packLibraryVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "packLibraryPermissionCount": "{count, plural, =1{1 permission} other{{count} permissions}}",
+  "@packLibraryPermissionCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "packLibraryOutputCount": "{count, plural, =1{1 output} other{{count} outputs}}",
+  "@packLibraryOutputCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "permissionGateTitle": "Permission Gate",
+  "permissionGateSubtitle": "Review built-in pack permissions and deferred high-risk capabilities.",
+  "permissionGateGrantedTitle": "Granted built-in permissions",
+  "permissionGateDeferredTitle": "Deferred high-risk permissions",
   "agentPlatformTitle": "Agent Observability",
   "agentPlatformSubtitle": "Read-only local runtime evidence from real trace events.",
   "traceConsoleTitle": "Trace Console",
@@ -376,6 +430,7 @@
   "backupSubtitle": "Export and import local records, Memory, cards, chat, providers, todos, and trace data.",
   "backupIdleStatus": "Local data stays on this device until you export or paste a backup.",
   "backupExportReadyStatus": "Backup JSON is ready.",
+  "backupSavedFileStatus": "Backup files saved locally.",
   "backupImportDoneStatus": "Backup imported into local storage.",
   "backupFailedStatus": "Backup failed: {details}",
   "@backupFailedStatus": {
@@ -403,10 +458,14 @@
   },
   "backupCopyJsonButton": "Copy JSON",
   "backupCopyMarkdownButton": "Copy Markdown",
+  "backupSaveFilesButton": "Save files",
+  "backupSavedJsonPath": "JSON file",
+  "backupSavedMarkdownPath": "Markdown file",
   "backupCopiedStatus": "Export copied.",
   "backupExportJsonTitle": "Backup JSON",
   "backupExportMarkdownTitle": "Readable Markdown",
   "backupImportSectionTitle": "Import",
   "backupImportHint": "Paste a WideNote local backup JSON...",
-  "backupImportButton": "Import backup"
+  "backupImportButton": "Import backup",
+  "backupImportLatestFileButton": "Import latest saved file"
 }

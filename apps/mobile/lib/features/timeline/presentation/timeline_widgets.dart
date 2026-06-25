@@ -128,12 +128,12 @@ class TimelineEmptyState extends StatelessWidget {
 class TimelineItemRows extends StatelessWidget {
   const TimelineItemRows({
     required this.items,
-    required this.onOpenCard,
+    required this.onOpenItem,
     super.key,
   });
 
   final List<MemoryFirstTimelineItem> items;
-  final ValueChanged<MemoryFirstTimelineItem> onOpenCard;
+  final ValueChanged<MemoryFirstTimelineItem> onOpenItem;
 
   @override
   Widget build(BuildContext context) {
@@ -141,7 +141,7 @@ class TimelineItemRows extends StatelessWidget {
       children: [
         for (var index = 0; index < items.length; index++) ...[
           if (index > 0) const Divider(height: 20),
-          TimelineItemRow(item: items[index], onOpenCard: onOpenCard),
+          TimelineItemRow(item: items[index], onOpenItem: onOpenItem),
         ],
       ],
     );
@@ -151,16 +151,15 @@ class TimelineItemRows extends StatelessWidget {
 class TimelineItemRow extends StatelessWidget {
   const TimelineItemRow({
     required this.item,
-    required this.onOpenCard,
+    required this.onOpenItem,
     super.key,
   });
 
   final MemoryFirstTimelineItem item;
-  final ValueChanged<MemoryFirstTimelineItem> onOpenCard;
+  final ValueChanged<MemoryFirstTimelineItem> onOpenItem;
 
   @override
   Widget build(BuildContext context) {
-    final canOpen = item.kind == MemoryFirstTimelineItemKind.card;
     final row = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -171,20 +170,15 @@ class TimelineItemRow extends StatelessWidget {
         ),
         const SizedBox(width: 10),
         Expanded(child: _TimelineItemText(item: item)),
-        if (canOpen) ...[
-          const SizedBox(width: 8),
-          const Icon(Icons.chevron_right, size: 20),
-        ],
+        const SizedBox(width: 8),
+        const Icon(Icons.chevron_right, size: 20),
       ],
     );
 
-    if (!canOpen) {
-      return KeyedSubtree(key: Key('timeline-item-${item.id}'), child: row);
-    }
     return InkWell(
       key: Key('timeline-item-${item.id}'),
       borderRadius: BorderRadius.circular(8),
-      onTap: () => onOpenCard(item),
+      onTap: () => onOpenItem(item),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: row,
@@ -194,9 +188,14 @@ class TimelineItemRow extends StatelessWidget {
 }
 
 class TimelineSourceRefList extends StatelessWidget {
-  const TimelineSourceRefList({required this.links, super.key});
+  const TimelineSourceRefList({
+    required this.links,
+    this.onOpenLink,
+    super.key,
+  });
 
   final List<SourceLink> links;
+  final ValueChanged<SourceLink>? onOpenLink;
 
   @override
   Widget build(BuildContext context) {
@@ -234,6 +233,17 @@ class TimelineSourceRefList extends StatelessWidget {
                   ],
                 ),
               ),
+              if (onOpenLink != null) ...[
+                const SizedBox(width: 8),
+                IconButton(
+                  key: Key(
+                    'open-source-ref-${links[index].kind}-${links[index].id}',
+                  ),
+                  tooltip: 'Open source',
+                  onPressed: () => onOpenLink!(links[index]),
+                  icon: const Icon(Icons.open_in_new),
+                ),
+              ],
             ],
           ),
         ],

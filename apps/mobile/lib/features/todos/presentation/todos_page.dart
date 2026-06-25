@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n.dart';
-import '../../capture/application/capture_controller.dart';
-import '../../capture/domain/capture_models.dart';
+import '../application/todo_controller.dart';
 
 class TodosPage extends ConsumerWidget {
   const TodosPage({super.key});
@@ -11,18 +10,22 @@ class TodosPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final todos = ref.watch(captureControllerProvider).todos;
+    final state = ref.watch(todoControllerProvider);
 
     return ListView(
       key: const Key('todos-page'),
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       children: [
         _PageHeader(title: l10n.todosTitle, subtitle: l10n.todosSubtitle),
+        if (state.errorMessage != null) ...[
+          const SizedBox(height: 12),
+          _ErrorLine(text: state.errorMessage!),
+        ],
         const SizedBox(height: 16),
         _Surface(
           icon: Icons.checklist_outlined,
           title: l10n.todosSurfaceTitle,
-          child: _TodoList(todos: todos),
+          child: _TodoList(todos: state.items),
         ),
       ],
     );
@@ -32,7 +35,7 @@ class TodosPage extends ConsumerWidget {
 class _TodoList extends StatelessWidget {
   const _TodoList({required this.todos});
 
-  final List<SourceTodo> todos;
+  final List<TodoListItem> todos;
 
   @override
   Widget build(BuildContext context) {
@@ -55,18 +58,22 @@ class _TodoList extends StatelessWidget {
   }
 }
 
-class _TodoRow extends StatelessWidget {
+class _TodoRow extends ConsumerWidget {
   const _TodoRow({required this.todo, super.key});
 
-  final SourceTodo todo;
+  final TodoListItem todo;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Checkbox(value: false, onChanged: null),
+        Checkbox(
+          key: Key('todo-checkbox-${todo.id}'),
+          value: todo.isCompleted,
+          onChanged: (_) => _toggle(ref, todo),
+        ),
         Expanded(
           child: Padding(
             padding: const EdgeInsets.only(top: 8),
@@ -94,12 +101,36 @@ class _TodoRow extends StatelessWidget {
                     ),
                   ],
                 ),
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  key: Key('todo-toggle-${todo.id}'),
+                  onPressed: () => _toggle(ref, todo),
+                  icon: Icon(
+                    todo.isCompleted
+                        ? Icons.refresh_outlined
+                        : Icons.check_circle_outline,
+                  ),
+                  label: Text(
+                    todo.isCompleted
+                        ? l10n.todoActionReopen
+                        : l10n.todoActionComplete,
+                  ),
+                ),
               ],
             ),
           ),
         ),
       ],
     );
+  }
+
+  void _toggle(WidgetRef ref, TodoListItem todo) {
+    final controller = ref.read(todoControllerProvider.notifier);
+    if (todo.isCompleted) {
+      controller.reopen(todo.id);
+      return;
+    }
+    controller.complete(todo.id);
   }
 }
 
@@ -126,8 +157,27 @@ String _localizedTodoStatusLabel(AppLocalizations l10n, String statusLabel) {
   return switch (statusLabel) {
     'needs explicit permission' => l10n.todoStatusNeedsExplicitPermission,
     'suggested by agent' => l10n.todoStatusSuggestedByAgent,
+    'open' => l10n.todoStatusOpen,
+    'completed' => l10n.todoStatusCompleted,
     _ => statusLabel,
   };
+}
+
+class _ErrorLine extends StatelessWidget {
+  const _ErrorLine({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      key: const Key('todos-error-line'),
+      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+        color: Theme.of(context).colorScheme.error,
+      ),
+    );
+  }
 }
 
 class _Tag extends StatelessWidget {

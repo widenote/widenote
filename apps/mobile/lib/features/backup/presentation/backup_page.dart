@@ -44,6 +44,10 @@ class _StatusLine extends StatelessWidget {
         l10n.backupExportReadyStatus,
         Theme.of(context).colorScheme.primary,
       ),
+      BackupOutcome.savedFile => (
+        l10n.backupSavedFileStatus,
+        Theme.of(context).colorScheme.primary,
+      ),
       BackupOutcome.imported => (
         l10n.backupImportDoneStatus,
         Theme.of(context).colorScheme.primary,
@@ -120,8 +124,28 @@ class _ExportSurface extends ConsumerWidget {
                     text: state.exportedMarkdown!,
                     label: l10n.backupCopyMarkdownButton,
                   ),
+                OutlinedButton.icon(
+                  key: const Key('backup-save-files-button'),
+                  onPressed: () => ref
+                      .read(backupControllerProvider.notifier)
+                      .saveExportedFiles(),
+                  icon: const Icon(Icons.save_alt_outlined),
+                  label: Text(l10n.backupSaveFilesButton),
+                ),
               ],
             ),
+            if (state.exportedJsonPath != null) ...[
+              const SizedBox(height: 12),
+              _FilePathLine(
+                label: l10n.backupSavedJsonPath,
+                path: state.exportedJsonPath!,
+              ),
+              if (state.exportedMarkdownPath != null)
+                _FilePathLine(
+                  label: l10n.backupSavedMarkdownPath,
+                  path: state.exportedMarkdownPath!,
+                ),
+            ],
             const SizedBox(height: 12),
             Text(
               l10n.backupExportJsonTitle,
@@ -186,6 +210,15 @@ class _ImportSurface extends ConsumerWidget {
             icon: const Icon(Icons.download_done_outlined),
             label: Text(l10n.backupImportButton),
           ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            key: const Key('backup-import-latest-file-button'),
+            onPressed: () => ref
+                .read(backupControllerProvider.notifier)
+                .importLatestSavedFile(),
+            icon: const Icon(Icons.folder_open_outlined),
+            label: Text(l10n.backupImportLatestFileButton),
+          ),
           if (state.outcome == BackupOutcome.imported ||
               state.outcome == BackupOutcome.failed) ...[
             const SizedBox(height: 8),
@@ -215,6 +248,25 @@ class _InlineOutcome extends StatelessWidget {
         color: isFailure
             ? Theme.of(context).colorScheme.error
             : Theme.of(context).colorScheme.primary,
+      ),
+    );
+  }
+}
+
+class _FilePathLine extends StatelessWidget {
+  const _FilePathLine({required this.label, required this.path});
+
+  final String label;
+  final String path;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      '$label: $path',
+      key: Key('backup-file-path-$label'),
+      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+        fontFamily: 'monospace',
       ),
     );
   }
