@@ -12,7 +12,16 @@ The long-term system is broader: user records become durable personal context, a
 
 ## Current Status
 
-This repository is at the foundation stage. The project brief has been preserved in [widenote_project_brief.md](./widenote_project_brief.md), and the first implementation work should start from the docs and boundaries in this repository rather than from a generated app scaffold.
+This repository is in the phase-one local-first usable-state integration stage.
+The current W7 state has a Flutter mobile app, hand-written SQLite local truth,
+local runtime outputs, runtime-enforced built-in Pack permissions, Settings /
+Privacy, safe backup / restore, real media permission handling, Daily Recap,
+timeline / search / detail surfaces, and cross-platform QA evidence. Safe
+backup restore rejects secret-bearing `encrypted_full` imports until a real
+encryption and credential-restore boundary exists. Use
+[W7 Current Integration State](./docs/research/2026-06-26-w7-current-integration-state.md)
+for the current boundary, and keep the original product brief in
+[widenote_project_brief.md](./widenote_project_brief.md) for product intent.
 
 ## Repository Map
 
@@ -32,7 +41,7 @@ packs/                 Agent Pack definitions.
 
 docs/                  Product, architecture, decisions, RFCs, and agent context.
 infra/                 Deployment and self-hosting assets.
-tools/                 Repository automation and generation scripts.
+tools/                 Repository automation, validation scripts, and generation helpers.
 ```
 
 ## Read First
@@ -51,7 +60,8 @@ The current foundation is:
 
 - Use a product monorepo for the client, backend, runner, schemas, docs, and default Agent Pack.
 - Use Flutter + Dart for the mobile-first client.
-- Use SQLite + Drift for the local-first data layer.
+- Use SQLite for the local-first data layer. The current implementation uses
+  hand-written `sqlite3`; Drift remains the accepted long-term client target.
 - Keep backend services optional and enhancing, not required for core use.
 - Build a lightweight WideNote Agent Runtime Kernel inside the product.
 - Treat external agent/workflow frameworks as runner adapters or integration targets.
@@ -59,4 +69,6 @@ The current foundation is:
 
 ## License
 
-The intended license is AGPLv3 with a future commercial dual-license path. A full license file should be added before public release.
+This repository includes the AGPLv3 license in [LICENSE](./LICENSE). A future
+commercial dual-license path remains a product/business option, but AGPLv3 is
+the current checked-in license text.

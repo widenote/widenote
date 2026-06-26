@@ -1,0 +1,17 @@
+{
+  "id": "model.complete",
+  "title": "Call model provider",
+  "description": "Allows a pack or runtime task to request text completion from an approved model provider.",
+  "risk": "medium",
+  "grant_behavior": "grant_on_enable",
+  "scope": {
+    "provider_selection": "user_selected"
+  },
+  "side_effects": [
+    "model_call"
+  ],
+  "requires_trace": true,
+  "metadata": {
+    "fixture": true
+  }
+}

@@ -11,9 +11,10 @@ Initial schema families:
 - Agent Pack manifest
 - Permission
 - Task
-- Tool
-- UI Block
-- Sync object
+- Runtime task/run
+- Context Packet
+- Provider/model metadata
+- Backup and Owner Export manifest
 - Trace
 
 Generated Dart and TypeScript types should come from this package.
@@ -33,8 +34,14 @@ Current source schemas:
 | Agent Pack manifest | `src/agent_pack/agent_pack_manifest.schema.json` |
 | Permission declaration | `src/permission/permission.schema.json` |
 | Trace event | `src/trace/trace.schema.json` |
+| Runtime task/run | `src/runtime/runtime_task_run.schema.json` |
+| Context Packet | `src/context_packet/context_packet.schema.json` |
+| Provider metadata and model routing | `src/model_provider/model_provider.schema.json` |
+| Backup and Owner Export manifest | `src/backup_export/backup_export_manifest.schema.json` |
 
-Future public surfaces include generated Dart types, generated TypeScript types, validation fixtures, and compatibility metadata.
+Synthetic fixtures live under `fixtures/valid/` and are indexed by `fixtures/manifest.json`.
+
+Future public surfaces include generated Dart types, generated TypeScript types, and compatibility metadata.
 
 ## Dependencies
 
@@ -56,6 +63,13 @@ When generation is introduced, document:
 
 ## Validation
 
+Schema fixture smoke validation uses a dependency-free Node runner that covers
+the JSON Schema subset used by the current contract files:
+
+```sh
+node packages/schemas/validate_fixtures.mjs
+```
+
 Current lightweight Agent Pack manifest validation checks parseability, basic shape, cross-references, and WideNote phase-one guardrails without adding repository dependencies:
 
 ```sh
@@ -64,9 +78,21 @@ node tools/pack_validator/validate.mjs packs/official/default/manifest.json pack
 
 The Agent Pack manifest currently includes subscription dependencies through
 `depends_on[]` and deterministic retry bounds through
-`agents[].retry_policy.max_attempts`. Script runtime and script side effects are
-described only as deferred contract values; phase-one validation rejects them
-until a sandbox RFC is accepted.
+`agents[].retry_policy.max_attempts`. It also exposes model profile routing
+fields such as `routing_policy`, `provider_ref`, `model_ref`, and
+`required_capabilities[]`. Script runtime and script side effects are described
+only as deferred contract values; phase-one validation rejects them until a
+sandbox RFC is accepted.
+
+Agent Pack `model_profiles[]` may omit routing fields while packs are still
+declarative. A materialized provider routing object should apply conservative
+defaults: `routing_policy: app_default`, empty `required_capabilities[]`, and
+`allow_fallback: false` unless the pack or user settings say otherwise.
+
+Provider metadata currently accepts canonical snake_case values and the current
+Dart camelCase wire names for provider kinds and capabilities. Treat camelCase
+entries as compatibility aliases until generated bindings or a migration close
+the drift.
 
 Validator self-tests:
 

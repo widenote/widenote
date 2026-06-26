@@ -78,9 +78,11 @@ class _HomePageState extends ConsumerState<HomePage> {
           controller: _captureTextController,
           onSubmit: _submitCapture,
           onModeChanged: _setCaptureMode,
-          onAddPhoto: _addPhoto,
-          onAddVoice: _addVoice,
-          onAddShare: _addShare,
+          onAddCamera: _addCamera,
+          onAddGallery: _addGallery,
+          onStartVoice: _startVoice,
+          onStopVoice: _stopVoice,
+          onCancelVoice: _cancelVoice,
           onRemoveAttachment: _removeAttachment,
           onAcceptAttachmentReview: _acceptAttachmentReview,
           isProcessing: captureState.isProcessing,
@@ -141,10 +143,21 @@ class _HomePageState extends ConsumerState<HomePage> {
     FocusScope.of(context).unfocus();
   }
 
-  void _addPhoto() {
+  void _addCamera() {
     unawaited(
       _addAttachment(
-        () => ref.read(captureInputControllerProvider.notifier).addPhoto(),
+        () =>
+            ref.read(captureInputControllerProvider.notifier).addCameraPhoto(),
+        (l10n) => l10n.capturePhotoAttachedMessage,
+      ),
+    );
+  }
+
+  void _addGallery() {
+    unawaited(
+      _addAttachment(
+        () =>
+            ref.read(captureInputControllerProvider.notifier).addGalleryPhoto(),
         (l10n) => l10n.capturePhotoAttachedMessage,
       ),
     );
@@ -154,24 +167,26 @@ class _HomePageState extends ConsumerState<HomePage> {
     ref.read(captureInputControllerProvider.notifier).setMode(mode);
   }
 
-  void _addVoice() {
+  void _startVoice() {
+    unawaited(
+      ref.read(captureInputControllerProvider.notifier).startVoiceRecording(),
+    );
+  }
+
+  void _stopVoice() {
     unawaited(
       _addAttachment(
         () => ref
             .read(captureInputControllerProvider.notifier)
-            .addVoiceTranscript(),
+            .stopVoiceRecording(),
         (l10n) => l10n.captureVoiceAttachedMessage,
       ),
     );
   }
 
-  void _addShare() {
+  void _cancelVoice() {
     unawaited(
-      _addAttachment(
-        () =>
-            ref.read(captureInputControllerProvider.notifier).addShareImport(),
-        (l10n) => l10n.captureShareAttachedMessage,
-      ),
+      ref.read(captureInputControllerProvider.notifier).cancelVoiceRecording(),
     );
   }
 
@@ -499,7 +514,7 @@ class _RecordsSection extends StatelessWidget {
                         '${record.id} · ${_localizedRecordStatus(l10n, record.status)}',
                     icon: Icons.notes_outlined,
                     onTap: () => context.go(
-                      '/timeline/items/${Uri.encodeComponent(record.sourceEventId ?? record.id)}',
+                      '/timeline/items/${Uri.encodeComponent(record.id)}',
                     ),
                   ),
               ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../l10n/l10n.dart';
 import '../application/todo_controller.dart';
@@ -92,8 +93,12 @@ class _TodoRow extends ConsumerWidget {
                   runSpacing: 4,
                   children: [
                     _Tag(
+                      key: Key('todo-source-${todo.id}'),
                       icon: Icons.link,
                       label: _localizedTodoSourceLabel(l10n, todo.sourceLabel),
+                      onTap: _sourceTarget(todo) == null
+                          ? null
+                          : () => context.go(_sourceTarget(todo)!),
                     ),
                     _Tag(
                       icon: Icons.info_outline,
@@ -132,6 +137,14 @@ class _TodoRow extends ConsumerWidget {
     }
     controller.complete(todo.id);
   }
+}
+
+String? _sourceTarget(TodoListItem todo) {
+  final sourceCaptureId = todo.sourceCaptureId;
+  if (sourceCaptureId == null || sourceCaptureId.trim().isEmpty) {
+    return null;
+  }
+  return '/timeline/items/${Uri.encodeComponent(sourceCaptureId)}';
 }
 
 String _localizedTodoTitle(AppLocalizations l10n, String title) {
@@ -181,14 +194,15 @@ class _ErrorLine extends StatelessWidget {
 }
 
 class _Tag extends StatelessWidget {
-  const _Tag({required this.icon, required this.label});
+  const _Tag({required this.icon, required this.label, this.onTap, super.key});
 
   final IconData icon;
   final String label;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
+    final tag = DecoratedBox(
       decoration: BoxDecoration(
         color: const Color(0xFFF1F4F8),
         borderRadius: BorderRadius.circular(8),
@@ -212,6 +226,14 @@ class _Tag extends StatelessWidget {
           ],
         ),
       ),
+    );
+    if (onTap == null) {
+      return tag;
+    }
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: tag,
     );
   }
 }

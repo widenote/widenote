@@ -33,7 +33,7 @@
     },
     "schema_version": {
       "type": "integer",
-      "minimum": 1
+      "const": 1
     },
     "publisher": {
       "type": "string",
@@ -294,6 +294,49 @@
           "minLength": 1
         },
         "required": {
+          "type": "boolean"
+        },
+        "routing_policy": {
+          "type": "string",
+          "enum": [
+            "app_default",
+            "user_selected",
+            "pack_preferred",
+            "fixed_provider"
+          ]
+        },
+        "provider_ref": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "model_ref": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "required_capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "chat",
+              "completion",
+              "embedding",
+              "vision",
+              "audio",
+              "streaming",
+              "tool_use",
+              "toolUse"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "allow_fallback": {
           "type": "boolean"
         }
       }

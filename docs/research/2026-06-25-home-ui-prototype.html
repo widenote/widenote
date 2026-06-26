@@ -1,0 +1,1147 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WideNote 首页与主 Tab 原型</title>
+  <style>
+    :root {
+      --page: #e9eeeb;
+      --paper: #fbfcfb;
+      --surface: #ffffff;
+      --ink: #17201b;
+      --muted: #65716a;
+      --soft: #eef4f1;
+      --line: #dbe4df;
+      --green: #2f7d5a;
+      --green-soft: #e4f1ea;
+      --blue: #4767a8;
+      --blue-soft: #e7ecf8;
+      --amber: #a86820;
+      --amber-soft: #f5ece0;
+      --rose: #aa5263;
+      --rose-soft: #f5e8eb;
+      --shadow: 0 20px 60px rgba(23, 32, 27, 0.14);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        linear-gradient(90deg, rgba(23, 32, 27, 0.04) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(23, 32, 27, 0.04) 1px, transparent 1px),
+        var(--page);
+      background-size: 28px 28px;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .workspace {
+      width: min(1180px, calc(100vw - 40px));
+      margin: 30px auto;
+      display: grid;
+      grid-template-columns: minmax(360px, 420px) 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+
+    .phone {
+      width: 390px;
+      height: 844px;
+      padding: 12px;
+      border-radius: 34px;
+      background: #1d2520;
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 24px;
+    }
+
+    .screen {
+      width: 100%;
+      height: 100%;
+      border-radius: 26px;
+      overflow: hidden;
+      background: var(--paper);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .statusbar {
+      height: 28px;
+      padding: 8px 22px 0;
+      display: flex;
+      justify-content: space-between;
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .appbar {
+      padding: 14px 18px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .title-block {
+      min-width: 0;
+    }
+
+    .brand {
+      font-size: 27px;
+      font-weight: 780;
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .date {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .icon-button {
+      width: 38px;
+      height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--surface);
+      color: var(--ink);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+    }
+
+    .icon-button svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .view {
+      flex: 1;
+      display: none;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .view.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 16px 92px;
+    }
+
+    .scroll::-webkit-scrollbar {
+      width: 0;
+    }
+
+    .capture-strip {
+      margin: 2px 16px 12px;
+      display: grid;
+      grid-template-columns: 1fr 42px 42px;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .capture-main {
+      height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--surface);
+      color: var(--muted);
+      padding: 0 13px;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .capture-main strong {
+      color: var(--ink);
+      font-weight: 760;
+    }
+
+    .capture-expanded {
+      display: none;
+      margin: -4px 16px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      padding: 12px;
+    }
+
+    .capture-expanded.open {
+      display: block;
+    }
+
+    .draft-input {
+      width: 100%;
+      min-height: 68px;
+      border: 0;
+      outline: none;
+      resize: none;
+      color: var(--ink);
+      background: transparent;
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    .capture-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 8px;
+      border-top: 1px solid var(--line);
+    }
+
+    .small-meta {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .primary-button {
+      border: 0;
+      border-radius: 10px;
+      background: var(--green);
+      color: white;
+      padding: 8px 13px;
+      font-weight: 720;
+      cursor: pointer;
+    }
+
+    .chips {
+      display: flex;
+      gap: 7px;
+      overflow-x: auto;
+      padding: 0 16px 13px;
+    }
+
+    .chips::-webkit-scrollbar {
+      width: 0;
+      height: 0;
+    }
+
+    .chip {
+      flex: 0 0 auto;
+      min-height: 32px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--muted);
+      padding: 0 13px;
+      font-size: 13px;
+      font-weight: 650;
+      cursor: pointer;
+    }
+
+    .chip.active {
+      color: var(--green);
+      border-color: rgba(47, 125, 90, 0.35);
+      background: var(--green-soft);
+    }
+
+    .feed {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .feed-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      padding: 13px;
+      box-shadow: 0 8px 20px rgba(23, 32, 27, 0.04);
+      cursor: pointer;
+    }
+
+    .feed-card.hidden {
+      display: none;
+    }
+
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 9px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 780;
+      line-height: 1.25;
+    }
+
+    .pill {
+      flex: 0 0 auto;
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 760;
+    }
+
+    .pill.insight {
+      color: var(--blue);
+      background: var(--blue-soft);
+    }
+
+    .pill.review {
+      color: var(--amber);
+      background: var(--amber-soft);
+    }
+
+    .pill.record {
+      color: var(--green);
+      background: var(--green-soft);
+    }
+
+    .pill.memory {
+      color: var(--rose);
+      background: var(--rose-soft);
+    }
+
+    .card-text {
+      color: #2c3832;
+      font-size: 14px;
+      line-height: 1.48;
+      margin: 0;
+    }
+
+    .card-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 11px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .source-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .source {
+      border-radius: 7px;
+      background: var(--soft);
+      color: var(--muted);
+      padding: 5px 7px;
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .quote-card {
+      border-left: 3px solid var(--green);
+      padding-left: 10px;
+    }
+
+    .section-title {
+      margin: 15px 0 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 820;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .conversation-list,
+    .task-list,
+    .pack-list,
+    .settings-list {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .row-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      padding: 12px;
+    }
+
+    .row-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 15px;
+      font-weight: 760;
+      line-height: 1.25;
+    }
+
+    .row-subtitle {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .search-box {
+      margin: 0 0 12px;
+      height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--surface);
+      padding: 0 12px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+    }
+
+    .message-panel {
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      padding: 12px;
+    }
+
+    .bubble {
+      width: fit-content;
+      max-width: 82%;
+      padding: 9px 11px;
+      border-radius: 10px;
+      margin-top: 8px;
+      font-size: 13px;
+      line-height: 1.42;
+    }
+
+    .bubble.user {
+      margin-left: auto;
+      color: white;
+      background: var(--green);
+    }
+
+    .bubble.agent {
+      color: var(--ink);
+      background: var(--soft);
+    }
+
+    .task-item {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 8px;
+      align-items: start;
+    }
+
+    .checkbox {
+      width: 22px;
+      height: 22px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--surface);
+      display: grid;
+      place-items: center;
+      color: var(--green);
+      font-weight: 900;
+      margin-top: 1px;
+    }
+
+    .task-done .row-title,
+    .task-done .row-subtitle {
+      color: #95a09a;
+      text-decoration: line-through;
+    }
+
+    .pack-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+
+    .pack-card {
+      min-height: 122px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .pack-name {
+      font-size: 14px;
+      font-weight: 780;
+      line-height: 1.25;
+    }
+
+    .pack-copy {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .bottom-nav {
+      height: 76px;
+      border-top: 1px solid var(--line);
+      background: rgba(251, 252, 251, 0.96);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 7px 10px 11px;
+    }
+
+    .nav-button {
+      border: 0;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--muted);
+      display: grid;
+      place-items: center;
+      gap: 2px;
+      font-size: 11px;
+      font-weight: 720;
+      cursor: pointer;
+    }
+
+    .nav-button svg {
+      width: 21px;
+      height: 21px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .nav-button.active {
+      color: var(--green);
+      background: var(--green-soft);
+    }
+
+    .sheet-scrim {
+      position: absolute;
+      inset: 0;
+      background: rgba(23, 32, 27, 0.28);
+      display: none;
+      align-items: end;
+      z-index: 8;
+    }
+
+    .sheet-scrim.open {
+      display: flex;
+    }
+
+    .bottom-sheet {
+      width: 100%;
+      max-height: 74%;
+      overflow-y: auto;
+      border-radius: 18px 18px 0 0;
+      background: var(--paper);
+      padding: 14px 16px 22px;
+      box-shadow: 0 -18px 50px rgba(23, 32, 27, 0.2);
+    }
+
+    .sheet-handle {
+      width: 42px;
+      height: 5px;
+      border-radius: 999px;
+      background: #cbd5cf;
+      margin: 0 auto 14px;
+    }
+
+    .sheet-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .detail-panel {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 9;
+      display: none;
+      background: var(--paper);
+      border-radius: 18px 18px 0 0;
+      box-shadow: 0 -18px 50px rgba(23, 32, 27, 0.22);
+      padding: 14px 16px 24px;
+      max-height: 70%;
+      overflow-y: auto;
+    }
+
+    .detail-panel.open {
+      display: block;
+    }
+
+    .detail-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .secondary-button {
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--surface);
+      color: var(--ink);
+      font-weight: 720;
+      cursor: pointer;
+    }
+
+    .notes {
+      display: grid;
+      gap: 14px;
+    }
+
+    .note-block {
+      border: 1px solid rgba(23, 32, 27, 0.1);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.72);
+      padding: 18px;
+      backdrop-filter: blur(8px);
+    }
+
+    .note-block h1,
+    .note-block h2 {
+      margin: 0;
+      letter-spacing: 0;
+    }
+
+    .note-block h1 {
+      font-size: 28px;
+      line-height: 1.16;
+    }
+
+    .note-block h2 {
+      font-size: 17px;
+      margin-bottom: 10px;
+    }
+
+    .note-block p,
+    .note-block li {
+      color: #35413b;
+      font-size: 14px;
+      line-height: 1.58;
+    }
+
+    .note-block ul {
+      margin: 8px 0 0;
+      padding-left: 18px;
+    }
+
+    .option-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .option {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      padding: 11px;
+      min-height: 96px;
+    }
+
+    .option strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .option span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.42;
+    }
+
+    @media (max-width: 880px) {
+      .workspace {
+        width: min(430px, calc(100vw - 20px));
+        grid-template-columns: 1fr;
+        margin: 10px auto 26px;
+      }
+
+      .phone {
+        width: min(390px, 100%);
+        position: static;
+        margin: 0 auto;
+      }
+
+      .option-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="workspace">
+    <section class="phone" aria-label="WideNote mobile prototype">
+      <div class="screen">
+        <div class="statusbar">
+          <span>9:41</span>
+          <span>5G  84%</span>
+        </div>
+
+        <section class="view active" id="view-home">
+          <header class="appbar">
+            <div class="title-block">
+              <div class="brand">广记</div>
+              <div class="date">6月25日 周四 · 本地优先</div>
+            </div>
+            <button class="icon-button" type="button" data-settings aria-label="设置">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.04.04a2.2 2.2 0 0 1-3.11 3.11l-.04-.04a1.8 1.8 0 0 0-1.98-.36 1.8 1.8 0 0 0-1.09 1.65V21.5a2.2 2.2 0 0 1-4.4 0v-.06a1.8 1.8 0 0 0-1.09-1.65 1.8 1.8 0 0 0-1.98.36l-.04.04a2.2 2.2 0 0 1-3.11-3.11l.04-.04a1.8 1.8 0 0 0 .36-1.98 1.8 1.8 0 0 0-1.65-1.09H2.5a2.2 2.2 0 0 1 0-4.4h.06a1.8 1.8 0 0 0 1.65-1.09 1.8 1.8 0 0 0-.36-1.98l-.04-.04A2.2 2.2 0 0 1 6.92 3.3l.04.04a1.8 1.8 0 0 0 1.98.36A1.8 1.8 0 0 0 10.03 2h.06a2.2 2.2 0 0 1 4.4 0v.06a1.8 1.8 0 0 0 1.09 1.65 1.8 1.8 0 0 0 1.98-.36l.04-.04a2.2 2.2 0 0 1 3.11 3.11l-.04.04a1.8 1.8 0 0 0-.36 1.98 1.8 1.8 0 0 0 1.65 1.09h.04a2.2 2.2 0 0 1 0 4.4h-.06A1.8 1.8 0 0 0 19.4 15Z"/></svg>
+            </button>
+          </header>
+
+          <div class="capture-strip">
+            <button class="capture-main" type="button" data-capture><strong>记一条</strong>  想法、语音、图片或文件</button>
+            <button class="icon-button" type="button" aria-label="语音记录">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/><path d="M8 22h8"/></svg>
+            </button>
+            <button class="icon-button" type="button" aria-label="导入">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+            </button>
+          </div>
+
+          <div class="capture-expanded" id="captureExpanded">
+            <textarea class="draft-input" aria-label="记录草稿">今天想先确认首页：卡片流是主体，洞察放在第一屏，插件不要混成设置。</textarea>
+            <div class="capture-actions">
+              <span class="small-meta">原文会保留，AI 只生成派生卡片</span>
+              <button class="primary-button" type="button">保存</button>
+            </div>
+          </div>
+
+          <nav class="chips" aria-label="首页筛选">
+            <button class="chip active" type="button" data-filter="all">全部</button>
+            <button class="chip" type="button" data-filter="insight">洞察</button>
+            <button class="chip" type="button" data-filter="review">待复核</button>
+            <button class="chip" type="button" data-filter="record">记录</button>
+            <button class="chip" type="button" data-filter="memory">Memory</button>
+          </nav>
+
+          <div class="scroll">
+            <div class="feed">
+              <article class="feed-card" data-kind="insight" data-title="今日洞察">
+                <div class="card-head">
+                  <div class="card-title">今日洞察</div>
+                  <span class="pill insight">洞察</span>
+                </div>
+                <p class="card-text">你今天反复提到三个主题：首页卡片流、洞察入口、插件与设置拆分。最稳定的方向是把首页收束成“记录后生成的卡片流”。</p>
+                <div class="source-row">
+                  <span class="source">5 条记录</span>
+                  <span class="source">2 个参考项目</span>
+                  <span class="source">可追问</span>
+                </div>
+              </article>
+
+              <article class="feed-card" data-kind="review" data-title="待确认的 Memory">
+                <div class="card-head">
+                  <div class="card-title">待确认的 Memory</div>
+                  <span class="pill review">待复核</span>
+                </div>
+                <p class="card-text">“首页不应该像开发控制台，应优先呈现用户记录过的内容。”</p>
+                <div class="card-foot">
+                  <span>来自 12:18 产品讨论</span>
+                  <span>确认 / 改写</span>
+                </div>
+              </article>
+
+              <article class="feed-card" data-kind="record" data-title="首页改版讨论">
+                <div class="card-head">
+                  <div class="card-title">首页改版讨论</div>
+                  <span class="pill record">记录</span>
+                </div>
+                <p class="card-text quote-card">主页应该是卡片流。用户记录之后，App 可以生成若干个对应格式的卡片。</p>
+                <div class="card-foot">
+                  <span>11:42 · 语音转文字</span>
+                  <span>3 张派生卡</span>
+                </div>
+              </article>
+
+              <article class="feed-card" data-kind="memory" data-title="产品定位">
+                <div class="card-head">
+                  <div class="card-title">产品定位</div>
+                  <span class="pill memory">Memory</span>
+                </div>
+                <p class="card-text">WideNote 的默认体验是本地优先的个人记录、记忆和洞察，不把待办、文档或插件变成首页主线。</p>
+                <div class="source-row">
+                  <span class="source">定位</span>
+                  <span class="source">可编辑</span>
+                </div>
+              </article>
+
+              <article class="feed-card" data-kind="record" data-title="参考实现摘记">
+                <div class="card-head">
+                  <div class="card-title">参考实现摘记</div>
+                  <span class="pill record">记录</span>
+                </div>
+                <p class="card-text">Omi 的一级结构更清楚；Memex 的卡片流和 Insight 模式更适合首页。WideNote 可以取两者之间的位置。</p>
+                <div class="card-foot">
+                  <span>09:36 · 文本</span>
+                  <span>已生成洞察</span>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-chat">
+          <header class="appbar">
+            <div class="title-block">
+              <div class="brand">对话</div>
+              <div class="date">围绕记录和记忆追问</div>
+            </div>
+            <button class="icon-button" type="button" data-settings aria-label="设置">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.04.04a2.2 2.2 0 0 1-3.11 3.11l-.04-.04a1.8 1.8 0 0 0-1.98-.36 1.8 1.8 0 0 0-1.09 1.65V21.5a2.2 2.2 0 0 1-4.4 0v-.06a1.8 1.8 0 0 0-1.09-1.65 1.8 1.8 0 0 0-1.98.36l-.04.04a2.2 2.2 0 0 1-3.11-3.11l.04-.04a1.8 1.8 0 0 0 .36-1.98 1.8 1.8 0 0 0-1.65-1.09H2.5a2.2 2.2 0 0 1 0-4.4h.06a1.8 1.8 0 0 0 1.65-1.09 1.8 1.8 0 0 0-.36-1.98l-.04-.04A2.2 2.2 0 0 1 6.92 3.3l.04.04a1.8 1.8 0 0 0 1.98.36A1.8 1.8 0 0 0 10.03 2h.06a2.2 2.2 0 0 1 4.4 0v.06a1.8 1.8 0 0 0 1.09 1.65 1.8 1.8 0 0 0 1.98-.36l.04-.04a2.2 2.2 0 0 1 3.11 3.11l-.04.04a1.8 1.8 0 0 0-.36 1.98 1.8 1.8 0 0 0 1.65 1.09h.04a2.2 2.2 0 0 1 0 4.4h-.06A1.8 1.8 0 0 0 19.4 15Z"/></svg>
+            </button>
+          </header>
+          <div class="scroll">
+            <div class="search-box">
+              <span>搜索会话、标签或来源</span>
+            </div>
+            <nav class="chips" style="padding:0 0 12px">
+              <button class="chip active" type="button">今日回顾</button>
+              <button class="chip" type="button">问记录</button>
+              <button class="chip" type="button">项目</button>
+              <button class="chip" type="button">人物</button>
+            </nav>
+            <div class="conversation-list">
+              <div class="row-card">
+                <div class="row-title"><span>首页改版应该怎么收敛？</span><span class="small-meta">刚刚</span></div>
+                <div class="row-subtitle">引用 8 条记录、2 个参考实现、1 个设计 RFC</div>
+              </div>
+              <div class="row-card">
+                <div class="row-title"><span>今天有哪些能转成待办？</span><span class="small-meta">12:40</span></div>
+                <div class="row-subtitle">已找到 4 个候选行动，2 个需要确认</div>
+              </div>
+            </div>
+            <div class="message-panel">
+              <div class="small-meta">当前会话</div>
+              <div class="bubble user">首页第一屏应该保留哪些内容？</div>
+              <div class="bubble agent">建议只保留轻量记录入口、今日洞察、待复核卡片和主卡片流。Trace、模型、备份放到设置。</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-todos">
+          <header class="appbar">
+            <div class="title-block">
+              <div class="brand">待办</div>
+              <div class="date">行动项保留来源回链</div>
+            </div>
+            <button class="icon-button" type="button" data-settings aria-label="设置">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.04.04a2.2 2.2 0 0 1-3.11 3.11l-.04-.04a1.8 1.8 0 0 0-1.98-.36 1.8 1.8 0 0 0-1.09 1.65V21.5a2.2 2.2 0 0 1-4.4 0v-.06a1.8 1.8 0 0 0-1.09-1.65 1.8 1.8 0 0 0-1.98.36l-.04.04a2.2 2.2 0 0 1-3.11-3.11l.04-.04a1.8 1.8 0 0 0 .36-1.98 1.8 1.8 0 0 0-1.65-1.09H2.5a2.2 2.2 0 0 1 0-4.4h.06a1.8 1.8 0 0 0 1.65-1.09 1.8 1.8 0 0 0-.36-1.98l-.04-.04A2.2 2.2 0 0 1 6.92 3.3l.04.04a1.8 1.8 0 0 0 1.98.36A1.8 1.8 0 0 0 10.03 2h.06a2.2 2.2 0 0 1 4.4 0v.06a1.8 1.8 0 0 0 1.09 1.65 1.8 1.8 0 0 0 1.98-.36l.04-.04a2.2 2.2 0 0 1 3.11 3.11l-.04.04a1.8 1.8 0 0 0-.36 1.98 1.8 1.8 0 0 0 1.65 1.09h.04a2.2 2.2 0 0 1 0 4.4h-.06A1.8 1.8 0 0 0 19.4 15Z"/></svg>
+            </button>
+          </header>
+          <div class="scroll">
+            <nav class="chips" style="padding:0 0 12px">
+              <button class="chip active" type="button">今天</button>
+              <button class="chip" type="button">待确认</button>
+              <button class="chip" type="button">以后</button>
+              <button class="chip" type="button">已完成</button>
+            </nav>
+            <div class="section-title">今天</div>
+            <div class="task-list">
+              <div class="row-card task-item">
+                <div class="checkbox"></div>
+                <div>
+                  <div class="row-title"><span>确认首页卡片类型</span><span class="small-meta">产品</span></div>
+                  <div class="row-subtitle">来源：首页改版讨论 · 11:42</div>
+                </div>
+              </div>
+              <div class="row-card task-item">
+                <div class="checkbox"></div>
+                <div>
+                  <div class="row-title"><span>决定设置是否从插件页移出</span><span class="small-meta">交互</span></div>
+                  <div class="row-subtitle">来源：参考 Omi Apps 与 Memex Personal Center</div>
+                </div>
+              </div>
+              <div class="row-card task-item task-done">
+                <div class="checkbox">✓</div>
+                <div>
+                  <div class="row-title"><span>先出一个 HTML 原型</span><span class="small-meta">完成</span></div>
+                  <div class="row-subtitle">来源：当前对话</div>
+                </div>
+              </div>
+            </div>
+            <div class="section-title">待确认</div>
+            <div class="task-list">
+              <div class="row-card task-item">
+                <div class="checkbox"></div>
+                <div>
+                  <div class="row-title"><span>把 Insight 做成首页筛选还是独立入口</span></div>
+                  <div class="row-subtitle">AI 置信度 0.72 · 需要产品确认</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-plugins">
+          <header class="appbar">
+            <div class="title-block">
+              <div class="brand">插件</div>
+              <div class="date">Agent Pack 与能力市场</div>
+            </div>
+            <button class="icon-button" type="button" data-settings aria-label="设置">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.04.04a2.2 2.2 0 0 1-3.11 3.11l-.04-.04a1.8 1.8 0 0 0-1.98-.36 1.8 1.8 0 0 0-1.09 1.65V21.5a2.2 2.2 0 0 1-4.4 0v-.06a1.8 1.8 0 0 0-1.09-1.65 1.8 1.8 0 0 0-1.98.36l-.04.04a2.2 2.2 0 0 1-3.11-3.11l.04-.04a1.8 1.8 0 0 0 .36-1.98 1.8 1.8 0 0 0-1.65-1.09H2.5a2.2 2.2 0 0 1 0-4.4h.06a1.8 1.8 0 0 0 1.65-1.09 1.8 1.8 0 0 0-.36-1.98l-.04-.04A2.2 2.2 0 0 1 6.92 3.3l.04.04a1.8 1.8 0 0 0 1.98.36A1.8 1.8 0 0 0 10.03 2h.06a2.2 2.2 0 0 1 4.4 0v.06a1.8 1.8 0 0 0 1.09 1.65 1.8 1.8 0 0 0 1.98-.36l.04-.04a2.2 2.2 0 0 1 3.11 3.11l-.04.04a1.8 1.8 0 0 0-.36 1.98 1.8 1.8 0 0 0 1.65 1.09h.04a2.2 2.2 0 0 1 0 4.4h-.06A1.8 1.8 0 0 0 19.4 15Z"/></svg>
+            </button>
+          </header>
+          <div class="scroll">
+            <div class="search-box">
+              <span>搜索插件、场景或权限</span>
+            </div>
+            <nav class="chips" style="padding:0 0 12px">
+              <button class="chip active" type="button">推荐</button>
+              <button class="chip" type="button">已安装</button>
+              <button class="chip" type="button">记录</button>
+              <button class="chip" type="button">效率</button>
+              <button class="chip" type="button">导出</button>
+            </nav>
+            <div class="pack-grid">
+              <div class="pack-card">
+                <div>
+                  <div class="pack-name">默认记录包</div>
+                  <div class="pack-copy">生成摘要、Memory 候选与轻量洞察</div>
+                </div>
+                <span class="pill record">已安装</span>
+              </div>
+              <div class="pack-card">
+                <div>
+                  <div class="pack-name">Todo 提取</div>
+                  <div class="pack-copy">从记录中提取可确认行动项</div>
+                </div>
+                <span class="pill record">已安装</span>
+              </div>
+              <div class="pack-card">
+                <div>
+                  <div class="pack-name">会议洞察</div>
+                  <div class="pack-copy">会议摘要、决策、风险和 follow-up</div>
+                </div>
+                <span class="pill insight">获取</span>
+              </div>
+              <div class="pack-card">
+                <div>
+                  <div class="pack-name">导出助手</div>
+                  <div class="pack-copy">把卡片导出为 Markdown 或文档</div>
+                </div>
+                <span class="pill insight">获取</span>
+              </div>
+            </div>
+            <div class="section-title">权限预览</div>
+            <div class="row-card">
+              <div class="row-title"><span>安装前先看读写边界</span><span class="small-meta">建议保留</span></div>
+              <div class="row-subtitle">插件市场只展示 Pack 能力和权限，模型、备份、存储放入右上角设置。</div>
+            </div>
+          </div>
+        </section>
+
+        <nav class="bottom-nav" aria-label="主导航">
+          <button class="nav-button active" type="button" data-tab="home" aria-label="首页">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg>
+            <span>首页</span>
+          </button>
+          <button class="nav-button" type="button" data-tab="chat" aria-label="对话">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v10H8l-4 4v-14Z"/><path d="M8 9h8"/><path d="M8 12h5"/></svg>
+            <span>对话</span>
+          </button>
+          <button class="nav-button" type="button" data-tab="todos" aria-label="待办">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="m3 6 1 1 2-2"/><path d="m3 12 1 1 2-2"/><path d="m3 18 1 1 2-2"/></svg>
+            <span>待办</span>
+          </button>
+          <button class="nav-button" type="button" data-tab="plugins" aria-label="插件">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8v6H8z"/><path d="M4 15h6v6H4z"/><path d="M14 15h6v6h-6z"/><path d="M12 9v3"/><path d="M7 12h10"/><path d="M7 12v3"/><path d="M17 12v3"/></svg>
+            <span>插件</span>
+          </button>
+        </nav>
+
+        <div class="sheet-scrim" id="settingsSheet" aria-hidden="true">
+          <div class="bottom-sheet" role="dialog" aria-label="设置">
+            <div class="sheet-handle"></div>
+            <div class="sheet-title">
+              <div>
+                <div class="card-title">设置</div>
+                <div class="small-meta">账户不是核心前置条件</div>
+              </div>
+              <button class="icon-button" type="button" data-close-settings aria-label="关闭">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              </button>
+            </div>
+            <div class="settings-list">
+              <div class="row-card">
+                <div class="row-title"><span>模型提供商</span><span class="small-meta">本地 / BYOK</span></div>
+                <div class="row-subtitle">选择默认模型、语音识别和摘要模型</div>
+              </div>
+              <div class="row-card">
+                <div class="row-title"><span>隐私与权限</span><span class="small-meta">敏感能力</span></div>
+                <div class="row-subtitle">麦克风、相册、文件、插件读写边界</div>
+              </div>
+              <div class="row-card">
+                <div class="row-title"><span>备份与导入</span><span class="small-meta">可选</span></div>
+                <div class="row-subtitle">本地导出、云端备份、迁移包</div>
+              </div>
+              <div class="row-card">
+                <div class="row-title"><span>存储与 Trace</span><span class="small-meta">高级</span></div>
+                <div class="row-subtitle">数据占用、运行记录、调试入口</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="detail-panel" id="detailPanel" aria-hidden="true">
+          <div class="sheet-handle"></div>
+          <div class="sheet-title">
+            <div>
+              <div class="card-title" id="detailTitle">卡片详情</div>
+              <div class="small-meta">原始记录和 AI 派生内容分开保存</div>
+            </div>
+            <button class="icon-button" type="button" data-close-detail aria-label="关闭">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+          </div>
+          <div class="row-card">
+            <div class="row-title"><span>来源</span><span class="small-meta">可回溯</span></div>
+            <div class="row-subtitle">查看原始记录、转写文本、附件和生成历史。</div>
+          </div>
+          <div class="detail-actions">
+            <button class="secondary-button" type="button">追问</button>
+            <button class="secondary-button" type="button">转待办</button>
+            <button class="secondary-button" type="button">加入 Memory</button>
+            <button class="secondary-button" type="button">归档</button>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <aside class="notes" aria-label="prototype notes">
+      <section class="note-block">
+        <h1>WideNote 主界面原型</h1>
+        <p>这个 HTML 是产品和交互原型，不是正式 Flutter 实现。它把 Omi 的四 tab 结构和 Memex 的卡片流首页合在一起：一级导航负责场景，首页负责记录后的卡片和洞察。</p>
+      </section>
+
+      <section class="note-block">
+        <h2>当前推荐方向</h2>
+        <ul>
+          <li>首页不再堆叠控制台模块，改成记录卡片流。</li>
+          <li>洞察和待复核内容作为首页高优先级卡片出现。</li>
+          <li>对话是围绕记录的问答，不做泛聊天入口。</li>
+          <li>待办成为独立一级场景，并保留来源回链。</li>
+          <li>插件页只承担市场和已安装 Pack，设置移到右上角。</li>
+        </ul>
+      </section>
+
+      <section class="note-block">
+        <h2>下一步需要你选</h2>
+        <div class="option-row">
+          <div class="option">
+            <strong>A. 首页轻捕获</strong>
+            <span>顶部保留轻量输入，主要空间留给卡片流。</span>
+          </div>
+          <div class="option">
+            <strong>B. 底部主按钮</strong>
+            <span>类似 Memex，把记录和 Agent 入口合在底部中心。</span>
+          </div>
+          <div class="option">
+            <strong>C. 模块首页</strong>
+            <span>类似 Omi，首页展示记录、任务、回顾、图谱模块。</span>
+          </div>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <script>
+    const views = {
+      home: document.querySelector("#view-home"),
+      chat: document.querySelector("#view-chat"),
+      todos: document.querySelector("#view-todos"),
+      plugins: document.querySelector("#view-plugins")
+    };
+
+    document.querySelectorAll("[data-tab]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const tab = button.dataset.tab;
+        document.querySelectorAll("[data-tab]").forEach((item) => item.classList.toggle("active", item === button));
+        Object.entries(views).forEach(([key, view]) => view.classList.toggle("active", key === tab));
+      });
+    });
+
+    const captureExpanded = document.querySelector("#captureExpanded");
+    document.querySelector("[data-capture]").addEventListener("click", () => {
+      captureExpanded.classList.toggle("open");
+    });
+
+    document.querySelectorAll("[data-filter]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const filter = button.dataset.filter;
+        document.querySelectorAll("[data-filter]").forEach((item) => item.classList.toggle("active", item === button));
+        document.querySelectorAll("[data-kind]").forEach((card) => {
+          card.classList.toggle("hidden", filter !== "all" && card.dataset.kind !== filter);
+        });
+      });
+    });
+
+    const settingsSheet = document.querySelector("#settingsSheet");
+    document.querySelectorAll("[data-settings]").forEach((button) => {
+      button.addEventListener("click", () => {
+        settingsSheet.classList.add("open");
+        settingsSheet.setAttribute("aria-hidden", "false");
+      });
+    });
+
+    document.querySelector("[data-close-settings]").addEventListener("click", () => {
+      settingsSheet.classList.remove("open");
+      settingsSheet.setAttribute("aria-hidden", "true");
+    });
+
+    settingsSheet.addEventListener("click", (event) => {
+      if (event.target === settingsSheet) {
+        settingsSheet.classList.remove("open");
+        settingsSheet.setAttribute("aria-hidden", "true");
+      }
+    });
+
+    const detailPanel = document.querySelector("#detailPanel");
+    const detailTitle = document.querySelector("#detailTitle");
+    document.querySelectorAll(".feed-card").forEach((card) => {
+      card.addEventListener("click", () => {
+        detailTitle.textContent = card.dataset.title || "卡片详情";
+        detailPanel.classList.add("open");
+        detailPanel.setAttribute("aria-hidden", "false");
+      });
+    });
+
+    document.querySelector("[data-close-detail]").addEventListener("click", () => {
+      detailPanel.classList.remove("open");
+      detailPanel.setAttribute("aria-hidden", "true");
+    });
+  </script>
+</body>
+</html>

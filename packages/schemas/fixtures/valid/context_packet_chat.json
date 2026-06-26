@@ -1,0 +1,88 @@
+{
+  "id": "ctx_synthetic_chat_001",
+  "schema_version": 1,
+  "surface": "chat",
+  "request_ref": {
+    "kind": "message",
+    "id": "msg_synthetic_user_001",
+    "uri": null
+  },
+  "subject_ref": {
+    "kind": "conversation",
+    "id": "conv_synthetic_001",
+    "uri": null
+  },
+  "source_refs": [
+    {
+      "kind": "memory",
+      "id": "mem_synthetic_001",
+      "source_version": 2,
+      "content_hash": "sha256:synthetic-memory-item",
+      "event_id": "evt_synthetic_memory_proposed_001",
+      "uri": null,
+      "sensitivity": "low"
+    },
+    {
+      "kind": "record",
+      "id": "cap_synthetic_001",
+      "source_version": 1,
+      "content_hash": "sha256:synthetic-capture-record",
+      "event_id": "evt_synthetic_capture_created_001",
+      "uri": null,
+      "sensitivity": "low"
+    }
+  ],
+  "permission_scope": {
+    "mode": "local_only",
+    "permissions": [
+      "memory.read",
+      "source.read.text"
+    ],
+    "grant_snapshot_id": "grant_synthetic_001",
+    "redaction_policy": "redact_sensitive"
+  },
+  "disclosure_level": "accepted_memory",
+  "generator_id": "context_builder.synthetic",
+  "generator_version": "0.1.0",
+  "pack_id": "pack.conversation",
+  "agent_id": "agent.conversation_answer",
+  "cache_policy": {
+    "cacheable": true,
+    "ttl_seconds": 3600,
+    "invalidation_keys": [
+      "memory:mem_synthetic_001:2",
+      "record:cap_synthetic_001:1",
+      "permission:grant_synthetic_001"
+    ]
+  },
+  "created_at": "2026-06-26T08:05:00Z",
+  "expires_at": "2026-06-26T09:05:00Z",
+  "sections": [
+    {
+      "id": "section.memory",
+      "kind": "memory",
+      "title": "Synthetic Memory",
+      "content": "Synthetic accepted memory with a public source link.",
+      "citations": [
+        {
+          "source_ref": {
+            "kind": "memory",
+            "id": "mem_synthetic_001",
+            "source_version": 2,
+            "content_hash": "sha256:synthetic-memory-item",
+            "event_id": "evt_synthetic_memory_proposed_001",
+            "uri": null,
+            "sensitivity": "low"
+          },
+          "evidence_hash": "sha256:synthetic-memory-evidence",
+          "excerpt": "Synthetic accepted memory evidence."
+        }
+      ],
+      "redactions": [],
+      "sensitivity": "low"
+    }
+  ],
+  "metadata": {
+    "fixture": true
+  }
+}

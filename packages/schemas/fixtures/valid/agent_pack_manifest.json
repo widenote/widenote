@@ -1,0 +1,81 @@
+{
+  "$schema": "../../src/agent_pack/agent_pack_manifest.schema.json",
+  "id": "pack.synthetic_contract",
+  "name": "Synthetic Contract Pack",
+  "version": "0.1.0",
+  "schema_version": 1,
+  "publisher": "widenote",
+  "edition": "local_dev",
+  "description": "Synthetic fixture pack for contract validation.",
+  "compatibility": {
+    "widenote_min": "0.1.0",
+    "widenote_max": null,
+    "schema_version": 1
+  },
+  "entrypoint_kind": "native",
+  "permissions": [
+    "source.read.text",
+    "memory.propose",
+    "model.complete"
+  ],
+  "subscriptions": [
+    {
+      "id": "sub.synthetic_capture",
+      "event_types": [
+        "wn.capture.created"
+      ],
+      "agent_id": "agent.synthetic_capture",
+      "delivery": "async",
+      "enabled_by_default": false,
+      "depends_on": []
+    }
+  ],
+  "agents": [
+    {
+      "id": "agent.synthetic_capture",
+      "runtime": "native",
+      "name": "Synthetic Capture Agent",
+      "prompt_ref": null,
+      "model_profile_ref": "synthetic_chat",
+      "permissions": [
+        "source.read.text",
+        "memory.propose",
+        "model.complete"
+      ],
+      "tools": [],
+      "output_events": [
+        "wn.memory.proposed"
+      ],
+      "retry_policy": {
+        "max_attempts": 1
+      }
+    }
+  ],
+  "model_profiles": [
+    {
+      "id": "synthetic_chat",
+      "purpose": "Validate model profile routing fields.",
+      "required": false,
+      "routing_policy": "fixed_provider",
+      "provider_ref": "provider.fake.synthetic",
+      "model_ref": "fake-chat",
+      "required_capabilities": [
+        "chat",
+        "completion"
+      ],
+      "allow_fallback": true
+    }
+  ],
+  "tools": [],
+  "ui_blocks": [],
+  "storage_quota": {
+    "local_bytes": 0
+  },
+  "integrity": {
+    "checksum_sha256": null,
+    "signature": null
+  },
+  "metadata": {
+    "fixture": true
+  }
+}

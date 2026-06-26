@@ -1,7 +1,7 @@
 import 'package:sqlite3/sqlite3.dart';
 
 abstract final class LocalDbSchema {
-  static const currentVersion = 7;
+  static const currentVersion = 8;
 }
 
 final class LocalDbMigrator {
@@ -60,6 +60,10 @@ final class LocalDbMigrator {
       if (currentVersion < 7 && targetVersion >= 7) {
         _migrateToV7(database);
         database.execute('PRAGMA user_version = 7;');
+      }
+      if (currentVersion < 8 && targetVersion >= 8) {
+        _migrateToV8(database);
+        database.execute('PRAGMA user_version = 8;');
       }
       database.execute('COMMIT;');
     } catch (_) {
@@ -475,6 +479,174 @@ ON attachments(status);
       ..execute('''
 CREATE INDEX IF NOT EXISTS attachments_sha256_idx
 ON attachments(sha256);
+''');
+  }
+
+  static void _migrateToV8(Database database) {
+    database
+      ..execute('''
+CREATE TABLE IF NOT EXISTS runtime_tasks (
+  id TEXT PRIMARY KEY,
+  schema_version INTEGER NOT NULL,
+  pack_id TEXT NOT NULL,
+  pack_version TEXT NOT NULL,
+  agent_id TEXT NOT NULL,
+  handler_id TEXT NOT NULL,
+  subscription_id TEXT NOT NULL,
+  trigger_event_id TEXT NOT NULL,
+  identity_key TEXT NOT NULL,
+  status TEXT NOT NULL,
+  dependency_task_ids_json TEXT NOT NULL,
+  missing_dependency_ids_json TEXT NOT NULL,
+  attempts INTEGER NOT NULL,
+  max_attempts INTEGER NOT NULL,
+  lease_owner TEXT,
+  leased_until TEXT,
+  error TEXT,
+  payload_json TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY(trigger_event_id) REFERENCES event_log(id) ON DELETE CASCADE
+);
+''')
+      ..execute('''
+CREATE UNIQUE INDEX IF NOT EXISTS runtime_tasks_identity_key_idx
+ON runtime_tasks(identity_key);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS runtime_tasks_pack_status_idx
+ON runtime_tasks(pack_id, status, updated_at);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS runtime_tasks_trigger_event_idx
+ON runtime_tasks(trigger_event_id);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS runtime_tasks_subscription_idx
+ON runtime_tasks(pack_id, subscription_id, trigger_event_id);
+''')
+      ..execute('''
+CREATE TABLE IF NOT EXISTS runtime_runs (
+  id TEXT PRIMARY KEY,
+  schema_version INTEGER NOT NULL,
+  task_id TEXT NOT NULL,
+  pack_id TEXT NOT NULL,
+  pack_version TEXT NOT NULL,
+  agent_id TEXT NOT NULL,
+  handler_id TEXT NOT NULL,
+  status TEXT NOT NULL,
+  attempt INTEGER NOT NULL,
+  output_event_ids_json TEXT NOT NULL,
+  error TEXT,
+  payload_json TEXT NOT NULL,
+  started_at TEXT NOT NULL,
+  completed_at TEXT,
+  FOREIGN KEY(task_id) REFERENCES runtime_tasks(id) ON DELETE CASCADE
+);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS runtime_runs_task_idx
+ON runtime_runs(task_id, started_at);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS runtime_runs_pack_status_idx
+ON runtime_runs(pack_id, status, started_at);
+''')
+      ..execute('''
+CREATE TABLE IF NOT EXISTS pack_installations (
+  pack_id TEXT PRIMARY KEY,
+  schema_version INTEGER NOT NULL,
+  name TEXT NOT NULL,
+  version TEXT NOT NULL,
+  publisher TEXT NOT NULL,
+  edition TEXT NOT NULL,
+  status TEXT NOT NULL,
+  runtime_status TEXT NOT NULL,
+  entrypoint_kind TEXT NOT NULL,
+  requested_permissions_json TEXT NOT NULL,
+  enabled_subscription_ids_json TEXT NOT NULL,
+  manifest_json TEXT NOT NULL,
+  payload_json TEXT NOT NULL,
+  installed_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS pack_installations_status_idx
+ON pack_installations(status, runtime_status);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS pack_installations_edition_idx
+ON pack_installations(edition);
+''')
+      ..execute('''
+CREATE TABLE IF NOT EXISTS permission_grants (
+  id TEXT PRIMARY KEY,
+  schema_version INTEGER NOT NULL,
+  pack_id TEXT NOT NULL,
+  permission_id TEXT NOT NULL,
+  status TEXT NOT NULL,
+  grant_kind TEXT NOT NULL,
+  source_event_id TEXT,
+  granted_at TEXT,
+  revoked_at TEXT,
+  reason TEXT,
+  payload_json TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY(pack_id) REFERENCES pack_installations(pack_id) ON DELETE CASCADE,
+  UNIQUE(pack_id, permission_id)
+);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS permission_grants_pack_status_idx
+ON permission_grants(pack_id, status);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS permission_grants_permission_idx
+ON permission_grants(permission_id);
+''')
+      ..execute('''
+CREATE TABLE IF NOT EXISTS context_packet_cache (
+  id TEXT PRIMARY KEY,
+  schema_version INTEGER NOT NULL,
+  surface TEXT NOT NULL,
+  request_ref_json TEXT NOT NULL,
+  subject_ref_json TEXT NOT NULL,
+  source_refs_json TEXT NOT NULL,
+  source_versions_json TEXT NOT NULL,
+  permission_scope TEXT NOT NULL,
+  disclosure_level TEXT NOT NULL,
+  generator_id TEXT NOT NULL,
+  generator_version TEXT NOT NULL,
+  prompt_version TEXT NOT NULL,
+  pack_id TEXT,
+  pack_version TEXT,
+  agent_id TEXT,
+  local_date TEXT,
+  privacy_profile TEXT NOT NULL,
+  invalidation_keys_json TEXT NOT NULL,
+  cache_key TEXT NOT NULL,
+  status TEXT NOT NULL,
+  packet_json TEXT NOT NULL,
+  expires_at TEXT,
+  invalidated_at TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY(pack_id) REFERENCES pack_installations(pack_id) ON DELETE SET NULL
+);
+''')
+      ..execute('''
+CREATE UNIQUE INDEX IF NOT EXISTS context_packet_cache_key_idx
+ON context_packet_cache(cache_key);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS context_packet_cache_subject_idx
+ON context_packet_cache(surface, status, updated_at);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS context_packet_cache_pack_idx
+ON context_packet_cache(pack_id, agent_id, status);
 ''');
   }
 }

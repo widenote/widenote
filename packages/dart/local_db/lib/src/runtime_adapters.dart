@@ -1,6 +1,7 @@
 import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
 
 import 'database.dart';
+import 'json.dart';
 import 'models.dart';
 
 final class LocalDbEventStore implements runtime.EventStore {
@@ -78,6 +79,222 @@ final class LocalDbTraceSink implements runtime.TraceSink {
   }
 }
 
+final class LocalDbRuntimeStore implements runtime.RuntimeStore {
+  const LocalDbRuntimeStore(this._database);
+
+  final WideNoteLocalDatabase _database;
+
+  @override
+  Future<void> upsertTask(runtime.RuntimeTask task) {
+    final existing =
+        _database.runtimeTasks.readById(task.id) ??
+        _database.runtimeTasks.readByIdentityKey(task.identityKey);
+    _database.runtimeTasks.save(_taskToRecord(task, existing: existing));
+    return Future<void>.value();
+  }
+
+  @override
+  Future<runtime.RuntimeTask?> readTaskById(String id) {
+    final record = _database.runtimeTasks.readById(id);
+    return Future<runtime.RuntimeTask?>.value(
+      record == null ? null : _taskFromRecord(record),
+    );
+  }
+
+  @override
+  Future<List<runtime.RuntimeTask>> readTasks({String? packId}) {
+    final records = packId == null
+        ? _database.runtimeTasks.readAll()
+        : _database.runtimeTasks.readByPack(packId);
+    return Future<List<runtime.RuntimeTask>>.value(
+      List<runtime.RuntimeTask>.unmodifiable(records.map(_taskFromRecord)),
+    );
+  }
+
+  @override
+  Future<void> upsertRun(runtime.RuntimeRun run) {
+    final existing = _database.runtimeRuns.readById(run.id);
+    _database.runtimeRuns.save(_runToRecord(run, existing: existing));
+    return Future<void>.value();
+  }
+
+  @override
+  Future<runtime.RuntimeRun?> readRunById(String id) {
+    final record = _database.runtimeRuns.readById(id);
+    return Future<runtime.RuntimeRun?>.value(
+      record == null ? null : _runFromRecord(record),
+    );
+  }
+
+  @override
+  Future<List<runtime.RuntimeRun>> readRuns({String? taskId, String? packId}) {
+    final records = taskId == null
+        ? _database.runtimeRuns.readAll()
+        : _database.runtimeRuns.readByTask(taskId);
+    return Future<List<runtime.RuntimeRun>>.value(
+      List<runtime.RuntimeRun>.unmodifiable(
+        records
+            .where((record) => packId == null || record.packId == packId)
+            .map(_runFromRecord),
+      ),
+    );
+  }
+
+  @override
+  Future<void> upsertPackStatus(runtime.RuntimePackStatus status) {
+    final existing = _database.packInstallations.readById(status.packId);
+    final now = DateTime.now().toUtc();
+    final payload = _packPayloadWithRuntimeCounts(
+      existing?.payload ?? const <String, Object?>{},
+      status,
+    );
+    final record = existing == null
+        ? PackInstallationRecord(
+            packId: status.packId,
+            name: status.name,
+            version: status.version,
+            publisher: _runtimePackPublisher,
+            edition: _runtimePackEdition,
+            status: 'enabled',
+            runtimeStatus: status.status.name,
+            manifest: <String, Object?>{
+              'id': status.packId,
+              'name': status.name,
+              'version': status.version,
+            },
+            payload: payload,
+            installedAt: now,
+            updatedAt: now,
+          )
+        : existing.copyWith(
+            runtimeStatus: status.status.name,
+            payload: payload,
+            updatedAt: now,
+          );
+    _database.packInstallations.save(record);
+    return Future<void>.value();
+  }
+
+  @override
+  Future<runtime.RuntimePackStatus?> readPackStatus(String packId) {
+    final record = _database.packInstallations.readById(packId);
+    return Future<runtime.RuntimePackStatus?>.value(
+      record == null ? null : _packStatusFromRecord(record),
+    );
+  }
+
+  @override
+  Future<List<runtime.RuntimePackStatus>> readPackStatuses() {
+    return Future<List<runtime.RuntimePackStatus>>.value(
+      List<runtime.RuntimePackStatus>.unmodifiable(
+        _database.packInstallations.readAll().map(_packStatusFromRecord),
+      ),
+    );
+  }
+
+  runtime.RuntimePackStatus _packStatusFromRecord(
+    PackInstallationRecord record,
+  ) {
+    final tasks = _database.runtimeTasks.readByPack(record.packId);
+    final taskCount = tasks.length;
+    final queuedCount = _countTaskStatuses(tasks, const <String>{
+      'queued',
+      'waiting',
+    });
+    final runningCount = _countTaskStatuses(tasks, const <String>{'running'});
+    final succeededCount = _countTaskStatuses(tasks, const <String>{
+      'succeeded',
+    });
+    final failedCount = _countTaskStatuses(tasks, const <String>{'failed'});
+    final deniedCount = _countTaskStatuses(tasks, const <String>{'denied'});
+    final canceledCount = _countTaskStatuses(tasks, const <String>{'canceled'});
+    final blockedCount = _countTaskStatuses(tasks, const <String>{'blocked'});
+
+    return runtime.RuntimePackStatus(
+      packId: record.packId,
+      version: record.version,
+      name: record.name,
+      status: _runtimePackStatusKind(record.runtimeStatus),
+      taskCount: _runtimePackCount(record.payload, 'task_count', taskCount),
+      queuedCount: _runtimePackCount(
+        record.payload,
+        'queued_count',
+        queuedCount,
+      ),
+      runningCount: _runtimePackCount(
+        record.payload,
+        'running_count',
+        runningCount,
+      ),
+      succeededCount: _runtimePackCount(
+        record.payload,
+        'succeeded_count',
+        succeededCount,
+      ),
+      failedCount: _runtimePackCount(
+        record.payload,
+        'failed_count',
+        failedCount,
+      ),
+      deniedCount: _runtimePackCount(
+        record.payload,
+        'denied_count',
+        deniedCount,
+      ),
+      canceledCount: _runtimePackCount(
+        record.payload,
+        'canceled_count',
+        canceledCount,
+      ),
+      blockedCount: _runtimePackCount(
+        record.payload,
+        'blocked_count',
+        blockedCount,
+      ),
+    );
+  }
+}
+
+final class LocalDbPermissionStore implements runtime.PermissionStore {
+  const LocalDbPermissionStore(this._database);
+
+  final WideNoteLocalDatabase _database;
+
+  @override
+  Future<void> upsert(runtime.PermissionDecision decision) {
+    final existing = _database.permissionGrants.readByPackAndPermission(
+      decision.packId,
+      decision.permission,
+    );
+    _database.permissionGrants.save(
+      _permissionDecisionToRecord(decision, existing: existing),
+    );
+    return Future<void>.value();
+  }
+
+  @override
+  Future<runtime.PermissionDecision?> read(String packId, String permission) {
+    final record = _database.permissionGrants.readByPackAndPermission(
+      packId,
+      permission,
+    );
+    return Future<runtime.PermissionDecision?>.value(
+      record == null ? null : _permissionDecisionFromRecord(record),
+    );
+  }
+
+  @override
+  Future<List<runtime.PermissionDecision>> readForPack(String packId) {
+    return Future<List<runtime.PermissionDecision>>.value(
+      List<runtime.PermissionDecision>.unmodifiable(
+        _database.permissionGrants
+            .readByPack(packId)
+            .map(_permissionDecisionFromRecord),
+      ),
+    );
+  }
+}
+
 EventLogEntry _eventToRecord(runtime.WnEvent event) {
   return EventLogEntry(
     id: event.id,
@@ -111,6 +328,108 @@ runtime.WnEvent _eventFromRecord(EventLogEntry record) {
     correlationId: record.correlationId,
     deviceId: record.deviceId ?? 'unknown-device',
     createdAt: record.createdAt,
+  );
+}
+
+RuntimeTaskRecord _taskToRecord(
+  runtime.RuntimeTask task, {
+  RuntimeTaskRecord? existing,
+}) {
+  return RuntimeTaskRecord(
+    id: existing?.id ?? task.id,
+    schemaVersion: existing?.schemaVersion ?? 1,
+    packId: task.packId,
+    packVersion: task.packVersion,
+    agentId: task.agentId,
+    handlerId: task.handlerRole,
+    subscriptionId: task.subscriptionId,
+    triggerEventId: task.triggerEventId,
+    identityKey: task.identityKey,
+    status: task.status.name,
+    dependencyTaskIds: <Object?>[...task.dependencyTaskIds],
+    missingDependencyIds: <Object?>[...task.missingDependencyIds],
+    attempts: task.attempts,
+    maxAttempts: task.maxAttempts,
+    leaseOwner: existing?.leaseOwner,
+    leasedUntil: existing?.leasedUntil,
+    error: task.error,
+    payload: existing?.payload ?? const <String, Object?>{},
+    createdAt: existing?.createdAt ?? task.createdAt,
+    updatedAt: task.updatedAt,
+  );
+}
+
+runtime.RuntimeTask _taskFromRecord(RuntimeTaskRecord record) {
+  return runtime.RuntimeTask(
+    id: record.id,
+    identityKey: record.effectiveIdentityKey,
+    packId: record.packId,
+    packVersion: record.packVersion,
+    agentId: record.agentId,
+    handlerRole: record.handlerId,
+    subscriptionId: record.subscriptionId,
+    triggerEventId: record.triggerEventId,
+    status: _runtimeTaskStatus(record.status),
+    dependencyTaskIds: _requiredStringList(
+      record.dependencyTaskIds,
+      'runtime_tasks.dependency_task_ids_json',
+    ),
+    missingDependencyIds: _requiredStringList(
+      record.missingDependencyIds,
+      'runtime_tasks.missing_dependency_ids_json',
+    ),
+    attempts: record.attempts,
+    maxAttempts: record.maxAttempts,
+    error: record.error,
+    createdAt: record.createdAt,
+    updatedAt: record.updatedAt,
+  );
+}
+
+RuntimeRunRecord _runToRecord(
+  runtime.RuntimeRun run, {
+  RuntimeRunRecord? existing,
+}) {
+  return RuntimeRunRecord(
+    id: run.id,
+    schemaVersion: existing?.schemaVersion ?? 1,
+    taskId: run.taskId,
+    packId: run.packId,
+    packVersion: run.packVersion,
+    agentId: run.agentId,
+    handlerId: existing?.handlerId ?? run.agentId,
+    status: run.status.name,
+    attempt: run.attempt,
+    outputEventIds: <Object?>[...run.outputEventIds],
+    error: run.error,
+    payload: _runPayloadWithLease(
+      existing?.payload ?? const <String, Object?>{},
+      run.leaseExpiresAt,
+    ),
+    startedAt: run.startedAt,
+    completedAt: run.completedAt,
+  );
+}
+
+runtime.RuntimeRun _runFromRecord(RuntimeRunRecord record) {
+  return runtime.RuntimeRun(
+    id: record.id,
+    taskId: record.taskId,
+    packId: record.packId,
+    packVersion: record.packVersion,
+    agentId: record.agentId,
+    status: _runtimeRunStatus(record.status),
+    startedAt: record.startedAt,
+    attempt: record.attempt,
+    completedAt: record.completedAt,
+    leaseExpiresAt: _dateTimeFromJson(
+      record.payload[_runtimeRunLeaseExpiresAtKey],
+    ),
+    outputEventIds: _requiredStringList(
+      record.outputEventIds,
+      'runtime_runs.output_event_ids_json',
+    ),
+    error: record.error,
   );
 }
 
@@ -150,6 +469,52 @@ runtime.RuntimeTrace _traceFromRecord(TraceEventRecord record) {
   );
 }
 
+PermissionGrantRecord _permissionDecisionToRecord(
+  runtime.PermissionDecision decision, {
+  PermissionGrantRecord? existing,
+}) {
+  final grantedAt = switch (decision.state) {
+    runtime.PermissionDecisionState.granted => decision.updatedAt,
+    runtime.PermissionDecisionState.denied => null,
+    runtime.PermissionDecisionState.revoked => existing?.grantedAt,
+  };
+  final revokedAt = switch (decision.state) {
+    runtime.PermissionDecisionState.granted ||
+    runtime.PermissionDecisionState.denied => null,
+    runtime.PermissionDecisionState.revoked => decision.updatedAt,
+  };
+
+  return PermissionGrantRecord(
+    id:
+        existing?.id ??
+        _permissionGrantId(decision.packId, decision.permission),
+    schemaVersion: existing?.schemaVersion ?? 1,
+    packId: decision.packId,
+    permissionId: decision.permission,
+    status: decision.state.name,
+    grantKind: existing?.grantKind ?? 'user',
+    sourceEventId: existing?.sourceEventId,
+    grantedAt: grantedAt,
+    revokedAt: revokedAt,
+    reason: decision.reason,
+    payload: existing?.payload ?? const <String, Object?>{},
+    createdAt: existing?.createdAt ?? decision.updatedAt,
+    updatedAt: decision.updatedAt,
+  );
+}
+
+runtime.PermissionDecision _permissionDecisionFromRecord(
+  PermissionGrantRecord record,
+) {
+  return runtime.PermissionDecision(
+    packId: record.packId,
+    permission: record.permissionId,
+    state: _permissionDecisionState(record.status),
+    updatedAt: record.updatedAt,
+    reason: record.reason,
+  );
+}
+
 runtime.WnActor _actorFromRecord(String value) {
   return runtime.WnActor.values.firstWhere(
     (actor) => actor.name == value,
@@ -166,11 +531,130 @@ runtime.SubjectRef? _subjectRefFromRecord(EventLogEntry record) {
   return runtime.SubjectRef(kind: kind, id: id);
 }
 
+runtime.RuntimeTaskStatus _runtimeTaskStatus(String value) {
+  return _enumByName(
+    runtime.RuntimeTaskStatus.values,
+    value,
+    'runtime task status',
+  );
+}
+
+runtime.RuntimeRunStatus _runtimeRunStatus(String value) {
+  return _enumByName(
+    runtime.RuntimeRunStatus.values,
+    value,
+    'runtime run status',
+  );
+}
+
+runtime.RuntimePackStatusKind _runtimePackStatusKind(String value) {
+  return _enumByName(
+    runtime.RuntimePackStatusKind.values,
+    value,
+    'runtime pack status',
+  );
+}
+
+runtime.PermissionDecisionState _permissionDecisionState(String value) {
+  return _enumByName(
+    runtime.PermissionDecisionState.values,
+    value,
+    'permission decision state',
+  );
+}
+
 runtime.TraceLevel _traceLevelFromRecord(String value) {
   return runtime.TraceLevel.values.firstWhere(
     (level) => level.name == value,
     orElse: () => runtime.TraceLevel.info,
   );
+}
+
+T _enumByName<T extends Enum>(List<T> values, String value, String label) {
+  for (final candidate in values) {
+    if (candidate.name == value) {
+      return candidate;
+    }
+  }
+  throw StateError('Unknown $label: $value');
+}
+
+List<String> _requiredStringList(JsonList values, String fieldName) {
+  final strings = <String>[];
+  for (final value in values) {
+    if (value is! String) {
+      throw StateError(
+        '$fieldName must contain only strings; found ${value.runtimeType}.',
+      );
+    }
+    strings.add(value);
+  }
+  return List<String>.unmodifiable(strings);
+}
+
+JsonMap _runPayloadWithLease(JsonMap payload, DateTime? leaseExpiresAt) {
+  final next = <String, Object?>{...payload};
+  if (leaseExpiresAt == null) {
+    next.remove(_runtimeRunLeaseExpiresAtKey);
+  } else {
+    next[_runtimeRunLeaseExpiresAtKey] = leaseExpiresAt
+        .toUtc()
+        .toIso8601String();
+  }
+  return next;
+}
+
+DateTime? _dateTimeFromJson(Object? value) {
+  if (value == null) {
+    return null;
+  }
+  if (value is! String || value.isEmpty) {
+    throw StateError(
+      '$_runtimeRunLeaseExpiresAtKey must be a non-empty ISO-8601 string.',
+    );
+  }
+  return DateTime.parse(value).toUtc();
+}
+
+JsonMap _packPayloadWithRuntimeCounts(
+  JsonMap payload,
+  runtime.RuntimePackStatus status,
+) {
+  return <String, Object?>{
+    ...payload,
+    _runtimePackCountsKey: <String, Object?>{
+      'task_count': status.taskCount,
+      'queued_count': status.queuedCount,
+      'running_count': status.runningCount,
+      'succeeded_count': status.succeededCount,
+      'failed_count': status.failedCount,
+      'denied_count': status.deniedCount,
+      'canceled_count': status.canceledCount,
+      'blocked_count': status.blockedCount,
+    },
+  };
+}
+
+int _runtimePackCount(JsonMap payload, String key, int fallback) {
+  final counts = payload[_runtimePackCountsKey];
+  if (counts is Map) {
+    final value = counts[key];
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+  }
+  return fallback;
+}
+
+int _countTaskStatuses(List<RuntimeTaskRecord> tasks, Set<String> statuses) {
+  return tasks.where((task) => statuses.contains(task.status)).length;
+}
+
+String _permissionGrantId(String packId, String permission) {
+  return 'permission:$packId::$permission';
 }
 
 String _schemaSeverity(runtime.TraceLevel level) {
@@ -193,3 +677,8 @@ String _schemaTraceType(String runtimeName) {
     _ => 'event_received',
   };
 }
+
+const _runtimeRunLeaseExpiresAtKey = 'runtime_run_lease_expires_at';
+const _runtimePackCountsKey = 'runtime_status_counts';
+const _runtimePackEdition = 'runtime';
+const _runtimePackPublisher = 'runtime';

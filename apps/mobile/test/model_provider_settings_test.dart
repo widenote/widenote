@@ -212,6 +212,111 @@ void main() {
     );
   });
 
+  testWidgets('provider settings deletes a non-default provider', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    await _pumpSettings(tester, database: database);
+
+    await _addProvider(
+      tester,
+      displayName: 'Team OpenAI',
+      endpoint: 'https://example.invalid/v1/chat/completions',
+      model: 'team-chat',
+    );
+    await _addProvider(
+      tester,
+      displayName: 'Kimi Main',
+      endpoint: 'https://example.invalid/v1/chat/completions',
+      model: 'kimi-chat',
+      kindLabel: 'Kimi',
+    );
+    await tester.tap(find.byKey(const Key('provider-default-kimi-main')));
+    await tester.pumpAndSettle();
+
+    await _deleteProvider(tester, 'team-openai');
+
+    expect(find.byKey(const Key('provider-row-team-openai')), findsNothing);
+    expect(find.byKey(const Key('provider-row-kimi-main')), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('provider-row-kimi-main')),
+        matching: find.text('Default'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      database.modelProviderConfigs
+          .readAll(status: 'active')
+          .map((provider) => provider.id),
+      <String>['kimi-main'],
+    );
+    final deleted = database.modelProviderConfigs.readById('team-openai')!;
+    expect(deleted.status, 'deleted');
+    expect(deleted.hasApiKey, isFalse);
+    expect(deleted.apiKey, isEmpty);
+  });
+
+  testWidgets('provider settings deleting default falls back or clears', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    await _pumpSettings(tester, database: database);
+
+    await _addProvider(
+      tester,
+      displayName: 'Team OpenAI',
+      endpoint: 'https://example.invalid/v1/chat/completions',
+      model: 'team-chat',
+    );
+    await _addProvider(
+      tester,
+      displayName: 'Kimi Main',
+      endpoint: 'https://example.invalid/v1/chat/completions',
+      model: 'kimi-chat',
+      kindLabel: 'Kimi',
+    );
+
+    await _deleteProvider(tester, 'team-openai');
+
+    expect(database.modelProviderConfigs.readDefault()!.id, 'kimi-main');
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('provider-row-kimi-main')),
+        matching: find.text('Default'),
+      ),
+      findsOneWidget,
+    );
+
+    await _deleteProvider(tester, 'kimi-main');
+
+    expect(find.text('No providers configured.'), findsOneWidget);
+    expect(database.modelProviderConfigs.readDefault(), isNull);
+    expect(database.modelProviderConfigs.readAll(status: 'active'), isEmpty);
+  });
+
+  testWidgets('provider kind picker does not expose fake demo providers', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    await _pumpSettings(tester, database: database);
+
+    await tester.tap(find.byKey(const Key('provider-add-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('provider-kind-field')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('OpenAI-compatible'), findsWidgets);
+    expect(find.text('Anthropic-compatible'), findsOneWidget);
+    expect(find.text('Xiaomi MIMO'), findsOneWidget);
+    expect(find.text('Kimi'), findsOneWidget);
+    expect(find.text('Fake Model Provider'), findsNothing);
+    expect(find.text('fake-model'), findsNothing);
+  });
+
   testWidgets('provider settings displays injected failure classification', (
     tester,
   ) async {
@@ -335,6 +440,16 @@ Future<void> _addProvider(
     _runtimeCredential(),
   );
   await tester.tap(find.byKey(const Key('provider-save-button')));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _deleteProvider(WidgetTester tester, String providerId) async {
+  await tester.ensureVisible(find.byKey(Key('provider-delete-$providerId')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(Key('provider-delete-$providerId')));
+  await tester.pumpAndSettle();
+  expect(find.text('Delete provider?'), findsOneWidget);
+  await tester.tap(find.byKey(Key('provider-confirm-delete-$providerId')));
   await tester.pumpAndSettle();
 }
 

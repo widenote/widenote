@@ -9,7 +9,9 @@ Owns the Agent Pack and runtime control-entry tab.
 This feature presents pack, Agent Platform queue/status, permission, model,
 backup, and trace entry points. It routes pack, permission, backup, trace, and
 model-provider rows to dedicated pages, but does not dynamically install packs
-or grant high-risk permissions. Agent Platform status reads local trace events.
+or grant high-risk permissions. Built-in official pack metadata comes from the
+mobile embedded manifest bridge and is checked against `packs/official/*`
+manifest JSON in focused tests. Agent Platform status reads local trace events.
 
 ## Dependencies
 
@@ -20,6 +22,7 @@ or grant high-risk permissions. Agent Platform status reads local trace events.
 ## Public Surface
 
 - `application/AgentPlatformController`
+- `application/official_pack_manifests.dart`
 - `application/pack_catalog.dart`
 - `presentation/AgentPlatformPanel`
 - `presentation/PluginsPage`

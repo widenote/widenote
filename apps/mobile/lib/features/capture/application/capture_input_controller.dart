@@ -1,23 +1,28 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../media/capture_media.dart';
+import '../media/platform_capture_media.dart';
 
-enum CaptureMode { text, voice, import }
+enum CaptureMode { text, voice, media }
 
 final assetSafetyGuardProvider = Provider<AssetSafetyGuard>((ref) {
   return const AssetSafetyGuard();
 });
 
+final captureMediaFileStoreProvider = Provider<CaptureMediaFileStore>((ref) {
+  return CaptureMediaFileStore();
+});
+
 final photoCaptureAdapterProvider = Provider<PhotoCaptureAdapter>((ref) {
-  return const FakePhotoCaptureAdapter();
+  return ImagePickerPhotoCaptureAdapter(
+    fileStore: ref.watch(captureMediaFileStoreProvider),
+  );
 });
 
 final voiceCaptureAdapterProvider = Provider<VoiceCaptureAdapter>((ref) {
-  return const FakeVoiceCaptureAdapter();
-});
-
-final shareImportAdapterProvider = Provider<ShareImportAdapter>((ref) {
-  return const FakeShareImportAdapter();
+  return RecordVoiceCaptureAdapter(
+    fileStore: ref.watch(captureMediaFileStoreProvider),
+  );
 });
 
 final captureInputControllerProvider =
@@ -29,6 +34,7 @@ final class CaptureInputState {
   const CaptureInputState({
     required this.attachments,
     this.mode = CaptureMode.text,
+    this.voiceSession,
     this.errorMessage,
     this.isBusy = false,
   });
@@ -39,10 +45,13 @@ final class CaptureInputState {
 
   final List<CaptureAttachment> attachments;
   final CaptureMode mode;
+  final VoiceRecordingSession? voiceSession;
   final String? errorMessage;
   final bool isBusy;
 
   bool get hasAttachments => attachments.isNotEmpty;
+
+  bool get isRecordingVoice => voiceSession != null;
 
   bool get hasBlockedAttachment => attachments.any(
     (attachment) => attachment.state == CaptureAttachmentState.blocked,
@@ -52,18 +61,24 @@ final class CaptureInputState {
     (attachment) => attachment.state == CaptureAttachmentState.needsReview,
   );
 
-  bool get canSubmit => !hasBlockedAttachment && !hasReviewAttachment;
+  bool get canSubmit =>
+      !hasBlockedAttachment && !hasReviewAttachment && !isRecordingVoice;
 
   CaptureInputState copyWith({
     List<CaptureAttachment>? attachments,
     CaptureMode? mode,
+    VoiceRecordingSession? voiceSession,
     String? errorMessage,
     bool? isBusy,
     bool clearError = false,
+    bool clearVoiceSession = false,
   }) {
     return CaptureInputState(
       attachments: attachments ?? this.attachments,
       mode: mode ?? this.mode,
+      voiceSession: clearVoiceSession
+          ? null
+          : voiceSession ?? this.voiceSession,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
       isBusy: isBusy ?? this.isBusy,
     );
@@ -81,20 +96,106 @@ class CaptureInputController extends Notifier<CaptureInputState> {
     state = state.copyWith(mode: mode, clearError: true);
   }
 
-  Future<void> addPhoto() async {
-    await _capture(() => ref.read(photoCaptureAdapterProvider).pickPhoto());
-  }
-
-  Future<void> addVoiceTranscript() async {
+  Future<void> addCameraPhoto() async {
     await _capture(
-      () => ref.read(voiceCaptureAdapterProvider).captureVoiceTranscript(),
+      () => ref.read(photoCaptureAdapterProvider).captureFromCamera(),
     );
   }
 
-  Future<void> addShareImport() async {
+  Future<void> addGalleryPhoto() async {
     await _capture(
-      () => ref.read(shareImportAdapterProvider).importSharedItem(),
+      () => ref.read(photoCaptureAdapterProvider).pickFromGallery(),
     );
+  }
+
+  Future<void> startVoiceRecording() async {
+    if (state.isBusy || state.isRecordingVoice) {
+      return;
+    }
+    state = state.copyWith(
+      mode: CaptureMode.voice,
+      isBusy: true,
+      clearError: true,
+    );
+    try {
+      final session = await ref
+          .read(voiceCaptureAdapterProvider)
+          .startRecording();
+      state = state.copyWith(
+        voiceSession: session,
+        isBusy: false,
+        clearError: true,
+      );
+    } on CaptureMediaException catch (error) {
+      state = state.copyWith(isBusy: false, errorMessage: error.userMessage);
+    } catch (error) {
+      state = state.copyWith(
+        isBusy: false,
+        errorMessage: 'Voice recording failed: $error',
+      );
+    }
+  }
+
+  Future<void> stopVoiceRecording() async {
+    final session = state.voiceSession;
+    if (state.isBusy || session == null) {
+      return;
+    }
+    state = state.copyWith(isBusy: true, clearError: true);
+    try {
+      final rawAsset = await ref
+          .read(voiceCaptureAdapterProvider)
+          .stopRecording(session);
+      final attachment = ref
+          .read(assetSafetyGuardProvider)
+          .buildAttachment(rawAsset);
+      state = state.copyWith(
+        attachments: [attachment, ...state.attachments],
+        isBusy: false,
+        clearVoiceSession: true,
+        clearError: true,
+      );
+    } on CaptureMediaException catch (error) {
+      state = state.copyWith(
+        isBusy: false,
+        clearVoiceSession: true,
+        errorMessage: error.userMessage,
+      );
+    } catch (error) {
+      state = state.copyWith(
+        isBusy: false,
+        clearVoiceSession: true,
+        errorMessage: 'Voice recording failed: $error',
+      );
+    }
+  }
+
+  Future<void> cancelVoiceRecording() async {
+    final session = state.voiceSession;
+    if (state.isBusy || session == null) {
+      return;
+    }
+    state = state.copyWith(isBusy: true, clearError: true);
+    try {
+      await ref.read(voiceCaptureAdapterProvider).cancelRecording(session);
+      state = state.copyWith(
+        isBusy: false,
+        clearVoiceSession: true,
+        errorMessage: 'Voice recording cancelled.',
+      );
+    } on CaptureMediaException catch (error) {
+      state = state.copyWith(
+        isBusy: false,
+        clearVoiceSession: true,
+        errorMessage: error.userMessage,
+      );
+    } catch (error) {
+      state = state.copyWith(
+        isBusy: false,
+        clearVoiceSession: true,
+        errorMessage: 'Voice recording cancel failed: $error',
+      );
+    }
   }
 
   void acceptAttachmentReview(String id) {
@@ -135,7 +236,9 @@ class CaptureInputController extends Notifier<CaptureInputState> {
   }
 
   void markSubmitBlocked() {
-    final message = state.hasBlockedAttachment
+    final message = state.isRecordingVoice
+        ? 'Stop or cancel the voice recording before saving.'
+        : state.hasBlockedAttachment
         ? 'Remove blocked attachments before saving.'
         : 'Review attachments before saving.';
     state = state.copyWith(errorMessage: message);
@@ -157,6 +260,8 @@ class CaptureInputController extends Notifier<CaptureInputState> {
         isBusy: false,
         clearError: true,
       );
+    } on CaptureMediaException catch (error) {
+      state = state.copyWith(isBusy: false, errorMessage: error.userMessage);
     } catch (error) {
       state = state.copyWith(
         isBusy: false,

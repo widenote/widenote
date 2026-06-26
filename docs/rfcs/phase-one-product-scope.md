@@ -1,6 +1,6 @@
 # RFC: Phase-One Product Scope
 
-Status: Draft
+Status: Accepted phase-one scope; amended by W7 safe-backup boundary
 
 Date: 2026-06-24
 
@@ -16,7 +16,7 @@ Phase one must include these five product areas:
 
 | Area | Required outcome |
 | --- | --- |
-| Capture console and import readiness | Home opens around a local-first capture console with text, voice-draft, photo/share import, attachment review, and raw input preservation. Real microphone recording and live ASR remain permissioned follow-ups. |
+| Capture console and media capture | Home opens around a local-first capture console with text, microphone recording, camera, gallery, attachment review, and raw input preservation. Share/import entrypoints are deferred until they have real platform integration. |
 | i18n | The mobile app supports at least Chinese and English through Flutter localization, not hardcoded strings. |
 | Model providers | Users can configure, test, and select local/BYOK model providers through a provider abstraction. |
 | Backup, import, migration | Users can export and import local data through a versioned WideNote backup format, with migration/error handling. |
@@ -62,8 +62,8 @@ capture created
 ## Model Provider Requirements
 
 - Provider config must be stored without leaking secrets into logs, generated
-  docs, automated review prompts, or test output. User-initiated backup JSON is
-  intentionally secret-bearing and includes provider API keys.
+  docs, automated review prompts, or test output. Safe backup is the current
+  implemented default and does not include provider API key values.
 - Package-level provider contracts should support fake, OpenAI-compatible, Anthropic-compatible, MIMO-compatible, and Kimi-compatible routing shapes.
 - UI must support adding/editing/testing a provider and selecting a default provider.
 - Unit tests use fake HTTP/model clients by default.
@@ -74,8 +74,10 @@ capture created
 - Backup files must include a manifest with schema version, app version, created time, and record counts.
 - Export/import must round-trip existing local data families first: captures, event log, Memory items/candidates, todos, and traces.
 - Cards, insights, chat, and provider config must join the backup format as those modules land.
-- Provider API keys are included in user-initiated backups for portability; the
-  UI and docs must make the secret-bearing nature of backups explicit.
+- Safe backup must exclude provider API key values and report when keys need
+  user re-entry after restore. Encrypted full backup is the future
+  secret-bearing restore path and must remain unavailable until encryption is
+  implemented.
 - Tests must cover successful round-trip, unsupported version, malformed payload, missing sections, and migration from older supported versions.
 
 ## Cards and Insights Requirements
@@ -111,4 +113,4 @@ The coordinator owns route integration, migration conflict resolution, Kimi revi
 - Whether real microphone recording and ASR provider integration should land in
   the next media slice or wait for Agent Pack audio permissions.
 - Whether provider secrets should later move from the local DB into platform
-  secure storage while preserving full user-managed backup/restore.
+  secure storage while preserving encrypted full backup/restore semantics.

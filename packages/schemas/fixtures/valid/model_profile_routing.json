@@ -1,0 +1,19 @@
+{
+  "kind": "model_profile_routing",
+  "id": "routing.synthetic_chat",
+  "schema_version": 1,
+  "model_profile_ref": "synthetic_chat",
+  "pack_id": "pack.synthetic_contract",
+  "agent_id": "agent.synthetic_capture",
+  "routing_policy": "fixed_provider",
+  "provider_ref": "provider.fake.synthetic",
+  "model_ref": "fake-chat",
+  "required_capabilities": [
+    "chat",
+    "completion"
+  ],
+  "allow_fallback": true,
+  "metadata": {
+    "fixture": true
+  }
+}

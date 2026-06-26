@@ -7,6 +7,7 @@ import 'package:widenote_local_db/widenote_local_db.dart';
 import 'package:widenote_model_providers/model_providers.dart';
 
 import '../../../app/local_database.dart';
+import '../../../app/model_client.dart';
 
 final modelProviderSettingsRepositoryProvider =
     Provider<ModelProviderSettingsRepository>((ref) {
@@ -157,6 +158,11 @@ final class LocalModelProviderSettingsRepository
     required String? defaultProviderId,
   }) async {
     final now = _clock();
+    final providerIds = providers.map((provider) => provider.id).toSet();
+    final persistedDefaultId = _defaultProviderIdFor(
+      providers,
+      requestedDefaultId: defaultProviderId,
+    );
     final records = <ModelProviderConfigRecord>[];
     for (final provider in providers) {
       final existing = _database.modelProviderConfigs.readById(provider.id);
@@ -164,15 +170,23 @@ final class LocalModelProviderSettingsRepository
         _recordFromConfig(
           provider,
           hasApiKey: provider.apiKey.trim().isNotEmpty,
-          isDefault: provider.id == defaultProviderId,
+          isDefault: provider.id == persistedDefaultId,
           createdAt: existing?.createdAt ?? now,
           updatedAt: now,
         ),
       );
     }
+    for (final existing in _database.modelProviderConfigs.readAll(
+      status: 'active',
+    )) {
+      if (providerIds.contains(existing.id)) {
+        continue;
+      }
+      records.add(_deletedRecordFrom(existing, updatedAt: now));
+    }
     _database.modelProviderConfigs.saveAll(
       records,
-      defaultId: defaultProviderId,
+      defaultId: persistedDefaultId,
     );
   }
 }
@@ -215,7 +229,10 @@ class ModelProviderSettingsController
       providers.add(config);
     }
 
-    final defaultProviderId = current.defaultProviderId ?? config.id;
+    final defaultProviderId = _defaultProviderIdFor(
+      providers,
+      requestedDefaultId: current.defaultProviderId ?? config.id,
+    );
     final connectionResults = _connectionResultsAfterSave(
       current,
       config,
@@ -224,6 +241,7 @@ class ModelProviderSettingsController
     await ref
         .read(modelProviderSettingsRepositoryProvider)
         .save(providers: providers, defaultProviderId: defaultProviderId);
+    _refreshRuntimeModelClient();
     state = AsyncData(
       current.copyWith(
         providers: providers,
@@ -247,8 +265,44 @@ class ModelProviderSettingsController
     await ref
         .read(modelProviderSettingsRepositoryProvider)
         .save(providers: current.providers, defaultProviderId: providerId);
+    _refreshRuntimeModelClient();
     state = AsyncData(
       current.copyWith(defaultProviderId: providerId, clearError: true),
+    );
+  }
+
+  Future<void> deleteProvider(String providerId) async {
+    final current = await _currentState();
+    final provider = _findProvider(current, providerId);
+    if (provider == null) {
+      state = AsyncData(current.copyWith(errorMessage: 'Provider not found.'));
+      return;
+    }
+
+    final providers = current.providers
+        .where((provider) => provider.id != providerId)
+        .toList(growable: false);
+    final defaultProviderId = _defaultProviderIdAfterDelete(
+      providers,
+      currentDefaultId: current.defaultProviderId,
+      deletedProviderId: providerId,
+    );
+    final connectionResults = Map<String, ProviderConnectionSnapshot>.of(
+      current.connectionResults,
+    )..remove(providerId);
+
+    await ref
+        .read(modelProviderSettingsRepositoryProvider)
+        .save(providers: providers, defaultProviderId: defaultProviderId);
+    _refreshRuntimeModelClient();
+    state = AsyncData(
+      current.copyWith(
+        providers: providers,
+        defaultProviderId: defaultProviderId,
+        clearDefaultProvider: defaultProviderId == null,
+        connectionResults: connectionResults,
+        clearError: true,
+      ),
     );
   }
 
@@ -349,6 +403,10 @@ class ModelProviderSettingsController
     }
     return future;
   }
+
+  void _refreshRuntimeModelClient() {
+    ref.invalidate(modelClientProvider);
+  }
 }
 
 bool liveProviderConnectionTestsEnabled({
@@ -440,6 +498,32 @@ String? _defaultProviderIdFor(
   return providers.first.id;
 }
 
+String? _defaultProviderIdAfterDelete(
+  List<ModelProviderConfig> providers, {
+  required String? currentDefaultId,
+  required String deletedProviderId,
+}) {
+  if (currentDefaultId != deletedProviderId) {
+    return _defaultProviderIdFor(
+      providers,
+      requestedDefaultId: currentDefaultId,
+    );
+  }
+  return _defaultProviderIdFor(
+    providers,
+    requestedDefaultId: _preferredFallbackProviderId(providers),
+  );
+}
+
+String? _preferredFallbackProviderId(List<ModelProviderConfig> providers) {
+  for (final provider in providers) {
+    if (provider.apiKey.trim().isNotEmpty) {
+      return provider.id;
+    }
+  }
+  return providers.isEmpty ? null : providers.first.id;
+}
+
 ModelProviderKind? _kindFromRecord(ModelProviderConfigRecord record) {
   for (final kind in ModelProviderKind.values) {
     if (kind.name == record.providerKind) {
@@ -483,6 +567,28 @@ ModelProviderConfigRecord _recordFromConfig(
         .toList(),
     payload: const <String, Object?>{'secret_storage': 'local_db_backup'},
     createdAt: createdAt,
+    updatedAt: updatedAt,
+  );
+}
+
+ModelProviderConfigRecord _deletedRecordFrom(
+  ModelProviderConfigRecord record, {
+  required DateTime updatedAt,
+}) {
+  return ModelProviderConfigRecord(
+    id: record.id,
+    schemaVersion: record.schemaVersion,
+    providerKind: record.providerKind,
+    displayName: record.displayName,
+    endpoint: record.endpoint,
+    model: record.model,
+    status: 'deleted',
+    isDefault: false,
+    hasApiKey: false,
+    apiKey: '',
+    capabilities: record.capabilities,
+    payload: const <String, Object?>{'deleted': true},
+    createdAt: record.createdAt,
     updatedAt: updatedAt,
   );
 }

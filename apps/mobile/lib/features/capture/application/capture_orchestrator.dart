@@ -4,6 +4,7 @@ import 'package:widenote_core/widenote_core.dart';
 import 'package:widenote_memory/memory.dart' as memory;
 
 import '../../../shared/text_preview.dart';
+import '../../plugins/application/official_pack_manifests.dart';
 import '../domain/capture_models.dart';
 import '../media/capture_media.dart';
 
@@ -83,34 +84,46 @@ final class CaptureOrchestrator {
     runtime.ModelClient? model,
     runtime.EventStore? eventStore,
     runtime.TraceSink? traceSink,
+    runtime.PermissionBroker? permissionBroker,
+    runtime.RuntimeStore? runtimeStore,
     memory.MemoryRepository? memoryRepository,
     CaptureKnowledgeSink? knowledgeSink,
+    bool autoGrantOfficialPermissions = true,
   }) {
     final localClock = clock ?? const SystemWnClock();
     final runtimeEventStore = eventStore ?? runtime.InMemoryEventStore();
     final runtimeTraceSink = traceSink ?? runtime.InMemoryTraceSink();
-    final permissions = runtime.InMemoryPermissionBroker()
-      ..grantAll(_defaultPackId, _defaultRequiredPermissions)
-      ..grantAll(_todoPackId, _todoRequiredPermissions);
+    final runtimeIdGenerator =
+        idGenerator ?? MonotonicWnIdGenerator(clock: localClock);
+    final permissions = permissionBroker ?? runtime.InMemoryPermissionBroker();
+    if (autoGrantOfficialPermissions &&
+        permissions is runtime.InMemoryPermissionBroker) {
+      for (final manifest in officialPackManifestSnapshots) {
+        permissions.grantAll(manifest.id, manifest.requiredPermissions);
+      }
+    }
     final kernel = runtime.RuntimeKernel(
       eventStore: runtimeEventStore,
       traceSink: runtimeTraceSink,
       permissionBroker: permissions,
       toolRegistry: runtime.InMemoryToolRegistry(),
-      idGenerator: idGenerator ?? MonotonicWnIdGenerator(clock: localClock),
+      idGenerator: runtimeIdGenerator,
       clock: localClock,
       model: model ?? const _CaptureSummaryModel(),
       deviceId: 'local-device',
+      runtimeStore: runtimeStore,
     );
-    kernel
-      ..registerPack(_defaultPack)
-      ..registerPack(_todoPack);
+    registerOfficialNativePacks(
+      kernel,
+      nativeHandlersByPackId: _officialNativeHandlersByPackId,
+    );
 
     final localMemoryRepository =
         memoryRepository ?? memory.InMemoryMemoryRepository();
     final memoryService = memory.MemoryService(
       repository: localMemoryRepository,
       clock: localClock.now,
+      idFactory: () => runtimeIdGenerator.nextId('memory'),
     );
 
     return CaptureOrchestrator._(
@@ -127,45 +140,13 @@ final class CaptureOrchestrator {
   static const _defaultAgentId = 'agent.capture_loop';
   static const _todoPackId = 'pack.todo';
   static const _todoAgentId = 'agent.todo_loop';
-
-  static const _defaultRequiredPermissions = <String>{
-    'model.complete',
-    'memory.propose',
-    'card.write',
-    'insight.write',
-  };
-
-  static const _todoRequiredPermissions = <String>{'todo.suggest'};
-
-  static const _defaultPack = runtime.AgentPack(
-    id: _defaultPackId,
-    name: 'Default capture loop',
-    version: '0.1.0',
-    requiredPermissions: _defaultRequiredPermissions,
-    subscriptions: <runtime.Subscription>[
-      runtime.Subscription(
-        id: 'sub.capture_created',
-        agentId: _defaultAgentId,
-        eventTypes: <String>{runtime.WnEventTypes.captureCreated},
-      ),
-    ],
-    agents: <String, runtime.AgentHandler>{_defaultAgentId: _CaptureAgent()},
-  );
-
-  static const _todoPack = runtime.AgentPack(
-    id: _todoPackId,
-    name: 'Todo extraction loop',
-    version: '0.1.0',
-    requiredPermissions: _todoRequiredPermissions,
-    subscriptions: <runtime.Subscription>[
-      runtime.Subscription(
-        id: 'sub.todo_capture_created',
-        agentId: _todoAgentId,
-        eventTypes: <String>{runtime.WnEventTypes.captureCreated},
-      ),
-    ],
-    agents: <String, runtime.AgentHandler>{_todoAgentId: _TodoAgent()},
-  );
+  static const _officialNativeHandlersByPackId =
+      <String, Map<String, runtime.AgentHandler>>{
+        _defaultPackId: <String, runtime.AgentHandler>{
+          _defaultAgentId: _CaptureAgent(),
+        },
+        _todoPackId: <String, runtime.AgentHandler>{_todoAgentId: _TodoAgent()},
+      };
 
   final runtime.RuntimeKernel _kernel;
   final runtime.EventStore _eventStore;
@@ -174,12 +155,21 @@ final class CaptureOrchestrator {
   final memory.MemoryRepository _memoryRepository;
   final CaptureKnowledgeSink? _knowledgeSink;
 
+  List<runtime.AgentPack> debugRegisteredPacks() {
+    return _kernel.packRegistry.list();
+  }
+
   Future<CapturePipelineResult> processCapture(
     String body, {
     List<CaptureAttachment> attachments = const <CaptureAttachment>[],
     String? captureId,
   }) async {
     final rawText = body.trim();
+    if (attachments.any((attachment) => !attachment.isReady)) {
+      throw const CapturePipelineException(
+        'Review or remove pending attachments before saving.',
+      );
+    }
     final captureBody = rawText.isEmpty
         ? _attachmentOnlyText(attachments)
         : rawText;
@@ -320,10 +310,26 @@ final class CaptureOrchestrator {
   memory.MemoryProposal _proposalFromEvent(runtime.WnEvent event) {
     final payload = event.payload;
     final body = _string(payload['text'], fallback: '');
-    final sourceId = _string(
+    final sourceEventId = _string(
       payload['source_event_id'],
       fallback: event.causationId ?? event.id,
     );
+    final sourceCaptureId = event.subjectRef?.kind == 'capture'
+        ? event.subjectRef!.id
+        : _string(payload['source_capture_id'], fallback: '');
+    final sourceRefs = <memory.MemorySourceRef>[
+      if (sourceCaptureId.isNotEmpty)
+        memory.MemorySourceRef(
+          sourceType: 'capture',
+          sourceId: sourceCaptureId,
+          excerpt: _string(payload['source_excerpt'], fallback: body),
+        ),
+      memory.MemorySourceRef(
+        sourceType: 'event',
+        sourceId: sourceEventId,
+        excerpt: _string(payload['source_excerpt'], fallback: body),
+      ),
+    ];
 
     return memory.MemoryProposal(
       id: 'proposal-${event.id}',
@@ -332,13 +338,7 @@ final class CaptureOrchestrator {
         fallback: 'capture.${event.subjectRef?.id ?? event.id}.summary',
       ),
       body: body,
-      evidence: <memory.MemorySourceRef>[
-        memory.MemorySourceRef(
-          sourceType: 'event',
-          sourceId: sourceId,
-          excerpt: _string(payload['source_excerpt'], fallback: body),
-        ),
-      ],
+      evidence: sourceRefs,
       memoryType: _memoryType(payload['memory_type']),
       confidence: _confidence(payload['confidence']),
       sensitivity: _sensitivity(payload['sensitivity']),
@@ -578,7 +578,9 @@ List<cards.CaptureCardSource> _captureSources(List<runtime.WnEvent> events) {
       .where((event) => event.type == runtime.WnEventTypes.captureCreated)
       .map(
         (event) => cards.CaptureCardSource(
-          id: event.id,
+          id: event.subjectRef?.kind == 'capture'
+              ? event.subjectRef!.id
+              : event.id,
           text: _captureTextFromPayload(event.payload),
           createdAt: event.createdAt,
         ),
@@ -730,6 +732,11 @@ final class _CaptureAgent implements runtime.AgentHandler {
             'source_refs': <Object?>[
               <String, Object?>{
                 'kind': 'capture',
+                'id': subject.id,
+                'excerpt': previewText(text),
+              },
+              <String, Object?>{
+                'kind': 'event',
                 'id': event.id,
                 'excerpt': previewText(text),
               },
@@ -747,6 +754,11 @@ final class _CaptureAgent implements runtime.AgentHandler {
             'source_refs': <Object?>[
               <String, Object?>{
                 'kind': 'capture',
+                'id': subject.id,
+                'excerpt': previewText(text),
+              },
+              <String, Object?>{
+                'kind': 'event',
                 'id': event.id,
                 'excerpt': previewText(text),
               },

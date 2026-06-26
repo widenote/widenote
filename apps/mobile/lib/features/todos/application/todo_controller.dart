@@ -76,7 +76,13 @@ final class TodoController extends Notifier<TodoState> {
   }
 
   List<TodoListItem> _readItems() {
-    return _database.todos.readAll().reversed.map(_todoView).toList();
+    return _database.todos
+        .readAll()
+        .where((record) => record.status != 'completed')
+        .toList()
+        .reversed
+        .map(_todoView)
+        .toList();
   }
 
   localdb.WideNoteLocalDatabase get _database {

@@ -1,0 +1,33 @@
+{
+  "kind": "memory_candidate",
+  "id": "memcand_synthetic_001",
+  "key": "project.schema_fixture",
+  "body": "Synthetic contract fixtures should stay free of user data.",
+  "source_refs": [
+    {
+      "kind": "capture",
+      "id": "cap_synthetic_001",
+      "source_type": "capture",
+      "source_id": "cap_synthetic_001",
+      "event_id": "evt_synthetic_capture_created_001",
+      "excerpt": "Synthetic capture for schema validation.",
+      "evidence_text": "Synthetic capture for schema validation.",
+      "source_version": 1,
+      "content_hash": "sha256:synthetic-memory-candidate"
+    }
+  ],
+  "memory_type": "project",
+  "confidence": "medium",
+  "sensitivity": "low",
+  "durability": "session",
+  "status": "auto_accepted",
+  "policy_reasons": [
+    "synthetic_low_risk_fixture"
+  ],
+  "conflicting_memory_ids": [],
+  "created_at": "2026-06-26T08:01:00Z",
+  "updated_at": "2026-06-26T08:01:30Z",
+  "metadata": {
+    "fixture": true
+  }
+}

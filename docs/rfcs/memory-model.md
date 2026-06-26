@@ -1,6 +1,6 @@
 # RFC: Memory Model
 
-Status: Draft  
+Status: Accepted phase-one contract; follow-ups open
 Date: 2026-06-23
 
 ## Context

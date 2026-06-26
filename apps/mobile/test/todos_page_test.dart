@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:widenote_local_db/widenote_local_db.dart';
 import 'package:widenote_mobile/app/local_database.dart';
 import 'package:widenote_mobile/features/todos/presentation/todos_page.dart';
 import 'package:widenote_mobile/l10n/l10n.dart';
 
 void main() {
-  testWidgets('todos page completes and reopens a source-linked todo', (
+  testWidgets('todos page completes and hides a source-linked todo', (
     tester,
   ) async {
     final database = WideNoteLocalDatabase.inMemory();
@@ -22,13 +23,18 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(database.todos.readById('todo-page-1')!.status, 'completed');
-    expect(find.text('completed'), findsOneWidget);
+    expect(find.byKey(const Key('todo-row-todo-page-1')), findsNothing);
 
-    await tester.tap(find.byKey(const Key('todo-toggle-todo-page-1')));
+    database.todos.updateStatus('todo-page-1', 'open');
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpTodosPage(tester, database);
+    expect(find.text('suggested by agent'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('todo-source-todo-page-1')));
     await tester.pumpAndSettle();
 
-    expect(database.todos.readById('todo-page-1')!.status, 'open');
-    expect(find.text('suggested by agent'), findsOneWidget);
+    expect(find.byKey(const Key('todo-source-destination')), findsOneWidget);
+    expect(find.text('capture-todo-page'), findsOneWidget);
   });
 }
 
@@ -36,14 +42,31 @@ Future<void> _pumpTodosPage(
   WidgetTester tester,
   WideNoteLocalDatabase database,
 ) async {
+  final router = GoRouter(
+    initialLocation: '/',
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (context, state) => const Scaffold(body: TodosPage()),
+      ),
+      GoRoute(
+        path: '/timeline/items/:itemId',
+        builder: (context, state) => Scaffold(
+          key: const Key('todo-source-destination'),
+          body: Text(state.pathParameters['itemId'] ?? ''),
+        ),
+      ),
+    ],
+  );
+  addTearDown(router.dispose);
   await tester.pumpWidget(
     ProviderScope(
       overrides: [localDatabaseProvider.overrideWithValue(database)],
-      child: const MaterialApp(
+      child: MaterialApp.router(
         locale: Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(body: TodosPage()),
+        routerConfig: router,
       ),
     ),
   );

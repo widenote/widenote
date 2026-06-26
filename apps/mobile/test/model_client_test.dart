@@ -6,8 +6,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
 import 'package:widenote_local_db/widenote_local_db.dart';
+import 'package:widenote_model_providers/model_providers.dart';
 import 'package:widenote_mobile/app/local_database.dart';
 import 'package:widenote_mobile/app/model_client.dart';
+import 'package:widenote_mobile/features/backup/application/backup_controller.dart';
+import 'package:widenote_mobile/features/capture/application/capture_controller.dart';
+import 'package:widenote_mobile/features/chat/application/chat_controller.dart';
+import 'package:widenote_mobile/features/chat/domain/chat_models.dart';
+import 'package:widenote_mobile/features/model_providers/application/model_provider_settings_controller.dart';
 
 void main() {
   test('LocalSummaryModelClient returns deterministic local summary', () async {
@@ -82,6 +88,261 @@ void main() {
     expect(response.text, 'Provider-backed memory.');
     expect(response.raw['provider_id'], 'provider-default');
   });
+
+  test(
+    'setting default refreshes model client dependents without app restart',
+    () async {
+      final oldEndpoint = await _providerEndpoint('Old provider memory.');
+      final newEndpoint = await _providerEndpoint('New provider memory.');
+      final database = WideNoteLocalDatabase.inMemory();
+      addTearDown(database.close);
+      _insertProvider(
+        database,
+        id: 'provider-old',
+        displayName: 'Old provider',
+        endpoint: oldEndpoint,
+        model: 'old-model',
+        apiKey: 'old-secret',
+      );
+      _insertProvider(
+        database,
+        id: 'provider-new',
+        displayName: 'New provider',
+        endpoint: newEndpoint,
+        model: 'new-model',
+        apiKey: 'new-secret',
+        isDefault: false,
+      );
+      final container = ProviderContainer(
+        overrides: [localDatabaseProvider.overrideWithValue(database)],
+      );
+      addTearDown(container.dispose);
+      await container.read(modelProviderSettingsControllerProvider.future);
+
+      final oldClient = container.read(modelClientProvider);
+      final oldChatAssistant = container.read(chatAssistantProvider);
+      final oldCaptureOrchestrator = container.read(
+        captureOrchestratorProvider,
+      );
+      final oldResponse = await oldClient.complete(
+        const runtime.ModelRequest(
+          prompt: 'Summarize capture for Memory: provider before switch',
+        ),
+      );
+      expect(oldResponse.text, 'Old provider memory.');
+
+      await container
+          .read(modelProviderSettingsControllerProvider.notifier)
+          .setDefaultProvider('provider-new');
+
+      final newClient = container.read(modelClientProvider);
+      expect(identical(newClient, oldClient), isFalse);
+      final newResponse = await newClient.complete(
+        const runtime.ModelRequest(
+          prompt: 'Summarize capture for Memory: provider after switch',
+        ),
+      );
+      expect(newResponse.text, 'New provider memory.');
+      expect(newResponse.raw['provider_id'], 'provider-new');
+
+      final newChatAssistant = container.read(chatAssistantProvider);
+      expect(identical(newChatAssistant, oldChatAssistant), isFalse);
+      final chatReply = await newChatAssistant.answer(
+        ChatAssistantPrompt(
+          question: 'What changed?',
+          sources: <ChatSource>[
+            ChatSource(
+              id: 'memory-provider',
+              kind: 'memory',
+              title: 'Memory',
+              excerpt: 'The default model provider changed.',
+              sourceLabel: 'event: provider-test',
+              createdAt: DateTime.utc(2026, 6, 26, 10),
+            ),
+          ],
+        ),
+      );
+      expect(chatReply.body, 'New provider memory.');
+
+      final newCaptureOrchestrator = container.read(
+        captureOrchestratorProvider,
+      );
+      expect(
+        identical(newCaptureOrchestrator, oldCaptureOrchestrator),
+        isFalse,
+      );
+      final captureResult = await newCaptureOrchestrator.processCapture(
+        'Capture should use the new provider.',
+      );
+      expect(captureResult.memoryItem.summary, 'New provider memory.');
+    },
+  );
+
+  test('saving and deleting providers refreshes modelClientProvider', () async {
+    final endpoint = await _providerEndpoint('Saved provider memory.');
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    final container = ProviderContainer(
+      overrides: [localDatabaseProvider.overrideWithValue(database)],
+    );
+    addTearDown(container.dispose);
+
+    expect(container.read(modelClientProvider), isA<LocalSummaryModelClient>());
+
+    final saved = await container
+        .read(modelProviderSettingsControllerProvider.notifier)
+        .saveProvider(
+          ModelProviderConfig(
+            id: 'provider-saved',
+            kind: ModelProviderKind.openAiCompatible,
+            displayName: 'Saved provider',
+            endpoint: endpoint,
+            model: 'saved-model',
+            apiKey: 'saved-secret',
+          ),
+        );
+    expect(saved, isTrue);
+
+    final providerResponse = await container
+        .read(modelClientProvider)
+        .complete(
+          const runtime.ModelRequest(
+            prompt: 'Summarize capture for Memory: provider after save',
+          ),
+        );
+    expect(providerResponse.text, 'Saved provider memory.');
+    expect(providerResponse.raw['provider_id'], 'provider-saved');
+
+    await container
+        .read(modelProviderSettingsControllerProvider.notifier)
+        .deleteProvider('provider-saved');
+
+    expect(database.modelProviderConfigs.readDefault(), isNull);
+    expect(database.modelProviderConfigs.readAll(status: 'active'), isEmpty);
+    final refreshed = container.read(modelClientProvider);
+    expect(refreshed, isA<LocalSummaryModelClient>());
+    final localResponse = await refreshed.complete(
+      const runtime.ModelRequest(
+        prompt: 'Summarize capture for Memory: provider deleted',
+      ),
+    );
+    expect(localResponse.text, 'provider deleted');
+  });
+
+  test(
+    'deleting default provider refreshes model client to fallback provider',
+    () async {
+      final oldEndpoint = await _providerEndpoint('Deleted provider memory.');
+      final fallbackEndpoint = await _providerEndpoint(
+        'Fallback provider memory.',
+      );
+      final database = WideNoteLocalDatabase.inMemory();
+      addTearDown(database.close);
+      _insertProvider(
+        database,
+        id: 'provider-deleted',
+        displayName: 'Deleted provider',
+        endpoint: oldEndpoint,
+        apiKey: 'deleted-secret',
+      );
+      _insertProvider(
+        database,
+        id: 'provider-fallback',
+        displayName: 'Fallback provider',
+        endpoint: fallbackEndpoint,
+        apiKey: 'fallback-secret',
+        isDefault: false,
+      );
+      final container = ProviderContainer(
+        overrides: [localDatabaseProvider.overrideWithValue(database)],
+      );
+      addTearDown(container.dispose);
+      await container.read(modelProviderSettingsControllerProvider.future);
+      final oldClient = container.read(modelClientProvider);
+
+      await container
+          .read(modelProviderSettingsControllerProvider.notifier)
+          .deleteProvider('provider-deleted');
+
+      expect(
+        database.modelProviderConfigs.readDefault()!.id,
+        'provider-fallback',
+      );
+      final newClient = container.read(modelClientProvider);
+      expect(identical(newClient, oldClient), isFalse);
+      final response = await newClient.complete(
+        const runtime.ModelRequest(
+          prompt: 'Summarize capture for Memory: after default delete',
+        ),
+      );
+      expect(response.text, 'Fallback provider memory.');
+      expect(response.raw['provider_id'], 'provider-fallback');
+    },
+  );
+
+  test(
+    'backup import refreshes stale runtime client and keeps safe backup secret-free',
+    () async {
+      final staleEndpoint = await _providerEndpoint('Stale provider memory.');
+      final importedEndpoint = await _providerEndpoint(
+        'Imported provider memory.',
+      );
+      final source = WideNoteLocalDatabase.inMemory();
+      addTearDown(source.close);
+      _insertProvider(
+        source,
+        id: 'provider-imported',
+        displayName: 'Imported provider',
+        endpoint: importedEndpoint,
+        apiKey: 'imported-secret',
+        updatedAt: DateTime.utc(2026, 6, 26, 12),
+      );
+      final json = LocalBackupService(source).exportJson();
+      expect(json, isNot(contains('imported-secret')));
+
+      final target = WideNoteLocalDatabase.inMemory();
+      addTearDown(target.close);
+      _insertProvider(
+        target,
+        id: 'provider-stale',
+        displayName: 'Stale provider',
+        endpoint: staleEndpoint,
+        apiKey: 'stale-secret',
+        updatedAt: DateTime.utc(2026, 6, 24, 12),
+      );
+      final container = ProviderContainer(
+        overrides: [localDatabaseProvider.overrideWithValue(target)],
+      );
+      addTearDown(container.dispose);
+      final staleResponse = await container
+          .read(modelClientProvider)
+          .complete(
+            const runtime.ModelRequest(
+              prompt: 'Summarize capture for Memory: before import',
+            ),
+          );
+      expect(staleResponse.text, 'Stale provider memory.');
+
+      final backupController = container.read(
+        backupControllerProvider.notifier,
+      );
+      backupController.updateImportDraft(json);
+      expect(backupController.importBackup(), isTrue);
+
+      final imported = target.modelProviderConfigs.readDefault()!;
+      expect(imported.id, 'provider-imported');
+      expect(imported.hasApiKey, isTrue);
+      expect(imported.apiKey, isEmpty);
+      final refreshed = container.read(modelClientProvider);
+      expect(refreshed, isA<LocalSummaryModelClient>());
+      final localResponse = await refreshed.complete(
+        const runtime.ModelRequest(
+          prompt: 'Summarize capture for Memory: imported key omitted',
+        ),
+      );
+      expect(localResponse.text, 'imported key omitted');
+    },
+  );
 
   test(
     'modelClientProvider falls back locally when default provider fails',
@@ -351,18 +612,51 @@ Future<Uri> _serve(_RequestHandler handler) async {
   return Uri.parse('http://${server.address.host}:${server.port}/messages');
 }
 
-void _insertProvider(WideNoteLocalDatabase database, {required Uri endpoint}) {
-  final now = DateTime.utc(2026, 6, 24, 12);
+Future<Uri> _providerEndpoint(String text) {
+  return _serve((request) async {
+    await utf8.decodeStream(request);
+    request.response
+      ..statusCode = HttpStatus.ok
+      ..headers.contentType = ContentType.json
+      ..write(
+        jsonEncode(<String, Object?>{
+          'id': 'provider-test',
+          'model': 'provider-model',
+          'choices': <Map<String, Object?>>[
+            <String, Object?>{
+              'message': <String, Object?>{
+                'role': 'assistant',
+                'content': text,
+              },
+            },
+          ],
+        }),
+      );
+    await request.response.close();
+  });
+}
+
+void _insertProvider(
+  WideNoteLocalDatabase database, {
+  required Uri endpoint,
+  String id = 'provider-default',
+  String displayName = 'Provider default',
+  String model = 'local-provider-model',
+  String apiKey = 'provider-secret',
+  bool isDefault = true,
+  DateTime? updatedAt,
+}) {
+  final now = updatedAt ?? DateTime.utc(2026, 6, 24, 12);
   database.modelProviderConfigs.insert(
     ModelProviderConfigRecord(
-      id: 'provider-default',
+      id: id,
       providerKind: 'openAiCompatible',
-      displayName: 'Provider default',
+      displayName: displayName,
       endpoint: endpoint.toString(),
-      model: 'local-provider-model',
-      isDefault: true,
+      model: model,
+      isDefault: isDefault,
       hasApiKey: true,
-      apiKey: 'provider-secret',
+      apiKey: apiKey,
       capabilities: const <Object?>['chat', 'completion'],
       createdAt: now,
       updatedAt: now,

@@ -171,6 +171,12 @@ void main() {
               eventTypes: <String>{WnEventTypes.captureCreated},
             ),
           ],
+          agentDefinitions: <String, AgentDefinition>{
+            'agent.alpha': AgentDefinition(
+              id: 'agent.alpha',
+              outputEvents: <String>{WnEventTypes.insightCreated},
+            ),
+          },
           agents: <String, AgentHandler>{
             'agent.alpha': _NamedInsightHandler('alpha'),
           },
@@ -188,6 +194,12 @@ void main() {
               eventTypes: <String>{WnEventTypes.captureCreated},
             ),
           ],
+          agentDefinitions: <String, AgentDefinition>{
+            'agent.beta': AgentDefinition(
+              id: 'agent.beta',
+              outputEvents: <String>{WnEventTypes.insightCreated},
+            ),
+          },
           agents: <String, AgentHandler>{
             'agent.beta': _NamedInsightHandler('beta'),
           },
@@ -230,6 +242,12 @@ void main() {
             eventTypes: <String>{WnEventTypes.captureCreated},
           ),
         ],
+        agentDefinitions: <String, AgentDefinition>{
+          'agent.privacy': AgentDefinition(
+            id: 'agent.privacy',
+            outputEvents: <String>{WnEventTypes.insightCreated},
+          ),
+        },
         agents: <String, AgentHandler>{'agent.privacy': _PrivacyEchoHandler()},
       ),
     );
@@ -293,6 +311,22 @@ void main() {
               eventTypes: <String>{WnEventTypes.captureCreated},
             ),
           ],
+          agentDefinitions: <String, AgentDefinition>{
+            'agent.capture_loop': AgentDefinition(
+              id: 'agent.capture_loop',
+              requiredPermissions: <String>{
+                ModelPermissions.complete,
+                'memory.propose',
+                'card.write',
+                'insight.write',
+              },
+              outputEvents: <String>{
+                WnEventTypes.memoryProposed,
+                WnEventTypes.cardCreated,
+                WnEventTypes.insightCreated,
+              },
+            ),
+          },
           agents: <String, AgentHandler>{
             'agent.capture_loop': _DefaultPackHandler(),
           },
@@ -311,6 +345,13 @@ void main() {
               eventTypes: <String>{WnEventTypes.captureCreated},
             ),
           ],
+          agentDefinitions: <String, AgentDefinition>{
+            'agent.todo_loop': AgentDefinition(
+              id: 'agent.todo_loop',
+              requiredPermissions: <String>{'todo.suggest'},
+              outputEvents: <String>{WnEventTypes.todoSuggested},
+            ),
+          },
           agents: <String, AgentHandler>{'agent.todo_loop': _TodoPackHandler()},
         ),
       );
@@ -414,6 +455,13 @@ void main() {
                   eventTypes: <String>{WnEventTypes.captureCreated},
                 ),
               ],
+              agentDefinitions: <String, AgentDefinition>{
+                'agent.model': AgentDefinition(
+                  id: 'agent.model',
+                  requiredPermissions: <String>{ModelPermissions.complete},
+                  outputEvents: <String>{WnEventTypes.insightCreated},
+                ),
+              },
               agents: <String, AgentHandler>{
                 'agent.model': _ModelUsingHandler(),
               },
@@ -474,6 +522,12 @@ void main() {
                 eventTypes: <String>{WnEventTypes.captureCreated},
               ),
             ],
+            agentDefinitions: <String, AgentDefinition>{
+              'agent.model': AgentDefinition(
+                id: 'agent.model',
+                outputEvents: <String>{WnEventTypes.insightCreated},
+              ),
+            },
             agents: <String, AgentHandler>{'agent.model': _ModelUsingHandler()},
           ),
         );
@@ -491,12 +545,15 @@ void main() {
 
     expect(events, hasLength(1));
     expect(model.requests, isEmpty);
-    expect(kernel.runs.single.status, RuntimeRunStatus.failed);
+    expect(kernel.tasks.single.status, RuntimeTaskStatus.denied);
+    expect(kernel.runs.single.status, RuntimeRunStatus.denied);
     expect(kernel.runs.single.error, contains(ModelPermissions.complete));
-    final failedTrace = traces.singleWhere(
-      (trace) => trace.name == 'runtime.run.failed',
+    final deniedTrace = traces.singleWhere(
+      (trace) => trace.name == 'runtime.permission.denied',
     );
-    expect(failedTrace.details['error'], contains(ModelPermissions.complete));
+    expect(deniedTrace.details['missing_permissions'], <String>[
+      ModelPermissions.complete,
+    ]);
   });
 
   test('agent tool invocation is permission checked', () async {
@@ -582,41 +639,52 @@ void main() {
     expect(failedTrace.details['error'], contains('handler exploded'));
   });
 
-  test('missing handler records trace without creating a task', () async {
-    final store = InMemoryEventStore();
-    final traceSink = InMemoryTraceSink();
-    final kernel = _blankKernel(store: store, traceSink: traceSink);
-    kernel.registerPack(
-      const AgentPack(
-        id: 'pack.default',
-        name: 'Missing handler pack',
-        version: '0.1.0',
-        subscriptions: <Subscription>[
-          Subscription(
-            id: 'sub.capture',
-            agentId: 'agent.missing',
-            eventTypes: <String>{WnEventTypes.captureCreated},
-          ),
-        ],
-        agents: <String, AgentHandler>{},
-      ),
-    );
+  test(
+    'missing native handler creates terminal failure without output',
+    () async {
+      final store = InMemoryEventStore();
+      final traceSink = InMemoryTraceSink();
+      final kernel = _blankKernel(store: store, traceSink: traceSink);
+      kernel.registerPack(
+        const AgentPack(
+          id: 'pack.default',
+          name: 'Missing handler pack',
+          version: '0.1.0',
+          subscriptions: <Subscription>[
+            Subscription(
+              id: 'sub.capture',
+              agentId: 'agent.missing',
+              eventTypes: <String>{WnEventTypes.captureCreated},
+            ),
+          ],
+          agentDefinitions: <String, AgentDefinition>{
+            'agent.missing': AgentDefinition(
+              id: 'agent.missing',
+              outputEvents: <String>{WnEventTypes.insightCreated},
+            ),
+          },
+          agents: <String, AgentHandler>{},
+        ),
+      );
 
-    await kernel.publish(
-      const WnEventDraft(
-        type: WnEventTypes.captureCreated,
-        actor: WnActor.user,
-      ),
-    );
+      await kernel.publish(
+        const WnEventDraft(
+          type: WnEventTypes.captureCreated,
+          actor: WnActor.user,
+        ),
+      );
 
-    expect(kernel.tasks, isEmpty);
-    expect(kernel.runs, isEmpty);
-    final traces = await traceSink.readAll();
-    expect(
-      traces.map((trace) => trace.name),
-      contains('runtime.handler.missing'),
-    );
-  });
+      expect(kernel.tasks.single.status, RuntimeTaskStatus.failed);
+      expect(kernel.runs.single.status, RuntimeRunStatus.failed);
+      expect(await store.readAll(), hasLength(1));
+      final traces = await traceSink.readAll();
+      expect(
+        traces.map((trace) => trace.name),
+        contains('runtime.handler.missing'),
+      );
+      expect(traces.map((trace) => trace.name), contains('runtime.run.failed'));
+    },
+  );
 
   test('tool permission denial is returned to the handler', () async {
     final store = InMemoryEventStore();
@@ -783,6 +851,12 @@ void main() {
                   eventTypes: <String>{WnEventTypes.captureCreated},
                 ),
               ],
+              agentDefinitions: <String, AgentDefinition>{
+                'agent.queue': AgentDefinition(
+                  id: 'agent.queue',
+                  outputEvents: <String>{WnEventTypes.insightCreated},
+                ),
+              },
               agents: <String, AgentHandler>{
                 'agent.queue': _NamedInsightHandler('queue'),
               },
@@ -836,6 +910,16 @@ void main() {
                 eventTypes: <String>{WnEventTypes.captureCreated},
               ),
             ],
+            agentDefinitions: const <String, AgentDefinition>{
+              'agent.finalize': AgentDefinition(
+                id: 'agent.finalize',
+                outputEvents: <String>{WnEventTypes.insightCreated},
+              ),
+              'agent.prepare': AgentDefinition(
+                id: 'agent.prepare',
+                outputEvents: <String>{WnEventTypes.insightCreated},
+              ),
+            },
             agents: <String, AgentHandler>{
               'agent.finalize': _OrderRecordingHandler('finalize', order),
               'agent.prepare': _OrderRecordingHandler('prepare', order),
@@ -888,6 +972,7 @@ void main() {
             agentDefinitions: const <String, AgentDefinition>{
               'agent.retry': AgentDefinition(
                 id: 'agent.retry',
+                outputEvents: <String>{WnEventTypes.insightCreated},
                 retryPolicy: RetryPolicy(maxAttempts: 2),
               ),
             },
@@ -957,6 +1042,573 @@ void main() {
       traces.map((trace) => trace.name),
       contains('runtime.task.canceled'),
     );
+  });
+
+  test('queued durable task restores after restart and drains once', () async {
+    final eventStore = InMemoryEventStore();
+    final traceSink = InMemoryTraceSink();
+    final runtimeStore = InMemoryRuntimeStore();
+    final pack = AgentPack(
+      id: 'pack.restart',
+      name: 'Restart pack',
+      version: '1.2.3',
+      subscriptions: const <Subscription>[
+        Subscription(
+          id: 'sub.restart',
+          agentId: 'agent.restart',
+          eventTypes: <String>{WnEventTypes.captureCreated},
+        ),
+      ],
+      agentDefinitions: const <String, AgentDefinition>{
+        'agent.restart': AgentDefinition(
+          id: 'agent.restart',
+          outputEvents: <String>{WnEventTypes.insightCreated},
+        ),
+      },
+      agents: const <String, AgentHandler>{
+        'agent.restart': _NamedInsightHandler('restart'),
+      },
+    );
+    final firstKernel = _blankKernel(
+      store: eventStore,
+      traceSink: traceSink,
+      runtimeStore: runtimeStore,
+      autoDrain: false,
+    )..registerPack(pack);
+
+    final capture = await firstKernel.publish(
+      const WnEventDraft(
+        type: WnEventTypes.captureCreated,
+        actor: WnActor.user,
+        payload: <String, Object?>{'text': 'survive restart'},
+      ),
+    );
+
+    final queuedTask = (await runtimeStore.readTasks()).single;
+    expect(queuedTask.status, RuntimeTaskStatus.queued);
+    expect(queuedTask.packVersion, '1.2.3');
+    expect(queuedTask.identityKey, contains(capture.id));
+    expect(queuedTask.identityKey, contains('pack.restart'));
+    expect(queuedTask.identityKey, contains('1.2.3'));
+    expect(queuedTask.identityKey, contains('sub.restart'));
+    expect(queuedTask.identityKey, contains('agent.restart'));
+
+    final restartedKernel = _blankKernel(
+      store: eventStore,
+      traceSink: traceSink,
+      runtimeStore: runtimeStore,
+      idGenerator: SequenceWnIdGenerator(seed: 'restart', startAt: 100),
+    )..registerPack(pack);
+    await restartedKernel.restoreRuntimeState();
+
+    expect(restartedKernel.tasks.single.id, queuedTask.id);
+    expect(await restartedKernel.drainQueue(), 1);
+    expect(await restartedKernel.drainQueue(), 0);
+
+    final events = await eventStore.readAll();
+    expect(events.map((event) => event.type), <String>[
+      WnEventTypes.captureCreated,
+      WnEventTypes.insightCreated,
+    ]);
+    expect(
+      await eventStore.readByType(WnEventTypes.insightCreated),
+      hasLength(1),
+    );
+    expect(
+      (await runtimeStore.readTaskById(queuedTask.id))?.status,
+      RuntimeTaskStatus.succeeded,
+    );
+  });
+
+  test(
+    'restore preserves terminal task states and terminates stale running run',
+    () async {
+      final runtimeStore = InMemoryRuntimeStore();
+      final now = DateTime.utc(2026, 6, 23, 1);
+      await runtimeStore.upsertTask(
+        _taskFixture(id: 'task-failed', status: RuntimeTaskStatus.failed),
+      );
+      await runtimeStore.upsertTask(
+        _taskFixture(id: 'task-denied', status: RuntimeTaskStatus.denied),
+      );
+      await runtimeStore.upsertTask(
+        _taskFixture(id: 'task-canceled', status: RuntimeTaskStatus.canceled),
+      );
+      await runtimeStore.upsertTask(
+        _taskFixture(id: 'task-blocked', status: RuntimeTaskStatus.blocked),
+      );
+      await runtimeStore.upsertTask(
+        _taskFixture(id: 'task-running', status: RuntimeTaskStatus.running),
+      );
+      await runtimeStore.upsertRun(
+        _runFixture(
+          id: 'run-running',
+          taskId: 'task-running',
+          status: RuntimeRunStatus.running,
+          startedAt: now.subtract(const Duration(hours: 1)),
+          leaseExpiresAt: now.subtract(const Duration(minutes: 30)),
+        ),
+      );
+
+      final kernel =
+          _blankKernel(
+            store: InMemoryEventStore(),
+            traceSink: InMemoryTraceSink(),
+            runtimeStore: runtimeStore,
+            clock: FixedWnClock(now),
+          )..registerPack(
+            const AgentPack(
+              id: 'pack.restore',
+              name: 'Restore pack',
+              version: '1.0.0',
+              subscriptions: <Subscription>[],
+              agents: <String, AgentHandler>{},
+            ),
+          );
+
+      await kernel.restoreRuntimeState();
+      expect(await kernel.drainQueue(), 0);
+
+      expect(
+        (await runtimeStore.readTaskById('task-failed'))?.status,
+        RuntimeTaskStatus.failed,
+      );
+      expect(
+        (await runtimeStore.readTaskById('task-denied'))?.status,
+        RuntimeTaskStatus.denied,
+      );
+      expect(
+        (await runtimeStore.readTaskById('task-canceled'))?.status,
+        RuntimeTaskStatus.canceled,
+      );
+      expect(
+        (await runtimeStore.readTaskById('task-blocked'))?.status,
+        RuntimeTaskStatus.blocked,
+      );
+      expect(
+        (await runtimeStore.readTaskById('task-running'))?.status,
+        RuntimeTaskStatus.failed,
+      );
+      expect(
+        (await runtimeStore.readRunById('run-running'))?.status,
+        RuntimeRunStatus.failed,
+      );
+    },
+  );
+
+  test('dependent task is blocked when prerequisite fails', () async {
+    final store = InMemoryEventStore();
+    final traceSink = InMemoryTraceSink();
+    final runtimeStore = InMemoryRuntimeStore();
+    final finalizeHandler = _CountingHandler();
+    final kernel =
+        _blankKernel(
+          store: store,
+          traceSink: traceSink,
+          runtimeStore: runtimeStore,
+        )..registerPack(
+          AgentPack(
+            id: 'pack.dependency-failure',
+            name: 'Dependency failure pack',
+            version: '0.1.0',
+            subscriptions: const <Subscription>[
+              Subscription(
+                id: 'sub.prepare',
+                agentId: 'agent.prepare',
+                eventTypes: <String>{WnEventTypes.captureCreated},
+              ),
+              Subscription(
+                id: 'sub.finalize',
+                agentId: 'agent.finalize',
+                eventTypes: <String>{WnEventTypes.captureCreated},
+                dependsOn: <String>{'sub.prepare'},
+              ),
+            ],
+            agentDefinitions: const <String, AgentDefinition>{
+              'agent.prepare': AgentDefinition(
+                id: 'agent.prepare',
+                outputEvents: <String>{WnEventTypes.insightCreated},
+              ),
+              'agent.finalize': AgentDefinition(
+                id: 'agent.finalize',
+                outputEvents: <String>{WnEventTypes.insightCreated},
+              ),
+            },
+            agents: <String, AgentHandler>{
+              'agent.prepare': const _ThrowingHandler(),
+              'agent.finalize': finalizeHandler,
+            },
+          ),
+        );
+
+    await kernel.publish(
+      const WnEventDraft(
+        type: WnEventTypes.captureCreated,
+        actor: WnActor.user,
+      ),
+    );
+
+    expect(finalizeHandler.calls, 0);
+    expect(kernel.tasks.map((task) => task.status), <RuntimeTaskStatus>[
+      RuntimeTaskStatus.failed,
+      RuntimeTaskStatus.blocked,
+    ]);
+    expect(
+      (await runtimeStore.readTasks()).map((task) => task.status),
+      <RuntimeTaskStatus>[RuntimeTaskStatus.failed, RuntimeTaskStatus.blocked],
+    );
+    expect(
+      (await traceSink.readAll()).map((trace) => trace.name),
+      contains('runtime.task.blocked'),
+    );
+  });
+
+  test(
+    'undeclared handler output fails terminally without auto retry or output append',
+    () async {
+      final store = InMemoryEventStore();
+      final traceSink = InMemoryTraceSink();
+      final kernel = _blankKernel(store: store, traceSink: traceSink)
+        ..registerPack(
+          const AgentPack(
+            id: 'pack.schema',
+            name: 'Schema pack',
+            version: '0.1.0',
+            subscriptions: <Subscription>[
+              Subscription(
+                id: 'sub.schema',
+                agentId: 'agent.schema',
+                eventTypes: <String>{WnEventTypes.captureCreated},
+              ),
+            ],
+            agentDefinitions: <String, AgentDefinition>{
+              'agent.schema': AgentDefinition(
+                id: 'agent.schema',
+                outputEvents: <String>{WnEventTypes.insightCreated},
+                retryPolicy: RetryPolicy(maxAttempts: 2),
+              ),
+            },
+            agents: <String, AgentHandler>{
+              'agent.schema': _UndeclaredOutputHandler(),
+            },
+          ),
+        );
+
+      await kernel.publish(
+        const WnEventDraft(
+          type: WnEventTypes.captureCreated,
+          actor: WnActor.user,
+        ),
+      );
+
+      expect(await store.readAll(), hasLength(1));
+      expect(kernel.tasks.single.status, RuntimeTaskStatus.failed);
+      expect(kernel.tasks.single.attempts, 1);
+      expect(kernel.runs, hasLength(1));
+      expect(kernel.runs.single.status, RuntimeRunStatus.failed);
+      expect(
+        (await traceSink.readAll()).map((trace) => trace.name),
+        contains('runtime.handler.output_rejected'),
+      );
+    },
+  );
+
+  test('appendAll is atomic when a batch contains a duplicate event', () async {
+    final store = InMemoryEventStore();
+    await store.append(_eventFixture(id: 'evt-1', type: 'wn.test.one'));
+
+    expect(
+      () => store.appendAll(<WnEvent>[
+        _eventFixture(id: 'evt-2', type: 'wn.test.two'),
+        _eventFixture(id: 'evt-1', type: 'wn.test.duplicate'),
+        _eventFixture(id: 'evt-3', type: 'wn.test.three'),
+      ]),
+      throwsStateError,
+    );
+
+    expect((await store.readAll()).map((event) => event.id), <String>['evt-1']);
+  });
+
+  test(
+    'pack registry validates manifest alignment and official guardrails',
+    () {
+      final registry = InMemoryPackRegistry()
+        ..register(
+          const AgentPack(
+            id: 'pack.default',
+            name: 'Default Capture Loop',
+            version: '0.1.0',
+            requiredPermissions: <String>{
+              ModelPermissions.complete,
+              'card.write',
+              'memory.propose',
+              'insight.write',
+            },
+            subscriptions: <Subscription>[
+              Subscription(
+                id: 'sub.capture_created',
+                agentId: 'agent.capture_loop',
+                eventTypes: <String>{WnEventTypes.captureCreated},
+              ),
+            ],
+            agentDefinitions: <String, AgentDefinition>{
+              'agent.capture_loop': AgentDefinition(
+                id: 'agent.capture_loop',
+                requiredPermissions: <String>{
+                  ModelPermissions.complete,
+                  'card.write',
+                  'memory.propose',
+                  'insight.write',
+                },
+                outputEvents: <String>{
+                  WnEventTypes.cardCreated,
+                  WnEventTypes.memoryProposed,
+                  WnEventTypes.insightCreated,
+                },
+                retryPolicy: RetryPolicy(maxAttempts: 2),
+                modelProfileRef: 'local_or_user_selected_model',
+              ),
+            },
+            agents: <String, AgentHandler>{
+              'agent.capture_loop': _DefaultPackHandler(),
+            },
+          ),
+        )
+        ..register(
+          const AgentPack(
+            id: 'pack.todo',
+            name: 'Todo Extraction Loop',
+            version: '0.1.0',
+            requiredPermissions: <String>{'todo.suggest'},
+            subscriptions: <Subscription>[
+              Subscription(
+                id: 'sub.todo_capture_created',
+                agentId: 'agent.todo_loop',
+                eventTypes: <String>{WnEventTypes.captureCreated},
+              ),
+            ],
+            agentDefinitions: <String, AgentDefinition>{
+              'agent.todo_loop': AgentDefinition(
+                id: 'agent.todo_loop',
+                requiredPermissions: <String>{'todo.suggest'},
+                outputEvents: <String>{WnEventTypes.todoSuggested},
+                retryPolicy: RetryPolicy(maxAttempts: 2),
+              ),
+            },
+            agents: <String, AgentHandler>{
+              'agent.todo_loop': _TodoPackHandler(),
+            },
+          ),
+        );
+
+      expect(
+        registry.checkManifestAlignment(_defaultManifest()).isAligned,
+        isTrue,
+      );
+
+      final badDefault = registry.checkManifestAlignment(
+        _defaultManifest(
+          outputEvents: const <String>[
+            WnEventTypes.memoryProposed,
+            WnEventTypes.todoSuggested,
+          ],
+        ),
+      );
+      expect(badDefault.isAligned, isFalse);
+      expect(
+        badDefault.issues.map((issue) => issue.path),
+        contains('pack.default.output_events'),
+      );
+
+      final badTodo = registry.checkManifestAlignment(
+        _todoManifest(
+          permissions: const <String>{'todo.suggest', 'memory.propose'},
+        ),
+      );
+      expect(badTodo.isAligned, isFalse);
+      expect(
+        badTodo.issues.map((issue) => issue.path),
+        contains('pack.todo.manifest_permissions'),
+      );
+    },
+  );
+
+  test(
+    'permission broker persists decisions and revoke gates queued/future tasks',
+    () async {
+      final permissionStore = InMemoryPermissionStore();
+      final permissions = InMemoryPermissionBroker(store: permissionStore);
+      permissions.grant('pack.permission', 'memory.propose');
+      expect(
+        (await permissions.readDecision(
+          'pack.permission',
+          'memory.propose',
+        ))?.state,
+        PermissionDecisionState.granted,
+      );
+      permissions.deny(
+        'pack.permission',
+        'memory.propose',
+        reason: 'test deny',
+      );
+      expect(
+        (await permissions.readDecision(
+          'pack.permission',
+          'memory.propose',
+        ))?.state,
+        PermissionDecisionState.denied,
+      );
+      permissions.grant('pack.permission', 'memory.propose');
+
+      final runtimeStore = InMemoryRuntimeStore();
+      final traceSink = InMemoryTraceSink();
+      final kernel =
+          _blankKernel(
+            store: InMemoryEventStore(),
+            traceSink: traceSink,
+            permissions: permissions,
+            runtimeStore: runtimeStore,
+            autoDrain: false,
+          )..registerPack(
+            const AgentPack(
+              id: 'pack.permission',
+              name: 'Permission pack',
+              version: '0.1.0',
+              requiredPermissions: <String>{'memory.propose'},
+              subscriptions: <Subscription>[
+                Subscription(
+                  id: 'sub.permission',
+                  agentId: 'agent.permission',
+                  eventTypes: <String>{WnEventTypes.captureCreated},
+                ),
+              ],
+              agentDefinitions: <String, AgentDefinition>{
+                'agent.permission': AgentDefinition(
+                  id: 'agent.permission',
+                  requiredPermissions: <String>{'memory.propose'},
+                  outputEvents: <String>{WnEventTypes.memoryProposed},
+                ),
+              },
+              agents: <String, AgentHandler>{
+                'agent.permission': _EmptyHandler(),
+              },
+            ),
+          );
+
+      await kernel.publish(
+        const WnEventDraft(
+          type: WnEventTypes.captureCreated,
+          actor: WnActor.user,
+        ),
+      );
+      expect(kernel.tasks.single.status, RuntimeTaskStatus.queued);
+
+      permissions.revoke('pack.permission', 'memory.propose');
+      expect(
+        (await permissions.readDecision(
+          'pack.permission',
+          'memory.propose',
+        ))?.state,
+        PermissionDecisionState.revoked,
+      );
+      final revokeResult = await kernel.handlePermissionRevoked(
+        'pack.permission',
+        'memory.propose',
+      );
+      expect(revokeResult.affectedTaskIds, <String>[kernel.tasks.first.id]);
+      expect(revokeResult.contextCacheInvalidationRequested, isTrue);
+      expect(kernel.tasks.first.status, RuntimeTaskStatus.denied);
+      expect(await kernel.drainQueue(), 0);
+
+      await kernel.publish(
+        const WnEventDraft(
+          type: WnEventTypes.captureCreated,
+          actor: WnActor.user,
+        ),
+      );
+      expect(kernel.tasks.last.status, RuntimeTaskStatus.blocked);
+      expect(
+        (await traceSink.readAll()).map((trace) => trace.name),
+        contains('runtime.context_cache.invalidate_requested'),
+      );
+
+      final restoredKernel =
+          _blankKernel(
+            store: InMemoryEventStore(),
+            traceSink: InMemoryTraceSink(),
+            permissions: permissions,
+            runtimeStore: runtimeStore,
+            autoDrain: false,
+          )..registerPack(
+            const AgentPack(
+              id: 'pack.permission',
+              name: 'Permission pack',
+              version: '0.1.0',
+              requiredPermissions: <String>{'memory.propose'},
+              subscriptions: <Subscription>[
+                Subscription(
+                  id: 'sub.permission',
+                  agentId: 'agent.permission',
+                  eventTypes: <String>{WnEventTypes.captureCreated},
+                ),
+              ],
+              agentDefinitions: <String, AgentDefinition>{
+                'agent.permission': AgentDefinition(
+                  id: 'agent.permission',
+                  requiredPermissions: <String>{'memory.propose'},
+                  outputEvents: <String>{WnEventTypes.memoryProposed},
+                ),
+              },
+              agents: <String, AgentHandler>{
+                'agent.permission': _EmptyHandler(),
+              },
+            ),
+          );
+      await restoredKernel.restoreRuntimeState();
+      await restoredKernel.publish(
+        const WnEventDraft(
+          type: WnEventTypes.captureCreated,
+          actor: WnActor.user,
+        ),
+      );
+      expect(restoredKernel.tasks.last.status, RuntimeTaskStatus.blocked);
+    },
+  );
+
+  test('trace details redact secrets and omit raw context payloads', () async {
+    final traceSink = InMemoryTraceSink();
+    final kernel =
+        _blankKernel(store: InMemoryEventStore(), traceSink: traceSink)
+          ..registerPack(
+            const AgentPack(
+              id: 'pack.redaction',
+              name: 'Redaction pack',
+              version: '0.1.0',
+              subscriptions: <Subscription>[
+                Subscription(
+                  id: 'sub.redaction',
+                  agentId: 'agent.redaction',
+                  eventTypes: <String>{WnEventTypes.captureCreated},
+                ),
+              ],
+              agents: <String, AgentHandler>{
+                'agent.redaction': _SecretThrowingHandler(),
+              },
+            ),
+          );
+
+    await kernel.publish(
+      const WnEventDraft(
+        type: WnEventTypes.captureCreated,
+        actor: WnActor.user,
+      ),
+    );
+
+    final failedTrace = (await traceSink.readAll()).singleWhere(
+      (trace) => trace.name == 'runtime.run.failed',
+    );
+    expect(failedTrace.details.toString(), isNot(contains('super-secret')));
+    expect(failedTrace.details['error'], contains('<redacted>'));
   });
 
   test('script runtime is denied without adding script execution', () async {
@@ -1040,6 +1692,24 @@ RuntimeKernel _kernel({
           eventTypes: <String>{WnEventTypes.captureCreated},
         ),
       ],
+      agentDefinitions: const <String, AgentDefinition>{
+        'agent.capture': AgentDefinition(
+          id: 'agent.capture',
+          requiredPermissions: <String>{
+            ModelPermissions.complete,
+            'memory.propose',
+            'card.write',
+            'insight.write',
+            'todo.suggest',
+          },
+          outputEvents: <String>{
+            WnEventTypes.memoryProposed,
+            WnEventTypes.cardCreated,
+            WnEventTypes.insightCreated,
+            WnEventTypes.todoSuggested,
+          },
+        ),
+      },
       agents: <String, AgentHandler>{'agent.capture': handler},
     ),
   );
@@ -1051,6 +1721,9 @@ RuntimeKernel _blankKernel({
   required TraceSink traceSink,
   ModelClient? model,
   PermissionBroker? permissions,
+  RuntimeStore? runtimeStore,
+  WnIdGenerator? idGenerator,
+  WnClock? clock,
   bool autoDrain = true,
 }) {
   return RuntimeKernel(
@@ -1058,10 +1731,11 @@ RuntimeKernel _blankKernel({
     traceSink: traceSink,
     permissionBroker: permissions ?? InMemoryPermissionBroker(),
     toolRegistry: InMemoryToolRegistry(),
-    idGenerator: SequenceWnIdGenerator(seed: 'test'),
-    clock: TickingWnClock(DateTime.utc(2026, 6, 23, 1)),
+    idGenerator: idGenerator ?? SequenceWnIdGenerator(seed: 'test'),
+    clock: clock ?? TickingWnClock(DateTime.utc(2026, 6, 23, 1)),
     model: model ?? FakeModel(),
     deviceId: 'device-local',
+    runtimeStore: runtimeStore,
     autoDrain: autoDrain,
   );
 }
@@ -1347,4 +2021,170 @@ final class _EmptyHandler implements AgentHandler {
   Future<AgentHandlerResult> handle(AgentContext context, WnEvent event) async {
     return const AgentHandlerResult.empty();
   }
+}
+
+final class _UndeclaredOutputHandler implements AgentHandler {
+  const _UndeclaredOutputHandler();
+
+  @override
+  Future<AgentHandlerResult> handle(AgentContext context, WnEvent event) async {
+    return AgentHandlerResult(
+      events: <WnEventDraft>[context.emit(type: WnEventTypes.todoSuggested)],
+    );
+  }
+}
+
+final class _SecretThrowingHandler implements AgentHandler {
+  const _SecretThrowingHandler();
+
+  @override
+  Future<AgentHandlerResult> handle(AgentContext context, WnEvent event) {
+    throw StateError('api_key=super-secret raw_db=dump');
+  }
+}
+
+RuntimeTask _taskFixture({
+  required String id,
+  required RuntimeTaskStatus status,
+  String packId = 'pack.restore',
+  String packVersion = '1.0.0',
+  String agentId = 'agent.restore',
+  String subscriptionId = 'sub.restore',
+  String triggerEventId = 'evt-restore',
+}) {
+  final now = DateTime.utc(2026, 6, 23, 1);
+  return RuntimeTask(
+    id: id,
+    identityKey:
+        '$triggerEventId::$packId::$packVersion::$subscriptionId::$agentId',
+    packId: packId,
+    packVersion: packVersion,
+    agentId: agentId,
+    handlerRole: agentId,
+    subscriptionId: subscriptionId,
+    triggerEventId: triggerEventId,
+    status: status,
+    createdAt: now,
+    updatedAt: now,
+  );
+}
+
+RuntimeRun _runFixture({
+  required String id,
+  required String taskId,
+  required RuntimeRunStatus status,
+  DateTime? startedAt,
+  DateTime? leaseExpiresAt,
+}) {
+  final started = startedAt ?? DateTime.utc(2026, 6, 23, 1);
+  return RuntimeRun(
+    id: id,
+    taskId: taskId,
+    packId: 'pack.restore',
+    packVersion: '1.0.0',
+    agentId: 'agent.restore',
+    status: status,
+    startedAt: started,
+    attempt: 1,
+    leaseExpiresAt: leaseExpiresAt,
+  );
+}
+
+WnEvent _eventFixture({required String id, required String type}) {
+  return WnEvent(
+    id: id,
+    type: type,
+    schemaVersion: 1,
+    actor: WnActor.system,
+    payload: const <String, Object?>{},
+    privacy: WnPrivacy.localOnly,
+    deviceId: 'device-local',
+    createdAt: DateTime.utc(2026, 6, 23, 1),
+  );
+}
+
+AgentPackManifestSnapshot _defaultManifest({
+  Iterable<String> outputEvents = const <String>[
+    WnEventTypes.cardCreated,
+    WnEventTypes.memoryProposed,
+    WnEventTypes.insightCreated,
+  ],
+}) {
+  return AgentPackManifestSnapshot.fromJson(<String, Object?>{
+    'id': 'pack.default',
+    'name': 'Default Capture Loop',
+    'version': '0.1.0',
+    'schema_version': 1,
+    'publisher': 'widenote',
+    'edition': 'official',
+    'permissions': <Object?>[
+      ModelPermissions.complete,
+      'card.write',
+      'memory.propose',
+      'insight.write',
+    ],
+    'subscriptions': <Object?>[
+      <String, Object?>{
+        'id': 'sub.capture_created',
+        'event_types': <Object?>[WnEventTypes.captureCreated],
+        'agent_id': 'agent.capture_loop',
+      },
+    ],
+    'agents': <Object?>[
+      <String, Object?>{
+        'id': 'agent.capture_loop',
+        'runtime': 'native',
+        'model_profile_ref': 'local_or_user_selected_model',
+        'permissions': <Object?>[
+          ModelPermissions.complete,
+          'card.write',
+          'memory.propose',
+          'insight.write',
+        ],
+        'tools': <Object?>[],
+        'output_events': outputEvents.toList(growable: false),
+        'retry_policy': <String, Object?>{'max_attempts': 2},
+      },
+    ],
+    'model_profiles': <Object?>[
+      <String, Object?>{
+        'id': 'local_or_user_selected_model',
+        'purpose': 'Test profile.',
+      },
+    ],
+  });
+}
+
+AgentPackManifestSnapshot _todoManifest({
+  Iterable<String> permissions = const <String>{'todo.suggest'},
+  Iterable<String> outputEvents = const <String>{WnEventTypes.todoSuggested},
+}) {
+  return AgentPackManifestSnapshot.fromJson(<String, Object?>{
+    'id': 'pack.todo',
+    'name': 'Todo Extraction Loop',
+    'version': '0.1.0',
+    'schema_version': 1,
+    'publisher': 'widenote',
+    'edition': 'official',
+    'permissions': permissions.toList(growable: false),
+    'subscriptions': <Object?>[
+      <String, Object?>{
+        'id': 'sub.todo_capture_created',
+        'event_types': <Object?>[WnEventTypes.captureCreated],
+        'agent_id': 'agent.todo_loop',
+      },
+    ],
+    'agents': <Object?>[
+      <String, Object?>{
+        'id': 'agent.todo_loop',
+        'runtime': 'native',
+        'model_profile_ref': null,
+        'permissions': permissions.toList(growable: false),
+        'tools': <Object?>[],
+        'output_events': outputEvents.toList(growable: false),
+        'retry_policy': <String, Object?>{'max_attempts': 2},
+      },
+    ],
+    'model_profiles': <Object?>[],
+  });
 }

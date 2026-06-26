@@ -1,6 +1,6 @@
 # RFC: Mobile Entry Closure
 
-Status: Draft
+Status: Implemented phase-one slice; current status superseded by W7 integration state
 
 Date: 2026-06-25
 
@@ -34,7 +34,7 @@ reference under ADR-0006.
 | Memory | A dedicated Memory page supports list, edit, tombstone delete, restore visibility, and source metadata. |
 | Packs | Built-in official packs have an inspectable library page based on WideNote-owned manifest concepts. |
 | Permissions | Pack permission requests have a review page that distinguishes default granted, explicit-review, and deferred high-risk capabilities. |
-| Backup | Backup keeps JSON/Markdown export, adds local file save/import paths, and continues warning that backups can contain provider secrets. |
+| Backup | Backup keeps safe JSON/Markdown export and local import paths. Safe backup does not contain provider secrets; encrypted full backup stays unavailable until an encryption boundary exists. |
 | Settings/Packs tab | The tab becomes a real control hub for Memory, packs, permissions, providers, backup, and traces. |
 
 ## Deferred

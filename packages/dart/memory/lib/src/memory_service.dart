@@ -84,7 +84,7 @@ final class MemoryService {
     final body = _reviewBody(editedBody, proposal.body);
     final now = _clock();
     final item = MemoryItem(
-      id: _idFactory(),
+      id: await _nextAvailableItemId(),
       key: proposal.key,
       body: body,
       evidence: proposal.evidence,
@@ -202,7 +202,7 @@ final class MemoryService {
   ) async {
     final now = _clock();
     final item = MemoryItem(
-      id: _idFactory(),
+      id: await _nextAvailableItemId(),
       key: proposal.key,
       body: proposal.body,
       evidence: proposal.evidence,
@@ -262,6 +262,16 @@ final class MemoryService {
       );
     }
     return proposal;
+  }
+
+  Future<String> _nextAvailableItemId() async {
+    for (var attempt = 0; attempt < 1000; attempt += 1) {
+      final id = _idFactory();
+      if (await _repository.findItemById(id) == null) {
+        return id;
+      }
+    }
+    throw StateError('Memory id factory did not produce an unused id.');
   }
 }
 

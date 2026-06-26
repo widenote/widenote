@@ -6,13 +6,16 @@ final class LocalMarkdownExportService {
 
   String exportBackup(LocalDataBackup backup) {
     final buffer = StringBuffer()
-      ..writeln('# WideNote Local Export')
+      ..writeln('# WideNote Owner Export')
       ..writeln()
       ..writeln('- format: ${backup.manifest.format}')
       ..writeln('- format_version: ${backup.manifest.formatVersion}')
+      ..writeln('- backup_mode: ${backup.manifest.backupMode.wireName}')
+      ..writeln('- includes_secrets: ${backup.manifest.includesSecrets}')
       ..writeln('- local_db_schema: ${backup.manifest.localDbSchemaVersion}')
       ..writeln('- exported_at: ${backup.manifest.createdAt.toIso8601String()}')
       ..writeln();
+    _writeRestoreBoundary(buffer, backup);
     _writeCounts(buffer, backup);
     _writeCaptures(buffer, backup);
     _writeMemory(buffer, backup);
@@ -21,8 +24,26 @@ final class LocalMarkdownExportService {
     _writeTodos(buffer, backup);
     _writeConversations(buffer, backup);
     _writeProviders(buffer, backup);
+    _writeRuntimeState(buffer, backup);
     _writeTraces(buffer, backup);
     return buffer.toString();
+  }
+
+  void _writeRestoreBoundary(StringBuffer buffer, LocalDataBackup backup) {
+    buffer
+      ..writeln('## Export Boundary')
+      ..writeln()
+      ..writeln('- owner_export: readable, secret-free projection')
+      ..writeln(
+        '- restore_source: use the paired JSON backup, not this Markdown',
+      )
+      ..writeln('- provider_keys_in_markdown: never')
+      ..writeln('- context_packet_cache_in_markdown: excluded, rebuildable')
+      ..writeln(
+        '- provider_keys_needed_after_safe_restore: '
+        '${backup.providerConfigsNeedingCredentialReentry.length}',
+      )
+      ..writeln();
   }
 
   void _writeCounts(StringBuffer buffer, LocalDataBackup backup) {
@@ -30,6 +51,9 @@ final class LocalMarkdownExportService {
       ..writeln('## Manifest Counts')
       ..writeln();
     for (final entry in backup.manifest.recordCounts.entries) {
+      if (entry.key == 'context_packet_cache') {
+        continue;
+      }
       buffer.writeln('- ${entry.key}: ${entry.value}');
     }
     buffer.writeln();
@@ -239,6 +263,67 @@ final class LocalMarkdownExportService {
         ],
         body: '',
       );
+    }
+  }
+
+  void _writeRuntimeState(StringBuffer buffer, LocalDataBackup backup) {
+    buffer
+      ..writeln('## Runtime State')
+      ..writeln();
+    if (backup.packInstallations.isEmpty &&
+        backup.permissionGrants.isEmpty &&
+        backup.runtimeTasks.isEmpty &&
+        backup.runtimeRuns.isEmpty) {
+      buffer
+        ..writeln('_No runtime state exported._')
+        ..writeln();
+      return;
+    }
+    if (backup.packInstallations.isNotEmpty) {
+      buffer
+        ..writeln('### Pack Installations')
+        ..writeln();
+      for (final pack in backup.packInstallations) {
+        buffer
+          ..writeln('- ${_line(pack.packId)}: ${_line(pack.status)}')
+          ..writeln(
+            '  - version: ${_line(pack.version)}, runtime: ${_line(pack.runtimeStatus)}',
+          );
+      }
+      buffer.writeln();
+    }
+    if (backup.permissionGrants.isNotEmpty) {
+      buffer
+        ..writeln('### Permissions')
+        ..writeln();
+      for (final grant in backup.permissionGrants) {
+        buffer.writeln(
+          '- ${_line(grant.packId)} ${_line(grant.permissionId)}: ${_line(grant.status)}',
+        );
+      }
+      buffer.writeln();
+    }
+    if (backup.runtimeTasks.isNotEmpty) {
+      buffer
+        ..writeln('### Tasks')
+        ..writeln();
+      for (final task in backup.runtimeTasks) {
+        buffer.writeln(
+          '- ${_line(task.id)}: ${_line(task.status)} ${_line(task.packId)} ${_line(task.subscriptionId)}',
+        );
+      }
+      buffer.writeln();
+    }
+    if (backup.runtimeRuns.isNotEmpty) {
+      buffer
+        ..writeln('### Runs')
+        ..writeln();
+      for (final run in backup.runtimeRuns) {
+        buffer.writeln(
+          '- ${_line(run.id)}: ${_line(run.status)} task=${_line(run.taskId)}',
+        );
+      }
+      buffer.writeln();
     }
   }
 

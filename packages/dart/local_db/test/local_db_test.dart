@@ -600,6 +600,449 @@ void main() {
       expect(database.todos.readAll(status: 'completed'), hasLength(1));
     });
 
+    test(
+      'stores durable runtime tasks, runs, packs, permissions, and cache',
+      () {
+        final createdAt = DateTime.utc(2026, 6, 26, 8);
+        final updatedAt = DateTime.utc(2026, 6, 26, 8, 5);
+        database.eventLog.append(
+          EventLogEntry(
+            id: 'event-runtime-1',
+            type: 'wn.capture.created',
+            actor: 'user',
+            createdAt: createdAt,
+          ),
+        );
+        database.packInstallations.insert(
+          PackInstallationRecord(
+            packId: 'pack.default',
+            name: 'Default Capture Loop',
+            version: '0.1.0',
+            publisher: 'widenote',
+            edition: 'official',
+            status: 'enabled',
+            runtimeStatus: 'idle',
+            requestedPermissions: const <Object?>[
+              'model.complete',
+              'memory.propose',
+            ],
+            enabledSubscriptionIds: const <Object?>['sub.capture_created'],
+            manifest: const <String, Object?>{
+              'id': 'pack.default',
+              'version': '0.1.0',
+            },
+            installedAt: createdAt,
+            updatedAt: createdAt,
+          ),
+        );
+        database.permissionGrants.insert(
+          PermissionGrantRecord(
+            id: 'grant-model',
+            packId: 'pack.default',
+            permissionId: 'model.complete',
+            grantedAt: createdAt,
+            createdAt: createdAt,
+            updatedAt: createdAt,
+          ),
+        );
+        final identity = runtimeTaskIdentityKey(
+          triggerEventId: 'event-runtime-1',
+          subscriptionId: 'sub.capture_created',
+          packId: 'pack.default',
+          packVersion: '0.1.0',
+          handlerId: 'agent.capture_loop',
+        );
+        database.runtimeTasks.insert(
+          RuntimeTaskRecord(
+            id: 'task-runtime-1',
+            packId: 'pack.default',
+            packVersion: '0.1.0',
+            agentId: 'agent.capture_loop',
+            handlerId: 'agent.capture_loop',
+            subscriptionId: 'sub.capture_created',
+            triggerEventId: 'event-runtime-1',
+            maxAttempts: 2,
+            payload: const <String, Object?>{
+              'required_permissions': <String>['model.complete'],
+            },
+            createdAt: createdAt,
+            updatedAt: createdAt,
+          ),
+        );
+        database.runtimeRuns.insert(
+          RuntimeRunRecord(
+            id: 'run-runtime-1',
+            taskId: 'task-runtime-1',
+            packId: 'pack.default',
+            packVersion: '0.1.0',
+            agentId: 'agent.capture_loop',
+            handlerId: 'agent.capture_loop',
+            status: 'succeeded',
+            attempt: 1,
+            outputEventIds: const <Object?>['event-output-1'],
+            startedAt: createdAt,
+            completedAt: updatedAt,
+          ),
+        );
+        database.contextPacketCaches.insert(
+          ContextPacketCacheRecord(
+            id: 'cache-runtime-1',
+            surface: 'pack_run',
+            requestRef: const <String, Object?>{
+              'kind': 'event',
+              'id': 'event-runtime-1',
+            },
+            subjectRef: const <String, Object?>{
+              'kind': 'capture',
+              'id': 'capture-runtime-1',
+            },
+            sourceRefs: const <Object?>[
+              <String, Object?>{'kind': 'event', 'id': 'event-runtime-1'},
+            ],
+            sourceVersions: const <Object?>[
+              <String, Object?>{
+                'kind': 'event',
+                'id': 'event-runtime-1',
+                'hash': 'hash-v1',
+              },
+            ],
+            permissionScope: 'pack.default:model.complete,memory.propose',
+            disclosureLevel: 'memory_and_derived',
+            generatorId: 'context.packet.builder',
+            generatorVersion: '1',
+            promptVersion: 'prompt-v1',
+            packId: 'pack.default',
+            packVersion: '0.1.0',
+            agentId: 'agent.capture_loop',
+            localDate: '2026-06-26',
+            privacyProfile: 'owner_export_safe',
+            invalidationKeys: const <Object?>[
+              'source:event-runtime-1:hash-v1',
+              'memory:memory-1:revision:2',
+              'memory:memory-1:tombstone:false',
+              'memory:memory-1:sensitivity:low',
+              'permission:pack.default:model.complete',
+              'generator:context.packet.builder:1',
+              'pack:pack.default:0.1.0',
+              'prompt:prompt-v1',
+              'local_date:2026-06-26',
+              'privacy:owner_export_safe',
+            ],
+            cacheKey: 'pack.default/event-runtime-1',
+            packet: const <String, Object?>{'synthetic_context': 'cache body'},
+            createdAt: createdAt,
+            updatedAt: createdAt,
+          ),
+        );
+
+        final task = database.runtimeTasks.readById('task-runtime-1')!;
+        expect(task.effectiveIdentityKey, identity);
+        expect(task.status, 'queued');
+        expect(database.runtimeTasks.readByIdentityKey(identity)!.id, task.id);
+        expect(
+          database.runtimeRuns
+              .readByTask('task-runtime-1')
+              .single
+              .outputEventIds,
+          ['event-output-1'],
+        );
+        expect(
+          database.packInstallations.readById('pack.default')!.status,
+          'enabled',
+        );
+        expect(
+          database.permissionGrants.isGranted('pack.default', 'model.complete'),
+          isTrue,
+        );
+        expect(
+          database.contextPacketCaches
+              .readReusableByCacheKey(
+                'pack.default/event-runtime-1',
+                now: updatedAt,
+              )!
+              .packet['synthetic_context'],
+          'cache body',
+        );
+
+        final revoked = database.permissionGrants.revoke(
+          'pack.default',
+          'model.complete',
+          reason: 'user_revoked',
+          revokedAt: updatedAt,
+        );
+        final deniedCount = database.runtimeTasks.denyActiveForPack(
+          'pack.default',
+          reason: 'permission_revoked:model.complete',
+          updatedAt: updatedAt,
+        );
+        final invalidatedCount = database.contextPacketCaches.invalidateByKeys(
+          const <String>['permission:pack.default:model.complete'],
+          invalidatedAt: updatedAt,
+          reason: 'permission_revoked',
+        );
+
+        expect(revoked.status, 'revoked');
+        expect(
+          database.permissionGrants.isGranted('pack.default', 'model.complete'),
+          isFalse,
+        );
+        expect(deniedCount, 1);
+        expect(
+          database.runtimeTasks.readById('task-runtime-1')!.status,
+          'denied',
+        );
+        expect(
+          database.runtimeTasks.readById('task-runtime-1')!.error,
+          'permission_revoked:model.complete',
+        );
+        expect(invalidatedCount, 1);
+        expect(
+          database.contextPacketCaches.readReusableByCacheKey(
+            'pack.default/event-runtime-1',
+            now: updatedAt,
+          ),
+          isNull,
+        );
+      },
+    );
+
+    test('does not reuse expired or invalidated context packet caches', () {
+      final createdAt = DateTime.utc(2026, 6, 26, 8, 30);
+      database.packInstallations.insert(
+        PackInstallationRecord(
+          packId: 'pack.cache',
+          name: 'Cache Pack',
+          version: '0.1.0',
+          publisher: 'widenote',
+          edition: 'official',
+          installedAt: createdAt,
+          updatedAt: createdAt,
+        ),
+      );
+      for (final id in <String>['expired', 'invalidated']) {
+        database.contextPacketCaches.insert(
+          ContextPacketCacheRecord(
+            id: 'cache-$id',
+            surface: 'chat',
+            sourceRefs: const <Object?>[
+              <String, Object?>{'kind': 'capture', 'id': 'capture-cache'},
+            ],
+            sourceVersions: const <Object?>[
+              <String, Object?>{'kind': 'capture', 'id': 'capture-cache'},
+            ],
+            permissionScope: 'pack.cache:model.complete',
+            disclosureLevel: 'memory',
+            generatorId: 'context.packet.builder',
+            generatorVersion: '1',
+            promptVersion: 'prompt-v1',
+            packId: 'pack.cache',
+            packVersion: '0.1.0',
+            invalidationKeys: <Object?>['source:capture-cache:$id'],
+            cacheKey: 'cache-key-$id',
+            packet: <String, Object?>{'text': id},
+            expiresAt: id == 'expired'
+                ? createdAt.subtract(const Duration(minutes: 1))
+                : null,
+            invalidatedAt: id == 'invalidated' ? createdAt : null,
+            status: id == 'invalidated' ? 'invalidated' : 'active',
+            createdAt: createdAt,
+            updatedAt: createdAt,
+          ),
+        );
+      }
+
+      expect(
+        database.contextPacketCaches.readReusableByCacheKey(
+          'cache-key-expired',
+          now: createdAt,
+        ),
+        isNull,
+      );
+      expect(
+        database.contextPacketCaches.readReusableByCacheKey(
+          'cache-key-invalidated',
+          now: createdAt,
+        ),
+        isNull,
+      );
+    });
+
+    test('writes capture, event, and initial tasks in one transaction', () {
+      final createdAt = DateTime.utc(2026, 6, 26, 9);
+      database.insertCaptureEventAndTasks(
+        capture: CaptureRecord(
+          id: 'capture-transaction',
+          sourceType: 'manual',
+          payload: const <String, Object?>{'text': 'transactional enqueue'},
+          createdAt: createdAt,
+          updatedAt: createdAt,
+        ),
+        event: EventLogEntry(
+          id: 'event-transaction',
+          type: 'wn.capture.created',
+          actor: 'user',
+          sourceCaptureId: 'capture-transaction',
+          createdAt: createdAt,
+        ),
+        tasks: <RuntimeTaskRecord>[
+          RuntimeTaskRecord(
+            id: 'task-transaction',
+            packId: 'pack.default',
+            packVersion: '0.1.0',
+            agentId: 'agent.capture_loop',
+            handlerId: 'agent.capture_loop',
+            subscriptionId: 'sub.capture_created',
+            triggerEventId: 'event-transaction',
+            createdAt: createdAt,
+            updatedAt: createdAt,
+          ),
+        ],
+      );
+
+      expect(database.captures.readById('capture-transaction'), isNotNull);
+      expect(database.eventLog.readById('event-transaction'), isNotNull);
+      expect(database.runtimeTasks.readById('task-transaction'), isNotNull);
+
+      expect(
+        () => database.insertCaptureEventAndTasks(
+          capture: CaptureRecord(
+            id: 'capture-rollback',
+            sourceType: 'manual',
+            createdAt: createdAt,
+            updatedAt: createdAt,
+          ),
+          event: EventLogEntry(
+            id: 'event-rollback',
+            type: 'wn.capture.created',
+            actor: 'user',
+            createdAt: createdAt,
+          ),
+          tasks: <RuntimeTaskRecord>[
+            RuntimeTaskRecord(
+              id: 'task-rollback',
+              packId: 'pack.default',
+              packVersion: '0.1.0',
+              agentId: 'agent.capture_loop',
+              handlerId: 'agent.capture_loop',
+              subscriptionId: 'sub.capture_created',
+              triggerEventId: 'event-rollback',
+              createdAt: createdAt,
+              updatedAt: createdAt,
+            ),
+            RuntimeTaskRecord(
+              id: 'task-rollback',
+              packId: 'pack.todo',
+              packVersion: '0.1.0',
+              agentId: 'agent.todo_loop',
+              handlerId: 'agent.todo_loop',
+              subscriptionId: 'sub.todo_capture_created',
+              triggerEventId: 'event-rollback',
+              createdAt: createdAt,
+              updatedAt: createdAt,
+            ),
+          ],
+        ),
+        throwsA(isA<SqliteException>()),
+      );
+      expect(database.captures.readById('capture-rollback'), isNull);
+      expect(database.eventLog.readById('event-rollback'), isNull);
+      expect(database.runtimeTasks.readById('task-rollback'), isNull);
+    });
+
+    test('enforces runtime foreign key actions', () {
+      final createdAt = DateTime.utc(2026, 6, 26, 9, 30);
+      database.eventLog.append(
+        EventLogEntry(
+          id: 'event-fk',
+          type: 'wn.capture.created',
+          actor: 'user',
+          createdAt: createdAt,
+        ),
+      );
+      database.packInstallations.insert(
+        PackInstallationRecord(
+          packId: 'pack.fk',
+          name: 'Foreign Key Pack',
+          version: '0.1.0',
+          publisher: 'widenote',
+          edition: 'official',
+          installedAt: createdAt,
+          updatedAt: createdAt,
+        ),
+      );
+      database.permissionGrants.insert(
+        PermissionGrantRecord(
+          id: 'grant-fk',
+          packId: 'pack.fk',
+          permissionId: 'model.complete',
+          createdAt: createdAt,
+          updatedAt: createdAt,
+        ),
+      );
+      database.runtimeTasks.insert(
+        RuntimeTaskRecord(
+          id: 'task-fk',
+          packId: 'pack.fk',
+          packVersion: '0.1.0',
+          agentId: 'agent.fk',
+          handlerId: 'agent.fk',
+          subscriptionId: 'sub.fk',
+          triggerEventId: 'event-fk',
+          createdAt: createdAt,
+          updatedAt: createdAt,
+        ),
+      );
+      database.runtimeRuns.insert(
+        RuntimeRunRecord(
+          id: 'run-fk',
+          taskId: 'task-fk',
+          packId: 'pack.fk',
+          packVersion: '0.1.0',
+          agentId: 'agent.fk',
+          handlerId: 'agent.fk',
+          status: 'running',
+          attempt: 1,
+          startedAt: createdAt,
+        ),
+      );
+      database.contextPacketCaches.insert(
+        ContextPacketCacheRecord(
+          id: 'cache-fk',
+          surface: 'pack_run',
+          sourceRefs: const <Object?>[
+            <String, Object?>{'kind': 'event', 'id': 'event-fk'},
+          ],
+          sourceVersions: const <Object?>[
+            <String, Object?>{'kind': 'event', 'id': 'event-fk'},
+          ],
+          permissionScope: 'pack.fk:model.complete',
+          disclosureLevel: 'memory',
+          generatorId: 'context.packet.builder',
+          generatorVersion: '1',
+          promptVersion: 'prompt-v1',
+          packId: 'pack.fk',
+          packVersion: '0.1.0',
+          invalidationKeys: const <Object?>['source:event-fk'],
+          cacheKey: 'cache-fk',
+          packet: const <String, Object?>{'text': 'fk'},
+          createdAt: createdAt,
+          updatedAt: createdAt,
+        ),
+      );
+
+      database.rawDatabase.execute(
+        "DELETE FROM event_log WHERE id = 'event-fk';",
+      );
+      expect(database.runtimeTasks.readById('task-fk'), isNull);
+      expect(database.runtimeRuns.readById('run-fk'), isNull);
+
+      database.rawDatabase.execute(
+        "DELETE FROM pack_installations WHERE pack_id = 'pack.fk';",
+      );
+      expect(database.permissionGrants.readById('grant-fk'), isNull);
+      expect(database.contextPacketCaches.readById('cache-fk')!.packId, isNull);
+    });
+
     test('records and reads trace events', () {
       final firstCreatedAt = DateTime.utc(2026, 6, 23, 13);
       final secondCreatedAt = DateTime.utc(2026, 6, 23, 13, 1);
@@ -758,6 +1201,78 @@ void main() {
             updatedAt: timestamp,
           ),
         );
+        database.packInstallations.insert(
+          PackInstallationRecord(
+            packId: 'pack.$index',
+            name: 'Pack $index',
+            version: '0.1.$index',
+            publisher: 'widenote',
+            edition: 'official',
+            installedAt: timestamp,
+            updatedAt: timestamp,
+          ),
+        );
+        database.permissionGrants.insert(
+          PermissionGrantRecord(
+            id: 'grant-$index',
+            packId: 'pack.$index',
+            permissionId: 'model.complete',
+            grantedAt: timestamp,
+            createdAt: timestamp,
+            updatedAt: timestamp,
+          ),
+        );
+        database.runtimeTasks.insert(
+          RuntimeTaskRecord(
+            id: 'task-$index',
+            packId: 'pack.$index',
+            packVersion: '0.1.$index',
+            agentId: 'agent.$index',
+            handlerId: 'agent.$index',
+            subscriptionId: 'sub.$index',
+            triggerEventId: 'event-$index',
+            createdAt: timestamp,
+            updatedAt: timestamp,
+          ),
+        );
+        database.runtimeRuns.insert(
+          RuntimeRunRecord(
+            id: 'run-$index',
+            taskId: 'task-$index',
+            packId: 'pack.$index',
+            packVersion: '0.1.$index',
+            agentId: 'agent.$index',
+            handlerId: 'agent.$index',
+            status: 'succeeded',
+            attempt: 1,
+            startedAt: timestamp,
+            completedAt: timestamp,
+          ),
+        );
+        database.contextPacketCaches.insert(
+          ContextPacketCacheRecord(
+            id: 'cache-$index',
+            surface: 'chat',
+            sourceRefs: <Object?>[
+              <String, Object?>{'kind': 'event', 'id': 'event-$index'},
+            ],
+            sourceVersions: <Object?>[
+              <String, Object?>{'kind': 'event', 'id': 'event-$index'},
+            ],
+            permissionScope: 'pack.$index:model.complete',
+            disclosureLevel: 'memory',
+            generatorId: 'context.packet.builder',
+            generatorVersion: '1',
+            promptVersion: 'prompt-v1',
+            packId: 'pack.$index',
+            packVersion: '0.1.$index',
+            invalidationKeys: <Object?>['source:event-$index'],
+            cacheKey: 'chat/event-$index',
+            packet: <String, Object?>{'text': 'cache $index'},
+            createdAt: timestamp,
+            updatedAt: timestamp,
+          ),
+        );
         database.traceEvents.insert(
           TraceEventRecord(
             id: 'trace-$index',
@@ -807,6 +1322,26 @@ void main() {
         'provider-1',
       );
       expect(database.todos.readAll(limit: 1, offset: 1).single.id, 'todo-1');
+      expect(
+        database.packInstallations.readAll(limit: 1, offset: 1).single.packId,
+        'pack.1',
+      );
+      expect(
+        database.permissionGrants.readAll(limit: 1, offset: 1).single.id,
+        'grant-1',
+      );
+      expect(
+        database.runtimeTasks.readAll(limit: 1, offset: 1).single.id,
+        'task-1',
+      );
+      expect(
+        database.runtimeRuns.readAll(limit: 1, offset: 1).single.id,
+        'run-1',
+      );
+      expect(
+        database.contextPacketCaches.readAll(limit: 1, offset: 1).single.id,
+        'cache-1',
+      );
       expect(
         database.traceEvents.readAll(limit: 1, offset: 1).single.id,
         'trace-1',
@@ -888,11 +1423,73 @@ INSERT INTO trace_events (
       expect(migrated.attachments.readAll(), isEmpty);
       expect(migrated.chatSessions.readAll(), isEmpty);
       expect(migrated.modelProviderConfigs.readAll(), isEmpty);
+      expect(migrated.runtimeTasks.readAll(), isEmpty);
+      expect(migrated.runtimeRuns.readAll(), isEmpty);
+      expect(migrated.packInstallations.readAll(), isEmpty);
+      expect(migrated.permissionGrants.readAll(), isEmpty);
+      expect(migrated.contextPacketCaches.readAll(), isEmpty);
       expect(
         rawDatabase
             .select('PRAGMA table_info(model_provider_configs);')
             .map((row) => row['name']),
         contains('api_key'),
+      );
+      expect(
+        rawDatabase
+            .select("SELECT name FROM sqlite_master WHERE type = 'index';")
+            .map((row) => row['name']),
+        containsAll(<String>[
+          'runtime_tasks_identity_key_idx',
+          'runtime_tasks_pack_status_idx',
+          'runtime_runs_task_idx',
+          'pack_installations_status_idx',
+          'permission_grants_pack_status_idx',
+          'context_packet_cache_key_idx',
+        ]),
+      );
+      expect(
+        rawDatabase
+            .select('PRAGMA foreign_key_list(runtime_tasks);')
+            .map((row) => row['table']),
+        contains('event_log'),
+      );
+      expect(
+        rawDatabase
+            .select('PRAGMA foreign_key_list(runtime_runs);')
+            .map((row) => row['table']),
+        contains('runtime_tasks'),
+      );
+      expect(
+        rawDatabase
+            .select('PRAGMA foreign_key_list(permission_grants);')
+            .map((row) => row['table']),
+        contains('pack_installations'),
+      );
+      LocalDbMigrator.bootstrap(rawDatabase);
+      expect(migrated.schemaVersion, LocalDbSchema.currentVersion);
+    });
+
+    test('rolls back a failed v8 migration without bumping user_version', () {
+      final rawDatabase = sqlite3.openInMemory();
+      addTearDown(rawDatabase.dispose);
+      LocalDbMigrator.bootstrap(rawDatabase, targetVersion: 7);
+      rawDatabase.execute('''
+CREATE TABLE runtime_tasks (
+  id TEXT PRIMARY KEY
+);
+''');
+
+      expect(
+        () => LocalDbMigrator.bootstrap(rawDatabase),
+        throwsA(isA<SqliteException>()),
+      );
+
+      expect(LocalDbMigrator.readSchemaVersion(rawDatabase), 7);
+      expect(
+        rawDatabase
+            .select("SELECT name FROM sqlite_master WHERE type = 'table';")
+            .map((row) => row['name']),
+        isNot(contains('runtime_runs')),
       );
     });
 
@@ -931,6 +1528,16 @@ INSERT INTO trace_events (
                   eventTypes: <String>{runtime.WnEventTypes.captureCreated},
                 ),
               ],
+              agentDefinitions: <String, runtime.AgentDefinition>{
+                'agent.capture_loop': runtime.AgentDefinition(
+                  id: 'agent.capture_loop',
+                  requiredPermissions: <String>{
+                    runtime.ModelPermissions.complete,
+                    'memory.propose',
+                  },
+                  outputEvents: <String>{runtime.WnEventTypes.memoryProposed},
+                ),
+              },
               agents: <String, runtime.AgentHandler>{
                 'agent.capture_loop': _PersistentMemoryHandler(),
               },

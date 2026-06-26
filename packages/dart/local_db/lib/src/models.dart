@@ -508,6 +508,459 @@ final class TodoRecord {
   }
 }
 
+final class RuntimeTaskRecord {
+  const RuntimeTaskRecord({
+    required this.id,
+    required this.packId,
+    required this.packVersion,
+    required this.agentId,
+    required this.handlerId,
+    required this.subscriptionId,
+    required this.triggerEventId,
+    required this.createdAt,
+    required this.updatedAt,
+    this.schemaVersion = 1,
+    this.identityKey = '',
+    this.status = 'queued',
+    this.dependencyTaskIds = const <Object?>[],
+    this.missingDependencyIds = const <Object?>[],
+    this.attempts = 0,
+    this.maxAttempts = 1,
+    this.leaseOwner,
+    this.leasedUntil,
+    this.error,
+    this.payload = const <String, Object?>{},
+  });
+
+  final String id;
+  final int schemaVersion;
+  final String packId;
+  final String packVersion;
+  final String agentId;
+  final String handlerId;
+  final String subscriptionId;
+  final String triggerEventId;
+  final String identityKey;
+  final String status;
+  final JsonList dependencyTaskIds;
+  final JsonList missingDependencyIds;
+  final int attempts;
+  final int maxAttempts;
+  final String? leaseOwner;
+  final DateTime? leasedUntil;
+  final String? error;
+  final JsonMap payload;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  String get effectiveIdentityKey {
+    if (identityKey.trim().isNotEmpty) {
+      return identityKey;
+    }
+    return runtimeTaskIdentityKey(
+      triggerEventId: triggerEventId,
+      subscriptionId: subscriptionId,
+      packId: packId,
+      packVersion: packVersion,
+      handlerId: handlerId,
+    );
+  }
+
+  RuntimeTaskRecord copyWith({
+    int? schemaVersion,
+    String? packId,
+    String? packVersion,
+    String? agentId,
+    String? handlerId,
+    String? subscriptionId,
+    String? triggerEventId,
+    String? identityKey,
+    String? status,
+    JsonList? dependencyTaskIds,
+    JsonList? missingDependencyIds,
+    int? attempts,
+    int? maxAttempts,
+    String? leaseOwner,
+    DateTime? leasedUntil,
+    String? error,
+    JsonMap? payload,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    bool clearLease = false,
+    bool clearError = false,
+  }) {
+    return RuntimeTaskRecord(
+      id: id,
+      schemaVersion: schemaVersion ?? this.schemaVersion,
+      packId: packId ?? this.packId,
+      packVersion: packVersion ?? this.packVersion,
+      agentId: agentId ?? this.agentId,
+      handlerId: handlerId ?? this.handlerId,
+      subscriptionId: subscriptionId ?? this.subscriptionId,
+      triggerEventId: triggerEventId ?? this.triggerEventId,
+      identityKey: identityKey ?? this.identityKey,
+      status: status ?? this.status,
+      dependencyTaskIds: dependencyTaskIds ?? this.dependencyTaskIds,
+      missingDependencyIds: missingDependencyIds ?? this.missingDependencyIds,
+      attempts: attempts ?? this.attempts,
+      maxAttempts: maxAttempts ?? this.maxAttempts,
+      leaseOwner: clearLease ? null : leaseOwner ?? this.leaseOwner,
+      leasedUntil: clearLease ? null : leasedUntil ?? this.leasedUntil,
+      error: clearError ? null : error ?? this.error,
+      payload: payload ?? this.payload,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+}
+
+String runtimeTaskIdentityKey({
+  required String triggerEventId,
+  required String subscriptionId,
+  required String packId,
+  required String packVersion,
+  required String handlerId,
+}) {
+  return [
+    'event:$triggerEventId',
+    'subscription:$subscriptionId',
+    'pack:$packId@$packVersion',
+    'handler:$handlerId',
+  ].join('|');
+}
+
+final class RuntimeRunRecord {
+  const RuntimeRunRecord({
+    required this.id,
+    required this.taskId,
+    required this.packId,
+    required this.packVersion,
+    required this.agentId,
+    required this.handlerId,
+    required this.status,
+    required this.startedAt,
+    required this.attempt,
+    this.schemaVersion = 1,
+    this.completedAt,
+    this.outputEventIds = const <Object?>[],
+    this.error,
+    this.payload = const <String, Object?>{},
+  });
+
+  final String id;
+  final int schemaVersion;
+  final String taskId;
+  final String packId;
+  final String packVersion;
+  final String agentId;
+  final String handlerId;
+  final String status;
+  final DateTime startedAt;
+  final int attempt;
+  final DateTime? completedAt;
+  final JsonList outputEventIds;
+  final String? error;
+  final JsonMap payload;
+
+  RuntimeRunRecord copyWith({
+    int? schemaVersion,
+    String? taskId,
+    String? packId,
+    String? packVersion,
+    String? agentId,
+    String? handlerId,
+    String? status,
+    DateTime? startedAt,
+    int? attempt,
+    DateTime? completedAt,
+    JsonList? outputEventIds,
+    String? error,
+    JsonMap? payload,
+    bool clearCompletedAt = false,
+    bool clearError = false,
+  }) {
+    return RuntimeRunRecord(
+      id: id,
+      schemaVersion: schemaVersion ?? this.schemaVersion,
+      taskId: taskId ?? this.taskId,
+      packId: packId ?? this.packId,
+      packVersion: packVersion ?? this.packVersion,
+      agentId: agentId ?? this.agentId,
+      handlerId: handlerId ?? this.handlerId,
+      status: status ?? this.status,
+      startedAt: startedAt ?? this.startedAt,
+      attempt: attempt ?? this.attempt,
+      completedAt: clearCompletedAt ? null : completedAt ?? this.completedAt,
+      outputEventIds: outputEventIds ?? this.outputEventIds,
+      error: clearError ? null : error ?? this.error,
+      payload: payload ?? this.payload,
+    );
+  }
+}
+
+final class PackInstallationRecord {
+  const PackInstallationRecord({
+    required this.packId,
+    required this.name,
+    required this.version,
+    required this.publisher,
+    required this.edition,
+    required this.installedAt,
+    required this.updatedAt,
+    this.schemaVersion = 1,
+    this.status = 'disabled',
+    this.runtimeStatus = 'idle',
+    this.entrypointKind = 'native',
+    this.requestedPermissions = const <Object?>[],
+    this.enabledSubscriptionIds = const <Object?>[],
+    this.manifest = const <String, Object?>{},
+    this.payload = const <String, Object?>{},
+  });
+
+  final String packId;
+  final int schemaVersion;
+  final String name;
+  final String version;
+  final String publisher;
+  final String edition;
+  final String status;
+  final String runtimeStatus;
+  final String entrypointKind;
+  final JsonList requestedPermissions;
+  final JsonList enabledSubscriptionIds;
+  final JsonMap manifest;
+  final JsonMap payload;
+  final DateTime installedAt;
+  final DateTime updatedAt;
+
+  PackInstallationRecord copyWith({
+    int? schemaVersion,
+    String? name,
+    String? version,
+    String? publisher,
+    String? edition,
+    String? status,
+    String? runtimeStatus,
+    String? entrypointKind,
+    JsonList? requestedPermissions,
+    JsonList? enabledSubscriptionIds,
+    JsonMap? manifest,
+    JsonMap? payload,
+    DateTime? installedAt,
+    DateTime? updatedAt,
+  }) {
+    return PackInstallationRecord(
+      packId: packId,
+      schemaVersion: schemaVersion ?? this.schemaVersion,
+      name: name ?? this.name,
+      version: version ?? this.version,
+      publisher: publisher ?? this.publisher,
+      edition: edition ?? this.edition,
+      status: status ?? this.status,
+      runtimeStatus: runtimeStatus ?? this.runtimeStatus,
+      entrypointKind: entrypointKind ?? this.entrypointKind,
+      requestedPermissions: requestedPermissions ?? this.requestedPermissions,
+      enabledSubscriptionIds:
+          enabledSubscriptionIds ?? this.enabledSubscriptionIds,
+      manifest: manifest ?? this.manifest,
+      payload: payload ?? this.payload,
+      installedAt: installedAt ?? this.installedAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+}
+
+final class PermissionGrantRecord {
+  const PermissionGrantRecord({
+    required this.id,
+    required this.packId,
+    required this.permissionId,
+    required this.createdAt,
+    required this.updatedAt,
+    this.schemaVersion = 1,
+    this.status = 'granted',
+    this.grantKind = 'user',
+    this.sourceEventId,
+    this.grantedAt,
+    this.revokedAt,
+    this.reason,
+    this.payload = const <String, Object?>{},
+  });
+
+  final String id;
+  final int schemaVersion;
+  final String packId;
+  final String permissionId;
+  final String status;
+  final String grantKind;
+  final String? sourceEventId;
+  final DateTime? grantedAt;
+  final DateTime? revokedAt;
+  final String? reason;
+  final JsonMap payload;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  bool get isActive => status == 'granted';
+
+  PermissionGrantRecord copyWith({
+    int? schemaVersion,
+    String? packId,
+    String? permissionId,
+    String? status,
+    String? grantKind,
+    String? sourceEventId,
+    DateTime? grantedAt,
+    DateTime? revokedAt,
+    String? reason,
+    JsonMap? payload,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    bool clearGrantTime = false,
+    bool clearRevokedAt = false,
+    bool clearReason = false,
+  }) {
+    return PermissionGrantRecord(
+      id: id,
+      schemaVersion: schemaVersion ?? this.schemaVersion,
+      packId: packId ?? this.packId,
+      permissionId: permissionId ?? this.permissionId,
+      status: status ?? this.status,
+      grantKind: grantKind ?? this.grantKind,
+      sourceEventId: sourceEventId ?? this.sourceEventId,
+      grantedAt: clearGrantTime ? null : grantedAt ?? this.grantedAt,
+      revokedAt: clearRevokedAt ? null : revokedAt ?? this.revokedAt,
+      reason: clearReason ? null : reason ?? this.reason,
+      payload: payload ?? this.payload,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+}
+
+final class ContextPacketCacheRecord {
+  const ContextPacketCacheRecord({
+    required this.id,
+    required this.surface,
+    required this.permissionScope,
+    required this.disclosureLevel,
+    required this.generatorId,
+    required this.generatorVersion,
+    required this.promptVersion,
+    required this.cacheKey,
+    required this.packet,
+    required this.createdAt,
+    required this.updatedAt,
+    this.schemaVersion = 1,
+    this.requestRef = const <String, Object?>{},
+    this.subjectRef = const <String, Object?>{},
+    this.sourceRefs = const <Object?>[],
+    this.sourceVersions = const <Object?>[],
+    this.packId,
+    this.packVersion,
+    this.agentId,
+    this.localDate,
+    this.privacyProfile = 'default',
+    this.invalidationKeys = const <Object?>[],
+    this.status = 'active',
+    this.expiresAt,
+    this.invalidatedAt,
+  });
+
+  final String id;
+  final int schemaVersion;
+  final String surface;
+  final JsonMap requestRef;
+  final JsonMap subjectRef;
+  final JsonList sourceRefs;
+  final JsonList sourceVersions;
+  final String permissionScope;
+  final String disclosureLevel;
+  final String generatorId;
+  final String generatorVersion;
+  final String promptVersion;
+  final String? packId;
+  final String? packVersion;
+  final String? agentId;
+  final String? localDate;
+  final String privacyProfile;
+  final JsonList invalidationKeys;
+  final String cacheKey;
+  final String status;
+  final JsonMap packet;
+  final DateTime? expiresAt;
+  final DateTime? invalidatedAt;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  bool isReusableAt(DateTime now) {
+    if (status != 'active' || invalidatedAt != null) {
+      return false;
+    }
+    final expires = expiresAt;
+    return expires == null || expires.isAfter(now.toUtc());
+  }
+
+  ContextPacketCacheRecord copyWith({
+    int? schemaVersion,
+    String? surface,
+    JsonMap? requestRef,
+    JsonMap? subjectRef,
+    JsonList? sourceRefs,
+    JsonList? sourceVersions,
+    String? permissionScope,
+    String? disclosureLevel,
+    String? generatorId,
+    String? generatorVersion,
+    String? promptVersion,
+    String? packId,
+    String? packVersion,
+    String? agentId,
+    String? localDate,
+    String? privacyProfile,
+    JsonList? invalidationKeys,
+    String? cacheKey,
+    String? status,
+    JsonMap? packet,
+    DateTime? expiresAt,
+    DateTime? invalidatedAt,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    bool clearExpiresAt = false,
+    bool clearInvalidatedAt = false,
+  }) {
+    return ContextPacketCacheRecord(
+      id: id,
+      schemaVersion: schemaVersion ?? this.schemaVersion,
+      surface: surface ?? this.surface,
+      requestRef: requestRef ?? this.requestRef,
+      subjectRef: subjectRef ?? this.subjectRef,
+      sourceRefs: sourceRefs ?? this.sourceRefs,
+      sourceVersions: sourceVersions ?? this.sourceVersions,
+      permissionScope: permissionScope ?? this.permissionScope,
+      disclosureLevel: disclosureLevel ?? this.disclosureLevel,
+      generatorId: generatorId ?? this.generatorId,
+      generatorVersion: generatorVersion ?? this.generatorVersion,
+      promptVersion: promptVersion ?? this.promptVersion,
+      packId: packId ?? this.packId,
+      packVersion: packVersion ?? this.packVersion,
+      agentId: agentId ?? this.agentId,
+      localDate: localDate ?? this.localDate,
+      privacyProfile: privacyProfile ?? this.privacyProfile,
+      invalidationKeys: invalidationKeys ?? this.invalidationKeys,
+      cacheKey: cacheKey ?? this.cacheKey,
+      status: status ?? this.status,
+      packet: packet ?? this.packet,
+      expiresAt: clearExpiresAt ? null : expiresAt ?? this.expiresAt,
+      invalidatedAt: clearInvalidatedAt
+          ? null
+          : invalidatedAt ?? this.invalidatedAt,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+}
+
 final class TraceEventRecord {
   const TraceEventRecord({
     required this.id,

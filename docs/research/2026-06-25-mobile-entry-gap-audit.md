@@ -1,6 +1,15 @@
 # Mobile Entry Gap Audit Against Memex
 
-Status: current audit
+Status: superseded by the W7 phase-one integration cleanup.
+
+Current implementation notes live in:
+
+- `docs/research/2026-06-26-w7-current-integration-state.md`
+- `docs/research/2026-06-26-w7-integration-qa.md`
+- `docs/research/2026-06-26-phase-one-acceptance-matrix.md`
+
+This file is retained as historical gap evidence only. Do not use it as the
+current route or implementation inventory.
 
 Date: 2026-06-25
 
@@ -30,34 +39,37 @@ private APIs, UI assets, or tests.
 WideNote currently exposes these app routes:
 
 - Bottom tabs: `/`, `/chat`, `/todos`, `/plugins`.
-- Timeline routes: `/timeline`, `/timeline/search`, `/timeline/cards/:cardId`.
-- Plugin routes: `/plugins/model-providers`, `/plugins/backup`,
-  `/plugins/traces`.
+- Home secondary routes: `/recap`, `/timeline`, `/timeline/search`,
+  `/timeline/cards/:cardId`, `/timeline/items/:itemId`, `/memory`,
+  `/settings`, `/settings/permissions`, `/settings/model-providers`,
+  `/settings/backup`, `/settings/traces`.
+- Plugin routes: `/plugins/packs`, `/plugins/permissions`,
+  `/plugins/model-providers`, `/plugins/backup`, `/plugins/traces`.
 
-The route graph does not yet include onboarding, full settings, locale switch,
-privacy lock, a dedicated Memory page, knowledge/files, insights, companion
-characters, custom agent authoring, Pack library, permission approvals,
+The route graph does not yet include onboarding, locale switch, privacy lock,
+knowledge/files, companion characters, custom agent authoring,
 schedule/calendar, app-action quick note, system share import, clipboard import,
-or real media capture screens.
+or broad file import. Camera, gallery, and microphone capture use platform
+adapters; deterministic fake adapters remain test-only.
 
 ## Entry Inventory
 
 | Entry | Current state | Evidence | Main gap | Priority |
 | --- | --- | --- | --- | --- |
-| Home capture console | Partial real feature | `HomePage` wires text submit and attachment callbacks; `CaptureInputController` defaults to `FakePhotoCaptureAdapter`, `FakeVoiceCaptureAdapter`, and `FakeShareImportAdapter`. | Text capture is real, but photo, voice, and share import are sample adapters. No real camera/gallery picker, microphone recording, platform share intent, clipboard import, or persisted draft. | P0 |
+| Home capture console | Real phase-one feature | `HomePage` wires text submit, camera, gallery, microphone recording, attachment safety review, and local persistence through platform adapters. | System share, clipboard import, broad file import, transcription provider routing, and persisted draft are still future slices. | P1 |
 | Capture processing pipeline | Real narrow loop | `CaptureOrchestrator` publishes `wn.capture.created`, runs default and todo packs, writes Memory proposal, todo, cards, insights, and traces. | The loop is synchronous and local. It has no durable background queue, dependency graph, cancellation, retry UI, or approval resume. | P0 for reliability, P1 for full custom-agent parity |
-| Memory review on Home | Partial | Home shows review candidates and supports accept, edit, reject. | No dedicated Memory route, list, search, delete, tombstone, revision history, sensitivity controls, or source backlink navigation. | P0 |
-| Home cards and insights sections | Partial and read-only | Home renders source-linked card and insight rows. | Rows do not navigate. Card/insight families are lightweight summaries, not rich Memex-like card renderers or typed insight views. | P0 |
-| Timeline | Partial real feature | `/timeline` loads local captures, cards, insights, Memory, and todos. | Only card rows open details. Captures, Memory, todos, and insights have no detail pages. No date/tag filters, edit/delete actions, or full i18n. | P0 |
+| Memory review on Home | Real phase-one feature | Home shows review candidates and supports accept, edit, reject; `/memory` supports list/search/edit/tombstone/restore. | Sensitivity controls, richer revision history, and advanced source management remain future slices. | P1 |
+| Home cards and insights sections | Real lightweight feature | Home renders source-linked card and insight rows backed by local read models. | Card/insight families are lightweight summaries, not rich Memex-like renderers or typed visual insight views. | P1 |
+| Timeline | Real phase-one feature | `/timeline` loads local captures, cards, insights, Memory, and todos, with search and item/card detail pages. | Date/tag filters, edit/delete actions, and richer media/gallery details remain future slices. | P1 |
 | Timeline search | Partial real feature | `/timeline/search` filters local timeline items. | It is a client-side browse-index search, not full FTS across raw records, cards, Memory, chat, facts, and attachments. Insight is not exposed in the visible filter list. | P0 |
-| Card detail | Partial | `/timeline/cards/:cardId` shows card body, source refs, related records, Memory, and todos. | Related rows use a no-op opener, and there are no edit/delete/share/comment/media-gallery actions. | P0 |
-| Chat tab | Real baseline | Chat has persistent local sessions/messages, source selection, retry states, deterministic offline assistant, and optional model-backed answers. | It is source-grounded Q&A, not companion chat. No character persona, auto-commentary, character memory, chat management, or clickable source drill-down. | P0 for source drill-down, P1 for companion |
-| Todos tab | Partial and non-actionable | Todo rows render a disabled checkbox. | Users cannot complete, edit, delete, restore, schedule, or inspect source detail for todos. | P0 |
-| Plugins tab | Mixed real and placeholder | Model provider, backup, and trace rows navigate. Pack Library and Permission Gate rows have no `onTap`. | The visible plugin surface suggests pack and permission controls, but there is no pack install/manage UI, permission approval UI, or custom agent editor. | P0 |
-| Model providers | Real baseline | Users can add, edit, set default, and test providers. Supported kinds include OpenAI-compatible, Anthropic-compatible, MIMO, and Kimi. | No delete action, no per-agent model roles, no OAuth flows, no provider call logs, limited provider matrix, and live connection tests are gated behind `WIDENOTE_LIVE_PROVIDER_TESTS`. | P0 |
+| Card detail | Real phase-one feature | `/timeline/cards/:cardId` shows card body, source refs, related records, Memory, and todos, and source rows navigate to detail pages. | No edit/delete/share/comment/media-gallery actions. | P1 |
+| Chat tab | Real baseline | Chat has persistent local sessions/messages, source selection, retry states, deterministic offline assistant, optional model-backed answers, and clickable source drill-down. | It is source-grounded Q&A, not companion chat. No character persona, auto-commentary, character memory, or chat management. | P1 |
+| Todos tab | Real baseline | Todo rows can be completed, completed rows hide from the main tab, and source tags open source detail. | No edit/delete/restore/schedule or completed archive UI. | P1 |
+| Plugins tab | Real phase-one controls | Pack Library, Permission Gate, Model Provider, Backup, and Trace Console rows all navigate to real local control pages. | No custom agent editor, remote marketplace install flow, or community pack execution. | P1 |
+| Model providers | Real baseline | Users can add, edit, delete, set default, test providers, and refresh runtime clients without app restart. Supported kinds include OpenAI-compatible, Anthropic-compatible, MIMO, and Kimi. | No per-agent model roles, OAuth flows, provider call logs, or large provider matrix. Live connection tests are gated behind `WIDENOTE_LIVE_PROVIDER_TESTS`. | P1 |
 | Backup | Real baseline, developer-shaped UX | Backup can export JSON, export readable Markdown, copy both, and import pasted JSON. | No system file picker/save/share, external backup intent, storage location selection, auto-backup, conflict resolution UI, or attachment file restore UX. | P0 |
 | Trace console | Real read-only baseline | `/plugins/traces` reads `trace_events`, shows counts, warnings, and rows. | No run detail, filtering, search, retry/cancel controls, LLM call redaction view, or task queue status. | P1 |
-| App shell and settings | Partial | The app has generated zh/en localization and a localized bottom nav. | No in-app locale switch, onboarding, provider setup prompt, user/profile center, full settings home, storage controls, app lock, or permission center. | P0 |
+| App shell and settings | Real baseline | The app has generated zh/en localization, localized bottom nav, top-right Settings, and settings child routes for permissions/providers/backup/traces. | No in-app locale switch, onboarding, user/profile center, storage controls, or app lock. | P1 |
 | External mobile entrypoints | Missing | No quick action, deep link quick note, share intent handler, clipboard preview, or file import intent appears in WideNote mobile. | High-frequency mobile capture still depends on opening the app manually and typing/picking fake attachments. | P0 |
 | Knowledge and facts | Missing as product surface | Memory-first cards exist, but no knowledge/files/facts/entities/tags UI. | No fact graph, entity/tag browsing, source-linked knowledge pages, or FTS-backed knowledge search. | P0/P1 depending phase-one strictness |
 | Rich insights | Missing as product surface | Insights exist as lightweight generated records. | No dedicated insight tab/page, charts, maps/routes, gallery, periodic reviews, pin/delete/sort, or detail pages. | P1 unless strict parity |
@@ -87,9 +99,8 @@ real app gesture.
 
 ## Recommended Implementation Order
 
-1. Capture entrypoints: replace fake photo, voice, and share adapters with
-   platform ports, fakeable interfaces, raw attachment persistence, and widget
-   tests for attach/remove/review/error states.
+1. Capture entrypoints: platform camera, gallery, and microphone adapters now
+   exist; future work is share/clipboard/file import and transcription routing.
 2. Timeline completeness: add detail routes for capture, Memory, todo, and
    insight items, and make source refs clickable from timeline, chat, and card
    detail.

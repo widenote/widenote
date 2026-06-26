@@ -26,6 +26,16 @@ void main() {
     );
   });
 
+  testWidgets('chat page shows localized Chinese empty state', (tester) async {
+    await _pumpApp(tester, locale: const Locale('zh'));
+    await _openTab(tester, const Key('tab-chat'));
+
+    expect(find.byKey(const Key('chat-page')), findsOneWidget);
+    expect(find.text('历史会话'), findsOneWidget);
+    expect(find.text('还没有本地会话。'), findsOneWidget);
+    expect(find.text('先问一个关于记录、Memory 或待办的问题。'), findsOneWidget);
+  });
+
   testWidgets('sending a message displays a deterministic local answer', (
     tester,
   ) async {
@@ -61,8 +71,21 @@ void main() {
     );
     expect(
       refs.map((ref) => ref.sourceLabel),
-      everyElement(startsWith('event:')),
+      containsAll(<Matcher>[startsWith('event:'), startsWith('capture:')]),
     );
+
+    final captureRef = refs.firstWhere((ref) => ref.kind == 'capture');
+    final sourceTag = find.byKey(Key('chat-source-capture-${captureRef.id}'));
+    await tester.drag(
+      find.byKey(const Key('chat-message-scroll')),
+      const Offset(0, -160),
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(sourceTag);
+    tester.widget<GestureDetector>(sourceTag).onTap!();
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('timeline-item-detail-page')), findsOneWidget);
   });
 
   testWidgets('composer stays visible after a long answer', (tester) async {
@@ -168,6 +191,7 @@ Future<void> _pumpApp(
   WidgetTester tester, {
   WideNoteLocalDatabase? database,
   List<Override> overrides = const <Override>[],
+  Locale locale = const Locale('en'),
 }) async {
   final localDatabase = database ?? WideNoteLocalDatabase.inMemory();
   addTearDown(localDatabase.close);
@@ -177,7 +201,7 @@ Future<void> _pumpApp(
         localDatabaseProvider.overrideWithValue(localDatabase),
         ...overrides,
       ],
-      child: const WideNoteApp(locale: Locale('en')),
+      child: WideNoteApp(locale: locale),
     ),
   );
   await tester.pumpAndSettle();

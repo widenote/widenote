@@ -27,6 +27,28 @@ It should stay short. It points to the right local context instead of duplicatin
 
 ## Research
 
+- `docs/research/2026-06-26-w7-current-integration-state.md`
+- `docs/research/2026-06-26-w7-integration-qa.md`
+- `docs/research/2026-06-26-product-technical-direction-summary.md`
+- `docs/research/2026-06-26-technical-plan-research-synthesis.md`
+- `docs/research/2026-06-26-storage-export-selection-options.md`
+- `docs/research/2026-06-26-kimi-technical-direction-review.md`
+- `docs/research/2026-06-26-implementation-readiness-review.md`
+- `docs/research/2026-06-26-phase-one-acceptance-matrix.md`
+- `docs/research/2026-06-26-current-implementation-baseline.md` (historical pre-wave baseline)
+- `docs/research/2026-06-26-wave-one-coordination.md`
+- `docs/research/2026-06-26-wave-one-results.md`
+- `docs/research/2026-06-26-wave-two-coordination.md`
+- `docs/research/2026-06-26-wave-two-results.md`
+- `docs/research/2026-06-26-wave-three-coordination.md`
+- `docs/research/2026-06-26-wave-three-results.md`
+- `docs/research/2026-06-26-android-emulator-qa.md`
+- `docs/research/2026-06-26-ios-simulator-qa.md`
+- `docs/research/2026-06-26-daily-recap-qa.md`
+- `docs/research/2026-06-26-w7-settings-privacy-qa.md`
+- `docs/research/2026-06-26-w7-backup-restore-qa.md`
+- `docs/research/2026-06-26-w7-real-media-capture-qa.md`
+- `docs/research/2026-06-26-mobile-ui-runtime-discussion-notes.md`
 - `docs/research/2026-06-23-phase-one-technical-research.md`
 - `docs/research/2026-06-23-memex-design-critique.md`
 - `docs/research/2026-06-23-kimi-review-followup.md`
@@ -50,6 +72,7 @@ It should stay short. It points to the right local context instead of duplicatin
 - `docs/rfcs/agent-pack-schema.md`
 - `docs/rfcs/model-provider-settings.md`
 - `docs/rfcs/phase-one-product-scope.md`
+- `docs/rfcs/phase-one-umbrella-technical-plan.md`
 - `docs/rfcs/mobile-entry-closure.md`
 - `docs/rfcs/mobile-visual-style.md`
 
@@ -69,7 +92,7 @@ It should stay short. It points to the right local context instead of duplicatin
 | Agent Packs | `packs/README.md` | Installable capability bundles |
 | Docs | `docs/README.md` | Product, architecture, decisions, and research |
 | Infra | `infra/README.md` | Deployment and self-hosting assets |
-| Tools | `tools/README.md` | Repository automation and generators |
+| Tools | `tools/README.md` | Repository automation, validation, and generation helpers |
 
 ## Modules
 
@@ -77,6 +100,10 @@ It should stay short. It points to the right local context instead of duplicatin
 | --- | --- | --- |
 | Mobile app | `apps/mobile/README.md` | Flutter client and local runtime host |
 | Mobile backup | `apps/mobile/lib/features/backup/README.md` | Local JSON backup export/import UI |
+| Mobile capture media | `apps/mobile/lib/features/capture/media/README.md` | Camera, gallery, voice, share, fake adapters, and attachment safety boundary |
+| Mobile timeline | `apps/mobile/lib/features/timeline/README.md` | Local timeline browse, search, details, and source-ref inspection |
+| Mobile recap | `apps/mobile/lib/features/recap/README.md` | Daily Recap page built from local object truth |
+| Mobile settings | `apps/mobile/lib/features/settings/README.md` | Settings and Privacy hub for controls, permissions, providers, backup, traces, and display status |
 | Mobile Memory | `apps/mobile/lib/features/memory/README.md` | Accepted Memory list, edit, tombstone delete, and restore UI |
 | Mobile model providers | `apps/mobile/lib/features/model_providers/README.md` | Provider settings UI and local state |
 | Mobile traces | `apps/mobile/lib/features/traces/README.md` | Read-only local Agent Runtime trace console |

@@ -1,0 +1,22 @@
+{
+  "kind": "runtime_task",
+  "id": "task_synthetic_001",
+  "schema_version": 1,
+  "pack_id": "pack.synthetic_contract",
+  "agent_id": "agent.synthetic_capture",
+  "subscription_id": "sub.synthetic_capture",
+  "trigger_event_id": "evt_synthetic_capture_created_001",
+  "idempotency_key": "evt_synthetic_capture_created_001:sub.synthetic_capture:pack.synthetic_contract:agent.synthetic_capture",
+  "status": "queued",
+  "dependency_task_ids": [],
+  "missing_dependency_ids": [],
+  "attempts": 0,
+  "max_attempts": 1,
+  "lease": null,
+  "error": null,
+  "created_at": "2026-06-26T08:00:02Z",
+  "updated_at": "2026-06-26T08:00:02Z",
+  "metadata": {
+    "fixture": true
+  }
+}

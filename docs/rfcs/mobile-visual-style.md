@@ -1,5 +1,7 @@
 # RFC: Mobile Visual Style
 
+Status: Accepted
+
 ## Summary
 
 WideNote mobile should adopt a Calm Expressive / Quiet Glass Console visual

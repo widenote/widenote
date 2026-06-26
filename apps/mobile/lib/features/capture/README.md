@@ -4,7 +4,7 @@
 
 Owns the home/records tab, Capture Console UI, visible capture feedback,
 source-linked home-row navigation, app-local capture/card/insight read models,
-fake-adapter media/share/voice capture inputs, and Memory review surface.
+text/photo/gallery/voice capture inputs, and Memory review surface.
 
 ## Ownership Boundary
 
@@ -13,10 +13,12 @@ from the local runtime. It owns capture interaction state such as text, voice
 draft, and import mode selection, but it must not become the durable runtime,
 policy, persistence, or schema source of truth.
 
-Voice mode is currently a transcript-draft path backed by fake adapters. It does
-not request microphone permission, start recording, stream audio, or claim live
-transcription. Real ASR/recorder behavior belongs behind explicit platform
-permissions and future Agent Pack capability boundaries.
+Text capture remains local and immediate. Photo, gallery, and voice capture go
+through narrow platform adapters that either return local attachment metadata or
+surface cancelled/denied/unavailable errors without creating phantom captures,
+events, or tasks. Deterministic fake adapters remain the default test fallback.
+Real ASR/OCR/image understanding is outside this module; media is saved as local
+source material with metadata, hashes, and source refs before any AI processing.
 
 ## Dependencies
 
@@ -25,7 +27,8 @@ permissions and future Agent Pack capability boundaries.
 - `packages/dart/agent_runtime`
 - `packages/dart/cards`
 - `packages/dart/memory`
-- `media/` fake adapter contracts and asset safety guard
+- `media/` adapter contracts, platform adapters, fake test adapters, and asset
+  safety guard
 
 ## Public Surface
 
@@ -38,6 +41,8 @@ permissions and future Agent Pack capability boundaries.
 - `application/LocalDbCaptureKnowledgeSink`
 - `media/CaptureAttachment`
 - `media/AssetSafetyGuard`
+- `media/ImagePickerPhotoCaptureAdapter`
+- `media/RecordVoiceCaptureAdapter`
 - lightweight domain view models in `domain/`
 
 ## Generated Artifacts

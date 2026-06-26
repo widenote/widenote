@@ -1,0 +1,19 @@
+{
+  "kind": "runtime_run",
+  "id": "run_synthetic_001",
+  "schema_version": 1,
+  "task_id": "task_synthetic_001",
+  "pack_id": "pack.synthetic_contract",
+  "agent_id": "agent.synthetic_capture",
+  "status": "succeeded",
+  "started_at": "2026-06-26T08:00:03Z",
+  "completed_at": "2026-06-26T08:00:04Z",
+  "attempt": 1,
+  "output_event_ids": [
+    "evt_synthetic_memory_proposed_001"
+  ],
+  "error": null,
+  "metadata": {
+    "fixture": true
+  }
+}

@@ -19,8 +19,12 @@ final class RuntimeKernel {
     required this.clock,
     required this.model,
     required this.deviceId,
+    RuntimeStore? runtimeStore,
+    PackRegistry? packRegistry,
+    this.runLeaseDuration = const Duration(minutes: 5),
     this.autoDrain = true,
-  });
+  }) : runtimeStore = runtimeStore ?? InMemoryRuntimeStore(),
+       packRegistry = packRegistry ?? InMemoryPackRegistry();
 
   final EventStore eventStore;
   final TraceSink traceSink;
@@ -30,11 +34,15 @@ final class RuntimeKernel {
   final WnClock clock;
   final ModelClient model;
   final String deviceId;
+  final RuntimeStore runtimeStore;
+  final PackRegistry packRegistry;
+  final Duration runLeaseDuration;
   final bool autoDrain;
 
   final Map<String, AgentPack> _packs = <String, AgentPack>{};
   final List<RuntimeTask> _tasks = <RuntimeTask>[];
   final List<RuntimeRun> _runs = <RuntimeRun>[];
+  final Set<String> _blockedPermissionKeys = <String>{};
 
   List<RuntimeTask> get tasks => List<RuntimeTask>.unmodifiable(_tasks);
   List<RuntimeRun> get runs => List<RuntimeRun>.unmodifiable(_runs);
@@ -47,6 +55,7 @@ final class RuntimeKernel {
           final status = _statusForPackTasks(packTasks);
           return RuntimePackStatus(
             packId: pack.id,
+            version: pack.version,
             name: pack.name,
             status: status,
             taskCount: packTasks.length,
@@ -65,7 +74,83 @@ final class RuntimeKernel {
   }
 
   void registerPack(AgentPack pack) {
-    _packs[pack.id] = pack;
+    registerPacks(<AgentPack>[pack]);
+  }
+
+  void registerPacks(Iterable<AgentPack> packs) {
+    final batch = packs.toList(growable: false);
+    final previous = <String, AgentPack?>{
+      for (final pack in batch) pack.id: _packs[pack.id],
+    };
+    try {
+      for (final pack in batch) {
+        _packs[pack.id] = pack;
+        packRegistry.register(pack);
+      }
+    } catch (_) {
+      for (final entry in previous.entries) {
+        final oldPack = entry.value;
+        if (oldPack == null) {
+          _packs.remove(entry.key);
+          packRegistry.unregister(entry.key);
+        } else {
+          _packs[entry.key] = oldPack;
+          packRegistry.register(oldPack);
+        }
+      }
+      rethrow;
+    }
+  }
+
+  Future<void> syncPackStatuses() async {
+    for (final status in packStatuses) {
+      await runtimeStore.upsertPackStatus(status);
+    }
+  }
+
+  Future<void> restoreRuntimeState({bool terminateStaleRuns = true}) async {
+    _tasks
+      ..clear()
+      ..addAll(await runtimeStore.readTasks());
+    _runs
+      ..clear()
+      ..addAll(await runtimeStore.readRuns());
+
+    await _restoreRevokedPermissionBlocks();
+    if (terminateStaleRuns) {
+      await _terminateStaleRuns();
+    }
+    await syncPackStatuses();
+  }
+
+  Future<PermissionRevocationResult> handlePermissionRevoked(
+    String packId,
+    String permission,
+  ) async {
+    _blockedPermissionKeys.add(_permissionKey(packId, permission));
+    final affectedTaskIds = <String>[];
+    for (final task in List<RuntimeTask>.of(_tasks)) {
+      if (task.packId != packId ||
+          task.status.isTerminal ||
+          task.status == RuntimeTaskStatus.running ||
+          !_taskRequiresPermission(task, permission)) {
+        continue;
+      }
+      final denied = await _replaceTask(
+        task,
+        RuntimeTaskStatus.denied,
+        error: 'Permission revoked: $permission',
+      );
+      affectedTaskIds.add(denied.id);
+      await _tracePermissionRevoked(denied, permission);
+    }
+    await _traceContextCacheInvalidationRequested(packId, permission);
+    return PermissionRevocationResult(
+      packId: packId,
+      permission: permission,
+      affectedTaskIds: List<String>.unmodifiable(affectedTaskIds),
+      contextCacheInvalidationRequested: true,
+    );
   }
 
   Future<WnEvent> publish(WnEventDraft draft) async {
@@ -75,7 +160,10 @@ final class RuntimeKernel {
       name: 'runtime.event.appended',
       message: 'Event appended.',
       eventId: event.id,
-      details: <String, Object?>{'type': event.type},
+      details: <String, Object?>{
+        'trace_type': 'event_received',
+        'type': event.type,
+      },
     );
     await _enqueueMatching(event);
     if (autoDrain) {
@@ -97,7 +185,7 @@ final class RuntimeKernel {
 
       final blocked = _nextBlockedTask();
       if (blocked != null) {
-        final latest = _replaceTask(
+        final latest = await _replaceTask(
           blocked,
           RuntimeTaskStatus.blocked,
           error: _dependencyBlockReason(blocked),
@@ -112,17 +200,25 @@ final class RuntimeKernel {
     return executed;
   }
 
-  Future<bool> cancelTask(String taskId, {String reason = 'user_requested'}) {
+  Future<bool> cancelTask(
+    String taskId, {
+    String reason = 'user_requested',
+  }) async {
     final task = _taskById(taskId);
     if (task == null || task.status.isTerminal) {
-      return Future<bool>.value(false);
+      return false;
     }
     if (task.status == RuntimeTaskStatus.running) {
-      return Future<bool>.value(false);
+      return false;
     }
 
-    final next = _replaceTask(task, RuntimeTaskStatus.canceled, error: reason);
-    return _traceTaskCanceled(next, reason).then((_) => true);
+    final next = await _replaceTask(
+      task,
+      RuntimeTaskStatus.canceled,
+      error: reason,
+    );
+    await _traceTaskCanceled(next, reason);
+    return true;
   }
 
   Future<bool> retryTask(String taskId, {bool drain = true}) async {
@@ -136,7 +232,12 @@ final class RuntimeKernel {
     final status = task.dependencyTaskIds.isEmpty
         ? RuntimeTaskStatus.queued
         : RuntimeTaskStatus.waiting;
-    final next = _replaceTask(task, status, attempts: 0, clearError: true);
+    final next = await _replaceTask(
+      task,
+      status,
+      attempts: 0,
+      clearError: true,
+    );
     await _traceTaskRetryRequested(next);
     if (drain) {
       await drainQueue();
@@ -154,10 +255,8 @@ final class RuntimeKernel {
 
         final definition = pack.definitionFor(subscription.agentId);
         final handler = pack.handlerFor(subscription.agentId);
-        if (handler == null &&
-            definition.runtimeKind != AgentRuntimeKind.script) {
+        if (handler == null) {
           await _traceMissingHandler(pack, subscription, event);
-          continue;
         }
 
         requests.add(
@@ -175,8 +274,26 @@ final class RuntimeKernel {
     final taskIdsBySubscription = <String, String>{};
     final created = <_QueuedRequest>[];
     for (final request in requests) {
+      final identityKey = _taskIdentityKey(
+        eventId: request.event.id,
+        packId: request.pack.id,
+        packVersion: request.pack.version,
+        subscriptionId: request.subscription.id,
+        handlerRole: request.subscription.agentId,
+      );
+      final existing = _taskByIdentity(identityKey);
+      if (existing != null) {
+        taskIdsBySubscription[_dependencyKey(
+              request.pack.id,
+              request.subscription.id,
+            )] =
+            existing.id;
+        await _traceDuplicateTaskSkipped(existing, request.event);
+        continue;
+      }
       final task = _createTask(request);
       _tasks.add(task);
+      await runtimeStore.upsertTask(task);
       taskIdsBySubscription[_dependencyKey(
             request.pack.id,
             request.subscription.id,
@@ -203,14 +320,27 @@ final class RuntimeKernel {
 
       final nextStatus = missingDependencyIds.isNotEmpty
           ? RuntimeTaskStatus.blocked
+          : _blockedPermissionFor(
+                  queued.request.pack,
+                  queued.request.definition,
+                ) !=
+                null
+          ? RuntimeTaskStatus.blocked
           : dependencyIds.isEmpty
           ? RuntimeTaskStatus.queued
           : RuntimeTaskStatus.waiting;
-      final next = _replaceTask(
+      final blockedPermission = _blockedPermissionFor(
+        queued.request.pack,
+        queued.request.definition,
+      );
+      final next = await _replaceTask(
         queued.task,
         nextStatus,
         dependencyTaskIds: dependencyIds,
         missingDependencyIds: missingDependencyIds,
+        error: blockedPermission == null
+            ? null
+            : 'Permission revoked: $blockedPermission',
       );
       await _traceTaskCreated(next, queued.request.event);
       if (nextStatus == RuntimeTaskStatus.waiting) {
@@ -224,7 +354,7 @@ final class RuntimeKernel {
   Future<void> _executeTask(RuntimeTask queuedTask) async {
     final pack = _packs[queuedTask.packId];
     if (pack == null) {
-      final blocked = _replaceTask(
+      final blocked = await _replaceTask(
         queuedTask,
         RuntimeTaskStatus.blocked,
         error: 'Registered pack is missing: ${queuedTask.packId}',
@@ -234,7 +364,7 @@ final class RuntimeKernel {
     }
 
     final definition = pack.definitionFor(queuedTask.agentId);
-    final task = _replaceTask(
+    final task = await _replaceTask(
       queuedTask,
       RuntimeTaskStatus.running,
       attempts: queuedTask.attempts + 1,
@@ -242,15 +372,16 @@ final class RuntimeKernel {
     );
     final run = _createRun(task);
     _runs.add(run);
+    await runtimeStore.upsertRun(run);
 
     final unsupportedRuntime = _unsupportedRuntimeReason(definition);
     if (unsupportedRuntime != null) {
-      final deniedTask = _replaceTask(
+      final deniedTask = await _replaceTask(
         task,
         RuntimeTaskStatus.denied,
         error: unsupportedRuntime,
       );
-      final deniedRun = _replaceRun(
+      final deniedRun = await _replaceRun(
         run,
         RuntimeRunStatus.denied,
         error: unsupportedRuntime,
@@ -263,9 +394,10 @@ final class RuntimeKernel {
       ...pack.requiredPermissions,
       ...definition.requiredPermissions,
     });
+    await _tracePermissionChecked(task, run, missing);
     if (missing.isNotEmpty) {
-      final deniedTask = _replaceTask(task, RuntimeTaskStatus.denied);
-      final deniedRun = _replaceRun(run, RuntimeRunStatus.denied);
+      final deniedTask = await _replaceTask(task, RuntimeTaskStatus.denied);
+      final deniedRun = await _replaceRun(run, RuntimeRunStatus.denied);
       await _tracePermissionDenied(deniedTask, deniedRun, missing);
       return;
     }
@@ -283,26 +415,54 @@ final class RuntimeKernel {
         throw StateError('Trigger event missing: ${task.triggerEventId}');
       }
       final result = await handler.handle(context, triggerEvent);
+      _validateOutputEvents(definition, result.events);
       final outputEvents = _materializeOutputs(result.events, triggerEvent);
       await eventStore.appendAll(outputEvents);
       for (final output in outputEvents) {
         await _traceOutput(task, run, output);
       }
-      final succeededRun = _replaceRun(
+      final succeededRun = await _replaceRun(
         run,
         RuntimeRunStatus.succeeded,
         outputEventIds: outputEvents.map((event) => event.id).toList(),
       );
-      final succeededTask = _replaceTask(task, RuntimeTaskStatus.succeeded);
+      final succeededTask = await _replaceTask(
+        task,
+        RuntimeTaskStatus.succeeded,
+      );
       await _traceRunCompleted(succeededTask, succeededRun);
+    } on RuntimePermissionDeniedException catch (error) {
+      final deniedRun = await _replaceRun(
+        run,
+        RuntimeRunStatus.denied,
+        error: error.message,
+      );
+      final deniedTask = await _replaceTask(
+        task,
+        RuntimeTaskStatus.denied,
+        error: error.message,
+      );
+      await _tracePermissionDenied(deniedTask, deniedRun, error.permissions);
+    } on OutputEventValidationException catch (error) {
+      final failedRun = await _replaceRun(
+        run,
+        RuntimeRunStatus.failed,
+        error: error.message,
+      );
+      final failedTask = await _replaceTask(
+        task,
+        RuntimeTaskStatus.failed,
+        error: error.message,
+      );
+      await _traceOutputRejected(failedTask, failedRun, error);
     } catch (error) {
-      final failedRun = _replaceRun(
+      final failedRun = await _replaceRun(
         run,
         RuntimeRunStatus.failed,
         error: '$error',
       );
       if (task.canRetry) {
-        final retryTask = _replaceTask(
+        final retryTask = await _replaceTask(
           task,
           RuntimeTaskStatus.queued,
           error: '$error',
@@ -312,7 +472,7 @@ final class RuntimeKernel {
         return;
       }
 
-      final failedTask = _replaceTask(
+      final failedTask = await _replaceTask(
         task,
         RuntimeTaskStatus.failed,
         error: '$error',
@@ -376,6 +536,104 @@ final class RuntimeKernel {
     return null;
   }
 
+  RuntimeTask? _taskByIdentity(String identityKey) {
+    for (final task in _tasks) {
+      if (task.identityKey == identityKey) {
+        return task;
+      }
+    }
+    return null;
+  }
+
+  String _taskIdentityKey({
+    required String eventId,
+    required String packId,
+    required String packVersion,
+    required String subscriptionId,
+    required String handlerRole,
+  }) {
+    return [
+      eventId,
+      packId,
+      packVersion,
+      subscriptionId,
+      handlerRole,
+    ].join('::');
+  }
+
+  bool _taskRequiresPermission(RuntimeTask task, String permission) {
+    final pack = _packs[task.packId];
+    if (pack == null) {
+      return false;
+    }
+    final definition = pack.definitionFor(task.agentId);
+    return pack.requiredPermissions.contains(permission) ||
+        definition.requiredPermissions.contains(permission);
+  }
+
+  String? _blockedPermissionFor(AgentPack pack, AgentDefinition definition) {
+    for (final permission in <String>{
+      ...pack.requiredPermissions,
+      ...definition.requiredPermissions,
+    }) {
+      if (_blockedPermissionKeys.contains(
+        _permissionKey(pack.id, permission),
+      )) {
+        return permission;
+      }
+    }
+    return null;
+  }
+
+  String _permissionKey(String packId, String permission) {
+    return '$packId::$permission';
+  }
+
+  Future<void> _restoreRevokedPermissionBlocks() async {
+    _blockedPermissionKeys.clear();
+    for (final pack in _packs.values) {
+      final decisions = await permissionBroker.decisionsForPack(pack.id);
+      for (final decision in decisions) {
+        if (decision.state == PermissionDecisionState.revoked) {
+          _blockedPermissionKeys.add(
+            _permissionKey(decision.packId, decision.permission),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _terminateStaleRuns() async {
+    final now = clock.now();
+    for (final run in List<RuntimeRun>.of(_runs)) {
+      if (run.status != RuntimeRunStatus.running) {
+        continue;
+      }
+      final leaseExpiresAt = run.leaseExpiresAt;
+      if (leaseExpiresAt == null || leaseExpiresAt.isAfter(now)) {
+        continue;
+      }
+      final task = _taskById(run.taskId);
+      final error =
+          'Recovered stale running run ${run.id}; lease expired at '
+          '${leaseExpiresAt.toIso8601String()}.';
+      final failedRun = await _replaceRun(
+        run,
+        RuntimeRunStatus.failed,
+        error: error,
+      );
+      RuntimeTask? failedTask;
+      if (task != null && task.status == RuntimeTaskStatus.running) {
+        failedTask = await _replaceTask(
+          task,
+          RuntimeTaskStatus.failed,
+          error: error,
+        );
+      }
+      await _traceStaleRunTerminated(failedTask, failedRun, error);
+    }
+  }
+
   String _dependencyBlockReason(RuntimeTask task) {
     if (task.missingDependencyIds.isNotEmpty) {
       return 'Missing dependencies: ${task.missingDependencyIds.join(', ')}';
@@ -393,9 +651,11 @@ final class RuntimeKernel {
 
   String? _unsupportedRuntimeReason(AgentDefinition definition) {
     return switch (definition.runtimeKind) {
-      AgentRuntimeKind.native ||
-      AgentRuntimeKind.declarative ||
-      AgentRuntimeKind.remote => null,
+      AgentRuntimeKind.native => null,
+      AgentRuntimeKind.declarative =>
+        'Declarative agent execution is not available in the local native runtime.',
+      AgentRuntimeKind.remote =>
+        'Remote agent execution is not available in the local native runtime.',
       AgentRuntimeKind.script =>
         'Script execution is not available without an accepted sandbox.',
     };
@@ -438,12 +698,35 @@ final class RuntimeKernel {
     return tasks.where((task) => task.status == status).length;
   }
 
+  Future<void> _persistPackStatus(String packId) async {
+    RuntimePackStatus? status;
+    for (final candidate in packStatuses) {
+      if (candidate.packId == packId) {
+        status = candidate;
+        break;
+      }
+    }
+    if (status != null) {
+      await runtimeStore.upsertPackStatus(status);
+    }
+  }
+
   RuntimeTask _createTask(_TaskRequest request) {
     final now = clock.now();
+    final handlerRole = request.subscription.agentId;
     return RuntimeTask(
       id: idGenerator.nextId('task'),
+      identityKey: _taskIdentityKey(
+        eventId: request.event.id,
+        packId: request.pack.id,
+        packVersion: request.pack.version,
+        subscriptionId: request.subscription.id,
+        handlerRole: handlerRole,
+      ),
       packId: request.pack.id,
+      packVersion: request.pack.version,
       agentId: request.subscription.agentId,
+      handlerRole: handlerRole,
       subscriptionId: request.subscription.id,
       triggerEventId: request.event.id,
       status: RuntimeTaskStatus.queued,
@@ -454,14 +737,17 @@ final class RuntimeKernel {
   }
 
   RuntimeRun _createRun(RuntimeTask task) {
+    final startedAt = clock.now();
     return RuntimeRun(
       id: idGenerator.nextId('run'),
       taskId: task.id,
       packId: task.packId,
+      packVersion: task.packVersion,
       agentId: task.agentId,
       status: RuntimeRunStatus.running,
-      startedAt: clock.now(),
+      startedAt: startedAt,
       attempt: task.attempts,
+      leaseExpiresAt: startedAt.add(runLeaseDuration),
     );
   }
 
@@ -473,19 +759,26 @@ final class RuntimeKernel {
       run: run,
       model: _PermissionCheckedModelClient(
         packId: task.packId,
+        taskId: task.id,
+        runId: run.id,
+        agentId: task.agentId,
         permissionBroker: permissionBroker,
         delegate: model,
+        trace: _trace,
       ),
       tools: _RuntimeToolInvoker(
         packId: task.packId,
         runId: run.id,
+        taskId: task.id,
+        agentId: task.agentId,
         permissionBroker: permissionBroker,
         toolRegistry: toolRegistry,
+        trace: _trace,
       ),
     );
   }
 
-  RuntimeTask _replaceTask(
+  Future<RuntimeTask> _replaceTask(
     RuntimeTask task,
     RuntimeTaskStatus status, {
     List<String>? dependencyTaskIds,
@@ -494,7 +787,7 @@ final class RuntimeKernel {
     int? maxAttempts,
     String? error,
     bool clearError = false,
-  }) {
+  }) async {
     final next = task.copyWith(
       status: status,
       updatedAt: clock.now(),
@@ -509,15 +802,17 @@ final class RuntimeKernel {
     if (index >= 0) {
       _tasks[index] = next;
     }
+    await runtimeStore.upsertTask(next);
+    await _persistPackStatus(next.packId);
     return next;
   }
 
-  RuntimeRun _replaceRun(
+  Future<RuntimeRun> _replaceRun(
     RuntimeRun run,
     RuntimeRunStatus status, {
     List<String>? outputEventIds,
     String? error,
-  }) {
+  }) async {
     final next = run.copyWith(
       status: status,
       completedAt: clock.now(),
@@ -528,6 +823,7 @@ final class RuntimeKernel {
     if (index >= 0) {
       _runs[index] = next;
     }
+    await runtimeStore.upsertRun(next);
     return next;
   }
 
@@ -538,6 +834,32 @@ final class RuntimeKernel {
     return drafts
         .map((draft) => _materialize(draft, causedBy: causedBy))
         .toList();
+  }
+
+  void _validateOutputEvents(
+    AgentDefinition definition,
+    Iterable<WnEventDraft> drafts,
+  ) {
+    final outputs = drafts.toList(growable: false);
+    if (outputs.isEmpty) {
+      return;
+    }
+    if (definition.outputEvents.isEmpty) {
+      throw OutputEventValidationException(
+        agentId: definition.id,
+        eventType: outputs.first.type,
+        declaredOutputEvents: definition.outputEvents,
+      );
+    }
+    for (final draft in outputs) {
+      if (!definition.outputEvents.contains(draft.type)) {
+        throw OutputEventValidationException(
+          agentId: definition.id,
+          eventType: draft.type,
+          declaredOutputEvents: definition.outputEvents,
+        );
+      }
+    }
   }
 
   WnEvent _materialize(WnEventDraft draft, {WnEvent? causedBy}) {
@@ -582,9 +904,80 @@ final class RuntimeKernel {
         runId: runId,
         packId: packId,
         agentId: agentId,
-        details: immutableJsonMap(details),
+        details: immutableJsonMap(_safeTraceDetails(details)),
       ),
     );
+  }
+
+  JsonMap _safeTraceDetails(JsonMap details) {
+    return <String, Object?>{
+      for (final entry in details.entries) entry.key: _safeTraceValue(entry),
+    };
+  }
+
+  Object? _safeTraceValue(MapEntry<String, Object?> entry) {
+    final key = entry.key.toLowerCase();
+    final value = entry.value;
+    if (_isSensitiveTraceKey(key)) {
+      return '<redacted>';
+    }
+    if (key.contains('raw_db') ||
+        key.contains('context_packet') ||
+        key.contains('full_context')) {
+      return '<omitted>';
+    }
+    if (value is String) {
+      return _safeTraceString(value);
+    }
+    if (value is Map) {
+      return <String, Object?>{
+        for (final nested in value.entries)
+          if (nested.key is String)
+            nested.key as String: _safeTraceValue(
+              MapEntry<String, Object?>(
+                nested.key as String,
+                nested.value as Object?,
+              ),
+            ),
+      };
+    }
+    if (value is Iterable) {
+      return value
+          .map((item) {
+            if (item is String) {
+              return _safeTraceString(item);
+            }
+            if (item is Map) {
+              return _safeTraceValue(MapEntry<String, Object?>('item', item));
+            }
+            return item;
+          })
+          .toList(growable: false);
+    }
+    return value;
+  }
+
+  bool _isSensitiveTraceKey(String key) {
+    return key.contains('secret') ||
+        key.contains('token') ||
+        key.contains('password') ||
+        key.contains('credential') ||
+        key == 'api_key' ||
+        key.endsWith('_key');
+  }
+
+  String _safeTraceString(String value) {
+    var safe = value.replaceAllMapped(
+      RegExp(
+        r'\b(api[_-]?key|secret|token|password|credential)\s*[:=]\s*[^,\s]+',
+        caseSensitive: false,
+      ),
+      (match) => '${match.group(1)}=<redacted>',
+    );
+    if (safe.length > 240) {
+      safe = '${safe.substring(0, 240)}...';
+    }
+    return safe;
   }
 
   Future<void> _traceMissingHandler(
@@ -611,9 +1004,28 @@ final class RuntimeKernel {
       packId: task.packId,
       agentId: task.agentId,
       details: <String, Object?>{
+        'trace_type': 'task_created',
         'subscription_id': task.subscriptionId,
+        'identity_key': task.identityKey,
+        'pack_version': task.packVersion,
         'dependency_task_ids': task.dependencyTaskIds,
         'max_attempts': task.maxAttempts,
+      },
+    );
+  }
+
+  Future<void> _traceDuplicateTaskSkipped(RuntimeTask task, WnEvent event) {
+    return _trace(
+      name: 'runtime.task.duplicate_skipped',
+      message: 'Duplicate task identity was already queued.',
+      level: TraceLevel.debug,
+      eventId: event.id,
+      taskId: task.id,
+      packId: task.packId,
+      agentId: task.agentId,
+      details: <String, Object?>{
+        'trace_type': 'task_created',
+        'identity_key': task.identityKey,
       },
     );
   }
@@ -625,7 +1037,10 @@ final class RuntimeKernel {
       taskId: task.id,
       packId: task.packId,
       agentId: task.agentId,
-      details: <String, Object?>{'dependency_task_ids': task.dependencyTaskIds},
+      details: <String, Object?>{
+        'trace_type': 'task_created',
+        'dependency_task_ids': task.dependencyTaskIds,
+      },
     );
   }
 
@@ -637,7 +1052,7 @@ final class RuntimeKernel {
       taskId: task.id,
       packId: task.packId,
       agentId: task.agentId,
-      details: <String, Object?>{'reason': reason},
+      details: <String, Object?>{'trace_type': 'failed', 'reason': reason},
     );
   }
 
@@ -650,6 +1065,7 @@ final class RuntimeKernel {
       packId: task.packId,
       agentId: task.agentId,
       details: <String, Object?>{
+        'trace_type': 'failed',
         'dependency_task_ids': task.dependencyTaskIds,
         'missing_dependency_ids': task.missingDependencyIds,
         'error': task.error,
@@ -666,6 +1082,7 @@ final class RuntimeKernel {
       packId: task.packId,
       agentId: task.agentId,
       details: <String, Object?>{
+        'trace_type': 'failed',
         'attempts': task.attempts,
         'max_attempts': task.maxAttempts,
       },
@@ -679,7 +1096,10 @@ final class RuntimeKernel {
       taskId: task.id,
       packId: task.packId,
       agentId: task.agentId,
-      details: <String, Object?>{'max_attempts': task.maxAttempts},
+      details: <String, Object?>{
+        'trace_type': 'task_created',
+        'max_attempts': task.maxAttempts,
+      },
     );
   }
 
@@ -691,7 +1111,11 @@ final class RuntimeKernel {
       runId: run.id,
       packId: task.packId,
       agentId: task.agentId,
-      details: <String, Object?>{'attempt': run.attempt},
+      details: <String, Object?>{
+        'trace_type': 'run_started',
+        'attempt': run.attempt,
+        'lease_expires_at': run.leaseExpiresAt?.toIso8601String(),
+      },
     );
   }
 
@@ -704,7 +1128,32 @@ final class RuntimeKernel {
       runId: run.id,
       packId: task.packId,
       agentId: task.agentId,
-      details: <String, Object?>{'type': output.type},
+      details: <String, Object?>{
+        'trace_type': 'event_emitted',
+        'type': output.type,
+      },
+    );
+  }
+
+  Future<void> _traceOutputRejected(
+    RuntimeTask task,
+    RuntimeRun run,
+    OutputEventValidationException error,
+  ) {
+    return _trace(
+      name: 'runtime.handler.output_rejected',
+      message: 'Handler emitted an undeclared output event.',
+      level: TraceLevel.error,
+      taskId: task.id,
+      runId: run.id,
+      packId: task.packId,
+      agentId: task.agentId,
+      details: <String, Object?>{
+        'trace_type': 'error',
+        'event_type': error.eventType,
+        'declared_output_events': error.declaredOutputEvents.toList(),
+        'error': error.message,
+      },
     );
   }
 
@@ -717,6 +1166,7 @@ final class RuntimeKernel {
       packId: task.packId,
       agentId: task.agentId,
       details: <String, Object?>{
+        'trace_type': 'run_completed',
         'output_event_count': run.outputEventIds.length,
         'attempt': run.attempt,
       },
@@ -732,7 +1182,11 @@ final class RuntimeKernel {
       runId: run.id,
       packId: task.packId,
       agentId: task.agentId,
-      details: <String, Object?>{'error': '$error', 'attempt': run.attempt},
+      details: <String, Object?>{
+        'trace_type': 'error',
+        'error': '$error',
+        'attempt': run.attempt,
+      },
     );
   }
 
@@ -750,8 +1204,29 @@ final class RuntimeKernel {
       packId: task.packId,
       agentId: task.agentId,
       details: <String, Object?>{
+        'trace_type': 'permission_checked',
         'runtime_kind': definition.runtimeKind.name,
         'error': task.error,
+      },
+    );
+  }
+
+  Future<void> _tracePermissionChecked(
+    RuntimeTask task,
+    RuntimeRun run,
+    List<String> missing,
+  ) {
+    return _trace(
+      name: 'runtime.permission.checked',
+      message: 'Pack permissions checked.',
+      taskId: task.id,
+      runId: run.id,
+      packId: task.packId,
+      agentId: task.agentId,
+      details: <String, Object?>{
+        'trace_type': 'permission_checked',
+        'missing_permissions': missing,
+        'granted': missing.isEmpty,
       },
     );
   }
@@ -770,9 +1245,57 @@ final class RuntimeKernel {
       packId: task.packId,
       agentId: task.agentId,
       details: <String, Object?>{
+        'trace_type': 'permission_checked',
         'missing_permissions': missing,
         'attempt': run.attempt,
       },
+    );
+  }
+
+  Future<void> _tracePermissionRevoked(RuntimeTask task, String permission) {
+    return _trace(
+      name: 'runtime.permission.revoked',
+      message: 'Queued task denied after permission revocation.',
+      level: TraceLevel.warning,
+      taskId: task.id,
+      packId: task.packId,
+      agentId: task.agentId,
+      details: <String, Object?>{
+        'trace_type': 'permission_checked',
+        'permission': permission,
+      },
+    );
+  }
+
+  Future<void> _traceContextCacheInvalidationRequested(
+    String packId,
+    String permission,
+  ) {
+    return _trace(
+      name: 'runtime.context_cache.invalidate_requested',
+      message: 'Context cache invalidation requested after permission change.',
+      packId: packId,
+      details: <String, Object?>{
+        'trace_type': 'event_emitted',
+        'permission': permission,
+      },
+    );
+  }
+
+  Future<void> _traceStaleRunTerminated(
+    RuntimeTask? task,
+    RuntimeRun run,
+    String error,
+  ) {
+    return _trace(
+      name: 'runtime.run.stale_terminated',
+      message: 'Recovered stale running run as failed.',
+      level: TraceLevel.warning,
+      taskId: task?.id ?? run.taskId,
+      runId: run.id,
+      packId: run.packId,
+      agentId: run.agentId,
+      details: <String, Object?>{'trace_type': 'failed', 'error': error},
     );
   }
 }
@@ -803,26 +1326,74 @@ final class _QueuedRequest {
 final class _PermissionCheckedModelClient implements ModelClient {
   const _PermissionCheckedModelClient({
     required this.packId,
+    required this.taskId,
+    required this.runId,
+    required this.agentId,
     required this.permissionBroker,
     required this.delegate,
+    required this.trace,
   });
 
   final String packId;
+  final String taskId;
+  final String runId;
+  final String agentId;
   final PermissionBroker permissionBroker;
   final ModelClient delegate;
+  final _TraceRecorder trace;
 
   @override
   Future<ModelResponse> complete(ModelRequest request) async {
+    await trace(
+      name: 'runtime.model.requested',
+      message: 'Model completion requested.',
+      taskId: taskId,
+      runId: runId,
+      packId: packId,
+      agentId: agentId,
+      details: <String, Object?>{
+        'trace_type': 'model',
+        'prompt_length': request.prompt.length,
+        'context_keys': request.context.keys.toList(growable: false),
+      },
+    );
     final granted = await permissionBroker.isGranted(
       packId,
       ModelPermissions.complete,
     );
     if (!granted) {
-      throw StateError(
-        'Pack $packId is missing ${ModelPermissions.complete} permission.',
+      await trace(
+        name: 'runtime.model.permission_denied',
+        message: 'Model completion permission denied.',
+        level: TraceLevel.warning,
+        taskId: taskId,
+        runId: runId,
+        packId: packId,
+        agentId: agentId,
+        details: const <String, Object?>{
+          'trace_type': 'permission_checked',
+          'missing_permissions': <String>[ModelPermissions.complete],
+        },
+      );
+      throw RuntimePermissionDeniedException(
+        packId: packId,
+        permissions: const <String>[ModelPermissions.complete],
       );
     }
-    return delegate.complete(request);
+    final response = await delegate.complete(request);
+    await trace(
+      name: 'runtime.model.completed',
+      message: 'Model completion returned.',
+      taskId: taskId,
+      runId: runId,
+      packId: packId,
+      agentId: agentId,
+      details: <String, Object?>{
+        'trace_type': 'model',
+        'response_length': response.text.length,
+      },
+    );
+    return response;
   }
 }
 
@@ -830,22 +1401,55 @@ final class _RuntimeToolInvoker implements ToolInvoker {
   const _RuntimeToolInvoker({
     required this.packId,
     required this.runId,
+    required this.taskId,
+    required this.agentId,
     required this.permissionBroker,
     required this.toolRegistry,
+    required this.trace,
   });
 
   final String packId;
   final String runId;
+  final String taskId;
+  final String agentId;
   final PermissionBroker permissionBroker;
   final ToolRegistry toolRegistry;
+  final _TraceRecorder trace;
 
   @override
   Future<WnResult<JsonMap>> invokeTool(
     String name, {
     JsonMap input = const <String, Object?>{},
   }) async {
+    await trace(
+      name: 'runtime.tool.requested',
+      message: 'Tool invocation requested.',
+      taskId: taskId,
+      runId: runId,
+      packId: packId,
+      agentId: agentId,
+      details: <String, Object?>{
+        'trace_type': 'tool',
+        'tool_name': name,
+        'input_keys': input.keys.toList(growable: false),
+      },
+    );
     final definition = toolRegistry.lookup(name);
     if (definition == null) {
+      await trace(
+        name: 'runtime.tool.failed',
+        message: 'Tool is not registered.',
+        level: TraceLevel.warning,
+        taskId: taskId,
+        runId: runId,
+        packId: packId,
+        agentId: agentId,
+        details: <String, Object?>{
+          'trace_type': 'tool',
+          'tool_name': name,
+          'error_code': 'tool_not_found',
+        },
+      );
       return WnResult<JsonMap>.err(
         WnFailure(
           code: 'tool_not_found',
@@ -858,6 +1462,20 @@ final class _RuntimeToolInvoker implements ToolInvoker {
       definition.requiredPermissions,
     );
     if (missing.isNotEmpty) {
+      await trace(
+        name: 'runtime.tool.permission_denied',
+        message: 'Tool permission denied.',
+        level: TraceLevel.warning,
+        taskId: taskId,
+        runId: runId,
+        packId: packId,
+        agentId: agentId,
+        details: <String, Object?>{
+          'trace_type': 'permission_checked',
+          'tool_name': name,
+          'missing_permissions': missing,
+        },
+      );
       return WnResult<JsonMap>.err(
         WnFailure(
           code: 'permission_denied',
@@ -866,7 +1484,7 @@ final class _RuntimeToolInvoker implements ToolInvoker {
         ),
       );
     }
-    return toolRegistry.invoke(
+    final result = await toolRegistry.invoke(
       ToolInvocation(
         packId: packId,
         runId: runId,
@@ -874,5 +1492,69 @@ final class _RuntimeToolInvoker implements ToolInvoker {
         input: input,
       ),
     );
+    await trace(
+      name: result.isOk ? 'runtime.tool.completed' : 'runtime.tool.failed',
+      message: result.isOk ? 'Tool invocation completed.' : 'Tool failed.',
+      level: result.isOk ? TraceLevel.info : TraceLevel.warning,
+      taskId: taskId,
+      runId: runId,
+      packId: packId,
+      agentId: agentId,
+      details: <String, Object?>{
+        'trace_type': 'tool',
+        'tool_name': name,
+        'error_code': result.isErr ? result.failure.code : null,
+      },
+    );
+    return result;
   }
+}
+
+typedef _TraceRecorder =
+    Future<void> Function({
+      required String name,
+      required String message,
+      TraceLevel level,
+      String? eventId,
+      String? taskId,
+      String? runId,
+      String? packId,
+      String? agentId,
+      JsonMap details,
+    });
+
+final class OutputEventValidationException implements Exception {
+  OutputEventValidationException({
+    required this.agentId,
+    required this.eventType,
+    required Set<String> declaredOutputEvents,
+  }) : declaredOutputEvents = Set<String>.unmodifiable(declaredOutputEvents),
+       message =
+           'Agent $agentId emitted undeclared output event $eventType. '
+           'Declared output_events: '
+           '${declaredOutputEvents.isEmpty ? '<none>' : declaredOutputEvents.join(', ')}.';
+
+  final String agentId;
+  final String eventType;
+  final Set<String> declaredOutputEvents;
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
+final class RuntimePermissionDeniedException implements Exception {
+  RuntimePermissionDeniedException({
+    required this.packId,
+    required Iterable<String> permissions,
+  }) : permissions = List<String>.unmodifiable(permissions),
+       message =
+           'Pack $packId is missing permissions: ${permissions.join(', ')}.';
+
+  final String packId;
+  final List<String> permissions;
+  final String message;
+
+  @override
+  String toString() => message;
 }
