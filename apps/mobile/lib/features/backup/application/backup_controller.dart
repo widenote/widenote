@@ -271,7 +271,8 @@ final class BackupController extends Notifier<BackupState> {
       ..invalidate(todoControllerProvider)
       ..invalidate(memoryControllerProvider)
       ..invalidate(modelProviderSettingsControllerProvider)
-      ..invalidate(modelClientProvider);
+      ..invalidate(modelClientProvider)
+      ..invalidate(chatModelClientProvider);
   }
 }
 

@@ -109,7 +109,7 @@ final class CaptureOrchestrator {
       toolRegistry: runtime.InMemoryToolRegistry(),
       idGenerator: runtimeIdGenerator,
       clock: localClock,
-      model: model ?? const _CaptureSummaryModel(),
+      model: model ?? const _ModelRequiredCaptureModel(),
       deviceId: 'local-device',
       runtimeStore: runtimeStore,
     );
@@ -399,7 +399,7 @@ final class CaptureOrchestrator {
         id: 'todo.skipped.$sourceCaptureId',
         title: 'No todo suggested',
         sourceLabel: 'source: $sourceCaptureId',
-        statusLabel: 'skipped for sensitive capture',
+        statusLabel: 'not suggested',
         sourceCaptureId: sourceCaptureId,
         sourceEventId: capture.id,
         isSuggested: false,
@@ -691,13 +691,11 @@ final class _CaptureAgent implements runtime.AgentHandler {
     final text = _captureTextFromPayload(event.payload);
     final subject =
         event.subjectRef ?? runtime.SubjectRef(kind: 'capture', id: event.id);
-    final policy = _policyForCaptureText(text);
     final summary = await _summarizeCapture(
       context.model,
       text: text,
       sourceEventId: event.id,
     );
-    final usedModelFallback = summary.raw['model_fallback'] == true;
 
     return runtime.AgentHandlerResult(
       events: <runtime.WnEventDraft>[
@@ -709,16 +707,12 @@ final class _CaptureAgent implements runtime.AgentHandler {
             'text': summary.text,
             'source_event_id': event.id,
             'source_excerpt': previewText(text),
-            'memory_type': policy.memoryType,
-            'confidence': usedModelFallback ? 'low' : policy.confidence,
-            'sensitivity': policy.sensitivity,
-            if (usedModelFallback) 'model_fallback': true,
-            if (summary.raw['model_fallback_error_type'] is String)
-              'model_fallback_error_type':
-                  summary.raw['model_fallback_error_type'],
-            if (summary.raw['model_fallback_status_code'] is int)
-              'model_fallback_status_code':
-                  summary.raw['model_fallback_status_code'],
+            if (_modelMetadataString(summary, 'memory_type') != null)
+              'memory_type': _modelMetadataString(summary, 'memory_type'),
+            if (_modelMetadataValue(summary, 'confidence') != null)
+              'confidence': _modelMetadataValue(summary, 'confidence'),
+            if (_modelMetadataString(summary, 'sensitivity') != null)
+              'sensitivity': _modelMetadataString(summary, 'sensitivity'),
           },
         ),
         context.emit(
@@ -770,57 +764,47 @@ final class _CaptureAgent implements runtime.AgentHandler {
   }
 }
 
-bool _shouldSkipTodoSuggestion(_MemoryPolicyFields policy) {
-  return policy.sensitivity == 'high';
-}
-
 Future<runtime.ModelResponse> _summarizeCapture(
   runtime.ModelClient model, {
   required String text,
   required String sourceEventId,
 }) async {
-  try {
-    return await model.complete(
-      runtime.ModelRequest(
-        prompt: 'Summarize capture for Memory: $text',
-        context: <String, Object?>{'source_event_id': sourceEventId},
-      ),
-    );
-  } catch (error) {
-    final statusCode = _statusCodeFromError(error);
-    return runtime.ModelResponse(
-      text: previewText(text),
-      raw: <String, Object?>{
-        'model_fallback': true,
-        'model_fallback_error_type': error.runtimeType.toString(),
-        'model_fallback_status_code': ?statusCode,
-      },
-    );
-  }
+  return model.complete(
+    runtime.ModelRequest(
+      prompt: 'Summarize capture for Memory: $text',
+      context: <String, Object?>{'source_event_id': sourceEventId},
+    ),
+  );
 }
 
-int? _statusCodeFromError(Object error) {
-  try {
-    final value = (error as dynamic).statusCode;
-    if (value is int) {
-      return value;
-    }
-  } on Object {
-    return null;
+String? _modelMetadataString(runtime.ModelResponse response, String key) {
+  final value = response.raw[key];
+  if (value is String && value.trim().isNotEmpty) {
+    return value.trim();
   }
   return null;
 }
 
-final class _MemoryPolicyFields {
-  const _MemoryPolicyFields({
-    required this.memoryType,
-    required this.confidence,
-    required this.sensitivity,
-  });
+Object? _modelMetadataValue(runtime.ModelResponse response, String key) {
+  final value = response.raw[key];
+  if (value is num) {
+    return value;
+  }
+  if (value is String && value.trim().isNotEmpty) {
+    return value.trim();
+  }
+  return null;
+}
 
-  final String memoryType;
-  final String confidence;
-  final String sensitivity;
+final class _ModelRequiredCaptureModel implements runtime.ModelClient {
+  const _ModelRequiredCaptureModel();
+
+  @override
+  Future<runtime.ModelResponse> complete(runtime.ModelRequest request) async {
+    throw const CapturePipelineException(
+      'Configure a model provider before running capture agents.',
+    );
+  }
 }
 
 final class _TodoAgent implements runtime.AgentHandler {
@@ -832,10 +816,6 @@ final class _TodoAgent implements runtime.AgentHandler {
     runtime.WnEvent event,
   ) async {
     final text = _captureTextFromPayload(event.payload);
-    final policy = _policyForCaptureText(text);
-    if (_shouldSkipTodoSuggestion(policy)) {
-      return const runtime.AgentHandlerResult.empty();
-    }
     final subject =
         event.subjectRef ?? runtime.SubjectRef(kind: 'capture', id: event.id);
 
@@ -851,19 +831,6 @@ final class _TodoAgent implements runtime.AgentHandler {
         ),
       ],
     );
-  }
-}
-
-final class _CaptureSummaryModel implements runtime.ModelClient {
-  const _CaptureSummaryModel();
-
-  @override
-  Future<runtime.ModelResponse> complete(runtime.ModelRequest request) async {
-    final text = request.prompt.replaceFirst(
-      'Summarize capture for Memory: ',
-      '',
-    );
-    return runtime.ModelResponse(text: previewText(text));
   }
 }
 
@@ -935,88 +902,6 @@ memory.MemoryType _memoryType(Object? value) {
     return memory.MemoryType.insight;
   }
   return memory.MemoryType.taskContext;
-}
-
-_MemoryPolicyFields _policyForCaptureText(String text) {
-  final lower = text.toLowerCase();
-  if (_containsAny(lower, const [
-    'api key',
-    'apikey',
-    'access token',
-    'token',
-    'password',
-    'secret',
-    'credential',
-    '密钥',
-    '密码',
-    '令牌',
-  ])) {
-    return const _MemoryPolicyFields(
-      memoryType: 'credential',
-      confidence: 'high',
-      sensitivity: 'high',
-    );
-  }
-  if (_containsAny(lower, const [
-    'doctor',
-    'medical',
-    'health',
-    'diagnosis',
-    'medication',
-    'hospital',
-    '健康',
-    '医生',
-    '诊断',
-    '用药',
-  ])) {
-    return const _MemoryPolicyFields(
-      memoryType: 'health',
-      confidence: 'medium',
-      sensitivity: 'high',
-    );
-  }
-  if (_containsAny(lower, const [
-    'bank',
-    'salary',
-    'income',
-    'tax',
-    'credit card',
-    'invoice',
-    '银行',
-    '薪资',
-    '收入',
-    '税',
-    '信用卡',
-  ])) {
-    return const _MemoryPolicyFields(
-      memoryType: 'finance',
-      confidence: 'medium',
-      sensitivity: 'high',
-    );
-  }
-  if (_containsAny(lower, const [
-    'home address',
-    'current location',
-    'gps',
-    '住址',
-    '地址',
-    '定位',
-  ])) {
-    return const _MemoryPolicyFields(
-      memoryType: 'location',
-      confidence: 'medium',
-      sensitivity: 'high',
-    );
-  }
-  return const _MemoryPolicyFields(
-    memoryType: 'task_context',
-    confidence: 'high',
-    sensitivity: 'low',
-  );
-}
-
-bool _containsAny(String text, Iterable<String> needles) {
-  return needles.any(text.contains);
 }
 
 String _timeLabel(DateTime time) {

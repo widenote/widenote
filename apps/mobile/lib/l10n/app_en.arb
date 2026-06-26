@@ -185,7 +185,9 @@
   "memoryEmpty": "Memory queue is waiting for first capture.",
   "memoryPageTitle": "Memory",
   "memoryPageSubtitle": "Edit, tombstone, restore, and inspect local Memory with source links.",
-  "memorySearchHint": "Search Memory body, type, status, or source...",
+  "memorySearchHint": "Text search needs a retriever...",
+  "memoryTextSearchRequiresRetriever": "Text search needs a model-backed retriever. Clear the field to browse Memory locally.",
+  "memoryTextSearchClearHint": "Clear the text field to browse Memory locally.",
   "memoryActiveSectionTitle": "Active Memory",
   "memoryActiveEmpty": "No active Memory yet.",
   "memoryDeletedSectionTitle": "Deleted Memory",
@@ -273,53 +275,6 @@
   "chatComposerHint": "Ask about local records, Memory, or todos...",
   "chatSendButton": "Send",
   "chatGeneratingButton": "Generating",
-  "chatAssistantEmptyReply": "I don't have local records to cite yet. Add captures first, then I can answer from Memory, records, and todos.",
-  "chatAssistantContextReply": "I found {count} local context item(s). {lead}\n\n{sources}",
-  "@chatAssistantContextReply": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "lead": {
-        "type": "String"
-      },
-      "sources": {
-        "type": "String"
-      }
-    }
-  },
-  "chatAssistantLeadTodo": "The closest match is a todo: {excerpt}",
-  "@chatAssistantLeadTodo": {
-    "placeholders": {
-      "excerpt": {
-        "type": "String"
-      }
-    }
-  },
-  "chatAssistantLeadMemory": "The closest match is a Memory item: {excerpt}",
-  "@chatAssistantLeadMemory": {
-    "placeholders": {
-      "excerpt": {
-        "type": "String"
-      }
-    }
-  },
-  "chatAssistantLeadCapture": "The closest match is a raw record: {excerpt}",
-  "@chatAssistantLeadCapture": {
-    "placeholders": {
-      "excerpt": {
-        "type": "String"
-      }
-    }
-  },
-  "chatAssistantLeadGeneric": "The closest match is: {excerpt}",
-  "@chatAssistantLeadGeneric": {
-    "placeholders": {
-      "excerpt": {
-        "type": "String"
-      }
-    }
-  },
   "chatContextMemoryTitle": "Memory",
   "chatContextRecordTitle": "Record",
   "chatContextTodoTitle": "Todo",
@@ -526,9 +481,9 @@
       }
     }
   },
-  "providerSettingsStatusNotConfigured": "Offline fallback active",
-  "providerSettingsStatusDescriptionConfigured": "Capture, chat, and Agent Packs use this default unless a later role override says otherwise.",
-  "providerSettingsStatusDescriptionOffline": "Core capture still works locally with deterministic summaries. Add a BYOK provider when you want live model calls.",
+  "providerSettingsStatusNotConfigured": "Model not configured",
+  "providerSettingsStatusDescriptionConfigured": "Chat and model-backed Agent Pack work use this default unless a later role override says otherwise. Capture still saves raw records locally.",
+  "providerSettingsStatusDescriptionOffline": "Core capture still saves raw records locally. Chat answers and semantic model work require a configured BYOK provider.",
   "providerSettingsProviderCount": "{count, plural, =1{1 provider} other{{count} providers}}",
   "@providerSettingsProviderCount": {
     "placeholders": {
@@ -540,15 +495,15 @@
   "providerSettingsRolesTitle": "Model roles",
   "providerSettingsRolesDescription": "WideNote keeps provider credentials separate from runtime roles so future Agent Packs can route safely.",
   "providerSettingsTextRoleTitle": "Default text model",
-  "providerSettingsTextRoleDescription": "Used by capture summaries, chat answers, Memory extraction, and built-in Agent Packs in this slice.",
+  "providerSettingsTextRoleDescription": "Used by chat answers and model-backed Agent Pack work in this slice.",
   "providerSettingsAgentRoleTitle": "Per-Agent overrides",
   "providerSettingsAgentRoleDescription": "Not enabled yet. For now, all built-in agents inherit the default model.",
-  "providerSettingsRoleFallback": "Local deterministic fallback",
+  "providerSettingsRoleFallback": "Requires configured model",
   "providerSettingsCapabilitiesTitle": "Capabilities and privacy",
   "providerSettingsCapabilitiesDescription": "Connection tests are user-initiated. API keys stay local and are included only in user-managed backups.",
   "providerSettingsCapabilityChat": "Chat",
   "providerSettingsCapabilityCompletion": "Completion",
-  "providerSettingsCapabilityOfflineFallback": "Offline fallback",
+  "providerSettingsCapabilityOfflineFallback": "Local raw capture",
   "providerSettingsCapabilityByok": "BYOK local storage",
   "providerClearKeyTitle": "Clear saved API key",
   "providerClearKeySubtitle": "Leave unchecked and keep this field blank to keep the saved key.",

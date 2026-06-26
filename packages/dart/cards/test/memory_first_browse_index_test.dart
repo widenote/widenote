@@ -40,7 +40,7 @@ void main() {
       ]);
     });
 
-    test('filters by text and item kind without a persisted search index', () {
+    test('filters by item kind without local text matching', () {
       final index = MemoryFirstBrowseIndex.build([
         _item(
           id: 'capture-1',
@@ -64,7 +64,12 @@ void main() {
 
       expect(
         index
-            .search(const MemoryFirstTimelineFilter(query: 'Lin source-linked'))
+            .search(
+              const MemoryFirstTimelineFilter(
+                query: 'Lin source-linked',
+                kinds: {MemoryFirstTimelineItemKind.memory},
+              ),
+            )
             .map((item) => item.id),
         ['memory-1'],
       );
@@ -82,11 +87,16 @@ void main() {
       expect(
         index.search(
           const MemoryFirstTimelineFilter(
-            query: 'follow',
             kinds: {MemoryFirstTimelineItemKind.memory},
           ),
         ),
-        isEmpty,
+        hasLength(1),
+      );
+      expect(
+        index.search(
+          const MemoryFirstTimelineFilter(query: 'No local substring search'),
+        ),
+        hasLength(3),
       );
     });
 

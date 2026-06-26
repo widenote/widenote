@@ -22,8 +22,8 @@ Features may own presentation and temporary app-local controllers. Durable runti
 - `recap`: Daily Recap second-level page built from local object truth.
 - `memory`: accepted Memory list, edit, tombstone delete, restore, and source
   metadata.
-- `chat`: local sessions, messages, provider-backed assistant bridge with
-  deterministic fallback, source-linked context, and retry UI.
+- `chat`: local sessions, messages, provider-backed assistant bridge,
+  source-linked context, model-required failure states, and retry UI.
 - `todos`: source-linked todo list.
 - `settings`: Settings / Privacy hub for permissions, model providers,
   backup/restore, trace console, and display status.

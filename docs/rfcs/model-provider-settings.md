@@ -25,6 +25,9 @@ requirement.
   missing-text failures.
 - Provide a mobile settings page for add, edit, test connection, and default
   provider selection.
+- Preserve local model-call trace metadata for BYOK users, including
+  provider/model ids, token usage when providers expose it, retry/failure state,
+  and future cost fields without persisting API keys or raw private prompts.
 - Keep real credentials out of repository files, fixtures, logs, generated
   docs, and automated review prompts.
 - Safe local backups exclude provider API key values by default. Encrypted full
@@ -35,7 +38,8 @@ requirement.
 
 - Real live-provider tests in CI.
 - Per-agent model role routing.
-- LLM call log storage.
+- A full billing ledger or provider-pricing engine. Runtime trace metadata may
+  store provider-exposed token/cost fields when available.
 - Migration away from the current QA-only MIMO bootstrap path.
 
 ## Proposed Design
@@ -56,11 +60,11 @@ contracts.
 The mobile settings page is organized as:
 
 1. Runtime model access status, showing whether a default provider is active or
-   whether the local deterministic fallback is in use.
+   whether model-backed work currently requires configuration.
 2. Model roles, showing the default text-model role and making clear that
    per-Agent overrides are deferred.
 3. Capabilities and privacy, explaining BYOK local storage, user-initiated
-   connection tests, and offline fallback.
+   connection tests, and local raw-capture availability.
 4. Provider management, preserving add, edit, default selection, and connection
    test actions.
 
@@ -107,9 +111,12 @@ This RFC creates the provider settings foundation for Agent Pack model access.
 Per-agent role selection and model routing remain follow-up work and should use
 public schemas rather than app-private tables.
 
-Until per-agent routing lands, built-in capture, chat, Memory, and Agent Pack
-execution inherit the default provider when one is configured and otherwise use
-the local deterministic fallback.
+Until per-agent routing lands, Chat and model-backed Agent Pack work inherit
+the default provider when one is configured. Without a configured provider,
+model-backed work must surface a model-required/model-unavailable state instead
+of a local template answer. Core capture still preserves raw records locally.
+Runtime traces should make model calls inspectable for BYOK users without
+recording prompt text or credential values.
 
 ## Alternatives
 
@@ -134,7 +141,8 @@ that keys need re-entry after restore.
 - Whether a future secure-storage abstraction can preserve full
   user-managed backup/restore semantics.
 - Which provider metadata belongs in `packages/schemas`?
-- How should per-agent model roles choose fallback providers?
+- How should per-agent model roles choose secondary model providers, retries,
+  or visible unavailable states?
 - What call-log metadata is safe to persist without leaking prompts or secrets?
 
 ## Decision Outcome

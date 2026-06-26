@@ -10,6 +10,8 @@ final localDatabaseProvider = Provider<WideNoteLocalDatabase>((ref) {
   throw StateError('localDatabaseProvider must be provided by app bootstrap.');
 });
 
+final appSupportDirectoryProvider = Provider<Directory?>((ref) => null);
+
 final localEventStoreProvider = Provider<runtime.EventStore>((ref) {
   return LocalDbEventStore(ref.watch(localDatabaseProvider));
 });
@@ -23,9 +25,13 @@ final localMemoryRepositoryProvider = Provider<memory.MemoryRepository>((ref) {
 });
 
 final class WideNoteMobileBootstrap {
-  const WideNoteMobileBootstrap._({required this.database});
+  const WideNoteMobileBootstrap._({
+    required this.database,
+    required Directory supportDirectory,
+  }) : _supportDirectory = supportDirectory;
 
   final WideNoteLocalDatabase database;
+  final Directory _supportDirectory;
 
   static Future<WideNoteMobileBootstrap> production({
     Directory? supportDirectory,
@@ -37,11 +43,15 @@ final class WideNoteMobileBootstrap {
 
     return WideNoteMobileBootstrap._(
       database: WideNoteLocalDatabase.openPath(databasePath),
+      supportDirectory: root,
     );
   }
 
   List<Override> get providerOverrides {
-    return <Override>[localDatabaseProvider.overrideWithValue(database)];
+    return <Override>[
+      localDatabaseProvider.overrideWithValue(database),
+      appSupportDirectoryProvider.overrideWithValue(_supportDirectory),
+    ];
   }
 
   void close() {

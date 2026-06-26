@@ -59,7 +59,7 @@ void main() {
     expect(find.textContaining('"kind": "backup_manifest"'), findsOneWidget);
     expect(find.textContaining('"includes_secrets": false'), findsOneWidget);
     expect(find.textContaining('"backup_mode": "safe"'), findsOneWidget);
-    expect(find.textContaining('[redacted_secret]'), findsOneWidget);
+    expect(find.textContaining('"payload_omitted": true'), findsOneWidget);
     expect(find.textContaining('"local_db_schema_version"'), findsOneWidget);
     expect(find.textContaining(_backupPageCredential()), findsNothing);
     expect(find.byKey(const Key('backup-export-markdown')), findsOneWidget);

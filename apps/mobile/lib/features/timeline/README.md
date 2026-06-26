@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Owns the mobile Timeline browse, search, and detail surfaces for local
+Owns the mobile Timeline browse, type-filter, and detail surfaces for local
 captures, cards, insights, accepted Memory, and todos.
 
 ## Ownership Boundary
@@ -13,8 +13,10 @@ presents provenance and source references, but it does not define canonical
 storage, Memory policy, Agent Pack runtime behavior, search indexing, or sync
 semantics.
 
-Timeline search is currently a local in-memory browse index over loaded rows.
-Full FTS/vector search remains a later persistence/search concern.
+Timeline text search is not implemented with local substring rules. The current
+surface supports local type filtering and shows a retriever-required state for
+text queries. Full embedding/vector or model-backed retrieval remains a later
+persistence/search concern.
 
 ## Dependencies
 

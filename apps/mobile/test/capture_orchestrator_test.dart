@@ -70,7 +70,7 @@ void main() {
   );
 
   test('quick capture runs runtime and silently auto-accepts Memory', () async {
-    final model = runtime.FakeModel(
+    final model = _SequenceMetadataModel(
       responses: <String>['Lin prefers source-linked WideNote todos.'],
     );
     final orchestrator = CaptureOrchestrator.local(
@@ -166,7 +166,9 @@ void main() {
       clock: TickingWnClock(DateTime.utc(2026, 6, 23, 1)),
       idGenerator: SequenceWnIdGenerator(seed: 'restart'),
       memoryRepository: repository,
-      model: runtime.FakeModel(responses: <String>['First durable memory.']),
+      model: _SequenceMetadataModel(
+        responses: <String>['First durable memory.'],
+      ),
     );
     final firstResult = await first.processCapture(
       'First capture before restart.',
@@ -177,7 +179,9 @@ void main() {
       clock: TickingWnClock(DateTime.utc(2026, 6, 23, 2)),
       idGenerator: SequenceWnIdGenerator(seed: 'restart'),
       memoryRepository: repository,
-      model: runtime.FakeModel(responses: <String>['Second durable memory.']),
+      model: _SequenceMetadataModel(
+        responses: <String>['Second durable memory.'],
+      ),
     );
     final secondResult = await second.processCapture(
       'Second capture after restart.',
@@ -196,12 +200,12 @@ void main() {
   });
 
   test(
-    'sensitive captures route Memory to review instead of auto-accept',
+    'capture content keywords do not drive Memory metadata or Todo branching',
     () async {
       final orchestrator = CaptureOrchestrator.local(
         clock: TickingWnClock(DateTime.utc(2026, 6, 23, 2)),
         idGenerator: SequenceWnIdGenerator(seed: 'secret'),
-        model: runtime.FakeModel(
+        model: _SequenceMetadataModel(
           responses: <String>['The user pasted an API token.'],
         ),
       );
@@ -210,22 +214,26 @@ void main() {
         'My API token is sk-demo-secret and should not be auto stored.',
       );
 
-      expect(result.acceptedMemoryCount, 0);
-      expect(result.reviewMemoryCount, 1);
-      expect(result.memoryItem.title, 'memory.needs_review');
-      expect(result.memoryItem.statusLabel, 'needs review');
-      expect(result.memoryItem.confidenceLabel, contains('review_only_type'));
-      expect(result.cards.map((card) => card.kindLabel), ['capture card']);
-      expect(result.insights, hasLength(3));
-      expect(result.todo.isSuggested, isFalse);
-      expect(result.todo.statusLabel, 'skipped for sensitive capture');
-      expect(result.todo.title, 'No todo suggested');
-      expect(
-        result.eventTypes,
-        isNot(contains(runtime.WnEventTypes.todoSuggested)),
+      expect(result.acceptedMemoryCount, 1);
+      expect(result.reviewMemoryCount, 0);
+      expect(result.memoryItem.title, 'memory.auto_saved');
+      expect(result.memoryItem.statusLabel, 'auto-accepted');
+      expect(result.memoryItem.confidenceLabel, 'high confidence');
+      final memoryEvent = result.events.singleWhere(
+        (event) => event.type == runtime.WnEventTypes.memoryProposed,
       );
-      expect(result.reviewCandidate, isNotNull);
-      expect(result.reviewCandidate!.reasonLabel, contains('review_only_type'));
+      expect(memoryEvent.payload['memory_type'], 'task_context');
+      expect(memoryEvent.payload['confidence'], 'high');
+      expect(memoryEvent.payload['sensitivity'], 'low');
+      expect(result.cards.map((card) => card.kindLabel), [
+        'capture card',
+        'Memory card',
+      ]);
+      expect(result.insights, hasLength(3));
+      expect(result.todo.isSuggested, isTrue);
+      expect(result.todo.statusLabel, 'suggested by agent');
+      expect(result.eventTypes, contains(runtime.WnEventTypes.todoSuggested));
+      expect(result.reviewCandidate, isNull);
     },
   );
 
@@ -233,7 +241,7 @@ void main() {
     final orchestrator = CaptureOrchestrator.local(
       clock: TickingWnClock(DateTime.utc(2026, 6, 23, 6)),
       idGenerator: SequenceWnIdGenerator(seed: 'repeat'),
-      model: runtime.FakeModel(
+      model: _SequenceMetadataModel(
         responses: <String>['First summary.', 'Second summary.'],
       ),
     );
@@ -341,68 +349,66 @@ void main() {
   );
 
   test(
-    'model failure falls back to local summary and completes chain',
+    'model failure fails model-backed capture derivation without local summary',
     () async {
+      final eventStore = runtime.InMemoryEventStore();
+      final traceSink = runtime.InMemoryTraceSink();
       final orchestrator = CaptureOrchestrator.local(
+        eventStore: eventStore,
+        traceSink: traceSink,
         clock: TickingWnClock(DateTime.utc(2026, 6, 23, 4)),
         idGenerator: SequenceWnIdGenerator(seed: 'fallback'),
         model: const _FailingModel(),
       );
 
-      final result = await orchestrator.processCapture(
-        'Keep raw capture usable when the QA model is unavailable.',
+      await expectLater(
+        () => orchestrator.processCapture(
+          'Keep raw capture usable when the QA model is unavailable.',
+        ),
+        throwsA(isA<CapturePipelineException>()),
       );
 
-      expect(result.record.status, 'Processed locally');
-      expect(result.memoryItem.summary, contains('Keep raw capture usable'));
-      expect(result.memoryItem.needsReview, isTrue);
-      final memoryEvent = result.events.singleWhere(
-        (event) => event.type == runtime.WnEventTypes.memoryProposed,
-      );
-      expect(memoryEvent.payload['model_fallback'], isTrue);
-      expect(memoryEvent.payload['model_fallback_error_type'], 'StateError');
-      expect(memoryEvent.payload['confidence'], 'low');
-      expect(result.acceptedMemoryCount, 0);
-      expect(result.reviewMemoryCount, 1);
-      expect(result.cards, hasLength(1));
-      expect(result.insights, hasLength(3));
+      final events = await eventStore.readAll();
+      expect(events.map((event) => event.type), <String>[
+        runtime.WnEventTypes.captureCreated,
+        runtime.WnEventTypes.todoSuggested,
+      ]);
       expect(
-        result.eventTypes,
-        containsAll(<String>[
-          runtime.WnEventTypes.memoryProposed,
-          runtime.WnEventTypes.cardCreated,
-          runtime.WnEventTypes.insightCreated,
-          runtime.WnEventTypes.todoSuggested,
-        ]),
+        events.map((event) => event.type),
+        isNot(contains(runtime.WnEventTypes.memoryProposed)),
       );
+      final traces = await traceSink.readAll();
+      expect(traces.map((trace) => trace.name), contains('runtime.run.failed'));
       expect(
-        result.traces.map((trace) => trace.label),
-        isNot(contains('runtime.run.failed')),
+        traces
+            .where((trace) => trace.name == 'runtime.run.failed')
+            .map((trace) => trace.details['error'].toString()),
+        everyElement(isNot(contains('model_fallback'))),
       );
     },
   );
 
-  test('model fallback records provider status code when available', () async {
+  test('model status errors do not emit fallback Memory metadata', () async {
+    final eventStore = runtime.InMemoryEventStore();
     final orchestrator = CaptureOrchestrator.local(
+      eventStore: eventStore,
       clock: TickingWnClock(DateTime.utc(2026, 6, 23, 5)),
       idGenerator: SequenceWnIdGenerator(seed: 'rate'),
       model: const _StatusCodeFailingModel(),
     );
 
-    final result = await orchestrator.processCapture(
-      'Keep rate limit diagnostics without exposing provider secrets.',
+    await expectLater(
+      () => orchestrator.processCapture(
+        'Keep rate limit diagnostics without exposing provider secrets.',
+      ),
+      throwsA(isA<CapturePipelineException>()),
     );
 
-    final memoryEvent = result.events.singleWhere(
-      (event) => event.type == runtime.WnEventTypes.memoryProposed,
-    );
-    expect(memoryEvent.payload['model_fallback'], isTrue);
+    final events = await eventStore.readAll();
     expect(
-      memoryEvent.payload['model_fallback_error_type'],
-      '_StatusCodeError',
+      events.map((event) => event.type),
+      isNot(contains(runtime.WnEventTypes.memoryProposed)),
     );
-    expect(memoryEvent.payload['model_fallback_status_code'], 429);
-    expect(result.memoryItem.needsReview, isTrue);
   });
 
   test(
@@ -559,6 +565,31 @@ void main() {
 
     expect(await orchestrator.listMemoryReviewQueue(), isEmpty);
   });
+}
+
+final class _SequenceMetadataModel implements runtime.ModelClient {
+  _SequenceMetadataModel({required List<String> responses})
+    : _responses = responses;
+
+  final List<String> _responses;
+  final requests = <runtime.ModelRequest>[];
+  var _index = 0;
+
+  @override
+  Future<runtime.ModelResponse> complete(runtime.ModelRequest request) async {
+    requests.add(request);
+    if (_index >= _responses.length) {
+      throw StateError('No fake model response configured.');
+    }
+    return runtime.ModelResponse(
+      text: _responses[_index++],
+      raw: const <String, Object?>{
+        'memory_type': 'task_context',
+        'confidence': 'high',
+        'sensitivity': 'low',
+      },
+    );
+  }
 }
 
 final class _FailingModel implements runtime.ModelClient {

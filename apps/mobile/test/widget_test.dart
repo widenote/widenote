@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
 import 'package:widenote_local_db/widenote_local_db.dart';
 import 'package:widenote_mobile/app/local_database.dart';
+import 'package:widenote_mobile/app/model_client.dart';
 import 'package:widenote_mobile/app/widenote_app.dart';
 import 'package:widenote_mobile/features/capture/application/capture_controller.dart';
 import 'package:widenote_mobile/features/capture/application/capture_input_controller.dart';
@@ -349,6 +350,43 @@ void main() {
     expect(state.todos, isEmpty);
   });
 
+  testWidgets('missing model keeps raw capture and shows unavailable state', (
+    tester,
+  ) async {
+    await _pumpApp(tester, modelClient: null);
+
+    const captureText = 'Save the raw note even without a configured model.';
+    await _submitQuickCapture(tester, captureText);
+
+    await tester.scrollUntilVisible(
+      find.text(captureText),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text(captureText), findsOneWidget);
+    expect(find.textContaining('Saved locally, agent failed'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.textContaining('Configure a model provider or retry'),
+      -120,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(
+      find.textContaining('Configure a model provider or retry'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('CapturePipelineException'), findsNothing);
+    expect(find.textContaining('Memory proposal'), findsNothing);
+
+    final state = _readCaptureState(tester);
+    expect(state.records.single.body, captureText);
+    expect(state.records.single.status, 'Saved locally, agent failed');
+    expect(state.memories, isEmpty);
+    expect(state.reviewCandidates, isEmpty);
+    expect(state.cards, isEmpty);
+    expect(state.insights, isEmpty);
+    expect(state.todos, isEmpty);
+  });
+
   testWidgets('quick capture input is locked while processing', (tester) async {
     await _pumpApp(
       tester,
@@ -413,7 +451,7 @@ void main() {
   testWidgets('sensitive capture can be accepted from Memory review', (
     tester,
   ) async {
-    await _pumpApp(tester);
+    await _pumpApp(tester, modelClient: const _ReviewCaptureModel());
 
     const captureText = 'My API token should be reviewed before storage.';
     await _submitQuickCapture(tester, captureText);
@@ -467,7 +505,7 @@ void main() {
   testWidgets('review candidate can be edited before acceptance', (
     tester,
   ) async {
-    await _pumpApp(tester);
+    await _pumpApp(tester, modelClient: const _ReviewCaptureModel());
 
     await _submitQuickCapture(
       tester,
@@ -508,7 +546,7 @@ void main() {
   testWidgets('review candidate can be rejected without creating Memory', (
     tester,
   ) async {
-    await _pumpApp(tester);
+    await _pumpApp(tester, modelClient: const _ReviewCaptureModel());
 
     await _submitQuickCapture(
       tester,
@@ -529,11 +567,11 @@ void main() {
 
     expect(find.text('Memory Review'), findsNothing);
     expect(find.text('Memory saved'), findsNothing);
-    expect(_readCaptureState(tester).todos, isEmpty);
+    expect(_readCaptureState(tester).todos, hasLength(1));
 
     await _openTab(tester, const Key('tab-todos'));
     expect(find.byKey(const Key('todos-page')), findsOneWidget);
-    expect(find.textContaining('Salary and bank details'), findsNothing);
+    expect(find.textContaining('Salary and bank details'), findsWidgets);
   });
 
   testWidgets('generated todo appears on Todos tab with source link', (
@@ -675,6 +713,7 @@ Future<void> _pumpApp(
   Locale locale = const Locale('en'),
   List<Override> overrides = const [],
   bool closeDatabase = true,
+  runtime.ModelClient? modelClient = const _CaptureTestModel(),
 }) async {
   final localDatabase = database ?? WideNoteLocalDatabase.inMemory();
   if (closeDatabase) {
@@ -684,6 +723,8 @@ Future<void> _pumpApp(
     ProviderScope(
       overrides: [
         localDatabaseProvider.overrideWithValue(localDatabase),
+        if (modelClient != null)
+          modelClientProvider.overrideWithValue(modelClient),
         ...overrides,
       ],
       child: WideNoteApp(locale: locale),
@@ -762,6 +803,38 @@ Iterable<String> _visibleTextValues(WidgetTester tester) {
       .widgetList<Text>(find.byType(Text))
       .map((widget) => widget.data)
       .whereType<String>();
+}
+
+final class _CaptureTestModel implements runtime.ModelClient {
+  const _CaptureTestModel({
+    this.raw = const <String, Object?>{
+      'memory_type': 'task_context',
+      'confidence': 'high',
+      'sensitivity': 'low',
+    },
+  });
+
+  final Map<String, Object?> raw;
+
+  @override
+  Future<runtime.ModelResponse> complete(runtime.ModelRequest request) async {
+    return runtime.ModelResponse(text: _captureText(request.prompt), raw: raw);
+  }
+}
+
+final class _ReviewCaptureModel extends _CaptureTestModel {
+  const _ReviewCaptureModel()
+    : super(
+        raw: const <String, Object?>{
+          'memory_type': 'credential',
+          'confidence': 'high',
+          'sensitivity': 'high',
+        },
+      );
+}
+
+String _captureText(String prompt) {
+  return prompt.replaceFirst('Summarize capture for Memory: ', '').trim();
 }
 
 final class _FailingEventStore implements runtime.EventStore {

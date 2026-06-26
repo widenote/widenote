@@ -67,7 +67,7 @@ void main() {
     expect(messages.last.sourceRefs.single.sourceLabel, 'event: capture-1');
   });
 
-  test('context selector prioritizes matching Memory, capture, and todo', () {
+  test('context selector preserves packet order without query scoring', () {
     final selector = ChatContextSelector();
     final now = DateTime.utc(2026, 6, 24, 2);
     final sources = <ChatSource>[
@@ -100,36 +100,23 @@ void main() {
     final selected = selector.select(
       question: 'Lin source linked todos?',
       sources: sources,
+      limit: 2,
     );
 
     expect(selected.map((source) => source.kind), <String>[
-      'memory',
       'capture',
-      'todo',
+      'memory',
     ]);
 
-    final chineseSelected = selector.select(
-      question: '待办？',
-      sources: <ChatSource>[
-        ChatSource(
-          id: 'capture-zh',
-          kind: 'capture',
-          title: '记录',
-          excerpt: '今天只是普通记录。',
-          sourceLabel: '记录: capture-zh',
-          createdAt: now,
-        ),
-        ChatSource(
-          id: 'todo-zh',
-          kind: 'todo',
-          title: '待办',
-          excerpt: '跟进待办：准备发布说明。',
-          sourceLabel: '待办: todo-zh',
-          createdAt: now.subtract(const Duration(minutes: 1)),
-        ),
-      ],
+    final unrelatedQuestion = selector.select(
+      question: '完全不相关的问题',
+      sources: sources,
+      limit: 2,
     );
-    expect(chineseSelected.single.id, 'todo-zh');
+    expect(unrelatedQuestion.map((source) => source.id), <String>[
+      'capture-1',
+      'memory-1',
+    ]);
   });
 
   test(
@@ -304,7 +291,7 @@ void main() {
   );
 
   test(
-    'local context source redacts sensitive text and skips unsafe packet refs',
+    'local context source keeps user text and skips unsupported packet refs',
     () async {
       final database = WideNoteLocalDatabase.inMemory();
       addTearDown(database.close);
@@ -323,18 +310,16 @@ void main() {
           )
           .join('\n');
 
-      expect(visibleText, isNot(contains('sk-capture-secret-123456')));
-      expect(visibleText, isNot(contains('abcd123456')));
-      expect(visibleText, isNot(contains('/private/raw/originals')));
-      expect(visibleText, isNot(contains(r'C:\Users\alice')));
-      expect(visibleText, isNot(contains('file:///Users/alice')));
-      expect(visibleText, isNot(contains('Ignore previous instructions')));
+      expect(visibleText, contains('sk-capture-secret-123456'));
+      expect(visibleText, contains('abcd123456'));
+      expect(visibleText, contains('/private/raw/originals'));
+      expect(visibleText, contains(r'C:\Users\alice'));
+      expect(visibleText, contains('file:///Users/alice'));
+      expect(visibleText, contains('Ignore previous instructions'));
       expect(
         visibleText,
         isNot(contains('High sensitivity Memory body secret')),
       );
-      expect(visibleText, contains('[redacted_instruction]'));
-      expect(visibleText, contains('[redacted_path]'));
       expect(sources.map((source) => source.kind), isNot(contains('file')));
       expect(sources.map((source) => source.id), isNot(contains('todo-done')));
       expect(sources.map((source) => source.id), contains('card-unresolved'));
@@ -342,17 +327,13 @@ void main() {
       final model = _RecordingModelClient(response: 'Safe local answer.');
       await ModelBackedChatAssistant(
         model: model,
-        fallback: const DeterministicLocalChatAssistant(),
       ).answer(ChatAssistantPrompt(question: 'Any context?', sources: sources));
 
       expect(model.lastPrompt, contains('capture/capture-secret'));
       expect(model.lastPrompt, isNot(contains('sections')));
       expect(model.lastPrompt, isNot(contains('packet_json')));
-      expect(model.lastPrompt, isNot(contains('sk-capture-secret-123456')));
-      expect(model.lastPrompt, isNot(contains('/private/raw/originals')));
-      expect(model.lastPrompt, isNot(contains(r'C:\Users\alice')));
-      expect(model.lastPrompt, isNot(contains('file:///Users/alice')));
-      expect(model.lastPrompt, isNot(contains('Ignore previous instructions')));
+      expect(model.lastPrompt, contains('sk-capture-secret-123456'));
+      expect(model.lastPrompt, contains('Ignore previous instructions'));
     },
   );
 
@@ -390,17 +371,8 @@ void main() {
     },
   );
 
-  test('assistant gives a useful empty-context answer', () async {
-    final reply = await const DeterministicLocalChatAssistant().answer(
-      const ChatAssistantPrompt(question: '你知道什么？', sources: <ChatSource>[]),
-    );
-
-    expect(reply.body, contains("I don't have local records"));
-    expect(reply.body, contains('Memory'));
-  });
-
   test(
-    'model-backed assistant uses local sources and falls back safely',
+    'model-backed assistant uses local sources and fails without local fallback',
     () async {
       final source = ChatSource(
         id: 'memory-1',
@@ -413,10 +385,7 @@ void main() {
       final model = _RecordingModelClient(
         response: 'The answer cites memory/memory-1.',
       );
-      final assistant = ModelBackedChatAssistant(
-        model: model,
-        fallback: const DeterministicLocalChatAssistant(),
-      );
+      final assistant = ModelBackedChatAssistant(model: model);
 
       final reply = await assistant.answer(
         ChatAssistantPrompt(question: 'What does Lin want?', sources: [source]),
@@ -425,31 +394,26 @@ void main() {
       expect(reply.body, 'The answer cites memory/memory-1.');
       expect(model.lastPrompt, contains('memory/memory-1'));
 
-      final fallback = ModelBackedChatAssistant(
-        model: _ThrowingModelClient(),
-        fallback: const DeterministicLocalChatAssistant(),
-      );
-      final fallbackReply = await fallback.answer(
-        ChatAssistantPrompt(question: 'What does Lin want?', sources: [source]),
-      );
-      expect(
-        fallbackReply.body,
-        contains('The closest match is a Memory item'),
+      await expectLater(
+        ModelBackedChatAssistant(model: _ThrowingModelClient()).answer(
+          ChatAssistantPrompt(
+            question: 'What does Lin want?',
+            sources: [source],
+          ),
+        ),
+        throwsA(isA<ChatAssistantException>()),
       );
 
-      final emptyModelReply =
-          await ModelBackedChatAssistant(
-            model: _RecordingModelClient(response: '   '),
-            fallback: const DeterministicLocalChatAssistant(),
-          ).answer(
-            ChatAssistantPrompt(
-              question: 'What does Lin want?',
-              sources: [source],
-            ),
-          );
-      expect(
-        emptyModelReply.body,
-        contains('The closest match is a Memory item'),
+      await expectLater(
+        ModelBackedChatAssistant(
+          model: _RecordingModelClient(response: '   '),
+        ).answer(
+          ChatAssistantPrompt(
+            question: 'What does Lin want?',
+            sources: [source],
+          ),
+        ),
+        throwsA(isA<ChatAssistantException>()),
       );
     },
   );
@@ -468,9 +432,7 @@ void main() {
           chatContextSourceProvider.overrideWithValue(
             LocalChatContextSource(database, clock: () => now),
           ),
-          chatAssistantProvider.overrideWithValue(
-            const DeterministicLocalChatAssistant(),
-          ),
+          chatAssistantProvider.overrideWithValue(const _SourceEchoAssistant()),
           chatClockProvider.overrideWithValue(_FixedClock(now).call),
         ],
       );
@@ -517,9 +479,7 @@ void main() {
         overrides: <Override>[
           chatRepositoryProvider.overrideWithValue(repository),
           chatContextSourceProvider.overrideWithValue(contextSource),
-          chatAssistantProvider.overrideWithValue(
-            const DeterministicLocalChatAssistant(),
-          ),
+          chatAssistantProvider.overrideWithValue(const _SourceEchoAssistant()),
           chatClockProvider.overrideWithValue(
             _FixedClock(DateTime.utc(2026, 6, 26, 11)).call,
           ),
@@ -844,6 +804,18 @@ final class _FailingAssistant implements ChatAssistant {
   @override
   Future<ChatAssistantReply> answer(ChatAssistantPrompt prompt) {
     throw StateError('assistant unavailable');
+  }
+}
+
+final class _SourceEchoAssistant implements ChatAssistant {
+  const _SourceEchoAssistant();
+
+  @override
+  Future<ChatAssistantReply> answer(ChatAssistantPrompt prompt) async {
+    final sources = prompt.sources
+        .map((source) => '${source.kind}/${source.id}')
+        .join(', ');
+    return ChatAssistantReply(body: 'Fake model sources: $sources');
   }
 }
 

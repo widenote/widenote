@@ -53,7 +53,7 @@ class _TimelineSearchPageState extends ConsumerState<TimelineSearchPage> {
               textInputAction: TextInputAction.search,
               decoration: const InputDecoration(
                 prefixIcon: Icon(Icons.search),
-                hintText: 'Search local cards, Memory, captures, and todos',
+                hintText: 'Filter by type, or use text after retriever setup',
               ),
               onChanged: (_) => setState(() {}),
             ),
@@ -157,14 +157,22 @@ class _SearchResults extends StatelessWidget {
       return const TimelineEmptyState(
         key: Key('timeline-search-empty'),
         title: 'Nothing to search yet',
-        body: 'Create a capture first, then search cards, Memory, and todos.',
+        body: 'Create a capture first, then browse cards, Memory, and todos.',
+      );
+    }
+    if (query.trim().isNotEmpty) {
+      return const TimelineEmptyState(
+        key: Key('timeline-search-requires-retriever'),
+        title: 'Text search needs a retriever',
+        body:
+            'Clear the text field to browse locally by type. Semantic search will use a model-backed retriever.',
       );
     }
     if (results.isEmpty) {
       return const TimelineEmptyState(
         key: Key('timeline-search-empty-results'),
         title: 'No matching timeline items',
-        body: 'Try a different phrase or remove the filter.',
+        body: 'Remove the type filter to show more local items.',
       );
     }
 

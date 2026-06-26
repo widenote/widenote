@@ -337,7 +337,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get memoryPageSubtitle => '编辑、删除留痕、恢复并检查带来源的本地记忆。';
 
   @override
-  String get memorySearchHint => '搜索记忆正文、类型、状态或来源...';
+  String get memorySearchHint => '文本搜索需要召回器...';
+
+  @override
+  String get memoryTextSearchRequiresRetriever =>
+      '文本搜索需要模型或向量召回器。清空输入框后可在本地浏览记忆。';
+
+  @override
+  String get memoryTextSearchClearHint => '清空输入框后可在本地浏览记忆。';
 
   @override
   String get memoryActiveSectionTitle => '活跃记忆';
@@ -523,35 +530,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get chatGeneratingButton => '生成中';
-
-  @override
-  String get chatAssistantEmptyReply =>
-      '我还没有可引用的本地记录。先记录一些内容后，我会基于 Memory、记录和待办回答。';
-
-  @override
-  String chatAssistantContextReply(int count, String lead, String sources) {
-    return '我基于 $count 条本地上下文回答。$lead\n\n$sources';
-  }
-
-  @override
-  String chatAssistantLeadTodo(String excerpt) {
-    return '最相关的是一个待办：$excerpt';
-  }
-
-  @override
-  String chatAssistantLeadMemory(String excerpt) {
-    return '最相关的是一条 Memory：$excerpt';
-  }
-
-  @override
-  String chatAssistantLeadCapture(String excerpt) {
-    return '最相关的是一条原始记录：$excerpt';
-  }
-
-  @override
-  String chatAssistantLeadGeneric(String excerpt) {
-    return '最相关的是：$excerpt';
-  }
 
   @override
   String get chatContextMemoryTitle => 'Memory';
@@ -896,15 +874,15 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get providerSettingsStatusNotConfigured => '离线兜底已启用';
+  String get providerSettingsStatusNotConfigured => '尚未配置模型';
 
   @override
   String get providerSettingsStatusDescriptionConfigured =>
-      '当前切片中，捕获、对话和内置 Agent Pack 默认使用这个模型；后续角色覆盖会在这里接入。';
+      '当前切片中，对话和需要模型的 Agent Pack 默认使用这个模型；捕获仍会在本地保存原始记录。';
 
   @override
   String get providerSettingsStatusDescriptionOffline =>
-      '核心记录仍可用本地确定性摘要离线运行。需要真实模型调用时，再添加自带密钥的提供商。';
+      '核心记录仍会本地保存原始输入。对话回答和语义模型任务需要先配置自带密钥的提供商。';
 
   @override
   String providerSettingsProviderCount(int count) {
@@ -923,7 +901,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get providerSettingsTextRoleDescription =>
-      '当前用于捕获摘要、对话回答、Memory 提取和内置 Agent Pack。';
+      '当前用于对话回答和需要模型的内置 Agent Pack。';
 
   @override
   String get providerSettingsAgentRoleTitle => '按智能体覆盖';
@@ -932,7 +910,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get providerSettingsAgentRoleDescription => '暂未启用。当前所有内置智能体继承默认模型。';
 
   @override
-  String get providerSettingsRoleFallback => '本地确定性兜底';
+  String get providerSettingsRoleFallback => '需要配置模型';
 
   @override
   String get providerSettingsCapabilitiesTitle => '能力与隐私';
@@ -948,7 +926,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get providerSettingsCapabilityCompletion => '补全';
 
   @override
-  String get providerSettingsCapabilityOfflineFallback => '离线兜底';
+  String get providerSettingsCapabilityOfflineFallback => '本地原始记录';
 
   @override
   String get providerSettingsCapabilityByok => '自带密钥本地存储';

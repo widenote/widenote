@@ -26,6 +26,17 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(
+      find.byKey(const Key('memory-search-requires-retriever')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('memory-list-row-memory-page-1')),
+      findsNothing,
+    );
+
+    await tester.enterText(find.byKey(const Key('memory-search-field')), '');
+    await tester.pumpAndSettle();
+    expect(
       find.byKey(const Key('memory-list-row-memory-page-1')),
       findsOneWidget,
     );

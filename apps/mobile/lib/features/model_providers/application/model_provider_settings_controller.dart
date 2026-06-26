@@ -405,7 +405,9 @@ class ModelProviderSettingsController
   }
 
   void _refreshRuntimeModelClient() {
-    ref.invalidate(modelClientProvider);
+    ref
+      ..invalidate(modelClientProvider)
+      ..invalidate(chatModelClientProvider);
   }
 }
 

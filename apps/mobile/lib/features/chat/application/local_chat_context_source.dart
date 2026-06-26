@@ -283,60 +283,20 @@ String _sourceLabel(JsonMap sourceRef, ChatContextLabels labels) {
 }
 
 String? _safeDisplayText(String? value) {
-  final sanitized = _sanitizeForChat(value);
-  if (sanitized == null || sanitized.isEmpty) {
+  final trimmed = value?.trim();
+  if (trimmed == null || trimmed.isEmpty) {
     return null;
   }
-  return sanitized;
+  return trimmed;
 }
 
 String? _safeLabelValue(String? value) {
-  final sanitized = _sanitizeForChat(value);
-  if (sanitized == null || sanitized.isEmpty) {
+  final sanitized = _safeDisplayText(value);
+  if (sanitized == null) {
     return null;
   }
   return sanitized.replaceAll(RegExp(r'\s+'), ' ');
 }
-
-String? _sanitizeForChat(String? value) {
-  var result = value?.trim();
-  if (result == null || result.isEmpty) {
-    return null;
-  }
-  result = result.replaceAll(
-    RegExp(r'\bsk-[A-Za-z0-9_\-]{8,}\b'),
-    '[redacted_secret]',
-  );
-  result = result.replaceAllMapped(_secretAssignmentPattern, (match) {
-    return '${match.group(1)}: [redacted_secret]';
-  });
-  result = result.replaceAll(
-    RegExp(
-      r'\b(ignore|disregard) previous instructions\b',
-      caseSensitive: false,
-    ),
-    '[redacted_instruction]',
-  );
-  result = result.replaceAll(
-    RegExp(r'\bfile://[^\s,;]+', caseSensitive: false),
-    '[redacted_path]',
-  );
-  result = result.replaceAll(
-    RegExp(r'\b[A-Za-z]:\\(?:Users|Temp|Windows|ProgramData)\\[^\s,;]+'),
-    '[redacted_path]',
-  );
-  result = result.replaceAll(
-    RegExp(r'(?<![\w:])/(?:private|var|tmp|Users|Volumes|home|data)/[^\s,;]+'),
-    '[redacted_path]',
-  );
-  return result.trim();
-}
-
-final _secretAssignmentPattern = RegExp(
-  '\\b(api[_ -]?key|token|secret|password)\\s*[:=]\\s*["\\\']?'
-  '[^\\s,"\\\']{6,}',
-  caseSensitive: false,
-);
 
 DateTime? _parseDateTime(Object? value) {
   final text = _string(value);

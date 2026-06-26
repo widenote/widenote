@@ -111,7 +111,7 @@ class CaptureController extends Notifier<CaptureState> {
       state = state.copyWith(
         records: _replaceRecord(state.records, pendingRecord.id, failedRecord),
         isProcessing: false,
-        errorMessage: 'Capture failed: $error',
+        errorMessage: _captureFailureMessage(error),
       );
     }
   }
@@ -205,6 +205,13 @@ class CaptureController extends Notifier<CaptureState> {
   LocalCaptureReadModelStore _readModelStore() {
     return LocalCaptureReadModelStore(ref.read(localDatabaseProvider));
   }
+}
+
+String _captureFailureMessage(Object error) {
+  if (error is CapturePipelineException) {
+    return 'Record saved locally. Configure a model provider or retry after agent recovery to generate Memory, cards, insights, and todos.';
+  }
+  return 'Record saved locally, but agent processing failed. Retry after model or permission recovery.';
 }
 
 void _seedDefaultOfficialPermissionGrants(

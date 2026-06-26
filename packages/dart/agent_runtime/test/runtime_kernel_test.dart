@@ -556,6 +556,68 @@ void main() {
     ]);
   });
 
+  test('model traces usage metadata without storing prompt text', () async {
+    final store = InMemoryEventStore();
+    final traceSink = InMemoryTraceSink();
+    final model = _UsageModel();
+    final permissions = InMemoryPermissionBroker()
+      ..grantAll('pack.model', <String>{ModelPermissions.complete});
+    final kernel =
+        _blankKernel(
+          store: store,
+          traceSink: traceSink,
+          model: model,
+          permissions: permissions,
+        )..registerPack(
+          const AgentPack(
+            id: 'pack.model',
+            name: 'Model pack',
+            version: '0.1.0',
+            subscriptions: <Subscription>[
+              Subscription(
+                id: 'sub.model',
+                agentId: 'agent.model',
+                eventTypes: <String>{WnEventTypes.captureCreated},
+              ),
+            ],
+            agentDefinitions: <String, AgentDefinition>{
+              'agent.model': AgentDefinition(
+                id: 'agent.model',
+                requiredPermissions: <String>{ModelPermissions.complete},
+                outputEvents: <String>{WnEventTypes.insightCreated},
+              ),
+            },
+            agents: <String, AgentHandler>{'agent.model': _ModelUsingHandler()},
+          ),
+        );
+
+    await kernel.publish(
+      const WnEventDraft(
+        type: WnEventTypes.captureCreated,
+        actor: WnActor.user,
+        payload: <String, Object?>{'text': 'Trace usage only.'},
+      ),
+    );
+
+    final traces = await traceSink.readAll();
+    final requested = traces.singleWhere(
+      (trace) => trace.name == 'runtime.model.requested',
+    );
+    final completed = traces.singleWhere(
+      (trace) => trace.name == 'runtime.model.completed',
+    );
+
+    expect(requested.details['prompt_length'], 'Use a model.'.length);
+    expect(requested.details.values.join(' '), isNot(contains('Use a model.')));
+    expect(completed.details['provider_id'], 'fake.byok');
+    expect(completed.details['model'], 'fake-large');
+    expect(completed.details['input_tokens'], 11);
+    expect(completed.details['output_tokens'], 7);
+    expect(completed.details['total_tokens'], 18);
+    expect(completed.details['estimated_cost_usd'], 0.0042);
+    expect(completed.details.values.join(' '), isNot(contains('Use a model.')));
+  });
+
   test('agent tool invocation is permission checked', () async {
     final store = InMemoryEventStore();
     final traceSink = InMemoryTraceSink();
@@ -1575,41 +1637,44 @@ void main() {
     },
   );
 
-  test('trace details redact secrets and omit raw context payloads', () async {
-    final traceSink = InMemoryTraceSink();
-    final kernel =
-        _blankKernel(store: InMemoryEventStore(), traceSink: traceSink)
-          ..registerPack(
-            const AgentPack(
-              id: 'pack.redaction',
-              name: 'Redaction pack',
-              version: '0.1.0',
-              subscriptions: <Subscription>[
-                Subscription(
-                  id: 'sub.redaction',
-                  agentId: 'agent.redaction',
-                  eventTypes: <String>{WnEventTypes.captureCreated},
-                ),
-              ],
-              agents: <String, AgentHandler>{
-                'agent.redaction': _SecretThrowingHandler(),
-              },
-            ),
-          );
+  test(
+    'trace details preserve handler errors without content keyword redaction',
+    () async {
+      final traceSink = InMemoryTraceSink();
+      final kernel =
+          _blankKernel(store: InMemoryEventStore(), traceSink: traceSink)
+            ..registerPack(
+              const AgentPack(
+                id: 'pack.trace',
+                name: 'Trace pack',
+                version: '0.1.0',
+                subscriptions: <Subscription>[
+                  Subscription(
+                    id: 'sub.trace',
+                    agentId: 'agent.trace',
+                    eventTypes: <String>{WnEventTypes.captureCreated},
+                  ),
+                ],
+                agents: <String, AgentHandler>{
+                  'agent.trace': _TraceThrowingHandler(),
+                },
+              ),
+            );
 
-    await kernel.publish(
-      const WnEventDraft(
-        type: WnEventTypes.captureCreated,
-        actor: WnActor.user,
-      ),
-    );
+      await kernel.publish(
+        const WnEventDraft(
+          type: WnEventTypes.captureCreated,
+          actor: WnActor.user,
+        ),
+      );
 
-    final failedTrace = (await traceSink.readAll()).singleWhere(
-      (trace) => trace.name == 'runtime.run.failed',
-    );
-    expect(failedTrace.details.toString(), isNot(contains('super-secret')));
-    expect(failedTrace.details['error'], contains('<redacted>'));
-  });
+      final failedTrace = (await traceSink.readAll()).singleWhere(
+        (trace) => trace.name == 'runtime.run.failed',
+      );
+      expect(failedTrace.details['error'], contains('api_key=super-secret'));
+      expect(failedTrace.details['error'], isNot(contains('<redacted>')));
+    },
+  );
 
   test('script runtime is denied without adding script execution', () async {
     final store = InMemoryEventStore();
@@ -1967,6 +2032,26 @@ final class _ModelUsingHandler implements AgentHandler {
   }
 }
 
+final class _UsageModel implements ModelClient {
+  @override
+  Future<ModelResponse> complete(ModelRequest request) async {
+    return const ModelResponse(
+      text: 'usage visible',
+      raw: <String, Object?>{
+        'provider_id': 'fake.byok',
+        'model': 'fake-large',
+        'usage': <String, Object?>{
+          'input_tokens': 11,
+          'output_tokens': 7,
+          'total_tokens': 18,
+          'cached_tokens': 2,
+        },
+        'estimated_cost_usd': 0.0042,
+      },
+    );
+  }
+}
+
 final class _ToolMissingHandler implements AgentHandler {
   const _ToolMissingHandler();
 
@@ -2034,8 +2119,8 @@ final class _UndeclaredOutputHandler implements AgentHandler {
   }
 }
 
-final class _SecretThrowingHandler implements AgentHandler {
-  const _SecretThrowingHandler();
+final class _TraceThrowingHandler implements AgentHandler {
+  const _TraceThrowingHandler();
 
   @override
   Future<AgentHandlerResult> handle(AgentContext context, WnEvent event) {

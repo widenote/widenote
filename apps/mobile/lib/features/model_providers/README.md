@@ -29,8 +29,9 @@ left blank, and the edit dialog can explicitly clear the saved key.
 
 The settings page is intentionally layered as runtime status, model roles,
 capabilities/privacy, then provider management. Per-Agent role overrides remain
-deferred; current built-in agents inherit the default provider or the local
-deterministic fallback.
+deferred. Chat and model-backed runtime work require a configured provider or a
+QA model client; local code should surface model-required/error states rather
+than template-answer fallback.
 
 ## Dependencies
 

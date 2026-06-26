@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
 import 'package:widenote_local_db/widenote_local_db.dart';
 import 'package:widenote_mobile/app/local_database.dart';
+import 'package:widenote_mobile/app/model_client.dart';
 import 'package:widenote_mobile/app/widenote_app.dart';
 import 'package:widenote_mobile/features/chat/application/chat_assistant.dart';
 import 'package:widenote_mobile/features/chat/application/chat_controller.dart';
@@ -36,7 +38,7 @@ void main() {
     expect(find.text('先问一个关于记录、Memory 或待办的问题。'), findsOneWidget);
   });
 
-  testWidgets('sending a message displays a deterministic local answer', (
+  testWidgets('sending without a configured model shows retryable failure', (
     tester,
   ) async {
     await _pumpApp(tester);
@@ -45,14 +47,42 @@ void main() {
     await _sendChat(tester, 'What records do you have?');
 
     expect(find.text('What records do you have?'), findsWidgets);
-    expect(find.textContaining("I don't have local records"), findsOneWidget);
+    expect(
+      find.textContaining('Chat needs a configured model provider'),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('chat-retry-button')), findsOneWidget);
     expect(find.byKey(const Key('chat-empty-sessions')), findsNothing);
+  });
+
+  testWidgets('chat composer preserves literal input without smart rewriting', (
+    tester,
+  ) async {
+    await _pumpApp(tester);
+    await _openTab(tester, const Key('tab-chat'));
+
+    final field = tester.widget<TextField>(
+      find.byKey(const Key('chat-input-field')),
+    );
+
+    expect(field.autocorrect, isFalse);
+    expect(field.enableSuggestions, isFalse);
+    expect(field.smartDashesType, SmartDashesType.disabled);
+    expect(field.smartQuotesType, SmartQuotesType.disabled);
   });
 
   testWidgets('assistant answer shows source-linked local context', (
     tester,
   ) async {
-    await _pumpApp(tester);
+    await _pumpApp(
+      tester,
+      modelClient: const _CaptureTestModel(),
+      overrides: <Override>[
+        chatAssistantProvider.overrideWithValue(
+          _ScriptedAssistant(responses: const <String>['Fake model answer.']),
+        ),
+      ],
+    );
 
     const captureText = 'Met Lin about WideNote source-linked todos.';
     await _submitQuickCapture(tester, captureText);
@@ -120,7 +150,14 @@ void main() {
   testWidgets('chat session survives tab navigation round trip', (
     tester,
   ) async {
-    await _pumpApp(tester);
+    await _pumpApp(
+      tester,
+      overrides: <Override>[
+        chatAssistantProvider.overrideWithValue(
+          _ScriptedAssistant(responses: const <String>['Persistent answer.']),
+        ),
+      ],
+    );
     await _openTab(tester, const Key('tab-chat'));
 
     await _sendChat(tester, 'Keep this chat open.');
@@ -192,6 +229,7 @@ Future<void> _pumpApp(
   WideNoteLocalDatabase? database,
   List<Override> overrides = const <Override>[],
   Locale locale = const Locale('en'),
+  runtime.ModelClient? modelClient,
 }) async {
   final localDatabase = database ?? WideNoteLocalDatabase.inMemory();
   addTearDown(localDatabase.close);
@@ -199,6 +237,8 @@ Future<void> _pumpApp(
     ProviderScope(
       overrides: <Override>[
         localDatabaseProvider.overrideWithValue(localDatabase),
+        if (modelClient != null)
+          modelClientProvider.overrideWithValue(modelClient),
         ...overrides,
       ],
       child: WideNoteApp(locale: locale),
@@ -231,6 +271,24 @@ ChatState _readChatState(WidgetTester tester) {
   return ProviderScope.containerOf(
     tester.element(find.byKey(const Key('chat-page'))),
   ).read(chatControllerProvider).requireValue;
+}
+
+final class _CaptureTestModel implements runtime.ModelClient {
+  const _CaptureTestModel();
+
+  @override
+  Future<runtime.ModelResponse> complete(runtime.ModelRequest request) async {
+    return runtime.ModelResponse(
+      text: request.prompt
+          .replaceFirst('Summarize capture for Memory: ', '')
+          .trim(),
+      raw: const <String, Object?>{
+        'memory_type': 'task_context',
+        'confidence': 'high',
+        'sensitivity': 'low',
+      },
+    );
+  }
 }
 
 final class _FlakyAssistant implements ChatAssistant {

@@ -4,21 +4,28 @@
 
 Owns the home/records tab, Capture Console UI, visible capture feedback,
 source-linked home-row navigation, app-local capture/card/insight read models,
-text/photo/gallery/voice capture inputs, and Memory review surface.
+text/photo/gallery/voice capture inputs, persistent text drafts, and Memory
+review surface.
 
 ## Ownership Boundary
 
 This feature presents record, card, insight, Memory, todo, and trace feedback
-from the local runtime. It owns capture interaction state such as text, voice
-draft, and import mode selection, but it must not become the durable runtime,
-policy, persistence, or schema source of truth.
+from the local runtime. It owns capture interaction state such as text drafts,
+voice draft, and import mode selection, but it must not become the durable
+runtime, policy, persistence, or schema source of truth.
+
+The active text draft is app-local UI state stored outside public schemas and
+backup contracts. It restores into the Capture Console after rebuild/relaunch
+and clears after explicit submit.
 
 Text capture remains local and immediate. Photo, gallery, and voice capture go
 through narrow platform adapters that either return local attachment metadata or
 surface cancelled/denied/unavailable errors without creating phantom captures,
-events, or tasks. Deterministic fake adapters remain the default test fallback.
+events, or tasks. Deterministic fake adapters remain test-only substitutes.
 Real ASR/OCR/image understanding is outside this module; media is saved as local
 source material with metadata, hashes, and source refs before any AI processing.
+The quick-capture text field disables autocorrect, suggestions, smart dashes,
+and smart quotes so platform input helpers do not rewrite literal raw records.
 
 ## Dependencies
 
@@ -36,6 +43,7 @@ source material with metadata, hashes, and source refs before any AI processing.
 - `presentation/CaptureConsole`
 - `application/CaptureMode`
 - `application/captureControllerProvider`
+- `application/captureDraftRepositoryProvider`
 - `application/captureInputControllerProvider`
 - `application/captureOrchestratorProvider`
 - `application/LocalDbCaptureKnowledgeSink`
