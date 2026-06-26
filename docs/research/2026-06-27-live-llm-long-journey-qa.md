@@ -173,6 +173,27 @@ This is currently treated as an external provider/authentication blocker rather
 than a local fallback trigger. Per ADR-0010, WideNote should surface failure and
 retry/unavailable state instead of generating local model-like answers.
 
+### Follow-Up Authentication Probe
+
+A post-PR probe retried a minimal Anthropic-compatible request without writing
+the credential to repository files. The probe varied endpoint path, model id,
+and auth header shape:
+
+| Endpoint | Model | Auth header shape | Result |
+| --- | --- | --- | --- |
+| `/anthropic/v1/messages` | `mimo-v2.5-pro` | `x-api-key` | HTTP 401 |
+| `/anthropic/v1/messages` | `mimo-v2.5-pro` | `Authorization: Bearer` | HTTP 401 |
+| `/anthropic/v1/messages` | `mimo-v2.5-pro` | both headers | HTTP 401 |
+| `/anthropic/v1/messages` | `claude-3-5-sonnet-20241022` | `x-api-key` | HTTP 401 |
+| `/anthropic/v1/messages` | `claude-3-5-sonnet-20241022` | `Authorization: Bearer` | HTTP 401 |
+| `/anthropic/v1/messages` | `claude-3-5-sonnet-20241022` | both headers | HTTP 401 |
+| `/v1/messages` | both tested models | all tested header shapes | HTTP 404 |
+
+This reduces the likelihood that the live blocker is caused by the current
+adapter's header choice or default model id. The next useful action is still to
+rerun with a credential or gateway configuration that authenticates
+successfully.
+
 ## Product Decision Items
 
 The following were not changed in this PR because they are interaction/product
