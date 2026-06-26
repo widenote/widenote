@@ -480,6 +480,7 @@ void main() {
       expect(contentType?.mimeType, ContentType.json.mimeType);
       expect(requestBody['model'], 'mimo-v2.5-pro');
       expect(requestBody['max_tokens'], 128);
+      expect(requestBody['thinking'], <String, Object?>{'type': 'disabled'});
       final messages = requestBody['messages']! as List<Object?>;
       final message = messages.single! as Map<String, Object?>;
       expect(message['role'], 'user');
@@ -536,13 +537,12 @@ What did I capture?
 Local sources:
 - memory/memory-1: WideNote keeps raw captures.
 ''',
-          context: <String, Object?>{
-            'chat_mode': 'source_cited_local_context',
-          },
+          context: <String, Object?>{'chat_mode': 'source_cited_local_context'},
         ),
       );
 
       expect(requestBody['max_tokens'], 512);
+      expect(requestBody['thinking'], <String, Object?>{'type': 'disabled'});
       final messages = requestBody['messages']! as List<Object?>;
       final message = messages.single! as Map<String, Object?>;
       expect(message['role'], 'user');

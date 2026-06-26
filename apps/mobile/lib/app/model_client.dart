@@ -241,6 +241,7 @@ final class XiaomiMimoModelClient implements runtime.ModelClient {
     final body = jsonEncode(<String, Object?>{
       'model': model,
       'max_tokens': _maxTokens(request),
+      'thinking': const <String, Object?>{'type': 'disabled'},
       'messages': <Map<String, Object?>>[
         <String, Object?>{'role': 'user', 'content': _qaPrompt(request)},
       ],

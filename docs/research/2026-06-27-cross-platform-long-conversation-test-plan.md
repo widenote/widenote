@@ -48,6 +48,16 @@ Related decision and QA sources:
 - `docs/research/2026-06-26-w7-current-integration-state.md`
 - `docs/research/2026-06-26-w7-integration-qa.md`
 - `docs/research/2026-06-26-phase-one-acceptance-matrix.md`
+- `docs/research/2026-06-27-live-llm-long-journey-qa.md`
+
+Automated implementation:
+
+- `apps/mobile/integration_test/live_llm_long_journey_test.dart` implements the
+  core live model-backed journey as an opt-in integration test.
+- The script is skipped unless
+  `--dart-define=WIDENOTE_QA_MIMO_API_KEY=<redacted>` is provided.
+- On 2026-06-27 it passed on both the iPhone 17 iOS simulator and
+  `Medium_Phone_API_35` Android emulator with real MIMO responses.
 
 ## Goals
 
