@@ -1,0 +1,21 @@
+{
+  "kind": "memory_candidate",
+  "id": "memcand_synthetic_missing_evidence",
+  "key": "project.schema_fixture.missing_evidence",
+  "body": "Synthetic Memory candidate routed to review because no source evidence was attached.",
+  "source_refs": [],
+  "memory_type": "project",
+  "confidence": "medium",
+  "sensitivity": "low",
+  "durability": "session",
+  "status": "needs_review",
+  "policy_reasons": [
+    "missing_evidence"
+  ],
+  "conflicting_memory_ids": [],
+  "created_at": "2026-06-26T08:01:00Z",
+  "updated_at": "2026-06-26T08:01:30Z",
+  "metadata": {
+    "fixture": true
+  }
+}

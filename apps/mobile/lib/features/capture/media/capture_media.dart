@@ -8,6 +8,30 @@ enum CaptureAssetKind {
   final String wireName;
 }
 
+enum CaptureMediaFailureReason {
+  cancelled('cancelled'),
+  permissionDenied('permission_denied'),
+  unavailable('unavailable'),
+  platformError('platform_error');
+
+  const CaptureMediaFailureReason(this.wireName);
+
+  final String wireName;
+}
+
+final class CaptureMediaException implements Exception {
+  const CaptureMediaException(this.reason, this.message, {this.cause});
+
+  final CaptureMediaFailureReason reason;
+  final String message;
+  final Object? cause;
+
+  String get userMessage => message;
+
+  @override
+  String toString() => 'CaptureMediaException(${reason.wireName}): $message';
+}
+
 enum CaptureAttachmentState {
   ready('ready'),
   needsReview('needs_review'),
@@ -145,7 +169,10 @@ final class AssetSafetyGuard {
     this.allowedMimeTypes = const <String>{
       'image/jpeg',
       'image/png',
+      'image/heic',
+      'image/webp',
       'audio/m4a',
+      'audio/mp4',
       'text/plain',
       'text/uri-list',
     },
@@ -202,18 +229,32 @@ final class AssetSafetyGuard {
 }
 
 abstract interface class PhotoCaptureAdapter {
-  Future<RawCaptureAsset> pickPhoto();
+  Future<RawCaptureAsset> captureFromCamera();
+
+  Future<RawCaptureAsset> pickFromGallery();
 }
 
 abstract interface class VoiceCaptureAdapter {
-  Future<RawCaptureAsset> captureVoiceTranscript();
+  Future<VoiceRecordingSession> startRecording();
+
+  Future<RawCaptureAsset> stopRecording(VoiceRecordingSession session);
+
+  Future<void> cancelRecording(VoiceRecordingSession session);
 }
 
-abstract interface class ShareImportAdapter {
-  Future<RawCaptureAsset> importSharedItem();
+final class VoiceRecordingSession {
+  const VoiceRecordingSession({
+    required this.id,
+    required this.path,
+    required this.startedAt,
+  });
+
+  final String id;
+  final String path;
+  final DateTime startedAt;
 }
 
-enum FakePhotoMode { safe, dangerous, unsupported }
+enum FakePhotoMode { safe, dangerous, unsupported, cancelled, denied, error }
 
 final class FakePhotoCaptureAdapter implements PhotoCaptureAdapter {
   const FakePhotoCaptureAdapter({
@@ -225,105 +266,152 @@ final class FakePhotoCaptureAdapter implements PhotoCaptureAdapter {
   final DateTime Function() now;
 
   @override
-  Future<RawCaptureAsset> pickPhoto() async {
+  Future<RawCaptureAsset> captureFromCamera() {
+    return _pickPhoto(source: 'camera');
+  }
+
+  @override
+  Future<RawCaptureAsset> pickFromGallery() {
+    return _pickPhoto(source: 'gallery');
+  }
+
+  Future<RawCaptureAsset> _pickPhoto({required String source}) async {
     final createdAt = now();
     return switch (mode) {
       FakePhotoMode.safe => RawCaptureAsset(
-        id: 'fake-photo-${createdAt.microsecondsSinceEpoch}',
+        id: 'fake-$source-photo-${createdAt.microsecondsSinceEpoch}',
         kind: CaptureAssetKind.photo,
-        displayName: 'Field photo sample.jpg',
+        displayName: source == 'camera'
+            ? 'Camera photo sample.jpg'
+            : 'Gallery photo sample.jpg',
         mimeType: 'image/jpeg',
-        sourceUri: 'fake://camera/field-photo.jpg',
+        sourceUri: 'fake://$source/photo-sample.jpg',
         sizeBytes: 384000,
-        previewText: 'Photo sample: whiteboard snapshot',
-        rawMetadata: const <String, Object?>{
+        previewText: source == 'camera'
+            ? 'Camera photo saved locally: whiteboard snapshot'
+            : 'Gallery photo saved locally: reference image',
+        rawMetadata: <String, Object?>{
           'adapter': 'fake_photo',
+          'source': source,
           'width': 1280,
           'height': 960,
+          'sha256': 'fake-$source-photo-sha256',
         },
         createdAt: createdAt,
       ),
       FakePhotoMode.dangerous => RawCaptureAsset(
-        id: 'fake-photo-blocked-${createdAt.microsecondsSinceEpoch}',
+        id: 'fake-$source-photo-blocked-${createdAt.microsecondsSinceEpoch}',
         kind: CaptureAssetKind.photo,
         displayName: 'Blocked photo sample.jpg',
         mimeType: 'image/jpeg',
-        sourceUri: 'fake://camera/blocked-photo.jpg',
+        sourceUri: 'fake://$source/blocked-photo.jpg',
         sizeBytes: 512000,
         previewText: 'DANGEROUS RAW PREVIEW SHOULD NOT RENDER',
-        rawMetadata: const <String, Object?>{
+        rawMetadata: <String, Object?>{
           'adapter': 'fake_photo',
+          'source': source,
           'raw_preview_text': 'DANGEROUS RAW PREVIEW SHOULD NOT RENDER',
         },
         safetyLabels: const <String>['dangerous'],
         createdAt: createdAt,
       ),
       FakePhotoMode.unsupported => RawCaptureAsset(
-        id: 'fake-photo-unsupported-${createdAt.microsecondsSinceEpoch}',
+        id: 'fake-$source-photo-unsupported-${createdAt.microsecondsSinceEpoch}',
         kind: CaptureAssetKind.photo,
         displayName: 'Unsupported photo sample.raw',
         mimeType: 'image/x-camera-raw',
-        sourceUri: 'fake://camera/unsupported.raw',
+        sourceUri: 'fake://$source/unsupported.raw',
         sizeBytes: 720000,
         previewText: 'Unsupported raw image preview',
-        rawMetadata: const <String, Object?>{'adapter': 'fake_photo'},
+        rawMetadata: <String, Object?>{
+          'adapter': 'fake_photo',
+          'source': source,
+        },
         createdAt: createdAt,
+      ),
+      FakePhotoMode.cancelled => throw CaptureMediaException(
+        CaptureMediaFailureReason.cancelled,
+        source == 'camera'
+            ? 'Camera capture cancelled.'
+            : 'Gallery selection cancelled.',
+      ),
+      FakePhotoMode.denied => throw CaptureMediaException(
+        CaptureMediaFailureReason.permissionDenied,
+        source == 'camera'
+            ? 'Camera permission denied.'
+            : 'Photo library permission denied.',
+      ),
+      FakePhotoMode.error => throw CaptureMediaException(
+        CaptureMediaFailureReason.platformError,
+        source == 'camera'
+            ? 'Camera capture failed.'
+            : 'Gallery selection failed.',
       ),
     };
   }
 }
 
+enum FakeVoiceMode { success, denied, cancelled, stopError }
+
 final class FakeVoiceCaptureAdapter implements VoiceCaptureAdapter {
-  const FakeVoiceCaptureAdapter({this.now = _defaultFakeNow});
+  const FakeVoiceCaptureAdapter({
+    this.mode = FakeVoiceMode.success,
+    this.now = _defaultFakeNow,
+  });
 
+  final FakeVoiceMode mode;
   final DateTime Function() now;
 
   @override
-  Future<RawCaptureAsset> captureVoiceTranscript() async {
+  Future<VoiceRecordingSession> startRecording() async {
     final createdAt = now();
+    return switch (mode) {
+      FakeVoiceMode.success || FakeVoiceMode.stopError => VoiceRecordingSession(
+        id: 'fake-voice-session-${createdAt.microsecondsSinceEpoch}',
+        path: 'fake://microphone/voice-note.m4a',
+        startedAt: createdAt,
+      ),
+      FakeVoiceMode.denied => throw const CaptureMediaException(
+        CaptureMediaFailureReason.permissionDenied,
+        'Microphone permission denied.',
+      ),
+      FakeVoiceMode.cancelled => throw const CaptureMediaException(
+        CaptureMediaFailureReason.cancelled,
+        'Voice recording cancelled.',
+      ),
+    };
+  }
+
+  @override
+  Future<RawCaptureAsset> stopRecording(VoiceRecordingSession session) async {
+    if (mode == FakeVoiceMode.stopError) {
+      throw const CaptureMediaException(
+        CaptureMediaFailureReason.platformError,
+        'Voice recording failed.',
+      );
+    }
+    final endedAt = now();
     return RawCaptureAsset(
-      id: 'fake-voice-${createdAt.microsecondsSinceEpoch}',
+      id: 'fake-voice-${endedAt.microsecondsSinceEpoch}',
       kind: CaptureAssetKind.voice,
-      displayName: 'Voice transcript sample.m4a',
+      displayName: 'Voice recording sample.m4a',
       mimeType: 'audio/m4a',
-      sourceUri: 'fake://microphone/voice-note.m4a',
+      sourceUri: session.path,
       sizeBytes: 96000,
-      previewText: 'Transcript draft: remember to compare capture flows.',
-      rawMetadata: const <String, Object?>{
+      previewText: 'Voice recording captured. Transcript pending.',
+      rawMetadata: <String, Object?>{
         'adapter': 'fake_voice',
-        'duration_ms': 6400,
-        'transcript_text':
-            'Transcript draft: remember to compare capture flows.',
-        'transcript_requires_review': true,
+        'source': 'microphone',
+        'duration_ms': endedAt.difference(session.startedAt).inMilliseconds,
+        'sha256': 'fake-voice-sha256',
+        'transcript_status': 'pending',
       },
-      createdAt: createdAt,
+      createdAt: endedAt,
     );
   }
-}
-
-final class FakeShareImportAdapter implements ShareImportAdapter {
-  const FakeShareImportAdapter({this.now = _defaultFakeNow});
-
-  final DateTime Function() now;
 
   @override
-  Future<RawCaptureAsset> importSharedItem() async {
-    final createdAt = now();
-    return RawCaptureAsset(
-      id: 'fake-share-${createdAt.microsecondsSinceEpoch}',
-      kind: CaptureAssetKind.share,
-      displayName: 'Shared web note sample',
-      mimeType: 'text/uri-list',
-      sourceUri: 'fake://share-sheet/example-link',
-      previewText: 'Shared link: https://example.test/widenote',
-      rawMetadata: const <String, Object?>{
-        'adapter': 'fake_share',
-        'url': 'https://example.test/widenote',
-        'title': 'Shared web note sample',
-      },
-      createdAt: createdAt,
-    );
-  }
+  Future<void> cancelRecording(VoiceRecordingSession session) async {}
 }
 
 DateTime _defaultFakeNow() => DateTime.now().toUtc();

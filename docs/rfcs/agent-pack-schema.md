@@ -1,6 +1,6 @@
 # RFC: Agent Pack Schema
 
-Status: Draft  
+Status: Accepted phase-one contract; scripted/community runtime deferred
 Date: 2026-06-23
 
 ## Context

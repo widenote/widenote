@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
 import 'package:widenote_local_db/widenote_local_db.dart' as localdb;
 
 import '../../../app/local_database.dart';
@@ -49,6 +50,7 @@ final class MemoryListItem {
     required this.revision,
     required this.tombstone,
     required this.updatedAt,
+    this.sourceCaptureId,
   });
 
   final String id;
@@ -62,6 +64,7 @@ final class MemoryListItem {
   final int revision;
   final bool tombstone;
   final DateTime updatedAt;
+  final String? sourceCaptureId;
 }
 
 final class MemoryController extends Notifier<MemoryState> {
@@ -76,7 +79,7 @@ final class MemoryController extends Notifier<MemoryState> {
       state = state.copyWith(errorMessage: 'Memory body cannot be empty.');
       return;
     }
-    _updateItem(id, (item, now) {
+    _updateItem(id, 'edited', (item, now) {
       return item.copyWith(
         body: nextBody,
         status: 'active',
@@ -88,7 +91,7 @@ final class MemoryController extends Notifier<MemoryState> {
   }
 
   void deleteMemory(String id) {
-    _updateItem(id, (item, now) {
+    _updateItem(id, 'deleted', (item, now) {
       return item.copyWith(
         status: 'deleted',
         tombstone: true,
@@ -99,7 +102,7 @@ final class MemoryController extends Notifier<MemoryState> {
   }
 
   void restoreMemory(String id) {
-    _updateItem(id, (item, now) {
+    _updateItem(id, 'restored', (item, now) {
       return item.copyWith(
         status: 'active',
         tombstone: false,
@@ -111,6 +114,7 @@ final class MemoryController extends Notifier<MemoryState> {
 
   void _updateItem(
     String id,
+    String action,
     localdb.MemoryItemRecord Function(localdb.MemoryItemRecord, DateTime)
     update,
   ) {
@@ -119,7 +123,10 @@ final class MemoryController extends Notifier<MemoryState> {
       if (existing == null) {
         throw StateError('Memory not found: $id');
       }
-      _database.memoryItems.save(update(existing, DateTime.now().toUtc()));
+      final now = DateTime.now().toUtc();
+      final updated = update(existing, now);
+      _database.memoryItems.save(updated);
+      _appendLifecycleEvidence(existing, updated, action, now);
       ref
         ..invalidate(timelineSnapshotProvider)
         ..invalidate(captureControllerProvider);
@@ -146,6 +153,61 @@ final class MemoryController extends Notifier<MemoryState> {
   localdb.WideNoteLocalDatabase get _database {
     return ref.read(localDatabaseProvider);
   }
+
+  void _appendLifecycleEvidence(
+    localdb.MemoryItemRecord previous,
+    localdb.MemoryItemRecord updated,
+    String action,
+    DateTime occurredAt,
+  ) {
+    final eventId =
+        'event-memory-$action-${updated.id}-${occurredAt.microsecondsSinceEpoch}';
+    final eventType = switch (action) {
+      'edited' => runtime.WnEventTypes.memoryEdited,
+      'deleted' => runtime.WnEventTypes.memoryDeleted,
+      'restored' => runtime.WnEventTypes.memoryRestored,
+      _ => 'wn.memory.$action',
+    };
+    _database.eventLog.append(
+      localdb.EventLogEntry(
+        id: eventId,
+        type: eventType,
+        actor: runtime.WnActor.user.name,
+        subjectRef: <String, Object?>{'kind': 'memory', 'id': updated.id},
+        sourceCaptureId: updated.sourceCaptureId,
+        sourceEventId: updated.sourceEventId,
+        payload: <String, Object?>{
+          'action': action,
+          'memory_id': updated.id,
+          'previous_revision': previous.revision,
+          'revision': updated.revision,
+          'previous_status': previous.status,
+          'status': updated.status,
+          'previous_tombstone': previous.tombstone,
+          'tombstone': updated.tombstone,
+          if (action == 'edited') 'body': updated.body,
+        },
+        createdAt: occurredAt,
+      ),
+    );
+    _database.traceEvents.insert(
+      localdb.TraceEventRecord(
+        id: 'trace-$eventId',
+        name: 'memory.lifecycle.$action',
+        level: 'info',
+        traceTypeOverride: 'memory.lifecycle',
+        message: 'Memory $action by user.',
+        sourceEventId: eventId,
+        status: 'ok',
+        payload: <String, Object?>{
+          'memory_id': updated.id,
+          'revision': updated.revision,
+          'action': action,
+        },
+        createdAt: occurredAt,
+      ),
+    );
+  }
 }
 
 MemoryListItem _memoryView(localdb.MemoryItemRecord record) {
@@ -161,7 +223,20 @@ MemoryListItem _memoryView(localdb.MemoryItemRecord record) {
     revision: record.revision,
     tombstone: record.tombstone,
     updatedAt: record.updatedAt,
+    sourceCaptureId: _sourceCaptureId(record),
   );
+}
+
+String? _sourceCaptureId(localdb.MemoryItemRecord record) {
+  for (final sourceRef in record.sourceRefs.whereType<Map>()) {
+    final kind =
+        _string(sourceRef['kind']) ?? _string(sourceRef['source_type']);
+    final id = _string(sourceRef['id']) ?? _string(sourceRef['source_id']);
+    if ((kind == 'capture' || kind == 'event') && id != null) {
+      return id;
+    }
+  }
+  return record.sourceCaptureId ?? record.sourceEventId;
 }
 
 String _sourceLabel(localdb.MemoryItemRecord record) {

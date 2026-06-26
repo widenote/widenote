@@ -1,6 +1,8 @@
 # Phase One Technical Plan
 
-Status: draft
+Status: planning baseline; superseded for current implementation state by
+`docs/rfcs/phase-one-umbrella-technical-plan.md` and
+`docs/research/2026-06-26-w7-current-integration-state.md`
 
 Date: 2026-06-23
 
@@ -66,7 +68,7 @@ Phase one is not a tiny MVP. It should cover the complete MemeX-like surface, wi
 | Agent Packs | Default pack, custom agent creation, per-agent model profile, event triggers, sync/async execution, dependencies, retry, traces, permission review |
 | Providers | BYOK model setup, per-pack/per-agent model profiles, OpenAI-compatible first, Anthropic/Gemini/local/other adapters behind capability metadata |
 | Privacy | Local-first default, app lock, permission broker, trace/audit, local-only/privacy-tier flags, sensitive remote execution gates |
-| Backup/export | Full backup/restore, JSON/JSONL export, Markdown/HTML/Obsidian-style projection export, debug export behind explicit switch |
+| Backup/export | Current W7: safe backup/restore and readable Owner Export without provider secrets; future: encrypted full backup, JSON/JSONL archive export, Markdown/HTML/Obsidian-style projections, debug export behind explicit switch |
 | Settings | Model providers, permissions, packs, backup/export, location context, trace review, privacy lock |
 
 High-risk continuous capture surfaces such as notifications, SMS, screen content, automatic screenshots, and always-on listening should be implemented as explicit advanced/community packs, not enabled by default.
@@ -79,7 +81,7 @@ High-risk continuous capture surfaces such as notifications, SMS, screen content
 | State and DI | Riverpod |
 | Navigation | go_router |
 | Models | freezed + json_serializable, generated from public schemas where possible |
-| Local DB | Drift + SQLite |
+| Local DB | Current W7: hand-written `sqlite3` + SQLite; long-term target: Drift + SQLite |
 | Search | SQLite FTS5 for MVP, with app-generated Chinese n-gram text; vector index as rebuildable projection |
 | Attachments | Local filesystem plus SQLite metadata and checksums |
 | OCR/STT | Platform adapters first; local or cloud providers behind permissions |
@@ -90,7 +92,10 @@ High-risk continuous capture surfaces such as notifications, SMS, screen content
 
 ## Local Data Model
 
-SQLite/Drift owns structured local truth. The filesystem owns large objects, backup/export packages, plugin bundles, and rebuildable projections.
+SQLite owns structured local truth. Current W7 uses hand-written `sqlite3`
+DAOs; Drift remains the long-term target from ADR-0002. The filesystem owns
+large objects, backup/export packages, plugin bundles, and rebuildable
+projections.
 
 Initial table families:
 

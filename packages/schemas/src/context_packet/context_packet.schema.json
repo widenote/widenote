@@ -1,0 +1,396 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://widenote.dev/schemas/context_packet.schema.json",
+  "title": "WideNote Context Packet",
+  "description": "Permission-aware generated read model for AI and UI context. Packets are rebuildable derived state, not source truth.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "schema_version",
+    "surface",
+    "source_refs",
+    "permission_scope",
+    "disclosure_level",
+    "generator_id",
+    "generator_version",
+    "created_at",
+    "sections"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "schema_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "surface": {
+      "type": "string",
+      "enum": [
+        "home",
+        "chat",
+        "recap",
+        "pack_run",
+        "export_preview",
+        "trace_review"
+      ]
+    },
+    "request_ref": {
+      "$ref": "#/$defs/ref_or_null"
+    },
+    "subject_ref": {
+      "$ref": "#/$defs/ref_or_null"
+    },
+    "source_refs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source_ref"
+      },
+      "uniqueItems": true
+    },
+    "permission_scope": {
+      "$ref": "#/$defs/permission_scope"
+    },
+    "disclosure_level": {
+      "type": "string",
+      "enum": [
+        "visible_context",
+        "accepted_memory",
+        "derived_summary",
+        "targeted_excerpt",
+        "attachment_expansion"
+      ]
+    },
+    "generator_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "generator_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "pack_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^pack\\.[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$"
+    },
+    "agent_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^agent\\.[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$"
+    },
+    "cache_policy": {
+      "$ref": "#/$defs/cache_policy"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "sections": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/section"
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "ref_or_null": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/object_ref"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "object_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "uri": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        }
+      }
+    },
+    "source_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "event",
+            "record",
+            "capture",
+            "memory",
+            "card",
+            "insight",
+            "recap",
+            "todo",
+            "conversation",
+            "message",
+            "file",
+            "uri",
+            "manual"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_version": {
+          "type": [
+            "integer",
+            "string",
+            "null"
+          ]
+        },
+        "content_hash": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "event_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "uri": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "sensitivity": {
+          "$ref": "#/$defs/sensitivity_or_null"
+        }
+      }
+    },
+    "permission_scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "permissions"
+      ],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "local_only",
+            "user_granted",
+            "export_safe",
+            "trace_review"
+          ]
+        },
+        "permissions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+          },
+          "uniqueItems": true
+        },
+        "grant_snapshot_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "redaction_policy": {
+          "type": "string",
+          "enum": [
+            "none",
+            "redact_sensitive",
+            "redact_attachments"
+          ]
+        }
+      }
+    },
+    "cache_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cacheable",
+        "invalidation_keys"
+      ],
+      "properties": {
+        "cacheable": {
+          "type": "boolean"
+        },
+        "ttl_seconds": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "invalidation_keys": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "section": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "content",
+        "citations"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "visible_context",
+            "memory",
+            "derived_summary",
+            "raw_excerpt",
+            "attachment_metadata",
+            "redaction_notice"
+          ]
+        },
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "content": {
+          "type": "string"
+        },
+        "citations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/citation"
+          }
+        },
+        "redactions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/redaction"
+          }
+        },
+        "sensitivity": {
+          "$ref": "#/$defs/sensitivity"
+        }
+      }
+    },
+    "citation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_ref"
+      ],
+      "properties": {
+        "source_ref": {
+          "$ref": "#/$defs/source_ref"
+        },
+        "evidence_hash": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "excerpt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "redaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reason"
+      ],
+      "properties": {
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_ref": {
+          "$ref": "#/$defs/ref_or_null"
+        }
+      }
+    },
+    "sensitivity": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "sensitivity_or_null": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        null
+      ]
+    }
+  }
+}

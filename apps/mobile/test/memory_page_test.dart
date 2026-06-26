@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
 import 'package:widenote_local_db/widenote_local_db.dart';
 import 'package:widenote_mobile/app/local_database.dart';
 import 'package:widenote_mobile/features/memory/presentation/memory_page.dart';
@@ -39,6 +41,14 @@ void main() {
 
     expect(find.text('Edited source-linked Memory body.'), findsOneWidget);
     expect(database.memoryItems.readById('memory-page-1')!.revision, 2);
+    expect(
+      database.eventLog.readByType(runtime.WnEventTypes.memoryEdited),
+      hasLength(1),
+    );
+    expect(
+      database.traceEvents.readAll().map((trace) => trace.name),
+      contains('memory.lifecycle.edited'),
+    );
 
     await tester.tap(find.byKey(const Key('memory-delete-memory-page-1')));
     await tester.pumpAndSettle();
@@ -59,7 +69,28 @@ void main() {
     expect(restored.tombstone, isFalse);
     expect(restored.status, 'active');
     expect(restored.revision, 4);
+    expect(
+      database.eventLog.readByType(runtime.WnEventTypes.memoryDeleted),
+      hasLength(1),
+    );
+    expect(
+      database.eventLog.readByType(runtime.WnEventTypes.memoryRestored),
+      hasLength(1),
+    );
+    expect(
+      database.traceEvents.readAll().map((trace) => trace.name),
+      containsAll(<String>[
+        'memory.lifecycle.deleted',
+        'memory.lifecycle.restored',
+      ]),
+    );
     expect(find.byKey(const Key('memory-edit-memory-page-1')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('memory-source-memory-page-1')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('memory-source-destination')), findsOneWidget);
+    expect(find.text('capture-memory-page'), findsOneWidget);
   });
 }
 
@@ -67,14 +98,31 @@ Future<void> _pumpMemoryPage(
   WidgetTester tester,
   WideNoteLocalDatabase database,
 ) async {
+  final router = GoRouter(
+    initialLocation: '/',
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (context, state) => const Scaffold(body: MemoryPage()),
+      ),
+      GoRoute(
+        path: '/timeline/items/:itemId',
+        builder: (context, state) => Scaffold(
+          key: const Key('memory-source-destination'),
+          body: Text(state.pathParameters['itemId'] ?? ''),
+        ),
+      ),
+    ],
+  );
+  addTearDown(router.dispose);
   await tester.pumpWidget(
     ProviderScope(
       overrides: [localDatabaseProvider.overrideWithValue(database)],
-      child: const MaterialApp(
+      child: MaterialApp.router(
         locale: Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(body: MemoryPage()),
+        routerConfig: router,
       ),
     ),
   );

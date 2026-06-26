@@ -2,6 +2,7 @@ library;
 
 export 'src/event.dart';
 export 'src/kernel.dart';
+export 'src/manifest.dart';
 export 'src/model.dart';
 export 'src/pack.dart';
 export 'src/permissions.dart';

@@ -11,8 +11,18 @@
 | [ADR-0006](./0006-use-clean-room-parity-specs.md) | Use clean-room parity specs for MemeX-like behavior | accepted | 2026-06-23 |
 | [ADR-0007](./0007-defer-cloud-sync-from-core-phase-one.md) | Defer cloud sync from the core phase-one implementation | accepted | 2026-06-23 |
 | [ADR-0008](./0008-use-dev-and-prod-mobile-flavors.md) | Use dev and prod mobile flavors first | accepted | 2026-06-25 |
+| [ADR-0009](./0009-use-object-truth-and-context-packets.md) | Use object truth and generated context packets for phase-one mobile memory | accepted | 2026-06-26 |
 
-## RFCs
+## RFC Status
 
-- [Mobile Entry Closure](../rfcs/mobile-entry-closure.md)
-- [Mobile Visual Style](../rfcs/mobile-visual-style.md)
+| RFC | Status |
+| --- | --- |
+| [Phase-One Umbrella Technical Plan](../rfcs/phase-one-umbrella-technical-plan.md) | accepted implementation baseline |
+| [Phase-One Product Scope](../rfcs/phase-one-product-scope.md) | accepted phase-one scope; W7 safe-backup amendment |
+| [Model Provider Settings](../rfcs/model-provider-settings.md) | accepted phase-one slice; W7 safe-backup amendment |
+| [Memory Model](../rfcs/memory-model.md) | accepted phase-one contract; follow-ups open |
+| [Agent Pack Schema](../rfcs/agent-pack-schema.md) | accepted phase-one contract; scripted/community runtime deferred |
+| [Mobile Entry Closure](../rfcs/mobile-entry-closure.md) | implemented slice; current status superseded by W7 integration state |
+| [Mobile Visual Style](../rfcs/mobile-visual-style.md) | accepted |
+
+Current implementation evidence: [W7 Current Integration State](../research/2026-06-26-w7-current-integration-state.md).

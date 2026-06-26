@@ -59,7 +59,16 @@ final class TimelineSnapshot {
   }
 
   MemoryFirstTimelineItem? itemById(String itemId) {
-    return index.itemById(itemId);
+    final direct = index.itemById(itemId);
+    if (direct != null) {
+      return direct;
+    }
+    for (final item in index.items) {
+      if (item.sourceLinks.any((link) => link.id == itemId)) {
+        return item;
+      }
+    }
+    return null;
   }
 
   MemoryFirstCardDetail? cardDetail(String cardId) {
@@ -79,7 +88,6 @@ final class LocalDbTimelineRepository implements TimelineRepository {
       ..._cardItems(),
       ..._insightItems(),
       ..._memoryItems(),
-      ..._todoEventItems(),
       ..._todoRecordItems(),
     ]);
   }
@@ -89,8 +97,9 @@ final class LocalDbTimelineRepository implements TimelineRepository {
         .readByType(runtime.WnEventTypes.captureCreated, limit: 200)
         .map((event) {
           final body = _string(event.payload['text']) ?? 'Untitled capture';
+          final captureId = event.subjectRefId ?? event.id;
           return MemoryFirstTimelineItem(
-            id: event.id,
+            id: captureId,
             kind: MemoryFirstTimelineItemKind.capture,
             title: 'Capture',
             body: body,
@@ -98,13 +107,16 @@ final class LocalDbTimelineRepository implements TimelineRepository {
             status: event.status,
             sourceLinks: _linksWithSelf(
               kind: 'capture',
-              id: event.id,
+              id: captureId,
               excerpt: body,
               links: <SourceLink>[
                 SourceLink(kind: 'event', id: event.id, excerpt: body),
               ],
             ),
-            metadata: <String, Object?>{'event_type': event.type},
+            metadata: <String, Object?>{
+              'event_type': event.type,
+              'event_id': event.id,
+            },
           );
         })
         .toList(growable: false);
@@ -194,37 +206,6 @@ final class LocalDbTimelineRepository implements TimelineRepository {
             },
           ),
         )
-        .toList(growable: false);
-  }
-
-  List<MemoryFirstTimelineItem> _todoEventItems() {
-    return _database.eventLog
-        .readByType(runtime.WnEventTypes.todoSuggested, limit: 200)
-        .map((event) {
-          final body = _string(event.payload['text']) ?? 'Untitled todo';
-          final sourceEventId = _string(event.payload['source_event_id']);
-          return MemoryFirstTimelineItem(
-            id: event.id,
-            kind: MemoryFirstTimelineItemKind.todo,
-            title: 'Todo',
-            body: body,
-            createdAt: event.createdAt,
-            status: event.status,
-            sourceLinks: _linksWithSelf(
-              kind: 'todo',
-              id: event.id,
-              excerpt: body,
-              links: <SourceLink>[
-                SourceLink(kind: 'event', id: event.id, excerpt: body),
-                if (sourceEventId != null)
-                  SourceLink(kind: 'event', id: sourceEventId),
-                if (event.causationId != null)
-                  SourceLink(kind: 'capture', id: event.causationId!),
-              ],
-            ),
-            metadata: <String, Object?>{'event_type': event.type},
-          );
-        })
         .toList(growable: false);
   }
 

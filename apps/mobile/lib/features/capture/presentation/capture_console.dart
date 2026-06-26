@@ -9,9 +9,11 @@ class CaptureConsole extends StatelessWidget {
     required this.controller,
     required this.onSubmit,
     required this.onModeChanged,
-    required this.onAddPhoto,
-    required this.onAddVoice,
-    required this.onAddShare,
+    required this.onAddCamera,
+    required this.onAddGallery,
+    required this.onStartVoice,
+    required this.onStopVoice,
+    required this.onCancelVoice,
     required this.onRemoveAttachment,
     required this.onAcceptAttachmentReview,
     required this.isProcessing,
@@ -22,9 +24,11 @@ class CaptureConsole extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onSubmit;
   final ValueChanged<CaptureMode> onModeChanged;
-  final VoidCallback onAddPhoto;
-  final VoidCallback onAddVoice;
-  final VoidCallback onAddShare;
+  final VoidCallback onAddCamera;
+  final VoidCallback onAddGallery;
+  final VoidCallback onStartVoice;
+  final VoidCallback onStopVoice;
+  final VoidCallback onCancelVoice;
   final ValueChanged<String> onRemoveAttachment;
   final ValueChanged<String> onAcceptAttachmentReview;
   final bool isProcessing;
@@ -75,17 +79,20 @@ class CaptureConsole extends StatelessWidget {
             _ModePanel(
               mode: inputState.mode,
               inputBusy: inputBusy,
-              onAddVoice: onAddVoice,
-              onAddPhoto: onAddPhoto,
-              onAddShare: onAddShare,
+              isRecordingVoice: inputState.isRecordingVoice,
+              onAddCamera: onAddCamera,
+              onAddGallery: onAddGallery,
+              onStartVoice: onStartVoice,
+              onStopVoice: onStopVoice,
+              onCancelVoice: onCancelVoice,
             ),
             const SizedBox(height: 12),
             _ConsoleActions(
               inputBusy: inputBusy,
               isProcessing: isProcessing,
-              onAddPhoto: onAddPhoto,
-              onAddVoice: onAddVoice,
-              onAddShare: onAddShare,
+              onAddCamera: onAddCamera,
+              onAddGallery: onAddGallery,
+              onStartVoice: onStartVoice,
               onSubmit: onSubmit,
             ),
             if (inputState.errorMessage != null) ...[
@@ -169,9 +176,9 @@ class _ModeSelector extends StatelessWidget {
           label: Text(l10n.captureModeVoice),
         ),
         ButtonSegment<CaptureMode>(
-          value: CaptureMode.import,
+          value: CaptureMode.media,
           icon: const Icon(Icons.file_upload_outlined),
-          label: Text(l10n.captureModeImport),
+          label: Text(l10n.captureModeMedia),
         ),
       ],
       selected: {selected},
@@ -186,16 +193,22 @@ class _ModePanel extends StatelessWidget {
   const _ModePanel({
     required this.mode,
     required this.inputBusy,
-    required this.onAddVoice,
-    required this.onAddPhoto,
-    required this.onAddShare,
+    required this.isRecordingVoice,
+    required this.onAddCamera,
+    required this.onAddGallery,
+    required this.onStartVoice,
+    required this.onStopVoice,
+    required this.onCancelVoice,
   });
 
   final CaptureMode mode;
   final bool inputBusy;
-  final VoidCallback onAddVoice;
-  final VoidCallback onAddPhoto;
-  final VoidCallback onAddShare;
+  final bool isRecordingVoice;
+  final VoidCallback onAddCamera;
+  final VoidCallback onAddGallery;
+  final VoidCallback onStartVoice;
+  final VoidCallback onStopVoice;
+  final VoidCallback onCancelVoice;
 
   @override
   Widget build(BuildContext context) {
@@ -211,12 +224,15 @@ class _ModePanel extends StatelessWidget {
         ),
         CaptureMode.voice => _VoiceDraftPanel(
           inputBusy: inputBusy,
-          onAddVoice: onAddVoice,
+          isRecording: isRecordingVoice,
+          onStartVoice: onStartVoice,
+          onStopVoice: onStopVoice,
+          onCancelVoice: onCancelVoice,
         ),
-        CaptureMode.import => _ImportPanel(
+        CaptureMode.media => _MediaPanel(
           inputBusy: inputBusy,
-          onAddPhoto: onAddPhoto,
-          onAddShare: onAddShare,
+          onAddCamera: onAddCamera,
+          onAddGallery: onAddGallery,
         ),
       },
     );
@@ -279,54 +295,79 @@ class _ModeHint extends StatelessWidget {
 }
 
 class _VoiceDraftPanel extends StatelessWidget {
-  const _VoiceDraftPanel({required this.inputBusy, required this.onAddVoice});
+  const _VoiceDraftPanel({
+    required this.inputBusy,
+    required this.isRecording,
+    required this.onStartVoice,
+    required this.onStopVoice,
+    required this.onCancelVoice,
+  });
 
   final bool inputBusy;
-  final VoidCallback onAddVoice;
+  final bool isRecording;
+  final VoidCallback onStartVoice;
+  final VoidCallback onStopVoice;
+  final VoidCallback onCancelVoice;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    if (isRecording) {
+      return _ModeHintWithAction(
+        key: const Key('capture-mode-voice-panel'),
+        icon: Icons.graphic_eq_outlined,
+        title: l10n.captureVoiceRecordingTitle,
+        body: l10n.captureVoiceRecordingBody,
+        buttonKey: const Key('capture-voice-stop-button'),
+        buttonIcon: Icons.stop_circle_outlined,
+        buttonLabel: l10n.captureVoiceStopButton,
+        onPressed: inputBusy ? null : onStopVoice,
+        secondaryButtonKey: const Key('capture-voice-cancel-button'),
+        secondaryButtonIcon: Icons.close,
+        secondaryButtonLabel: l10n.captureVoiceCancelButton,
+        onSecondaryPressed: inputBusy ? null : onCancelVoice,
+      );
+    }
     return _ModeHintWithAction(
       key: const Key('capture-mode-voice-panel'),
       icon: Icons.graphic_eq_outlined,
-      title: l10n.captureVoiceDraftTitle,
-      body: l10n.captureVoiceDraftBody,
-      buttonKey: const Key('capture-voice-draft-button'),
-      buttonIcon: Icons.playlist_add_check_outlined,
-      buttonLabel: l10n.captureVoiceDraftButton,
-      onPressed: inputBusy ? null : onAddVoice,
+      title: l10n.captureVoiceTitle,
+      body: l10n.captureVoiceBody,
+      buttonKey: const Key('capture-voice-start-button'),
+      buttonIcon: Icons.mic_none_outlined,
+      buttonLabel: l10n.captureVoiceStartButton,
+      onPressed: inputBusy ? null : onStartVoice,
     );
   }
 }
 
-class _ImportPanel extends StatelessWidget {
-  const _ImportPanel({
+class _MediaPanel extends StatelessWidget {
+  const _MediaPanel({
     required this.inputBusy,
-    required this.onAddPhoto,
-    required this.onAddShare,
+    required this.onAddCamera,
+    required this.onAddGallery,
   });
 
   final bool inputBusy;
-  final VoidCallback onAddPhoto;
-  final VoidCallback onAddShare;
+  final VoidCallback onAddCamera;
+  final VoidCallback onAddGallery;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return _ModeHintWithAction(
-      key: const Key('capture-mode-import-panel'),
-      icon: Icons.file_upload_outlined,
-      title: l10n.captureImportTitle,
-      body: l10n.captureImportBody,
-      buttonKey: const Key('capture-import-share-button'),
-      buttonIcon: Icons.file_upload_outlined,
-      buttonLabel: l10n.captureImportShareButton,
-      onPressed: inputBusy ? null : onAddShare,
-      secondaryButtonKey: const Key('capture-import-photo-button'),
-      secondaryButtonIcon: Icons.add_photo_alternate_outlined,
-      secondaryButtonLabel: l10n.captureImportPhotoButton,
-      onSecondaryPressed: inputBusy ? null : onAddPhoto,
+      key: const Key('capture-mode-media-panel'),
+      icon: Icons.perm_media_outlined,
+      title: l10n.captureMediaTitle,
+      body: l10n.captureMediaBody,
+      buttonKey: const Key('capture-media-camera-button'),
+      buttonIcon: Icons.photo_camera_outlined,
+      buttonLabel: l10n.captureMediaCameraButton,
+      onPressed: inputBusy ? null : onAddCamera,
+      secondaryButtonKey: const Key('capture-media-gallery-button'),
+      secondaryButtonIcon: Icons.photo_library_outlined,
+      secondaryButtonLabel: l10n.captureMediaGalleryButton,
+      onSecondaryPressed: inputBusy ? null : onAddGallery,
     );
   }
 }
@@ -432,17 +473,17 @@ class _ConsoleActions extends StatelessWidget {
   const _ConsoleActions({
     required this.inputBusy,
     required this.isProcessing,
-    required this.onAddPhoto,
-    required this.onAddVoice,
-    required this.onAddShare,
+    required this.onAddCamera,
+    required this.onAddGallery,
+    required this.onStartVoice,
     required this.onSubmit,
   });
 
   final bool inputBusy;
   final bool isProcessing;
-  final VoidCallback onAddPhoto;
-  final VoidCallback onAddVoice;
-  final VoidCallback onAddShare;
+  final VoidCallback onAddCamera;
+  final VoidCallback onAddGallery;
+  final VoidCallback onStartVoice;
   final VoidCallback onSubmit;
 
   @override
@@ -454,22 +495,22 @@ class _ConsoleActions extends StatelessWidget {
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         OutlinedButton.icon(
-          key: const Key('add-photo-attachment-button'),
-          onPressed: inputBusy ? null : onAddPhoto,
-          icon: const Icon(Icons.add_photo_alternate_outlined),
-          label: Text(l10n.captureActionPhoto),
+          key: const Key('add-camera-attachment-button'),
+          onPressed: inputBusy ? null : onAddCamera,
+          icon: const Icon(Icons.photo_camera_outlined),
+          label: Text(l10n.captureActionCamera),
         ),
         OutlinedButton.icon(
-          key: const Key('add-voice-attachment-button'),
-          onPressed: inputBusy ? null : onAddVoice,
+          key: const Key('add-gallery-attachment-button'),
+          onPressed: inputBusy ? null : onAddGallery,
+          icon: const Icon(Icons.photo_library_outlined),
+          label: Text(l10n.captureActionGallery),
+        ),
+        OutlinedButton.icon(
+          key: const Key('add-voice-recording-button'),
+          onPressed: inputBusy ? null : onStartVoice,
           icon: const Icon(Icons.graphic_eq_outlined),
           label: Text(l10n.captureActionVoice),
-        ),
-        OutlinedButton.icon(
-          key: const Key('add-share-import-button'),
-          onPressed: inputBusy ? null : onAddShare,
-          icon: const Icon(Icons.file_upload_outlined),
-          label: Text(l10n.captureActionImport),
         ),
         FilledButton.icon(
           key: const Key('record-capture-button'),
@@ -631,7 +672,7 @@ String _hintForMode(AppLocalizations l10n, CaptureMode mode) {
   return switch (mode) {
     CaptureMode.text => l10n.quickCaptureHint,
     CaptureMode.voice => l10n.captureVoiceHint,
-    CaptureMode.import => l10n.captureImportHint,
+    CaptureMode.media => l10n.captureMediaHint,
   };
 }
 

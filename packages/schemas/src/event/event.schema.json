@@ -10,7 +10,6 @@
     "type",
     "schema_version",
     "actor",
-    "subject_ref",
     "payload",
     "privacy",
     "device_id",
@@ -37,6 +36,16 @@
         "system"
       ]
     },
+    "status": {
+      "type": "string",
+      "enum": [
+        "recorded",
+        "pending",
+        "processed",
+        "failed",
+        "deleted"
+      ]
+    },
     "pack_id": {
       "type": [
         "string",
@@ -51,8 +60,30 @@
       ],
       "minLength": 1
     },
+    "source_capture_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "source_event_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
     "subject_ref": {
-      "$ref": "#/$defs/subject_ref"
+      "description": "Optional canonical subject reference. Some runtime events, such as raw capture append evidence, may not have a separate subject yet.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/subject_ref"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "payload": {
       "type": "object",

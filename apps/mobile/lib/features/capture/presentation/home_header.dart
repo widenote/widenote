@@ -34,9 +34,17 @@ class HomeHeader extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         Wrap(
-          spacing: 8,
+          spacing: 6,
+          runSpacing: 6,
+          alignment: WrapAlignment.end,
           children: [
             IconButton.filledTonal(
+              key: const Key('open-daily-recap-button'),
+              tooltip: l10n.homeOpenDailyRecapTooltip,
+              onPressed: () => context.push('/recap'),
+              icon: const Icon(Icons.today_outlined),
+            ),
+            IconButton.outlined(
               key: const Key('open-timeline-button'),
               tooltip: l10n.homeOpenTimelineTooltip,
               onPressed: () => context.go('/timeline'),
@@ -53,6 +61,12 @@ class HomeHeader extends StatelessWidget {
               tooltip: l10n.homeOpenMemoryTooltip,
               onPressed: () => context.go('/memory'),
               icon: const Icon(Icons.psychology_alt_outlined),
+            ),
+            IconButton.outlined(
+              key: const Key('open-settings-button'),
+              tooltip: l10n.homeOpenSettingsTooltip,
+              onPressed: () => context.push('/settings'),
+              icon: const Icon(Icons.settings_outlined),
             ),
           ],
         ),

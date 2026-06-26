@@ -2,13 +2,14 @@ import 'package:sqlite3/sqlite3.dart';
 
 import 'daos.dart';
 import 'migration.dart';
+import 'models.dart';
 
 final class WideNoteLocalDatabase {
   WideNoteLocalDatabase._(this._database)
-      : eventLog = EventLogDao(_database),
-        captures = CapturesDao(_database),
-        attachments = AttachmentsDao(_database),
-        memoryItems = MemoryItemsDao(_database),
+    : eventLog = EventLogDao(_database),
+      captures = CapturesDao(_database),
+      attachments = AttachmentsDao(_database),
+      memoryItems = MemoryItemsDao(_database),
       memoryCandidates = MemoryCandidatesDao(_database),
       cards = CardsDao(_database),
       insights = InsightsDao(_database),
@@ -16,6 +17,11 @@ final class WideNoteLocalDatabase {
       chatMessages = ChatMessagesDao(_database),
       modelProviderConfigs = ModelProviderConfigsDao(_database),
       todos = TodosDao(_database),
+      runtimeTasks = RuntimeTasksDao(_database),
+      runtimeRuns = RuntimeRunsDao(_database),
+      packInstallations = PackInstallationsDao(_database),
+      permissionGrants = PermissionGrantsDao(_database),
+      contextPacketCaches = ContextPacketCachesDao(_database),
       traceEvents = TraceEventsDao(_database);
 
   factory WideNoteLocalDatabase.open(
@@ -49,11 +55,42 @@ final class WideNoteLocalDatabase {
   final ChatMessagesDao chatMessages;
   final ModelProviderConfigsDao modelProviderConfigs;
   final TodosDao todos;
+  final RuntimeTasksDao runtimeTasks;
+  final RuntimeRunsDao runtimeRuns;
+  final PackInstallationsDao packInstallations;
+  final PermissionGrantsDao permissionGrants;
+  final ContextPacketCachesDao contextPacketCaches;
   final TraceEventsDao traceEvents;
 
   int get schemaVersion => LocalDbMigrator.readSchemaVersion(_database);
 
   Database get rawDatabase => _database;
+
+  void insertCaptureEventAndTasks({
+    required CaptureRecord capture,
+    required EventLogEntry event,
+    required List<RuntimeTaskRecord> tasks,
+  }) {
+    _database.execute('BEGIN IMMEDIATE;');
+    try {
+      captures.insert(capture);
+      eventLog.append(event);
+      for (final task in tasks) {
+        runtimeTasks.insert(task);
+      }
+      final foreignKeyErrors = _database.select('PRAGMA foreign_key_check;');
+      if (foreignKeyErrors.isNotEmpty) {
+        throw StateError(
+          'Capture/event/task transaction failed foreign key validation '
+          'for ${foreignKeyErrors.length} row(s).',
+        );
+      }
+      _database.execute('COMMIT;');
+    } catch (_) {
+      _database.execute('ROLLBACK;');
+      rethrow;
+    }
+  }
 
   void close() {
     _database.dispose();

@@ -26,6 +26,18 @@ extension RuntimeTaskStatusState on RuntimeTaskStatus {
   }
 }
 
+extension RuntimeRunStatusState on RuntimeRunStatus {
+  bool get isTerminal {
+    return switch (this) {
+      RuntimeRunStatus.succeeded ||
+      RuntimeRunStatus.failed ||
+      RuntimeRunStatus.denied ||
+      RuntimeRunStatus.canceled => true,
+      RuntimeRunStatus.running => false,
+    };
+  }
+}
+
 final class RetryPolicy {
   const RetryPolicy({this.maxAttempts = 1});
 
@@ -37,8 +49,11 @@ final class RetryPolicy {
 final class RuntimeTask {
   const RuntimeTask({
     required this.id,
+    required this.identityKey,
     required this.packId,
+    required this.packVersion,
     required this.agentId,
+    required this.handlerRole,
     required this.subscriptionId,
     required this.triggerEventId,
     required this.status,
@@ -52,8 +67,11 @@ final class RuntimeTask {
   });
 
   final String id;
+  final String identityKey;
   final String packId;
+  final String packVersion;
   final String agentId;
+  final String handlerRole;
   final String subscriptionId;
   final String triggerEventId;
   final RuntimeTaskStatus status;
@@ -79,8 +97,11 @@ final class RuntimeTask {
   }) {
     return RuntimeTask(
       id: id,
+      identityKey: identityKey,
       packId: packId,
+      packVersion: packVersion,
       agentId: agentId,
+      handlerRole: handlerRole,
       subscriptionId: subscriptionId,
       triggerEventId: triggerEventId,
       status: status ?? this.status,
@@ -100,11 +121,13 @@ final class RuntimeRun {
     required this.id,
     required this.taskId,
     required this.packId,
+    required this.packVersion,
     required this.agentId,
     required this.status,
     required this.startedAt,
     required this.attempt,
     this.completedAt,
+    this.leaseExpiresAt,
     this.outputEventIds = const <String>[],
     this.error,
   });
@@ -112,11 +135,13 @@ final class RuntimeRun {
   final String id;
   final String taskId;
   final String packId;
+  final String packVersion;
   final String agentId;
   final RuntimeRunStatus status;
   final DateTime startedAt;
   final int attempt;
   final DateTime? completedAt;
+  final DateTime? leaseExpiresAt;
   final List<String> outputEventIds;
   final String? error;
 
@@ -130,11 +155,13 @@ final class RuntimeRun {
       id: id,
       taskId: taskId,
       packId: packId,
+      packVersion: packVersion,
       agentId: agentId,
       status: status ?? this.status,
       startedAt: startedAt,
       attempt: attempt,
       completedAt: completedAt ?? this.completedAt,
+      leaseExpiresAt: leaseExpiresAt,
       outputEventIds: outputEventIds ?? this.outputEventIds,
       error: error ?? this.error,
     );
@@ -155,6 +182,7 @@ enum RuntimePackStatusKind {
 final class RuntimePackStatus {
   const RuntimePackStatus({
     required this.packId,
+    required this.version,
     required this.name,
     required this.status,
     required this.taskCount,
@@ -168,6 +196,7 @@ final class RuntimePackStatus {
   });
 
   final String packId;
+  final String version;
   final String name;
   final RuntimePackStatusKind status;
   final int taskCount;

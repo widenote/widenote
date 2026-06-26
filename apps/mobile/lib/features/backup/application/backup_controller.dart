@@ -5,8 +5,10 @@ import 'package:path_provider/path_provider.dart';
 import 'package:widenote_local_db/widenote_local_db.dart';
 
 import '../../../app/local_database.dart';
+import '../../../app/model_client.dart';
 import '../../capture/application/capture_controller.dart';
 import '../../memory/application/memory_controller.dart';
+import '../../model_providers/application/model_provider_settings_controller.dart';
 import '../../timeline/application/timeline_repository.dart';
 import '../../todos/application/todo_controller.dart';
 
@@ -96,6 +98,8 @@ final class BackupState {
     this.exportedMarkdownPath,
     this.recordCounts = const <String, int>{},
     this.importDraft = '',
+    this.lastImportReport,
+    this.safeProviderSecretOmissionCount = 0,
     this.outcome = BackupOutcome.idle,
     this.errorDetails,
   });
@@ -106,6 +110,8 @@ final class BackupState {
   final String? exportedMarkdownPath;
   final Map<String, int> recordCounts;
   final String importDraft;
+  final LocalBackupImportReport? lastImportReport;
+  final int safeProviderSecretOmissionCount;
   final BackupOutcome outcome;
   final String? errorDetails;
 
@@ -118,10 +124,13 @@ final class BackupState {
     String? exportedMarkdownPath,
     Map<String, int>? recordCounts,
     String? importDraft,
+    LocalBackupImportReport? lastImportReport,
+    int? safeProviderSecretOmissionCount,
     BackupOutcome? outcome,
     String? errorDetails,
     bool clearError = false,
     bool clearFilePaths = false,
+    bool clearImportReport = false,
   }) {
     return BackupState(
       exportedJson: exportedJson ?? this.exportedJson,
@@ -134,6 +143,12 @@ final class BackupState {
           : exportedMarkdownPath ?? this.exportedMarkdownPath,
       recordCounts: recordCounts ?? this.recordCounts,
       importDraft: importDraft ?? this.importDraft,
+      lastImportReport: clearImportReport
+          ? null
+          : lastImportReport ?? this.lastImportReport,
+      safeProviderSecretOmissionCount:
+          safeProviderSecretOmissionCount ??
+          this.safeProviderSecretOmissionCount,
       outcome: outcome ?? this.outcome,
       errorDetails: clearError ? null : errorDetails ?? this.errorDetails,
     );
@@ -151,6 +166,7 @@ final class BackupController extends Notifier<BackupState> {
       importDraft: value,
       outcome: BackupOutcome.idle,
       clearError: true,
+      clearImportReport: true,
     );
   }
 
@@ -165,9 +181,12 @@ final class BackupController extends Notifier<BackupState> {
         exportedJsonPath: null,
         exportedMarkdownPath: null,
         recordCounts: backup.manifest.recordCounts,
+        safeProviderSecretOmissionCount:
+            backup.providerConfigsNeedingCredentialReentry.length,
         outcome: BackupOutcome.exported,
         clearError: true,
         clearFilePaths: true,
+        clearImportReport: true,
       );
     } catch (error) {
       state = state.copyWith(
@@ -205,9 +224,15 @@ final class BackupController extends Notifier<BackupState> {
 
   bool importBackup() {
     try {
-      ref.read(backupServiceProvider).importJson(state.importDraft);
+      final report = ref
+          .read(backupServiceProvider)
+          .importJson(state.importDraft);
       _refreshImportedData();
-      state = state.copyWith(outcome: BackupOutcome.imported, clearError: true);
+      state = state.copyWith(
+        lastImportReport: report,
+        outcome: BackupOutcome.imported,
+        clearError: true,
+      );
       return true;
     } catch (error) {
       state = state.copyWith(
@@ -221,10 +246,11 @@ final class BackupController extends Notifier<BackupState> {
   Future<bool> importLatestSavedFile() async {
     try {
       final json = await ref.read(backupFileStoreProvider).readLatestJson();
-      ref.read(backupServiceProvider).importJson(json);
+      final report = ref.read(backupServiceProvider).importJson(json);
       _refreshImportedData();
       state = state.copyWith(
         importDraft: json,
+        lastImportReport: report,
         outcome: BackupOutcome.imported,
         clearError: true,
       );
@@ -243,7 +269,9 @@ final class BackupController extends Notifier<BackupState> {
       ..invalidate(captureControllerProvider)
       ..invalidate(timelineSnapshotProvider)
       ..invalidate(todoControllerProvider)
-      ..invalidate(memoryControllerProvider);
+      ..invalidate(memoryControllerProvider)
+      ..invalidate(modelProviderSettingsControllerProvider)
+      ..invalidate(modelClientProvider);
   }
 }
 

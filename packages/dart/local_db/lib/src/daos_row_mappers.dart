@@ -185,6 +185,124 @@ TodoRecord _todoFromRow(Row row) {
   );
 }
 
+RuntimeTaskRecord _runtimeTaskFromRow(Row row) {
+  return RuntimeTaskRecord(
+    id: _text(row, 'id'),
+    schemaVersion: _integer(row, 'schema_version'),
+    packId: _text(row, 'pack_id'),
+    packVersion: _text(row, 'pack_version'),
+    agentId: _text(row, 'agent_id'),
+    handlerId: _text(row, 'handler_id'),
+    subscriptionId: _text(row, 'subscription_id'),
+    triggerEventId: _text(row, 'trigger_event_id'),
+    identityKey: _text(row, 'identity_key'),
+    status: _text(row, 'status'),
+    dependencyTaskIds: decodeJsonList(_text(row, 'dependency_task_ids_json')),
+    missingDependencyIds: decodeJsonList(
+      _text(row, 'missing_dependency_ids_json'),
+    ),
+    attempts: _integer(row, 'attempts'),
+    maxAttempts: _integer(row, 'max_attempts'),
+    leaseOwner: _nullableText(row, 'lease_owner'),
+    leasedUntil: _nullableDateTime(row, 'leased_until'),
+    error: _nullableText(row, 'error'),
+    payload: decodeJsonMap(_text(row, 'payload_json')),
+    createdAt: _dateTime(row, 'created_at'),
+    updatedAt: _dateTime(row, 'updated_at'),
+  );
+}
+
+RuntimeRunRecord _runtimeRunFromRow(Row row) {
+  return RuntimeRunRecord(
+    id: _text(row, 'id'),
+    schemaVersion: _integer(row, 'schema_version'),
+    taskId: _text(row, 'task_id'),
+    packId: _text(row, 'pack_id'),
+    packVersion: _text(row, 'pack_version'),
+    agentId: _text(row, 'agent_id'),
+    handlerId: _text(row, 'handler_id'),
+    status: _text(row, 'status'),
+    attempt: _integer(row, 'attempt'),
+    outputEventIds: decodeJsonList(_text(row, 'output_event_ids_json')),
+    error: _nullableText(row, 'error'),
+    payload: decodeJsonMap(_text(row, 'payload_json')),
+    startedAt: _dateTime(row, 'started_at'),
+    completedAt: _nullableDateTime(row, 'completed_at'),
+  );
+}
+
+PackInstallationRecord _packInstallationFromRow(Row row) {
+  return PackInstallationRecord(
+    packId: _text(row, 'pack_id'),
+    schemaVersion: _integer(row, 'schema_version'),
+    name: _text(row, 'name'),
+    version: _text(row, 'version'),
+    publisher: _text(row, 'publisher'),
+    edition: _text(row, 'edition'),
+    status: _text(row, 'status'),
+    runtimeStatus: _text(row, 'runtime_status'),
+    entrypointKind: _text(row, 'entrypoint_kind'),
+    requestedPermissions: decodeJsonList(
+      _text(row, 'requested_permissions_json'),
+    ),
+    enabledSubscriptionIds: decodeJsonList(
+      _text(row, 'enabled_subscription_ids_json'),
+    ),
+    manifest: decodeJsonMap(_text(row, 'manifest_json')),
+    payload: decodeJsonMap(_text(row, 'payload_json')),
+    installedAt: _dateTime(row, 'installed_at'),
+    updatedAt: _dateTime(row, 'updated_at'),
+  );
+}
+
+PermissionGrantRecord _permissionGrantFromRow(Row row) {
+  return PermissionGrantRecord(
+    id: _text(row, 'id'),
+    schemaVersion: _integer(row, 'schema_version'),
+    packId: _text(row, 'pack_id'),
+    permissionId: _text(row, 'permission_id'),
+    status: _text(row, 'status'),
+    grantKind: _text(row, 'grant_kind'),
+    sourceEventId: _nullableText(row, 'source_event_id'),
+    grantedAt: _nullableDateTime(row, 'granted_at'),
+    revokedAt: _nullableDateTime(row, 'revoked_at'),
+    reason: _nullableText(row, 'reason'),
+    payload: decodeJsonMap(_text(row, 'payload_json')),
+    createdAt: _dateTime(row, 'created_at'),
+    updatedAt: _dateTime(row, 'updated_at'),
+  );
+}
+
+ContextPacketCacheRecord _contextPacketCacheFromRow(Row row) {
+  return ContextPacketCacheRecord(
+    id: _text(row, 'id'),
+    schemaVersion: _integer(row, 'schema_version'),
+    surface: _text(row, 'surface'),
+    requestRef: decodeJsonMap(_text(row, 'request_ref_json')),
+    subjectRef: decodeJsonMap(_text(row, 'subject_ref_json')),
+    sourceRefs: decodeJsonList(_text(row, 'source_refs_json')),
+    sourceVersions: decodeJsonList(_text(row, 'source_versions_json')),
+    permissionScope: _text(row, 'permission_scope'),
+    disclosureLevel: _text(row, 'disclosure_level'),
+    generatorId: _text(row, 'generator_id'),
+    generatorVersion: _text(row, 'generator_version'),
+    promptVersion: _text(row, 'prompt_version'),
+    packId: _nullableText(row, 'pack_id'),
+    packVersion: _nullableText(row, 'pack_version'),
+    agentId: _nullableText(row, 'agent_id'),
+    localDate: _nullableText(row, 'local_date'),
+    privacyProfile: _text(row, 'privacy_profile'),
+    invalidationKeys: decodeJsonList(_text(row, 'invalidation_keys_json')),
+    cacheKey: _text(row, 'cache_key'),
+    status: _text(row, 'status'),
+    packet: decodeJsonMap(_text(row, 'packet_json')),
+    expiresAt: _nullableDateTime(row, 'expires_at'),
+    invalidatedAt: _nullableDateTime(row, 'invalidated_at'),
+    createdAt: _dateTime(row, 'created_at'),
+    updatedAt: _dateTime(row, 'updated_at'),
+  );
+}
+
 TraceEventRecord _traceFromRow(Row row) {
   final traceType = _text(row, 'trace_type');
   final severity = _text(row, 'severity');
@@ -238,6 +356,11 @@ String? _eventSubjectId(EventLogEntry event) {
 
 DateTime _dateTime(Row row, String column) {
   return DateTime.parse(_text(row, column)).toUtc();
+}
+
+DateTime? _nullableDateTime(Row row, String column) {
+  final value = _nullableText(row, column);
+  return value == null ? null : DateTime.parse(value).toUtc();
 }
 
 String _text(Row row, String column) => row[column] as String;

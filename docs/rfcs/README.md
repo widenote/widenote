@@ -1,14 +1,25 @@
 # RFCs
 
-RFCs are for major proposed changes that are still being discussed.
+RFCs are for major proposed changes and implementation baselines that may later
+split into ADRs.
 
-Open an RFC when a change is cross-cutting, hard to reverse, or affects schemas, runtime, memory, sync, privacy, Agent Packs, plugin permissions, or public APIs.
+Open an RFC when a change is cross-cutting, hard to reverse, or affects schemas,
+runtime, memory, sync, privacy, Agent Packs, plugin permissions, or public APIs.
 
-When an RFC resolves, record the final decision as one or more ADRs.
+When an RFC resolves into durable policy, record the final decision as one or
+more ADRs. Do not leave an implemented phase-one RFC listed as merely open.
 
-## Active RFCs
+## Current Phase-One RFC State
 
-- [Memory Model](./memory-model.md)
-- [Agent Pack Schema](./agent-pack-schema.md)
-- [Model Provider Settings](./model-provider-settings.md)
-- [Phase-One Product Scope](./phase-one-product-scope.md)
+| RFC | Status |
+| --- | --- |
+| [Phase-One Umbrella Technical Plan](./phase-one-umbrella-technical-plan.md) | Accepted implementation baseline |
+| [Phase-One Product Scope](./phase-one-product-scope.md) | Accepted phase-one scope; amended by W7 safe-backup boundary |
+| [Model Provider Settings](./model-provider-settings.md) | Accepted phase-one slice; amended by W7 safe-backup boundary |
+| [Memory Model](./memory-model.md) | Accepted phase-one contract; follow-ups open |
+| [Agent Pack Schema](./agent-pack-schema.md) | Accepted phase-one contract; scripted/community runtime deferred |
+| [Mobile Entry Closure](./mobile-entry-closure.md) | Implemented phase-one slice; current status superseded by W7 integration state |
+| [Mobile Visual Style](./mobile-visual-style.md) | Accepted |
+
+Current implementation status lives in
+[`docs/research/2026-06-26-w7-current-integration-state.md`](../research/2026-06-26-w7-current-integration-state.md).

@@ -9,7 +9,6 @@
     "id",
     "schema_version",
     "trace_type",
-    "run_id",
     "severity",
     "status",
     "created_at"
@@ -28,6 +27,11 @@
       "enum": [
         "run_started",
         "run_completed",
+        "task_created",
+        "task_waiting",
+        "task_blocked",
+        "task_canceled",
+        "task_retry_queued",
         "event_received",
         "event_emitted",
         "permission_checked",
@@ -36,8 +40,26 @@
         "error"
       ]
     },
-    "run_id": {
+    "name": {
       "type": "string",
+      "minLength": 1
+    },
+    "level": {
+      "description": "Runtime compatibility severity from RuntimeTrace.",
+      "type": "string",
+      "enum": [
+        "debug",
+        "info",
+        "warning",
+        "error"
+      ]
+    },
+    "run_id": {
+      "description": "Optional because pre-run runtime traces can be emitted while appending or routing an event.",
+      "type": [
+        "string",
+        "null"
+      ],
       "minLength": 1
     },
     "task_id": {

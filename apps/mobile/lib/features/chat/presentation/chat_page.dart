@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../l10n/l10n.dart';
 import '../application/chat_controller.dart';
@@ -373,9 +374,9 @@ class _SourceRefs extends StatelessWidget {
           children: [
             for (var index = 0; index < uniqueRefs.length; index++)
               _SourceTag(
-                key: Key(
+                tagKey: Key(
                   'chat-source-${uniqueRefs[index].kind}-'
-                  '${uniqueRefs[index].id}-$index',
+                  '${uniqueRefs[index].id}',
                 ),
                 ref: uniqueRefs[index],
               ),
@@ -399,13 +400,15 @@ List<ChatSourceRef> _dedupeSourceRefs(List<ChatSourceRef> refs) {
 }
 
 class _SourceTag extends StatelessWidget {
-  const _SourceTag({required this.ref, super.key});
+  const _SourceTag({required this.ref, required this.tagKey});
 
   final ChatSourceRef ref;
+  final Key tagKey;
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
+    final target = _timelineTargetFor(ref);
+    final tag = DecoratedBox(
       decoration: BoxDecoration(
         color: const Color(0xFFEFF6FF),
         borderRadius: BorderRadius.circular(8),
@@ -430,6 +433,15 @@ class _SourceTag extends StatelessWidget {
           ],
         ),
       ),
+    );
+    if (target == null) {
+      return KeyedSubtree(key: tagKey, child: tag);
+    }
+    return GestureDetector(
+      key: tagKey,
+      behavior: HitTestBehavior.opaque,
+      onTap: () => context.go(target),
+      child: tag,
     );
   }
 }
@@ -639,4 +651,11 @@ IconData _iconForKind(String kind) {
     'capture' => Icons.article_outlined,
     _ => Icons.link,
   };
+}
+
+String? _timelineTargetFor(ChatSourceRef ref) {
+  if (ref.kind == 'capture' || ref.kind == 'event') {
+    return '/timeline/items/${Uri.encodeComponent(ref.id)}';
+  }
+  return null;
 }

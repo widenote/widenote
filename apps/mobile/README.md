@@ -14,6 +14,7 @@ Responsibilities:
 - Local Agent Runtime Kernel
 - Permissions and trace review
 - BYOK model provider configuration
+- Settings and Privacy hub
 
 ## Ownership Boundary
 
@@ -33,11 +34,18 @@ Current source layout:
 - `lib/l10n`: Flutter localization resources and generated bindings.
 
 The current client boots a device-local SQLite database at
-`local-data/widenote.sqlite` and injects `LocalDbEventStore` /
-`LocalDbTraceSink` into the local runtime by default. It also injects
-`LocalDbMemoryRepository` so Memory candidates and reviewed Memory items are
-written to SQLite. Capture UI read models are still held in feature state after
-processing; restart hydration remains a phase-one follow-up work item.
+`local-data/widenote.sqlite` and injects `LocalDbEventStore`,
+`LocalDbTraceSink`, `LocalDbRuntimeStore`, `LocalDbPermissionStore`, and
+`LocalDbMemoryRepository` into the local runtime by default. Built-in Pack
+permissions are default-granted only when no user decision exists; later deny or
+revoke decisions are read by the runtime and block future Pack work. Capture,
+todo, Memory, card, insight, and trace read models hydrate from SQLite on
+restart.
+
+Safe backup / restore is the implemented backup path. It restores records,
+runtime evidence, Pack state, permissions, and provider metadata, but excludes
+provider credential values. Secret-bearing `encrypted_full` backup import is
+rejected in this build until encrypted full restore is designed and implemented.
 
 ## Dependencies
 
@@ -70,6 +78,49 @@ flutter build apk --flavor prod --release
 China/global market flavors are intentionally deferred. Add a market axis only
 after store requirements, provider defaults, compliance, or distribution policy
 make the split real.
+
+## iOS Runner and Flavors
+
+The iOS runner lives under `ios/` and is restored from Flutter's app template,
+then lightly customized to match ADR-0008's release-channel model.
+
+Source of truth:
+
+- Flutter SDK app template
+- `pubspec.yaml`
+- `lib/main.dart`
+
+Generation / repair command:
+
+```sh
+flutter create --platforms=android,ios --org app.widenote --project-name widenote_mobile --no-pub .
+```
+
+Manual customizations after template repair:
+
+- Keep shared `dev` and `prod` schemes under
+  `ios/Runner.xcodeproj/xcshareddata/xcschemes`.
+- Keep `Debug-dev`, `Profile-dev`, `Release-dev`, `Debug-prod`,
+  `Profile-prod`, and `Release-prod` Xcode build configurations.
+- Keep `ios/Podfile` custom configuration mappings in sync with those
+  configuration names.
+- Keep `Runner/Info.plist` display name sourced from `APP_DISPLAY_NAME`.
+
+| Flavor | iOS bundle id | App display name | Intended use |
+| --- | --- | --- | --- |
+| `dev` | `app.widenote.dev` | `WideNote Dev` | Local development and QA builds that can coexist with production. |
+| `prod` | `app.widenote` | `WideNote` | Formal release builds. |
+
+Simulator builds do not require Apple signing:
+
+```sh
+flutter build ios --simulator --debug --flavor dev
+flutter build ios --simulator --debug --flavor prod
+flutter run -d "iPhone 17" --flavor dev
+```
+
+The default `Runner` scheme is retained for template familiarity, but app
+builds should use explicit `dev` or `prod` flavors.
 
 Flutter plugin dependencies used by the app bootstrap:
 

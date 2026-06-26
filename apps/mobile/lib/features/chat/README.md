@@ -5,14 +5,15 @@
 Owns the first local conversation surface for WideNote.
 
 The feature lets users create local chat sessions, append messages, ask a
-deterministic offline assistant, and inspect source-linked context from local
-records, accepted Memory, and todos.
+deterministic offline assistant, and inspect source-linked citations produced
+from local Context Packets.
 
 ## Ownership Boundary
 
 This feature owns mobile chat domain models, controller state, presentation,
 context selection, deterministic local assistant behavior, and the mobile
-adapter that maps chat sessions/messages onto `widenote_local_db` DAOs.
+adapters that map chat sessions/messages and packet-derived source refs onto
+`widenote_local_db` DAOs.
 
 It does not own model-provider settings, companion/persona behavior, public
 conversation schemas, or backup/export contracts. The current
@@ -24,8 +25,7 @@ conversation schemas, or backup/export contracts. The current
 - Flutter Material
 - Riverpod
 - Mobile localization (`apps/mobile/lib/l10n`)
-- `widenote_local_db` for local SQLite access
-- `widenote_agent_runtime` event names through the context source
+- `widenote_local_db` for local SQLite access and `ContextPacketBuilder`
 
 ## Public Surface
 

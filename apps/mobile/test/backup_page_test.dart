@@ -4,34 +4,20 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:widenote_local_db/widenote_local_db.dart';
 import 'package:widenote_mobile/app/local_database.dart';
 import 'package:widenote_mobile/features/backup/application/backup_controller.dart';
-import 'package:widenote_mobile/app/widenote_app.dart';
 import 'package:widenote_mobile/features/backup/presentation/backup_page.dart';
 import 'package:widenote_mobile/l10n/l10n.dart';
 
 void main() {
-  testWidgets('plugins entry opens backup route', (tester) async {
+  testWidgets('backup page renders export and import controls', (tester) async {
     final database = WideNoteLocalDatabase.inMemory();
-    addTearDown(database.close);
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [localDatabaseProvider.overrideWithValue(database)],
-        child: const WideNoteApp(),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byKey(const Key('tab-plugins')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('backup-entry')));
-    await tester.pumpAndSettle();
+    await _pumpBackupPage(tester, database: database);
 
     expect(find.byKey(const Key('backup-page')), findsOneWidget);
-    expect(find.text('Export JSON'), findsOneWidget);
+    expect(find.text('Export safe restore JSON'), findsOneWidget);
     expect(find.text('Import backup'), findsOneWidget);
   });
 
-  testWidgets('backup page exports versioned JSON with manifest counts', (
+  testWidgets('backup page exports safe JSON with manifest counts', (
     tester,
   ) async {
     final database = WideNoteLocalDatabase.inMemory();
@@ -39,16 +25,30 @@ void main() {
     await _pumpBackupPage(tester, database: database);
 
     expect(
-      find.text(
-        'Backups include provider API keys. Keep exported JSON private.',
-      ),
+      find.textContaining('Safe restore JSON brings back records'),
       findsOneWidget,
+    );
+    expect(
+      find.textContaining('Owner Export Markdown is for reading'),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('Encrypted full backup will be the secret-bearing'),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('backup-full-export-disabled-button')),
+      findsNothing,
     );
     await tester.tap(find.byKey(const Key('backup-export-button')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Backup JSON'), findsOneWidget);
-    expect(find.text('Readable Markdown'), findsOneWidget);
+    expect(find.text('Safe backup JSON'), findsOneWidget);
+    expect(find.text('Owner Export Markdown'), findsOneWidget);
+    expect(
+      find.text('Provider keys omitted from safe export: 1'),
+      findsOneWidget,
+    );
     expect(find.text('captures: 1'), findsOneWidget);
     expect(find.text('todos: 1'), findsOneWidget);
     expect(find.text('model_provider_configs: 1'), findsOneWidget);
@@ -56,17 +56,23 @@ void main() {
       find.textContaining('"format": "widenote.local_data_backup"'),
       findsOneWidget,
     );
+    expect(find.textContaining('"kind": "backup_manifest"'), findsOneWidget);
+    expect(find.textContaining('"includes_secrets": false'), findsOneWidget);
+    expect(find.textContaining('"backup_mode": "safe"'), findsOneWidget);
+    expect(find.textContaining('[redacted_secret]'), findsOneWidget);
     expect(find.textContaining('"local_db_schema_version"'), findsOneWidget);
+    expect(find.textContaining(_backupPageCredential()), findsNothing);
+    expect(find.byKey(const Key('backup-export-markdown')), findsOneWidget);
+    expect(find.textContaining('# WideNote Owner Export'), findsOneWidget);
     expect(
-      find.textContaining('"api_key": "${_backupPageCredential()}"'),
+      find.textContaining('provider_keys_in_markdown: never'),
       findsOneWidget,
     );
-    expect(find.byKey(const Key('backup-export-markdown')), findsOneWidget);
     expect(
       find.textContaining('Portable local backup from widget test.'),
       findsWidgets,
     );
-    expect(find.textContaining(_backupPageCredential()), findsOneWidget);
+    expect(find.textContaining(_backupPageCredential()), findsNothing);
   });
 
   testWidgets('backup copy actions expose explicit JSON and Markdown exports', (
@@ -123,7 +129,9 @@ void main() {
         fileStore.savedJson,
         contains('"format": "widenote.local_data_backup"'),
       );
+      expect(fileStore.savedJson, isNot(contains(_backupPageCredential())));
       expect(fileStore.savedMarkdown, contains('Portable local backup'));
+      expect(fileStore.savedMarkdown, isNot(contains(_backupPageCredential())));
       expect(find.textContaining('/tmp/widenote-backup.json'), findsOneWidget);
     },
   );
@@ -181,8 +189,13 @@ void main() {
     final todo = target.todos.readById('todo-backup-page')!;
     expect(todo.payload['title'], 'Review portable local backup');
     final provider = target.modelProviderConfigs.readDefault()!;
-    expect(provider.apiKey, _backupPageCredential());
+    expect(provider.hasApiKey, isTrue);
+    expect(provider.apiKey, isEmpty);
     expect(find.text('Backup imported into local storage.'), findsOneWidget);
+    expect(
+      find.textContaining('Re-enter 1 provider key before model calls'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('backup page imports latest saved JSON file into local DB', (
@@ -220,7 +233,7 @@ void main() {
     expect(find.text('Backup imported into local storage.'), findsOneWidget);
   });
 
-  testWidgets('backup import refreshes app Home and Todos read models', (
+  testWidgets('backup import restores core records and provider metadata', (
     tester,
   ) async {
     final source = WideNoteLocalDatabase.inMemory();
@@ -229,26 +242,8 @@ void main() {
     final json = LocalBackupService(source).exportJson();
 
     final target = WideNoteLocalDatabase.inMemory();
-    addTearDown(target.close);
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [localDatabaseProvider.overrideWithValue(target)],
-        child: const WideNoteApp(),
-      ),
-    );
-    await tester.pumpAndSettle();
+    await _pumpBackupPage(tester, database: target);
 
-    await tester.scrollUntilVisible(
-      find.text('No local records yet.'),
-      120,
-      scrollable: find.byType(Scrollable).first,
-    );
-    expect(find.text('No local records yet.'), findsOneWidget);
-
-    await tester.tap(find.byKey(const Key('tab-plugins')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('backup-entry')));
-    await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('backup-import-field')), json);
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
@@ -261,22 +256,59 @@ void main() {
     await tester.tap(find.byKey(const Key('backup-import-button')));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const Key('tab-home')));
+    expect(
+      target.captures.readById('capture-backup-page')!.payload['text'],
+      'Portable local backup from widget test.',
+    );
+    expect(
+      target.todos.readById('todo-backup-page')!.payload['title'],
+      'Review portable local backup',
+    );
+    final provider = target.modelProviderConfigs.readDefault()!;
+    expect(provider.displayName, 'MIMO test');
+    expect(provider.hasApiKey, isTrue);
+    expect(provider.apiKey, isEmpty);
+    expect(find.byKey(const Key('backup-import-report')), findsOneWidget);
+  });
+
+  testWidgets('backup import error recovers after valid JSON is pasted', (
+    tester,
+  ) async {
+    final source = WideNoteLocalDatabase.inMemory();
+    addTearDown(source.close);
+    _seedLocalData(source);
+    final json = LocalBackupService(source).exportJson();
+
+    final target = WideNoteLocalDatabase.inMemory();
+    await _pumpBackupPage(tester, database: target);
+
+    await tester.enterText(
+      find.byKey(const Key('backup-import-field')),
+      '{bad',
+    );
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
-      find.text('Portable local backup from widget test.'),
+      find.byKey(const Key('backup-import-button')),
       120,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(
-      find.text('Portable local backup from widget test.'),
-      findsOneWidget,
-    );
-
-    await tester.tap(find.byKey(const Key('tab-todos')));
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -120));
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('todo-row-todo-backup-page')), findsOneWidget);
-    expect(find.text('Review portable local backup'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('backup-import-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Invalid backup format'), findsOneWidget);
+    expect(target.captures.readAll(), isEmpty);
+
+    await tester.enterText(find.byKey(const Key('backup-import-field')), json);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('backup-import-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('backup-import-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Backup imported into local storage.'), findsOneWidget);
+    expect(target.captures.readById('capture-backup-page'), isNotNull);
   });
 }
 
@@ -359,7 +391,12 @@ void _seedLocalData(WideNoteLocalDatabase database) {
       hasApiKey: true,
       apiKey: _backupPageCredential(),
       capabilities: const <Object?>['chat', 'completion'],
-      payload: const <String, Object?>{'secret_storage': 'local_db_backup'},
+      payload: <String, Object?>{
+        'secret_storage': 'local_db_backup',
+        'api_key_shadow': _backupPageCredential(),
+        'serialized_config':
+            '{"api_key":"${_backupPageCredential()}","label":"safe metadata"}',
+      },
       createdAt: now,
       updatedAt: now,
     ),

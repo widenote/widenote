@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
 import assert from "node:assert/strict";
+import { fileURLToPath } from "node:url";
 
-import { validateManifest } from "./validate.mjs";
+import { validateManifest, validateManifestPath } from "./validate.mjs";
 
 const baseManifest = Object.freeze({
   id: "pack.test",
@@ -30,10 +31,30 @@ const baseManifest = Object.freeze({
       },
     },
   ],
+  model_profiles: [
+    {
+      id: "chat_profile",
+      purpose: "Synthetic chat profile.",
+      required: false,
+      routing_policy: "fixed_provider",
+      provider_ref: "provider.fake.synthetic",
+      model_ref: "fake-chat",
+      required_capabilities: ["chat", "completion"],
+      allow_fallback: true,
+    },
+  ],
   tools: [],
 });
 
 assert.deepEqual(validateManifest(clone(baseManifest)), []);
+
+expectError(
+  {
+    ...clone(baseManifest),
+    schema_version: 2,
+  },
+  "schema_version must be 1",
+);
 
 expectError(
   {
@@ -112,6 +133,55 @@ expectError(
   },
   "side_effect script_execution is deferred",
 );
+
+expectError(
+  {
+    ...clone(baseManifest),
+    agents: [
+      {
+        ...clone(baseManifest).agents[0],
+        model_profile_ref: "missing_profile",
+      },
+    ],
+  },
+  "model_profile_ref references missing model profile: missing_profile",
+);
+
+expectError(
+  {
+    ...clone(baseManifest),
+    model_profiles: [
+      {
+        id: "chat_profile",
+        purpose: "Synthetic chat profile.",
+        routing_policy: "unsafe_remote_choice",
+      },
+    ],
+  },
+  "routing_policy must be one of",
+);
+
+expectError(
+  {
+    ...clone(baseManifest),
+    tools: [
+      {
+        id: "tool.memory",
+        permissions: ["memory.read"],
+      },
+    ],
+  },
+  "tools[0].permissions contains permission not declared by pack: memory.read",
+);
+
+const officialManifestPaths = [
+  "../../packs/official/default/manifest.json",
+  "../../packs/official/todo/manifest.json",
+].map((path) => fileURLToPath(new URL(path, import.meta.url)));
+
+for (const manifestPath of officialManifestPaths) {
+  assert.deepEqual(validateManifestPath(manifestPath), []);
+}
 
 console.log("tools/pack_validator/validate_test.mjs: ok");
 

@@ -3,6 +3,9 @@ import 'package:widenote_core/widenote_core.dart';
 abstract final class WnEventTypes {
   static const captureCreated = 'wn.capture.created';
   static const memoryProposed = 'wn.memory.proposed';
+  static const memoryEdited = 'wn.memory.edited';
+  static const memoryDeleted = 'wn.memory.deleted';
+  static const memoryRestored = 'wn.memory.restored';
   static const cardCreated = 'wn.card.created';
   static const insightCreated = 'wn.insight.created';
   static const todoSuggested = 'wn.todo.suggested';

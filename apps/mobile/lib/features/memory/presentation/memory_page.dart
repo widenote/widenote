@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../l10n/l10n.dart';
 import '../application/memory_controller.dart';
@@ -208,7 +209,15 @@ class _MemoryRow extends StatelessWidget {
                   _Tag(label: item.memoryType),
                   _Tag(label: item.confidence),
                   _Tag(label: item.sensitivity),
-                  _Tag(label: item.sourceLabel),
+                  _Tag(
+                    key: Key('memory-source-${item.id}'),
+                    label: item.sourceLabel,
+                    onTap: item.sourceCaptureId == null
+                        ? null
+                        : () => context.go(
+                            '/timeline/items/${Uri.encodeComponent(item.sourceCaptureId!)}',
+                          ),
+                  ),
                   _Tag(label: l10n.memoryRevisionLabel(item.revision)),
                 ],
               ),
@@ -387,13 +396,14 @@ class _Surface extends StatelessWidget {
 }
 
 class _Tag extends StatelessWidget {
-  const _Tag({required this.label});
+  const _Tag({required this.label, this.onTap, super.key});
 
   final String label;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
+    final tag = DecoratedBox(
       decoration: BoxDecoration(
         color: const Color(0xFFF1F4F8),
         borderRadius: BorderRadius.circular(8),
@@ -402,6 +412,14 @@ class _Tag extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         child: Text(label, style: Theme.of(context).textTheme.labelSmall),
       ),
+    );
+    if (onTap == null) {
+      return tag;
+    }
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: tag,
     );
   }
 }

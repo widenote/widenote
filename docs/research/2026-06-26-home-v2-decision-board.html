@@ -1,0 +1,948 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WideNote 首页 V2 决策稿</title>
+  <style>
+    :root {
+      --page: #edf2ef;
+      --paper: #fbfcfb;
+      --surface: #ffffff;
+      --surface-2: #f1f6f3;
+      --ink: #17201b;
+      --muted: #66716a;
+      --weak: #8a9690;
+      --line: #dbe5df;
+      --primary: #2f7d5a;
+      --primary-soft: #e1f1e8;
+      --blue: #4869aa;
+      --blue-soft: #e6ecf8;
+      --amber: #a96b25;
+      --amber-soft: #f5ece0;
+      --rose: #aa5263;
+      --rose-soft: #f5e8eb;
+      --shadow: 0 18px 46px rgba(23, 32, 27, 0.12);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body[data-style="android"] {
+      --page: #eef2f6;
+      --paper: #fbfcff;
+      --surface-2: #edf3f9;
+      --primary: #386a9b;
+      --primary-soft: #e1eef8;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        linear-gradient(90deg, rgba(23, 32, 27, 0.04) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(23, 32, 27, 0.04) 1px, transparent 1px),
+        var(--page);
+      background-size: 28px 28px;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .page {
+      width: min(1380px, calc(100vw - 36px));
+      margin: 22px auto 36px;
+      display: grid;
+      grid-template-columns: 440px 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .hero,
+    .panel {
+      border: 1px solid rgba(23, 32, 27, 0.1);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.78);
+      box-shadow: 0 8px 22px rgba(23, 32, 27, 0.05);
+      backdrop-filter: blur(12px);
+    }
+
+    .hero {
+      grid-column: 1 / -1;
+      padding: 18px;
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: center;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      font-size: 24px;
+      line-height: 1.2;
+    }
+
+    .lead {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+      max-width: 860px;
+    }
+
+    .toggle {
+      display: flex;
+      gap: 5px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface);
+      padding: 4px;
+      flex: 0 0 auto;
+    }
+
+    .toggle button {
+      border: 0;
+      border-radius: 9px;
+      background: transparent;
+      color: var(--muted);
+      padding: 8px 11px;
+      font-weight: 760;
+      cursor: pointer;
+    }
+
+    .toggle button.active {
+      color: var(--primary);
+      background: var(--primary-soft);
+    }
+
+    .phone-wrap {
+      position: sticky;
+      top: 18px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .phone {
+      width: 390px;
+      height: 844px;
+      padding: 12px;
+      border-radius: 34px;
+      background: #1d2520;
+      box-shadow: var(--shadow);
+      margin: 0 auto;
+    }
+
+    .screen {
+      height: 100%;
+      border-radius: 26px;
+      background: var(--paper);
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .statusbar {
+      height: 28px;
+      padding: 8px 22px 0;
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 780;
+    }
+
+    .appbar {
+      padding: 15px 18px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand {
+      font-size: 26px;
+      font-weight: 820;
+      line-height: 1.05;
+    }
+
+    .date {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .icon-button {
+      width: 38px;
+      height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--surface);
+      color: var(--ink);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+    }
+
+    .icon-button svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .mode-tabs {
+      display: flex;
+      gap: 7px;
+      overflow: hidden;
+      padding: 0 16px 12px;
+    }
+
+    .mode-tabs button {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--muted);
+      padding: 7px 12px;
+      font-size: 13px;
+      font-weight: 760;
+      cursor: pointer;
+    }
+
+    .mode-tabs button.active {
+      border-color: transparent;
+      color: var(--primary);
+      background: var(--primary-soft);
+    }
+
+    .scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 16px 96px;
+    }
+
+    .scroll::-webkit-scrollbar {
+      width: 0;
+    }
+
+    .view {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .view.active {
+      display: flex;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      padding: 13px;
+      box-shadow: 0 6px 16px rgba(23, 32, 27, 0.04);
+    }
+
+    .card.primary {
+      background: var(--primary-soft);
+      border-color: rgba(47, 125, 90, 0.2);
+    }
+
+    .card.blue {
+      background: var(--blue-soft);
+      border-color: rgba(72, 105, 170, 0.18);
+    }
+
+    .card.amber {
+      background: var(--amber-soft);
+      border-color: rgba(169, 107, 37, 0.18);
+    }
+
+    .card.rose {
+      background: var(--rose-soft);
+      border-color: rgba(170, 82, 99, 0.18);
+    }
+
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 820;
+      line-height: 1.25;
+    }
+
+    .card-text {
+      color: #2d3832;
+      font-size: 14px;
+      line-height: 1.48;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .pill {
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--primary);
+      background: rgba(255, 255, 255, 0.62);
+      white-space: nowrap;
+    }
+
+    .recent-list {
+      display: grid;
+      gap: 9px;
+    }
+
+    .recent-row {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      padding: 11px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .recent-title {
+      font-size: 14px;
+      font-weight: 780;
+      line-height: 1.3;
+    }
+
+    .source-row {
+      margin-top: 8px;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .source {
+      border-radius: 7px;
+      background: rgba(255, 255, 255, 0.62);
+      padding: 5px 7px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 720;
+    }
+
+    .bottom-nav {
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      bottom: 10px;
+      min-height: 58px;
+      border: 1px solid rgba(23, 32, 27, 0.08);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.86);
+      backdrop-filter: blur(14px);
+      display: grid;
+      grid-template-columns: 1fr 1fr 68px 1fr 1fr;
+      gap: 4px;
+      padding: 5px;
+    }
+
+    body[data-style="android"] .bottom-nav {
+      border-radius: 22px;
+      background: var(--surface);
+    }
+
+    .nav-item,
+    .compose-button {
+      border: 0;
+      border-radius: 12px;
+      background: transparent;
+      color: var(--muted);
+      display: grid;
+      place-items: center;
+      font-size: 11px;
+      font-weight: 760;
+      cursor: pointer;
+    }
+
+    .nav-item.active {
+      color: var(--primary);
+      background: var(--primary-soft);
+    }
+
+    .compose-button {
+      background: var(--primary);
+      color: white;
+      transform: translateY(-13px);
+      min-height: 58px;
+      box-shadow: 0 10px 24px rgba(47, 125, 90, 0.26);
+    }
+
+    .compose-sheet {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 10;
+      display: none;
+      max-height: 78%;
+      border-radius: 20px 20px 0 0;
+      background: var(--paper);
+      padding: 13px 16px 20px;
+      box-shadow: 0 -18px 48px rgba(23, 32, 27, 0.22);
+    }
+
+    .compose-sheet.open {
+      display: block;
+    }
+
+    .handle {
+      width: 42px;
+      height: 5px;
+      border-radius: 999px;
+      background: #ccd6d0;
+      margin: 0 auto 14px;
+    }
+
+    .textarea {
+      width: 100%;
+      min-height: 152px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      padding: 12px;
+      color: var(--ink);
+      font-size: 15px;
+      line-height: 1.5;
+      resize: none;
+      outline: none;
+    }
+
+    .compose-tools {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 10px;
+      align-items: center;
+    }
+
+    .tool-row {
+      display: flex;
+      gap: 7px;
+    }
+
+    .tool {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--surface);
+      color: var(--muted);
+      padding: 8px 10px;
+      font-size: 12px;
+      font-weight: 780;
+    }
+
+    .save {
+      border: 0;
+      border-radius: 10px;
+      background: var(--primary);
+      color: white;
+      padding: 9px 14px;
+      font-weight: 820;
+    }
+
+    .settings-sheet {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 11;
+      display: none;
+      max-height: 74%;
+      border-radius: 20px 20px 0 0;
+      background: var(--paper);
+      padding: 13px 16px 20px;
+      box-shadow: 0 -18px 48px rgba(23, 32, 27, 0.22);
+    }
+
+    .settings-sheet.open {
+      display: block;
+    }
+
+    .decision-panel {
+      padding: 16px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .section {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      padding: 14px;
+    }
+
+    .section h2 {
+      font-size: 17px;
+      line-height: 1.25;
+    }
+
+    .section p {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .choice-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .choice {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-2);
+      padding: 10px;
+      cursor: pointer;
+    }
+
+    .choice.active {
+      border-color: rgba(47, 125, 90, 0.48);
+      background: var(--primary-soft);
+      box-shadow: 0 0 0 3px rgba(47, 125, 90, 0.1);
+    }
+
+    body[data-style="android"] .choice.active {
+      border-color: rgba(56, 106, 155, 0.5);
+      box-shadow: 0 0 0 3px rgba(56, 106, 155, 0.12);
+    }
+
+    .choice strong {
+      display: block;
+      font-size: 14px;
+      line-height: 1.25;
+    }
+
+    .choice span {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .locked-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .locked {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-2);
+      padding: 10px;
+    }
+
+    .locked strong {
+      display: block;
+      font-size: 13px;
+    }
+
+    .locked span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .summary {
+      border-left: 3px solid var(--primary);
+      padding-left: 10px;
+    }
+
+    @media (max-width: 980px) {
+      .page {
+        width: min(430px, calc(100vw - 20px));
+        grid-template-columns: 1fr;
+        margin-top: 10px;
+      }
+
+      .hero {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .phone-wrap {
+        position: static;
+      }
+
+      .phone {
+        width: min(390px, 100%);
+      }
+
+      .choice-grid,
+      .locked-list {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body data-style="ios">
+  <main class="page">
+    <header class="hero">
+      <div>
+        <h1>WideNote 首页 V2 决策稿</h1>
+        <p class="lead">这版按你的反馈收束：删除 Memory 确认模块，不在首页放 Todo/Schedule，捕获改成底部 Compose Sheet。剩下真正需要决策的是：首页是否还需要卡片流、每日回顾如何占位、洞察是否做首页二级页、对话页如何组织。</p>
+      </div>
+      <div class="toggle" aria-label="平台视觉切换">
+        <button class="active" type="button" data-style="ios">iOS 取向</button>
+        <button type="button" data-style="android">Android 取向</button>
+      </div>
+    </header>
+
+    <section class="phone-wrap">
+      <div class="phone">
+        <div class="screen">
+          <div class="statusbar">
+            <span>9:41</span>
+            <span>5G 84%</span>
+          </div>
+
+          <header class="appbar">
+            <div>
+              <div class="brand" id="screenTitle">广记</div>
+              <div class="date" id="screenSubtitle">今天记了 6 条，生成 1 份回顾</div>
+            </div>
+            <button class="icon-button" type="button" data-settings aria-label="设置">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.04.04a2.2 2.2 0 0 1-3.11 3.11l-.04-.04a1.8 1.8 0 0 0-1.98-.36 1.8 1.8 0 0 0-1.09 1.65v.06a2.2 2.2 0 0 1-4.4 0v-.06a1.8 1.8 0 0 0-1.09-1.65 1.8 1.8 0 0 0-1.98.36l-.04.04a2.2 2.2 0 0 1-3.11-3.11l.04-.04a1.8 1.8 0 0 0 .36-1.98 1.8 1.8 0 0 0-1.65-1.09h-.06a2.2 2.2 0 0 1 0-4.4h.06a1.8 1.8 0 0 0 1.65-1.09 1.8 1.8 0 0 0-.36-1.98l-.04-.04A2.2 2.2 0 0 1 6.92 3.3l.04.04a1.8 1.8 0 0 0 1.98.36A1.8 1.8 0 0 0 10.03 2h.06a2.2 2.2 0 0 1 4.4 0v.06a1.8 1.8 0 0 0 1.09 1.65 1.8 1.8 0 0 0 1.98-.36l.04-.04a2.2 2.2 0 0 1 3.11 3.11l-.04.04a1.8 1.8 0 0 0-.36 1.98 1.8 1.8 0 0 0 1.65 1.09h.06a2.2 2.2 0 0 1 0 4.4h-.06A1.8 1.8 0 0 0 19.4 15Z"/></svg>
+            </button>
+          </header>
+
+          <nav class="mode-tabs" aria-label="首页二级页">
+            <button class="active" type="button" data-view="today">今天</button>
+            <button type="button" data-view="insights">洞察</button>
+            <button type="button" data-view="timeline">记录</button>
+          </nav>
+
+          <div class="scroll">
+            <section class="view active" id="view-today">
+              <article class="card blue">
+                <div class="card-head">
+                  <div class="card-title">每日回顾</div>
+                  <span class="pill">粗粒度</span>
+                </div>
+                <p class="card-text">今天主要围绕首页结构、捕获入口和插件边界做决策。卡片流不再作为首页主体，只保留最近记录和完整时间线入口。</p>
+                <div class="source-row">
+                  <span class="source">6 条记录</span>
+                  <span class="source">2 个主题</span>
+                  <span class="source">1 个决策</span>
+                </div>
+              </article>
+
+              <article class="card">
+                <div class="card-head">
+                  <div class="card-title">最近记录</div>
+                  <span class="pill">只露 2 条</span>
+                </div>
+                <div class="recent-list">
+                  <div class="recent-row">
+                    <div>
+                      <div class="recent-title">首页不需要完整卡片流</div>
+                      <div class="small">13:42 · 语音</div>
+                    </div>
+                    <span class="small">详情</span>
+                  </div>
+                  <div class="recent-row">
+                    <div>
+                      <div class="recent-title">捕获改成底部 Compose Sheet</div>
+                      <div class="small">13:39 · 文本</div>
+                    </div>
+                    <span class="small">详情</span>
+                  </div>
+                </div>
+              </article>
+
+              <article class="card primary">
+                <div class="card-head">
+                  <div class="card-title">继续记录</div>
+                  <span class="pill">高频</span>
+                </div>
+                <p class="card-text">底部按钮打开长文本/语音/图片输入，保存后自动生成摘要、Memory 和洞察，不打断用户确认。</p>
+              </article>
+            </section>
+
+            <section class="view" id="view-insights">
+              <article class="card blue">
+                <div class="card-head">
+                  <div class="card-title">洞察二级页</div>
+                  <span class="pill">独立</span>
+                </div>
+                <p class="card-text">这里不和主页混在一起。用户主动进来时，看到主题聚类、趋势、反复出现的问题和可追问入口。</p>
+              </article>
+              <article class="card">
+                <div class="card-title">主题聚类</div>
+                <p class="card-text">首页结构、捕获交互、插件边界、对话入口。</p>
+              </article>
+              <article class="card rose">
+                <div class="card-title">可沉淀 Memory</div>
+                <p class="card-text">默认自动确认低风险 Memory，只在冲突、敏感或低置信时进入设置里的复核队列。</p>
+              </article>
+            </section>
+
+            <section class="view" id="view-timeline">
+              <article class="card">
+                <div class="card-head">
+                  <div class="card-title">完整记录流</div>
+                  <span class="pill">二级页</span>
+                </div>
+                <p class="card-text">这里保留卡片流能力，但它不是首页默认主体。适合回看最近几天，长尾内容主要通过对话搜索。</p>
+              </article>
+              <div class="recent-list">
+                <div class="recent-row"><div><div class="recent-title">插件市场 + 右上设置</div><div class="small">昨天 · 派生 2 张卡</div></div><span class="small">打开</span></div>
+                <div class="recent-row"><div><div class="recent-title">Omi 每日回顾参考</div><div class="small">昨天 · 参考实现</div></div><span class="small">打开</span></div>
+                <div class="recent-row"><div><div class="recent-title">Memex 最近两条体感</div><div class="small">今天 · 产品判断</div></div><span class="small">打开</span></div>
+              </div>
+            </section>
+          </div>
+
+          <nav class="bottom-nav" aria-label="主导航">
+            <button class="nav-item active" type="button">首页</button>
+            <button class="nav-item" type="button">对话</button>
+            <button class="compose-button" type="button" data-compose>记录</button>
+            <button class="nav-item" type="button">待办</button>
+            <button class="nav-item" type="button">插件</button>
+          </nav>
+
+          <section class="compose-sheet" id="composeSheet" aria-label="记录面板">
+            <div class="handle"></div>
+            <div class="card-head">
+              <div>
+                <div class="card-title">记一条</div>
+                <div class="small">长文本、语音、图片或文件</div>
+              </div>
+              <button class="icon-button" type="button" data-close-compose aria-label="关闭">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              </button>
+            </div>
+            <textarea class="textarea">今天的结论：主页不是完整卡片流，而是每日回顾 + 最近两条 + 记录入口。</textarea>
+            <div class="compose-tools">
+              <div class="tool-row">
+                <button class="tool" type="button">语音</button>
+                <button class="tool" type="button">图片</button>
+                <button class="tool" type="button">文件</button>
+              </div>
+              <button class="save" type="button">保存</button>
+            </div>
+          </section>
+
+          <section class="settings-sheet" id="settingsSheet" aria-label="设置">
+            <div class="handle"></div>
+            <div class="card-head">
+              <div>
+                <div class="card-title">设置</div>
+                <div class="small">模型、备份、隐私、权限、Trace</div>
+              </div>
+              <button class="icon-button" type="button" data-close-settings aria-label="关闭">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              </button>
+            </div>
+            <div class="recent-list">
+              <div class="recent-row"><div><div class="recent-title">模型提供商</div><div class="small">本地 / BYOK / 默认模型</div></div><span class="small">进入</span></div>
+              <div class="recent-row"><div><div class="recent-title">隐私与权限</div><div class="small">麦克风、相册、插件读写边界</div></div><span class="small">进入</span></div>
+              <div class="recent-row"><div><div class="recent-title">备份与导入</div><div class="small">本地文件、可选云端</div></div><span class="small">进入</span></div>
+              <div class="recent-row"><div><div class="recent-title">高级与 Trace</div><div class="small">运行记录、调试入口</div></div><span class="small">进入</span></div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <section class="panel section summary">
+        <h2>当前推荐组合</h2>
+        <p>首页采用“每日回顾 + 最近两条 + 底部记录 Sheet”。完整卡片流保留为首页二级页“记录”，洞察保留为首页二级页“洞察”。这让首页服务高频记录和粗粒度回看，长尾内容交给对话与搜索。</p>
+      </section>
+    </section>
+
+    <section class="decision-panel panel">
+      <section class="section">
+        <h2>已锁定的选择</h2>
+        <p>这些不再做 A/B/C，直接作为下一版产品假设。</p>
+        <div class="locked-list">
+          <div class="locked"><strong>Memory 确认</strong><span>默认自动确认；只把冲突、敏感、低置信放到复核队列。</span></div>
+          <div class="locked"><strong>捕获入口</strong><span>底部 Compose Sheet，支持长文本、语音、图片、文件。</span></div>
+          <div class="locked"><strong>待办 Tab</strong><span>来源链接任务流；AI 生成不必逐条确认。</span></div>
+          <div class="locked"><strong>插件与设置</strong><span>插件页做市场和已安装 Pack；设置放右上角。</span></div>
+          <div class="locked"><strong>卡片详情</strong><span>来源优先，原始记录和派生内容分离。</span></div>
+          <div class="locked"><strong>不放 Schedule</strong><span>首页不放待办/日程模块，避免和待办大 tab 冲突。</span></div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>决策 1：首页还要不要卡片流？</h2>
+        <p>我的倾向是：不要把卡片流当首页主体，但要保留一个二级页，因为它仍然是“最近几天浏览”的低成本入口。</p>
+        <div class="choice-grid">
+          <div class="choice active" data-choice="home" data-title="首页只露最近两条">
+            <strong>A. 最近两条</strong>
+            <span>首页只显示最近 2 条，完整卡片流放二级页。</span>
+          </div>
+          <div class="choice" data-choice="home" data-title="首页完整卡片流">
+            <strong>B. 完整卡片流</strong>
+            <span>回到 Memex 式首页，适合浏览但会稀释记录入口。</span>
+          </div>
+          <div class="choice" data-choice="home" data-title="完全去卡片流">
+            <strong>C. 无卡片流</strong>
+            <span>首页只做回顾和记录，长尾完全交给 Agent。</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>决策 2：每日回顾放多重？</h2>
+        <p>你喜欢 Omi 的粗粒度回顾，所以这里建议它成为首页第一张大卡。</p>
+        <div class="choice-grid">
+          <div class="choice active" data-choice="recap" data-title="每日回顾第一卡">
+            <strong>A. 第一张大卡</strong>
+            <span>打开首页先看到今天都记了什么、干了什么。</span>
+          </div>
+          <div class="choice" data-choice="recap" data-title="每日回顾独立入口">
+            <strong>B. 独立入口</strong>
+            <span>首页只露按钮，点进去看完整 recap。</span>
+          </div>
+          <div class="choice" data-choice="recap" data-title="晚上才出现">
+            <strong>C. 晚间出现</strong>
+            <span>白天首页更像记录器，晚上变成回顾。</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>决策 3：洞察是否做首页二级页？</h2>
+        <p>我赞成做首页二级页，不和主页混在一起，也不新增第五个底部 tab。</p>
+        <div class="choice-grid">
+          <div class="choice active" data-choice="insight" data-title="洞察为首页二级页">
+            <strong>A. 首页二级页</strong>
+            <span>顶部 segmented：今天 / 洞察 / 记录。</span>
+          </div>
+          <div class="choice" data-choice="insight" data-title="洞察独立入口按钮">
+            <strong>B. 独立按钮</strong>
+            <span>首页放入口，不占顶部导航。</span>
+          </div>
+          <div class="choice" data-choice="insight" data-title="洞察归入对话">
+            <strong>C. 归入对话</strong>
+            <span>Agent 主动解释洞察，页面更少但可见性降低。</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>决策 4：对话页怎么定？</h2>
+        <p>来源先行已经淘汰。剩下是“上下文会话列表”还是“全屏 Copilot”。</p>
+        <div class="choice-grid">
+          <div class="choice active" data-choice="chat" data-title="上下文会话列表">
+            <strong>A. 上下文列表</strong>
+            <span>按今日回顾、项目、人物、主题组织会话。</span>
+          </div>
+          <div class="choice" data-choice="chat" data-title="全屏 Copilot">
+            <strong>B. 全屏 Copilot</strong>
+            <span>更像 AI Chat，输入优先，来源放回答后。</span>
+          </div>
+          <div class="choice" data-choice="chat" data-title="混合入口">
+            <strong>C. 混合入口</strong>
+            <span>顶部直接问，下方仍保留上下文会话。</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section summary">
+        <h2>当前选择摘要</h2>
+        <p id="choiceSummary">首页只露最近两条；每日回顾第一卡；洞察为首页二级页；对话使用上下文会话列表。</p>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const selections = {
+      home: "首页只露最近两条",
+      recap: "每日回顾第一卡",
+      insight: "洞察为首页二级页",
+      chat: "上下文会话列表"
+    };
+
+    const summary = document.querySelector("#choiceSummary");
+
+    function updateSummary() {
+      summary.textContent = `${selections.home}；${selections.recap}；${selections.insight}；${selections.chat}。`;
+    }
+
+    document.querySelectorAll("[data-style]").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.body.dataset.style = button.dataset.style;
+        document.querySelectorAll("[data-style]").forEach((item) => item.classList.toggle("active", item === button));
+      });
+    });
+
+    document.querySelectorAll("[data-view]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const view = button.dataset.view;
+        document.querySelectorAll("[data-view]").forEach((item) => item.classList.toggle("active", item === button));
+        document.querySelectorAll(".view").forEach((item) => item.classList.toggle("active", item.id === `view-${view}`));
+        const titles = {
+          today: ["广记", "今天记了 6 条，生成 1 份回顾"],
+          insights: ["洞察", "主题、趋势和可追问问题"],
+          timeline: ["记录", "完整卡片流放在二级页"]
+        };
+        document.querySelector("#screenTitle").textContent = titles[view][0];
+        document.querySelector("#screenSubtitle").textContent = titles[view][1];
+      });
+    });
+
+    document.querySelectorAll("[data-choice]").forEach((choice) => {
+      choice.addEventListener("click", () => {
+        const group = choice.dataset.choice;
+        document.querySelectorAll(`[data-choice="${group}"]`).forEach((item) => item.classList.toggle("active", item === choice));
+        selections[group] = choice.dataset.title;
+        updateSummary();
+      });
+    });
+
+    const composeSheet = document.querySelector("#composeSheet");
+    document.querySelector("[data-compose]").addEventListener("click", () => {
+      composeSheet.classList.add("open");
+    });
+    document.querySelector("[data-close-compose]").addEventListener("click", () => {
+      composeSheet.classList.remove("open");
+    });
+
+    const settingsSheet = document.querySelector("#settingsSheet");
+    document.querySelector("[data-settings]").addEventListener("click", () => {
+      settingsSheet.classList.add("open");
+    });
+    document.querySelector("[data-close-settings]").addEventListener("click", () => {
+      settingsSheet.classList.remove("open");
+    });
+  </script>
+</body>
+</html>

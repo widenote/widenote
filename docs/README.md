@@ -6,7 +6,7 @@ This directory is the project memory for humans and agents.
 product/          Product positioning, users, default experience, and roadmap.
 architecture/     Runtime, data, privacy, project structure, and technical design.
 decisions/        Accepted, rejected, superseded, and deprecated ADRs.
-rfcs/             Open design proposals for major changes.
+rfcs/             Design proposals and accepted implementation baselines.
 research/         External research and summarized discussion evidence.
 agent-context/    Entry points for future AI agents working in this repo.
 templates/        Reusable ADR, RFC, and conversation-summary templates.
@@ -14,10 +14,12 @@ templates/        Reusable ADR, RFC, and conversation-summary templates.
 
 For current decisions, start with [decisions/index.md](./decisions/index.md).
 
-## Current Phase-One Plans
+## Current Phase-One State And Plans
 
-- [Phase One Technical Plan](./architecture/phase-one-technical-plan.md)
-- [Phase One Module Plan](./architecture/phase-one-module-plan.md)
+- [W7 Current Integration State](./research/2026-06-26-w7-current-integration-state.md)
+- [W7 Integration QA](./research/2026-06-26-w7-integration-qa.md)
+- [Phase One Technical Plan](./architecture/phase-one-technical-plan.md) is a planning baseline; use W7 current state and the umbrella RFC for current implementation status.
+- [Phase One Module Plan](./architecture/phase-one-module-plan.md) is a planning baseline; update module READMEs and project map as modules land.
 - [Engineering Rules](./architecture/engineering-rules.md) for complexity budgets, test gates, subagent collaboration, external review boundaries, and emulator validation
 - [Phase One Technical Research](./research/2026-06-23-phase-one-technical-research.md)
 - [MemeX Design Critique](./research/2026-06-23-memex-design-critique.md)
@@ -25,13 +27,34 @@ For current decisions, start with [decisions/index.md](./decisions/index.md).
 - [External Review Follow-Up](./research/2026-06-24-external-review-followup.md)
 - [Android Emulator QA](./research/2026-06-24-android-emulator-qa.md)
 - [MemeX Phase-One Parity Gap Audit](./research/2026-06-24-memex-phase-one-gap-audit.md)
+- [Product and Technical Direction Summary](./research/2026-06-26-product-technical-direction-summary.md)
+- [Storage and Export Selection Options](./research/2026-06-26-storage-export-selection-options.md)
+- [Kimi Technical Direction Review](./research/2026-06-26-kimi-technical-direction-review.md)
+- [Implementation Readiness Review](./research/2026-06-26-implementation-readiness-review.md)
+- [Phase-One Acceptance Matrix](./research/2026-06-26-phase-one-acceptance-matrix.md)
+- [Current Implementation Baseline](./research/2026-06-26-current-implementation-baseline.md) is historical pre-wave evidence; use W7 current state for the current implementation boundary.
+- [Wave One Coordination](./research/2026-06-26-wave-one-coordination.md)
+- [Wave One Results](./research/2026-06-26-wave-one-results.md)
+- [Wave Two Coordination](./research/2026-06-26-wave-two-coordination.md)
+- [Wave Two Results](./research/2026-06-26-wave-two-results.md)
+- [Wave Three Coordination](./research/2026-06-26-wave-three-coordination.md)
+- [Wave Three Results](./research/2026-06-26-wave-three-results.md)
+- [Android Emulator QA](./research/2026-06-26-android-emulator-qa.md)
+- [iOS Simulator QA](./research/2026-06-26-ios-simulator-qa.md)
+- [Daily Recap QA](./research/2026-06-26-daily-recap-qa.md)
+- [Settings and Privacy QA](./research/2026-06-26-w7-settings-privacy-qa.md)
+- [Backup Restore QA](./research/2026-06-26-w7-backup-restore-qa.md)
+- [Real Media Capture QA](./research/2026-06-26-w7-real-media-capture-qa.md)
 
-## Active RFCs
+## Phase-One RFC State
 
-- [Memory Model](./rfcs/memory-model.md)
-- [Agent Pack Schema](./rfcs/agent-pack-schema.md)
-- [Model Provider Settings](./rfcs/model-provider-settings.md)
-- [Phase-One Product Scope](./rfcs/phase-one-product-scope.md)
+- [Phase-One Umbrella Technical Plan](./rfcs/phase-one-umbrella-technical-plan.md): accepted implementation baseline.
+- [Phase-One Product Scope](./rfcs/phase-one-product-scope.md): accepted scope, amended by W7 safe-backup boundary.
+- [Model Provider Settings](./rfcs/model-provider-settings.md): accepted provider-settings slice, amended by W7 safe-backup boundary.
+- [Memory Model](./rfcs/memory-model.md): accepted phase-one contract with follow-ups open.
+- [Agent Pack Schema](./rfcs/agent-pack-schema.md): accepted phase-one contract; scripted/community runtime deferred.
+- [Mobile Entry Closure](./rfcs/mobile-entry-closure.md): implemented slice; current status superseded by W7 integration state.
+- [Mobile Visual Style](./rfcs/mobile-visual-style.md): accepted.
 
 ## Contract Sources
 

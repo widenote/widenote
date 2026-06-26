@@ -1,0 +1,1196 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WideNote 多方案交互选择板</title>
+  <style>
+    :root {
+      --page: #eef2ef;
+      --ink: #17201b;
+      --muted: #66716a;
+      --weak: #8a948f;
+      --paper: #fbfcfb;
+      --surface: #ffffff;
+      --surface-2: #f3f7f4;
+      --line: #dce5df;
+      --primary: #2f7d5a;
+      --primary-soft: #e2f1e8;
+      --blue: #4869aa;
+      --blue-soft: #e6ecf8;
+      --amber: #aa681f;
+      --amber-soft: #f5ece0;
+      --rose: #aa5263;
+      --rose-soft: #f5e8eb;
+      --violet: #6b5ca8;
+      --violet-soft: #ece9f6;
+      --chrome: rgba(255, 255, 255, 0.82);
+      --shadow: 0 18px 44px rgba(23, 32, 27, 0.12);
+      color-scheme: light;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body[data-style="android"] {
+      --page: #edf1f5;
+      --paper: #fbfcff;
+      --surface-2: #edf3f9;
+      --primary: #386a9b;
+      --primary-soft: #e1eef8;
+      --chrome: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(90deg, rgba(23, 32, 27, 0.04) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(23, 32, 27, 0.04) 1px, transparent 1px),
+        var(--page);
+      background-size: 28px 28px;
+      color: var(--ink);
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .shell {
+      width: min(1440px, calc(100vw - 36px));
+      margin: 22px auto 36px;
+      display: grid;
+      grid-template-columns: 220px minmax(620px, 1fr) 280px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .topbar {
+      grid-column: 1 / -1;
+      border: 1px solid rgba(23, 32, 27, 0.1);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(14px);
+      padding: 18px;
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: center;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 24px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .style-toggle {
+      display: flex;
+      gap: 6px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface);
+    }
+
+    .style-toggle button {
+      border: 0;
+      border-radius: 9px;
+      background: transparent;
+      color: var(--muted);
+      padding: 8px 12px;
+      font-weight: 740;
+      cursor: pointer;
+    }
+
+    .style-toggle button.active {
+      color: var(--primary);
+      background: var(--primary-soft);
+    }
+
+    .panel {
+      border: 1px solid rgba(23, 32, 27, 0.1);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.78);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 22px rgba(23, 32, 27, 0.05);
+    }
+
+    .module-nav {
+      position: sticky;
+      top: 18px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .nav-choice {
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted);
+      min-height: 44px;
+      padding: 9px 10px;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .nav-choice strong {
+      display: block;
+      color: inherit;
+      font-size: 14px;
+      line-height: 1.2;
+    }
+
+    .nav-choice span {
+      display: block;
+      margin-top: 3px;
+      font-size: 11px;
+      color: var(--weak);
+      line-height: 1.25;
+    }
+
+    .nav-choice.active {
+      color: var(--primary);
+      background: var(--primary-soft);
+    }
+
+    .main-panel {
+      min-width: 0;
+      padding: 18px;
+    }
+
+    .module-head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: start;
+      margin-bottom: 14px;
+    }
+
+    .module-eyebrow {
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 820;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .module-title {
+      margin-top: 5px;
+      font-size: 26px;
+      line-height: 1.15;
+    }
+
+    .module-question {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+      max-width: 760px;
+    }
+
+    .constraint-pill {
+      border-radius: 999px;
+      background: var(--surface-2);
+      color: var(--muted);
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 760;
+      white-space: nowrap;
+    }
+
+    .option-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .option-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+      min-width: 0;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .option-card.selected {
+      border-color: rgba(47, 125, 90, 0.45);
+      box-shadow: 0 0 0 3px rgba(47, 125, 90, 0.12);
+    }
+
+    body[data-style="android"] .option-card.selected {
+      border-color: rgba(56, 106, 155, 0.5);
+      box-shadow: 0 0 0 3px rgba(56, 106, 155, 0.13);
+    }
+
+    .option-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: start;
+    }
+
+    .option-label {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      color: var(--primary);
+      background: var(--primary-soft);
+      font-weight: 860;
+    }
+
+    .option-title {
+      min-width: 0;
+    }
+
+    .option-title h3 {
+      font-size: 16px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .tag {
+      display: inline-flex;
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 780;
+      white-space: nowrap;
+    }
+
+    .tag.recommended {
+      color: var(--primary);
+      background: var(--primary-soft);
+    }
+
+    .tag.neutral {
+      color: var(--muted);
+      background: var(--surface-2);
+    }
+
+    .option-copy {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .platform-note {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-2);
+      padding: 9px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .phone-mini {
+      height: 380px;
+      border-radius: 24px;
+      background: #1d2520;
+      padding: 9px;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+    }
+
+    .mini-screen {
+      height: 100%;
+      border-radius: 18px;
+      background: var(--paper);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .mini-status {
+      height: 22px;
+      padding: 7px 14px 0;
+      display: flex;
+      justify-content: space-between;
+      color: var(--ink);
+      font-size: 9px;
+      font-weight: 780;
+    }
+
+    .mini-top {
+      margin: 8px 10px 7px;
+      padding: 9px;
+      border-radius: 14px;
+      background: var(--chrome);
+      border: 1px solid rgba(23, 32, 27, 0.08);
+      backdrop-filter: blur(10px);
+    }
+
+    body[data-style="android"] .mini-top {
+      border-radius: 20px;
+      box-shadow: 0 4px 12px rgba(56, 106, 155, 0.06);
+    }
+
+    .mini-title {
+      font-size: 15px;
+      font-weight: 840;
+      line-height: 1.15;
+    }
+
+    .mini-subtitle {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.28;
+    }
+
+    .mini-chips {
+      display: flex;
+      gap: 5px;
+      overflow: hidden;
+      padding: 0 10px 7px;
+    }
+
+    .mini-chip {
+      flex: 0 0 auto;
+      border-radius: 999px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      padding: 5px 7px;
+      font-size: 10px;
+      font-weight: 740;
+    }
+
+    .mini-chip.active {
+      color: var(--primary);
+      background: var(--primary-soft);
+      border-color: transparent;
+    }
+
+    .mini-content {
+      flex: 1;
+      overflow: hidden;
+      padding: 0 10px 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .mini-block {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      padding: 8px;
+      min-height: 48px;
+    }
+
+    .mini-block.compact {
+      min-height: 34px;
+    }
+
+    .mini-block.primary {
+      background: var(--primary-soft);
+      border-color: rgba(47, 125, 90, 0.18);
+    }
+
+    .mini-block.blue {
+      background: var(--blue-soft);
+      border-color: rgba(72, 105, 170, 0.18);
+    }
+
+    .mini-block.amber {
+      background: var(--amber-soft);
+      border-color: rgba(170, 104, 31, 0.18);
+    }
+
+    .mini-block.rose {
+      background: var(--rose-soft);
+      border-color: rgba(170, 82, 99, 0.18);
+    }
+
+    .mini-block.violet {
+      background: var(--violet-soft);
+      border-color: rgba(107, 92, 168, 0.18);
+    }
+
+    .mini-block-title {
+      font-size: 11px;
+      font-weight: 820;
+      line-height: 1.25;
+    }
+
+    .mini-block-text {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.32;
+    }
+
+    .mini-nav {
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      bottom: 9px;
+      min-height: 36px;
+      border-radius: 14px;
+      background: var(--chrome);
+      border: 1px solid rgba(23, 32, 27, 0.08);
+      backdrop-filter: blur(12px);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      align-items: center;
+      gap: 4px;
+      padding: 4px;
+    }
+
+    body[data-style="android"] .mini-nav {
+      border-radius: 18px;
+    }
+
+    .mini-nav span {
+      display: grid;
+      place-items: center;
+      min-height: 28px;
+      border-radius: 10px;
+      color: var(--weak);
+      font-size: 9px;
+      font-weight: 780;
+    }
+
+    .mini-nav span:first-child {
+      color: var(--primary);
+      background: var(--primary-soft);
+    }
+
+    .decision-panel {
+      position: sticky;
+      top: 18px;
+      padding: 16px;
+    }
+
+    .decision-panel h2 {
+      font-size: 17px;
+      line-height: 1.25;
+    }
+
+    .summary-list {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .summary-item {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      padding: 9px;
+    }
+
+    .summary-item strong {
+      display: block;
+      font-size: 13px;
+      line-height: 1.25;
+    }
+
+    .summary-item span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .notes {
+      margin-top: 14px;
+      border-top: 1px solid var(--line);
+      padding-top: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .source-links {
+      grid-column: 1 / -1;
+      padding: 16px 18px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .source-links a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 760;
+    }
+
+    @media (max-width: 1180px) {
+      .shell {
+        grid-template-columns: 190px 1fr;
+      }
+
+      .decision-panel {
+        grid-column: 1 / -1;
+        position: static;
+      }
+    }
+
+    @media (max-width: 860px) {
+      .shell {
+        width: min(460px, calc(100vw - 20px));
+        grid-template-columns: 1fr;
+        margin-top: 10px;
+      }
+
+      .topbar {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .module-nav {
+        position: static;
+        flex-direction: row;
+        overflow-x: auto;
+      }
+
+      .nav-choice {
+        flex: 0 0 128px;
+      }
+
+      .module-head {
+        grid-template-columns: 1fr;
+      }
+
+      .option-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body data-style="ios">
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <h1>WideNote / 广记 多方案交互选择板</h1>
+        <p class="lead">基于本地 ADR/RFC、当前实现、Omi 与 Memex 的公开交互模式，拆成模块级 A/B/C 选项。先选产品形态，再进入正式设计和开发。</p>
+      </div>
+      <div class="style-toggle" aria-label="视觉语言切换">
+        <button class="active" type="button" data-style-choice="ios">iOS 26 取向</button>
+        <button type="button" data-style-choice="android">Android M3 取向</button>
+      </div>
+    </header>
+
+    <nav class="panel module-nav" id="moduleNav" aria-label="模块选择"></nav>
+
+    <section class="panel main-panel">
+      <div class="module-head">
+        <div>
+          <div class="module-eyebrow" id="moduleEyebrow"></div>
+          <h2 class="module-title" id="moduleTitle"></h2>
+          <p class="module-question" id="moduleQuestion"></p>
+        </div>
+        <span class="constraint-pill" id="moduleConstraint"></span>
+      </div>
+      <div class="option-grid" id="optionGrid"></div>
+    </section>
+
+    <aside class="panel decision-panel">
+      <h2>你的选择</h2>
+      <p class="lead">点每张方案卡即可记录选择。默认先放我认为最稳的推荐项，方便你直接改。</p>
+      <div class="summary-list" id="summaryList"></div>
+      <p class="notes">双平台原则：紧凑手机用底部导航；iPad、横屏 Android、折叠屏展开后可切到 Navigation Rail / 双栏详情，但同一模块的核心行为不变。</p>
+    </aside>
+
+    <footer class="panel source-links">
+      参考依据：
+      <a href="https://developer.apple.com/design/human-interface-guidelines" target="_blank" rel="noreferrer">Apple HIG</a>、
+      <a href="https://developer.apple.com/videos/play/wwdc2025/356/" target="_blank" rel="noreferrer">WWDC25 新设计系统</a>、
+      <a href="https://developer.android.com/develop/ui/compose/designsystems/material3" target="_blank" rel="noreferrer">Android Material 3 / M3 Expressive</a>、
+      <a href="https://developer.android.com/develop/ui/views/layout/build-responsive-navigation" target="_blank" rel="noreferrer">Android responsive navigation</a>、
+      <a href="https://github.com/BasedHardware/omi" target="_blank" rel="noreferrer">Omi</a>、
+      <a href="https://github.com/memex-lab/memex" target="_blank" rel="noreferrer">Memex</a>。
+      本地约束来自 `mobile-visual-style`、`positioning`、ADR-0005、ADR-0006、`mobile-entry-closure`。
+    </footer>
+  </main>
+
+  <script>
+    const modules = [
+      {
+        id: "home",
+        nav: "首页",
+        navHint: "打开 App 第一眼",
+        eyebrow: "Module 01",
+        title: "首页整体形态",
+        question: "首页需要承接默认循环：快速记录、卡片流、Memory 和洞察。这里主要决定第一屏的重心。",
+        constraint: "默认循环优先",
+        options: [
+          {
+            id: "A",
+            name: "卡片流优先",
+            recommended: true,
+            summary: "首页就是记录生成后的卡片流，洞察和待复核卡排在顶部。",
+            platform: "iOS 可用轻玻璃导航层；Android 用短底栏和动态色。两端内容卡都保持安静、可读。",
+            preview: {
+              title: "广记",
+              subtitle: "今日洞察在卡片流顶部",
+              chips: ["全部", "洞察", "待复核", "记录"],
+              blocks: [
+                ["blue", "今日洞察", "首页改版、插件拆分、待办一级入口"],
+                ["amber", "待确认 Memory", "首页不应该像开发控制台"],
+                ["", "首页改版讨论", "原始记录 + 3 张派生卡"],
+                ["rose", "产品定位", "本地优先的个人记录和记忆"]
+              ]
+            }
+          },
+          {
+            id: "B",
+            name: "每日回顾优先",
+            recommended: false,
+            summary: "首页先给每日回顾、今日任务和最近记录，像 Omi 的 Home 一样偏 dashboard。",
+            platform: "iOS 上适合顶部大标题和回顾卡；Android 上适合 M3 Expressive 的信息分组，但首页会更像工作台。",
+            preview: {
+              title: "今天",
+              subtitle: "回顾、任务、最近记录",
+              chips: ["回顾", "任务", "最近"],
+              blocks: [
+                ["primary", "每日回顾", "今天最重要的 3 个主题"],
+                ["amber", "今日任务", "2 个待处理行动项"],
+                ["", "最近记录", "产品讨论、参考实现、UI 原型"],
+                ["blue", "记忆图谱", "项目定位、首页、插件"]
+              ]
+            }
+          },
+          {
+            id: "C",
+            name: "Agent Dock 优先",
+            recommended: false,
+            summary: "首页以底部中心记录/对话按钮为核心，卡片流退到背景，更接近 Memex 的大按钮心智。",
+            platform: "iOS/Android 都能做，但需要更强动效和主按钮状态；双平台实现成本会高一些。",
+            preview: {
+              title: "广记",
+              subtitle: "底部主入口触发记录或追问",
+              chips: ["全部", "Insight", "Schedule"],
+              blocks: [
+                ["", "首页改版讨论", "卡片流展示最近记录"],
+                ["blue", "Insight", "需要选择首页筛选结构"],
+                ["", "参考实现摘记", "Omi 四 tab，Memex 卡片流"],
+                ["primary", "记录 / 追问", "底部中心主入口"]
+              ]
+            }
+          }
+        ]
+      },
+      {
+        id: "capture",
+        nav: "捕获",
+        navHint: "记录入口",
+        eyebrow: "Module 02",
+        title: "快速捕获交互",
+        question: "捕获不能吞掉首页，但也不能藏太深。这里决定用户新增一条记录的主要路径。",
+        constraint: "原始记录必须保留",
+        options: [
+          {
+            id: "A",
+            name: "顶部轻输入",
+            recommended: true,
+            summary: "首页顶部保留一条轻量输入，展开后支持文字、语音、图片、文件。",
+            platform: "iOS 上像搜索/输入栏浮在内容上；Android 上像 M3 filled text field + trailing actions。",
+            preview: {
+              title: "广记",
+              subtitle: "轻量记录入口",
+              chips: ["文字", "语音", "导入"],
+              blocks: [
+                ["primary", "记一条", "想法、语音、图片或文件"],
+                ["blue", "今日洞察", "记录后自动生成派生卡"],
+                ["", "记录卡片", "原文、来源、生成历史"]
+              ]
+            }
+          },
+          {
+            id: "B",
+            name: "底部 Compose Sheet",
+            recommended: false,
+            summary: "首页只露一个底部新建按钮，点开后进入半屏捕获面板。",
+            platform: "iOS 对应从按钮源头弹出的 sheet；Android 对应 modal bottom sheet 和 FAB。",
+            preview: {
+              title: "广记",
+              subtitle: "内容在前，捕获在底部",
+              chips: ["全部", "洞察", "记录"],
+              blocks: [
+                ["blue", "今日洞察", "首页主体完全留给卡片"],
+                ["", "记录卡片", "滑动浏览"],
+                ["primary", "半屏记录面板", "文字 / 语音 / 附件"]
+              ]
+            }
+          },
+          {
+            id: "C",
+            name: "Capture Inbox",
+            recommended: false,
+            summary: "所有导入、语音、分享先进入收件箱，用户确认后再生成卡片。",
+            platform: "适合重隐私和高准确场景，但日常快速记录会多一步。",
+            preview: {
+              title: "捕获收件箱",
+              subtitle: "先收进来，再确认处理",
+              chips: ["待处理", "已生成", "失败"],
+              blocks: [
+                ["amber", "语音转写待确认", "13:20 · 46 秒"],
+                ["amber", "图片摘要待确认", "需要相册权限"],
+                ["", "已生成卡片", "首页改版讨论"]
+              ]
+            }
+          }
+        ]
+      },
+      {
+        id: "insight",
+        nav: "洞察",
+        navHint: "看见模式",
+        eyebrow: "Module 03",
+        title: "洞察入口与呈现",
+        question: "洞察是主打能力，但不一定要做成一级 tab。这里决定它在首页里的存在感。",
+        constraint: "AI 输出是派生对象",
+        options: [
+          {
+            id: "A",
+            name: "首页首卡 + 筛选",
+            recommended: true,
+            summary: "今日洞察作为首页第一张高优先级卡片，同时提供洞察筛选。",
+            platform: "双平台都自然；iOS 用轻玻璃标题区，Android 用短底栏和 expressive chip。",
+            preview: {
+              title: "广记",
+              subtitle: "洞察是首页里的高优先卡",
+              chips: ["全部", "洞察", "待复核"],
+              blocks: [
+                ["blue", "今日洞察", "把分散记录收束成 3 个主题"],
+                ["", "相关记录", "点击后看到来源链"],
+                ["rose", "可加入 Memory", "用户确认后沉淀"]
+              ]
+            }
+          },
+          {
+            id: "B",
+            name: "独立洞察流",
+            recommended: false,
+            summary: "首页中保留一个二级模式，进入后只看洞察卡、统计和趋势。",
+            platform: "适合后期洞察数量多时扩展；早期可能显得空。",
+            preview: {
+              title: "洞察",
+              subtitle: "知识洞察 / 活动统计",
+              chips: ["知识", "统计", "已收藏"],
+              blocks: [
+                ["blue", "主题聚类", "首页、插件、设置"],
+                ["violet", "活动统计", "本周记录 42 条"],
+                ["", "收藏洞察", "产品定位"]
+              ]
+            }
+          },
+          {
+            id: "C",
+            name: "每日回顾报告",
+            recommended: false,
+            summary: "洞察以每天一份 recap 的方式出现，适合低频用户回看。",
+            platform: "很适合 iOS 风格的沉浸式阅读；Android 上需要控制报告页不要过重。",
+            preview: {
+              title: "6月25日回顾",
+              subtitle: "自动整理的一天",
+              chips: ["摘要", "行动", "Memory"],
+              blocks: [
+                ["blue", "今天的主线", "首页改版方向已经收敛"],
+                ["amber", "行动项", "确认捕获入口形态"],
+                ["rose", "Memory 候选", "2 条需要确认"]
+              ]
+            }
+          }
+        ]
+      },
+      {
+        id: "chat",
+        nav: "对话",
+        navHint: "问记录",
+        eyebrow: "Module 04",
+        title: "对话 Tab 的组织方式",
+        question: "对话不是泛聊天，它应该围绕记录、Memory 和来源链。这里决定对话页的入口心智。",
+        constraint: "回答需要来源",
+        options: [
+          {
+            id: "A",
+            name: "上下文会话列表",
+            recommended: true,
+            summary: "按主题/标签/最近问题组织会话，用户能回到某个上下文继续问。",
+            platform: "iOS/Android 都像常规消息列表，学习成本低。",
+            preview: {
+              title: "对话",
+              subtitle: "围绕记录和记忆追问",
+              chips: ["今日回顾", "问记录", "项目", "人物"],
+              blocks: [
+                ["", "首页改版应该怎么收敛？", "引用 8 条记录"],
+                ["", "今天有哪些能转成待办？", "4 个候选行动"],
+                ["blue", "当前回答", "带来源卡片和追问建议"]
+              ]
+            }
+          },
+          {
+            id: "B",
+            name: "Context Copilot",
+            recommended: false,
+            summary: "对话页直接是一个全屏 agent，强调输入和响应，而不是会话管理。",
+            platform: "视觉更现代，但容易削弱记录产品心智，变成 AI Chat。",
+            preview: {
+              title: "Ask WideNote",
+              subtitle: "直接问你的记录",
+              chips: ["今天", "本周", "全部"],
+              blocks: [
+                ["primary", "输入问题", "问问最近的项目进展"],
+                ["blue", "回答", "基于 6 条来源记录"],
+                ["", "来源", "首页改版讨论、ADR 摘要"]
+              ]
+            }
+          },
+          {
+            id: "C",
+            name: "来源先行问答",
+            recommended: false,
+            summary: "先选一组记录或 Memory，再围绕它提问。更准确，但入口较重。",
+            platform: "适合平板双栏：左边来源，右边问答；手机上步骤更多。",
+            preview: {
+              title: "选择来源",
+              subtitle: "先定范围，再提问",
+              chips: ["记录", "Memory", "插件"],
+              blocks: [
+                ["", "首页改版讨论", "已选"],
+                ["rose", "产品定位 Memory", "已选"],
+                ["primary", "开始提问", "仅使用所选来源"]
+              ]
+            }
+          }
+        ]
+      },
+      {
+        id: "todos",
+        nav: "待办",
+        navHint: "行动项",
+        eyebrow: "Module 05",
+        title: "待办 Tab 的产品深度",
+        question: "待办被放在一级 tab 后，就不能只是生成结果列表。这里决定它是轻量行动流还是完整任务管理。",
+        constraint: "每个 AI 待办要有来源",
+        options: [
+          {
+            id: "A",
+            name: "来源链接任务流",
+            recommended: true,
+            summary: "Today / 待确认 / 以后 / 已完成，所有 AI 生成待办都能回到来源记录。",
+            platform: "双平台成本低，符合 WideNote 的 source-first 约束。",
+            preview: {
+              title: "待办",
+              subtitle: "行动项保留来源回链",
+              chips: ["今天", "待确认", "以后", "完成"],
+              blocks: [
+                ["", "确认首页卡片类型", "来源：首页改版讨论"],
+                ["amber", "决定设置入口", "需要产品确认"],
+                ["primary", "手动新增", "也可没有来源"]
+              ]
+            }
+          },
+          {
+            id: "B",
+            name: "AI Review Queue",
+            recommended: false,
+            summary: "先展示 AI 从记录中提取的行动候选，用户确认后才进入待办。",
+            platform: "适合强调可控性，但确认负担更重。",
+            preview: {
+              title: "待确认",
+              subtitle: "从记录中提取的行动",
+              chips: ["高置信", "低置信", "敏感"],
+              blocks: [
+                ["amber", "确认首页卡片类型", "置信度 0.82"],
+                ["amber", "整理插件权限", "置信度 0.68"],
+                ["primary", "全部确认", "进入今天"]
+              ]
+            }
+          },
+          {
+            id: "C",
+            name: "Today Plan",
+            recommended: false,
+            summary: "待办页更像每日计划，结合日程、行动和回顾。",
+            platform: "体验更完整，但会靠近日历/规划产品，可能超出阶段一默认范围。",
+            preview: {
+              title: "今天",
+              subtitle: "计划、行动、回顾",
+              chips: ["上午", "下午", "无日期"],
+              blocks: [
+                ["blue", "今日重点", "确定首页交互方案"],
+                ["", "任务列表", "3 个行动项"],
+                ["violet", "时间块", "14:00 产品讨论"]
+              ]
+            }
+          }
+        ]
+      },
+      {
+        id: "plugins",
+        nav: "插件",
+        navHint: "Agent Pack",
+        eyebrow: "Module 06",
+        title: "插件与设置边界",
+        question: "现在插件页混入了 providers、backup、trace 等设置项。这里决定第四个 tab 到底是市场、控制台还是设置。",
+        constraint: "插件依赖公开边界",
+        options: [
+          {
+            id: "A",
+            name: "插件市场 + 右上设置",
+            recommended: true,
+            summary: "第四 tab 只放 Agent Pack 市场和已安装插件；设置统一放右上角。",
+            platform: "最接近 Omi Apps，也更符合移动端用户对设置入口的习惯。",
+            preview: {
+              title: "插件",
+              subtitle: "Agent Pack 与能力市场",
+              chips: ["推荐", "已安装", "记录", "效率"],
+              blocks: [
+                ["primary", "默认记录包", "已安装"],
+                ["primary", "Todo 提取", "已安装"],
+                ["blue", "会议洞察", "获取"],
+                ["", "权限预览", "安装前先看读写边界"]
+              ]
+            }
+          },
+          {
+            id: "B",
+            name: "控制中心",
+            recommended: false,
+            summary: "第四 tab 继续承载 Packs、权限、模型、备份、Trace，是一个高级用户控制台。",
+            platform: "适合开发者和 power user，但普通用户会觉得插件页含义发散。",
+            preview: {
+              title: "控制中心",
+              subtitle: "Packs、模型、备份、Trace",
+              chips: ["Packs", "权限", "模型", "备份"],
+              blocks: [
+                ["", "Pack Library", "官方包与权限"],
+                ["violet", "Model Providers", "BYOK / 本地"],
+                ["amber", "Backup", "导出和恢复"],
+                ["blue", "Trace", "运行记录"]
+              ]
+            }
+          },
+          {
+            id: "C",
+            name: "Workspace Store",
+            recommended: false,
+            summary: "插件页按工作流展示：记录、会议、研究、导出，每个工作流是一组 Pack。",
+            platform: "适合后期生态扩大；早期内容少时容易空。",
+            preview: {
+              title: "工作流",
+              subtitle: "按场景安装一组能力",
+              chips: ["记录", "会议", "研究", "导出"],
+              blocks: [
+                ["primary", "记录增强", "摘要 + Memory + 洞察"],
+                ["blue", "会议包", "纪要 + 决策 + 待办"],
+                ["violet", "研究包", "资料整理与引用"]
+              ]
+            }
+          }
+        ]
+      },
+      {
+        id: "detail",
+        nav: "详情",
+        navHint: "卡片打开后",
+        eyebrow: "Module 07",
+        title: "卡片详情页结构",
+        question: "首页卡片点击后，详情页要同时解释原始记录、AI 结果、来源链和可执行动作。",
+        constraint: "原文与派生分离",
+        options: [
+          {
+            id: "A",
+            name: "来源优先详情",
+            recommended: true,
+            summary: "顶部展示卡片结论，下方立刻给来源、原文、生成历史和操作。",
+            platform: "最符合本地优先和可回溯；两端都容易落地。",
+            preview: {
+              title: "首页改版讨论",
+              subtitle: "卡片结论 + 来源链",
+              chips: ["摘要", "来源", "操作"],
+              blocks: [
+                ["blue", "AI 摘要", "首页应收束成卡片流"],
+                ["", "原始记录", "11:42 语音转写"],
+                ["rose", "Memory 候选", "可确认或改写"],
+                ["primary", "操作", "追问 / 转待办 / 归档"]
+              ]
+            }
+          },
+          {
+            id: "B",
+            name: "摘要优先 Tabs",
+            recommended: false,
+            summary: "像 Omi conversation detail，一进来先看 Summary，再切 Transcript / Actions。",
+            platform: "适合长语音和会议类记录；短记录会显得结构过重。",
+            preview: {
+              title: "记录详情",
+              subtitle: "Summary / Transcript / Actions",
+              chips: ["Summary", "Transcript", "Actions"],
+              blocks: [
+                ["blue", "Summary", "首页、洞察、插件边界"],
+                ["", "Transcript", "原始转写在第二页"],
+                ["amber", "Actions", "4 个待办候选"]
+              ]
+            }
+          },
+          {
+            id: "C",
+            name: "行动 Sheet",
+            recommended: false,
+            summary: "卡片点击只打开轻量详情，更多操作从卡片源头弹出。",
+            platform: "符合新 iOS 的源头弹层思路；Android 也能用 bottom sheet，但信息承载较少。",
+            preview: {
+              title: "卡片预览",
+              subtitle: "轻量详情 + 操作弹层",
+              chips: ["预览", "更多"],
+              blocks: [
+                ["blue", "一句话结论", "先快速理解"],
+                ["primary", "操作弹层", "追问 / Memory / Todo"],
+                ["", "完整来源", "二次点击进入"]
+              ]
+            }
+          }
+        ]
+      }
+    ];
+
+    const state = Object.fromEntries(modules.map((module) => {
+      const recommended = module.options.find((option) => option.recommended) || module.options[0];
+      return [module.id, recommended.id];
+    }));
+
+    let currentModuleId = modules[0].id;
+
+    const nav = document.querySelector("#moduleNav");
+    const grid = document.querySelector("#optionGrid");
+    const summary = document.querySelector("#summaryList");
+
+    function renderNav() {
+      nav.innerHTML = modules.map((module) => `
+        <button class="nav-choice ${module.id === currentModuleId ? "active" : ""}" type="button" data-module="${module.id}">
+          <strong>${module.nav}</strong>
+          <span>${module.navHint}</span>
+        </button>
+      `).join("");
+
+      nav.querySelectorAll("[data-module]").forEach((button) => {
+        button.addEventListener("click", () => {
+          currentModuleId = button.dataset.module;
+          render();
+        });
+      });
+    }
+
+    function renderPreview(preview) {
+      const chips = preview.chips.map((chip, index) => `<span class="mini-chip ${index === 0 ? "active" : ""}">${chip}</span>`).join("");
+      const blocks = preview.blocks.map(([tone, title, text], index) => `
+        <div class="mini-block ${tone} ${index > 2 ? "compact" : ""}">
+          <div class="mini-block-title">${title}</div>
+          <div class="mini-block-text">${text}</div>
+        </div>
+      `).join("");
+
+      return `
+        <div class="phone-mini">
+          <div class="mini-screen">
+            <div class="mini-status"><span>9:41</span><span>5G 84%</span></div>
+            <div class="mini-top">
+              <div class="mini-title">${preview.title}</div>
+              <div class="mini-subtitle">${preview.subtitle}</div>
+            </div>
+            <div class="mini-chips">${chips}</div>
+            <div class="mini-content">${blocks}</div>
+            <div class="mini-nav"><span>首页</span><span>对话</span><span>待办</span><span>插件</span></div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderOptions(module) {
+      grid.innerHTML = module.options.map((option) => {
+        const selected = state[module.id] === option.id;
+        return `
+          <article class="option-card ${selected ? "selected" : ""}" data-option="${option.id}">
+            <div class="option-top">
+              <div style="display:flex; gap:9px; min-width:0">
+                <div class="option-label">${option.id}</div>
+                <div class="option-title">
+                  <h3>${option.name}</h3>
+                  <p class="option-copy">${option.summary}</p>
+                </div>
+              </div>
+              <span class="tag ${option.recommended ? "recommended" : "neutral"}">${option.recommended ? "推荐" : "可选"}</span>
+            </div>
+            ${renderPreview(option.preview)}
+            <div class="platform-note">${option.platform}</div>
+          </article>
+        `;
+      }).join("");
+
+      grid.querySelectorAll("[data-option]").forEach((card) => {
+        card.addEventListener("click", () => {
+          state[module.id] = card.dataset.option;
+          render();
+        });
+      });
+    }
+
+    function renderSummary() {
+      summary.innerHTML = modules.map((module) => {
+        const selected = module.options.find((option) => option.id === state[module.id]);
+        return `
+          <div class="summary-item">
+            <strong>${module.nav}: ${selected.id}. ${selected.name}</strong>
+            <span>${selected.summary}</span>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function render() {
+      const module = modules.find((item) => item.id === currentModuleId);
+      document.querySelector("#moduleEyebrow").textContent = module.eyebrow;
+      document.querySelector("#moduleTitle").textContent = module.title;
+      document.querySelector("#moduleQuestion").textContent = module.question;
+      document.querySelector("#moduleConstraint").textContent = module.constraint;
+      renderNav();
+      renderOptions(module);
+      renderSummary();
+    }
+
+    document.querySelectorAll("[data-style-choice]").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.body.dataset.style = button.dataset.styleChoice;
+        document.querySelectorAll("[data-style-choice]").forEach((item) => item.classList.toggle("active", item === button));
+      });
+    });
+
+    render();
+  </script>
+</body>
+</html>

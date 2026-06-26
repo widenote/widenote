@@ -6,7 +6,8 @@ Pure Dart SQLite local truth package for local-first WideNote storage.
 
 This package owns local tables, migration bootstrap, and DAO APIs for the
 minimum phase-one record surfaces: events, captures, Memory, cards, insights,
-todos, attachment metadata, and traces.
+todos, attachment metadata, durable runtime state, Agent Pack install state,
+permission grants/revocations, context packet caches, and traces.
 
 ## Ownership Boundary
 
@@ -23,6 +24,7 @@ rendering.
 - `LocalBackupService`
 - `LocalBackupCodec`
 - `LocalBackupManifest`
+- `LocalBackupImportReport`
 - `LocalDataBackup`
 - `LocalMarkdownExportService`
 - `EventLogDao`
@@ -33,6 +35,11 @@ rendering.
 - `CardsDao`
 - `InsightsDao`
 - `TodosDao`
+- `RuntimeTasksDao`
+- `RuntimeRunsDao`
+- `PackInstallationsDao`
+- `PermissionGrantsDao`
+- `ContextPacketCachesDao`
 - `TraceEventsDao`
 - `LocalDbEventStore`
 - `LocalDbTraceSink`
@@ -78,23 +85,40 @@ current SQLite truth tables. The JSON document uses a WideNote-owned
 `widenote.local_data_backup` format with:
 
 - `manifest`: format version, local DB schema version, creation timestamp, and
+  backup mode, `includes_secrets`, encryption metadata placeholder, and
   per-section record counts.
 - `event_log`, `captures`, `attachments`, `memory_items`, `memory_candidates`, `cards`,
   `insights`, `chat_sessions`, `chat_messages`, `model_provider_configs`,
-  `todos`, and `trace_events`: JSON rows reconstructed through the package
-  record models.
+  `todos`, `runtime_tasks`, `runtime_runs`, `pack_installations`,
+  `permission_grants`, `context_packet_cache`, and `trace_events`: JSON rows
+  reconstructed through the package record models.
 
 Format v2 adds `attachments`; v1 backups without that section are imported as
-empty attachment sets so older local backups remain restorable.
+empty attachment sets so older local backups remain restorable. Format v3 adds
+durable runtime, pack, permission, and context cache sections. Older backups
+without those sections import them as empty. `context_packet_cache` is
+rebuildable derived state, so restore also tolerates that section missing from a
+current backup.
 
-This V1 format covers the tables currently owned by this package. It exports
-provider API keys as part of user-managed backup/restore portability. Backup
-callers must treat exported JSON as secret-bearing user data and keep keys out
-of logs, generated docs, test output, and automated review prompts.
+`LocalBackupMode.safe` is the default and excludes provider API key values while
+preserving provider metadata, default-provider state, and whether a key was
+present. `LocalBackupMode.encryptedFull` is reserved for a future encrypted
+full-backup path that can carry provider API key values only after callers have
+a real encryption boundary. The W7 mobile app does not expose encrypted full
+backup yet. Keys must stay out of logs, generated docs, test output, and
+automated review prompts.
+
+`LocalBackupImportReport` summarizes restore effects for UI and QA without
+exposing backup contents. It reports backup mode, secret inclusion, restored
+provider/pack/permission/runtime/cache counts, and whether provider keys need
+user re-entry after a safe restore.
 
 `LocalMarkdownExportService` is a human-readable projection of a decoded
 backup. It is not restorable and intentionally reports only whether provider
-API keys are present; it does not include key values.
+API keys are present; it does not include key values. It summarizes runtime
+pack/task/permission status and excludes Context Packet cache contents from the
+readable Owner Export projection. It also writes an explicit export boundary so
+users and agents do not confuse Markdown with the restore source.
 
 ## Generated Artifacts
 
@@ -114,10 +138,15 @@ candidate storage, source-linked card and insight storage, chat sessions and
 messages, provider metadata, attachment metadata, Memory review
 accept/edit/reject transitions, the SQLite-backed Memory repository adapter,
 todo status updates, trace reads, in-memory schema bootstrap, file-path reopen
-persistence, v1-to-current migrations, pagination, backup import/export, and
-runtime EventStore/TraceSink adapters. Backup tests also cover the Markdown
-projection and verify that provider API key values stay out of the readable
-export.
+persistence, v1-to-current migrations, v8 runtime/pack/permission/context-cache
+tables, migration indexes/foreign keys/repeated bootstrap/failure rollback,
+pagination, capture/event/task transactional enqueue, permission revoke terminal
+state, backup import/export, cache-tolerant restore, tombstone restore behavior,
+secret-boundary manifest validation, safe-backup provider credential re-entry
+reports, encrypted-full guardrails, and runtime EventStore/TraceSink adapters.
+Backup tests also cover the
+Markdown projection and verify that provider API key values and Context Packet
+cache contents stay out of the readable export.
 
 ## Related Context
 

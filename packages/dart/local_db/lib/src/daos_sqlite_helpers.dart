@@ -29,6 +29,26 @@ ResultSet _selectOrdered(
   int? limit,
   int? offset,
 }) {
+  return _selectOrderedBy(
+    database,
+    table,
+    orderBy: 'created_at, id',
+    whereSql: whereSql,
+    parameters: parameters,
+    limit: limit,
+    offset: offset,
+  );
+}
+
+ResultSet _selectOrderedBy(
+  Database database,
+  String table, {
+  required String orderBy,
+  String? whereSql,
+  List<Object?> parameters = const <Object?>[],
+  int? limit,
+  int? offset,
+}) {
   _checkPagination(limit: limit, offset: offset);
 
   final sql = StringBuffer('SELECT * FROM $table');
@@ -36,7 +56,7 @@ ResultSet _selectOrdered(
   if (whereSql != null) {
     sql.write(' WHERE $whereSql');
   }
-  sql.write(' ORDER BY created_at, id');
+  sql.write(' ORDER BY $orderBy');
   if (limit != null) {
     sql.write(' LIMIT ?');
     queryParameters.add(limit);

@@ -1,5 +1,7 @@
 # RFC: Model Provider Settings
 
+Status: Accepted phase-one slice; amended by W7 safe-backup boundary
+
 ## Summary
 
 WideNote phase one needs user-facing model provider setup instead of a QA-only
@@ -25,8 +27,9 @@ requirement.
   provider selection.
 - Keep real credentials out of repository files, fixtures, logs, generated
   docs, and automated review prompts.
-- User-initiated local backups intentionally include provider API keys for
-  restore portability.
+- Safe local backups exclude provider API key values by default. Encrypted full
+  backup is the future path for secret-bearing restore portability and is not
+  implemented in the W7 phase-one state.
 
 ## Non-goals
 
@@ -79,21 +82,24 @@ The package-level config includes:
 - runtime credential value
 
 Safe metadata exports expose only whether a credential is present. User-managed
-backup exports are separate from safe metadata and include the credential value.
+safe backup exports preserve provider metadata and default-provider state, but
+exclude credential values. Encrypted full backup may include credentials only
+after a real encryption boundary exists.
 
 ## Privacy and Security Impact
 
 Provider credentials are durable local values in this slice. They must not be
 printed by `toString`, included in safe JSON, committed to tests, written to
 docs, stored in generated artifacts, or sent to automated review prompts.
-User-initiated backup JSON is the explicit exception and must be treated as
-secret-bearing user data.
+Encrypted full backup is the explicit future exception and must be treated as
+secret-bearing user data once implemented.
 
 ## Local-first and Sync Impact
 
 The feature does not require an account, backend, or live network service. Sync
-is unaffected. Local backup/export includes provider API keys so restored
-devices can continue using configured providers without manual re-entry.
+is unaffected. Current safe backup/export restores provider metadata without
+API key values, so restored devices must ask the user to re-enter provider keys.
+Encrypted full backup is the later path for restoring credentials.
 
 ## Agent / Plugin Impact
 
@@ -112,14 +118,16 @@ the local deterministic fallback.
 - Implement real SDK clients immediately. This adds dependency and credential
   risk before the local settings model is stable.
 - Exclude provider credentials from backup. This would make provider restore
-  incomplete and conflicts with the product portability requirement.
+  incomplete, but W7 accepts that tradeoff for safe backup until encrypted full
+  backup exists.
 
 ## Migration / Compatibility
 
 The existing QA-only model client remains available for Android QA builds. The
 new provider package adapters do not change runtime model semantics yet.
 `packages/dart/local_db` stores provider metadata, API keys, and
-default-provider state.
+default-provider state locally. Safe backup omits API key values and reports
+that keys need re-entry after restore.
 
 ## Open Questions
 
@@ -131,4 +139,5 @@ default-provider state.
 
 ## Decision Outcome
 
-Open.
+Accepted for phase-one provider settings, with the W7 amendment that safe
+backup is the implemented default and encrypted full backup remains deferred.

@@ -152,6 +152,138 @@ abstract class AppLocalizations {
   /// **'Open Memory'**
   String get homeOpenMemoryTooltip;
 
+  /// No description provided for @homeOpenDailyRecapTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Daily Recap'**
+  String get homeOpenDailyRecapTooltip;
+
+  /// No description provided for @homeOpenSettingsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Settings'**
+  String get homeOpenSettingsTooltip;
+
+  /// No description provided for @recapTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Recap'**
+  String get recapTitle;
+
+  /// No description provided for @recapSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Today from local object truth · {date}'**
+  String recapSubtitle(String date);
+
+  /// No description provided for @recapBackTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Close Daily Recap'**
+  String get recapBackTooltip;
+
+  /// No description provided for @recapUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Recap unavailable'**
+  String get recapUnavailableTitle;
+
+  /// No description provided for @recapEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing recorded today yet.'**
+  String get recapEmptyTitle;
+
+  /// No description provided for @recapEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture a thought, voice draft, camera photo, or gallery image. Today\'s recap will stay source-linked here.'**
+  String get recapEmptyBody;
+
+  /// No description provided for @recapCapturesMetric.
+  ///
+  /// In en, this message translates to:
+  /// **'captures'**
+  String get recapCapturesMetric;
+
+  /// No description provided for @recapMemoryMetric.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory'**
+  String get recapMemoryMetric;
+
+  /// No description provided for @recapTodoOpenMetric.
+  ///
+  /// In en, this message translates to:
+  /// **'open todos'**
+  String get recapTodoOpenMetric;
+
+  /// No description provided for @recapTodoCompletedMetric.
+  ///
+  /// In en, this message translates to:
+  /// **'completed'**
+  String get recapTodoCompletedMetric;
+
+  /// No description provided for @recapCardsMetric.
+  ///
+  /// In en, this message translates to:
+  /// **'cards'**
+  String get recapCardsMetric;
+
+  /// No description provided for @recapInsightsMetric.
+  ///
+  /// In en, this message translates to:
+  /// **'insights'**
+  String get recapInsightsMetric;
+
+  /// No description provided for @recapRecordsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Records today'**
+  String get recapRecordsTitle;
+
+  /// No description provided for @recapMemoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory today'**
+  String get recapMemoryTitle;
+
+  /// No description provided for @recapTodosTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Todo activity'**
+  String get recapTodosTitle;
+
+  /// No description provided for @recapCardsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cards'**
+  String get recapCardsTitle;
+
+  /// No description provided for @recapInsightsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Insights'**
+  String get recapInsightsTitle;
+
+  /// No description provided for @recapSectionEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No source-linked items in this section today.'**
+  String get recapSectionEmpty;
+
+  /// No description provided for @recapEvidenceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Local evidence'**
+  String get recapEvidenceTitle;
+
+  /// No description provided for @recapEvidenceBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{eventCount, plural, =1{1 event} other{{eventCount} events}} · {traceCount, plural, =1{1 trace} other{{traceCount} traces}}'**
+  String recapEvidenceBody(int eventCount, int traceCount);
+
   /// No description provided for @quickCaptureTitle.
   ///
   /// In en, this message translates to:
@@ -173,14 +305,14 @@ abstract class AppLocalizations {
   /// No description provided for @captureModeVoice.
   ///
   /// In en, this message translates to:
-  /// **'Voice draft'**
+  /// **'Voice'**
   String get captureModeVoice;
 
-  /// No description provided for @captureModeImport.
+  /// No description provided for @captureModeMedia.
   ///
   /// In en, this message translates to:
-  /// **'Import'**
-  String get captureModeImport;
+  /// **'Media'**
+  String get captureModeMedia;
 
   /// No description provided for @captureModeTextTitle.
   ///
@@ -197,74 +329,98 @@ abstract class AppLocalizations {
   /// No description provided for @captureVoiceHint.
   ///
   /// In en, this message translates to:
-  /// **'Add optional context while a voice draft waits for transcript review...'**
+  /// **'Add context while the voice recording is attached as local raw media...'**
   String get captureVoiceHint;
 
-  /// No description provided for @captureVoiceDraftTitle.
+  /// No description provided for @captureVoiceTitle.
   ///
   /// In en, this message translates to:
-  /// **'Voice draft'**
-  String get captureVoiceDraftTitle;
+  /// **'Record voice'**
+  String get captureVoiceTitle;
 
-  /// No description provided for @captureVoiceDraftBody.
+  /// No description provided for @captureVoiceBody.
   ///
   /// In en, this message translates to:
-  /// **'This slice uses a transcript draft adapter. No microphone permission starts here; save only after review.'**
-  String get captureVoiceDraftBody;
+  /// **'WideNote requests microphone permission, stores the raw audio locally, and keeps transcript generation as a later agent step.'**
+  String get captureVoiceBody;
 
-  /// No description provided for @captureVoiceDraftButton.
+  /// No description provided for @captureVoiceStartButton.
   ///
   /// In en, this message translates to:
-  /// **'Add voice draft'**
-  String get captureVoiceDraftButton;
+  /// **'Start recording'**
+  String get captureVoiceStartButton;
 
-  /// No description provided for @captureImportHint.
+  /// No description provided for @captureVoiceRecordingTitle.
   ///
   /// In en, this message translates to:
-  /// **'Add context for an imported photo, link, or file...'**
-  String get captureImportHint;
+  /// **'Recording'**
+  String get captureVoiceRecordingTitle;
 
-  /// No description provided for @captureImportTitle.
+  /// No description provided for @captureVoiceRecordingBody.
   ///
   /// In en, this message translates to:
-  /// **'Bring material in'**
-  String get captureImportTitle;
+  /// **'Stop to attach the recording, or cancel to discard it without creating a record.'**
+  String get captureVoiceRecordingBody;
 
-  /// No description provided for @captureImportBody.
+  /// No description provided for @captureVoiceStopButton.
   ///
   /// In en, this message translates to:
-  /// **'Attach a photo or shared item, keep the raw source, then let WideNote create source-linked Memory.'**
-  String get captureImportBody;
+  /// **'Stop'**
+  String get captureVoiceStopButton;
 
-  /// No description provided for @captureImportPhotoButton.
+  /// No description provided for @captureVoiceCancelButton.
   ///
   /// In en, this message translates to:
-  /// **'Add photo'**
-  String get captureImportPhotoButton;
+  /// **'Cancel'**
+  String get captureVoiceCancelButton;
 
-  /// No description provided for @captureImportShareButton.
+  /// No description provided for @captureMediaHint.
   ///
   /// In en, this message translates to:
-  /// **'Import item'**
-  String get captureImportShareButton;
+  /// **'Add context for a camera photo or gallery image...'**
+  String get captureMediaHint;
 
-  /// No description provided for @captureActionPhoto.
+  /// No description provided for @captureMediaTitle.
   ///
   /// In en, this message translates to:
-  /// **'Photo'**
-  String get captureActionPhoto;
+  /// **'Attach media'**
+  String get captureMediaTitle;
+
+  /// No description provided for @captureMediaBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera and gallery use platform pickers. WideNote stores a local file reference, hash, and source metadata.'**
+  String get captureMediaBody;
+
+  /// No description provided for @captureMediaCameraButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get captureMediaCameraButton;
+
+  /// No description provided for @captureMediaGalleryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery'**
+  String get captureMediaGalleryButton;
+
+  /// No description provided for @captureActionCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get captureActionCamera;
+
+  /// No description provided for @captureActionGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery'**
+  String get captureActionGallery;
 
   /// No description provided for @captureActionVoice.
   ///
   /// In en, this message translates to:
   /// **'Voice'**
   String get captureActionVoice;
-
-  /// No description provided for @captureActionImport.
-  ///
-  /// In en, this message translates to:
-  /// **'Import'**
-  String get captureActionImport;
 
   /// No description provided for @captureUseTranscriptButton.
   ///
@@ -1004,6 +1160,195 @@ abstract class AppLocalizations {
   /// **'No source-linked todos yet.'**
   String get todosEmpty;
 
+  /// No description provided for @settingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsTitle;
+
+  /// No description provided for @settingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy, permissions, models, backup, and traces.'**
+  String get settingsSubtitle;
+
+  /// No description provided for @settingsBackTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Close Settings'**
+  String get settingsBackTooltip;
+
+  /// No description provided for @settingsPrivacyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy'**
+  String get settingsPrivacyTitle;
+
+  /// No description provided for @settingsPrivacyLocalFirstTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Local-first core'**
+  String get settingsPrivacyLocalFirstTitle;
+
+  /// No description provided for @settingsPrivacyLocalFirstBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Records, Memory, todos, cards, chat, and traces stay on this device unless you choose backup, sync, or a provider.'**
+  String get settingsPrivacyLocalFirstBody;
+
+  /// No description provided for @settingsPrivacyLocalFirstStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'no account'**
+  String get settingsPrivacyLocalFirstStatus;
+
+  /// No description provided for @settingsPrivacyPermissionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Revocable permissions'**
+  String get settingsPrivacyPermissionsTitle;
+
+  /// No description provided for @settingsPrivacyPermissionsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Built-in packs use narrow permissions; high-risk file, network, and script capabilities stay deferred until explicit approval exists.'**
+  String get settingsPrivacyPermissionsBody;
+
+  /// No description provided for @settingsPrivacyPermissionsStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'reviewable'**
+  String get settingsPrivacyPermissionsStatus;
+
+  /// No description provided for @settingsPrivacyBackupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup secrets boundary'**
+  String get settingsPrivacyBackupTitle;
+
+  /// No description provided for @settingsPrivacyBackupBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Safe export omits provider API keys. Encrypted full backup is the future secret-bearing restore path and has no action in this build.'**
+  String get settingsPrivacyBackupBody;
+
+  /// No description provided for @settingsPrivacyBackupStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'safe export'**
+  String get settingsPrivacyBackupStatus;
+
+  /// No description provided for @settingsControlsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Controls'**
+  String get settingsControlsTitle;
+
+  /// No description provided for @settingsPermissionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy & Permissions'**
+  String get settingsPermissionsTitle;
+
+  /// No description provided for @settingsPermissionsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review available pack permissions and deferred high-risk capabilities.'**
+  String get settingsPermissionsSubtitle;
+
+  /// No description provided for @settingsPermissionsStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'explicit'**
+  String get settingsPermissionsStatus;
+
+  /// No description provided for @settingsPermissionsStatusSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{availableCount} available / {deferredCount} deferred'**
+  String settingsPermissionsStatusSummary(
+    int availableCount,
+    int deferredCount,
+  );
+
+  /// No description provided for @settingsModelProvidersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Model Providers'**
+  String get settingsModelProvidersTitle;
+
+  /// No description provided for @settingsModelProvidersSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure local or BYOK model access for runtime and Agent Packs.'**
+  String get settingsModelProvidersSubtitle;
+
+  /// No description provided for @settingsBackupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup & Restore'**
+  String get settingsBackupTitle;
+
+  /// No description provided for @settingsBackupSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export or import local records, Memory, cards, providers, todos, and traces.'**
+  String get settingsBackupSubtitle;
+
+  /// No description provided for @settingsBackupStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'local'**
+  String get settingsBackupStatus;
+
+  /// No description provided for @settingsBackupStatusSafeOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'safe only'**
+  String get settingsBackupStatusSafeOnly;
+
+  /// No description provided for @settingsBackupStatusExportReady.
+  ///
+  /// In en, this message translates to:
+  /// **'export ready'**
+  String get settingsBackupStatusExportReady;
+
+  /// No description provided for @settingsBackupStatusRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'restored'**
+  String get settingsBackupStatusRestored;
+
+  /// No description provided for @settingsBackupStatusNeedsReview.
+  ///
+  /// In en, this message translates to:
+  /// **'review needed'**
+  String get settingsBackupStatusNeedsReview;
+
+  /// No description provided for @settingsTraceConsoleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trace Console'**
+  String get settingsTraceConsoleTitle;
+
+  /// No description provided for @settingsTraceConsoleSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspect local Agent Runtime runs, permission checks, and generated outputs.'**
+  String get settingsTraceConsoleSubtitle;
+
+  /// No description provided for @settingsTraceConsoleStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'read-only'**
+  String get settingsTraceConsoleStatus;
+
+  /// No description provided for @settingsTraceConsoleStatusSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{eventCount} events / {warningCount} warnings'**
+  String settingsTraceConsoleStatusSummary(int eventCount, int warningCount);
+
   /// No description provided for @pluginsTitle.
   ///
   /// In en, this message translates to:
@@ -1163,13 +1508,13 @@ abstract class AppLocalizations {
   /// No description provided for @permissionGateSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Review built-in pack permissions and deferred high-risk capabilities.'**
+  /// **'Review local pack permission state and deferred high-risk capabilities.'**
   String get permissionGateSubtitle;
 
   /// No description provided for @permissionGateGrantedTitle.
   ///
   /// In en, this message translates to:
-  /// **'Granted built-in permissions'**
+  /// **'Built-in and available permissions'**
   String get permissionGateGrantedTitle;
 
   /// No description provided for @permissionGateDeferredTitle.
@@ -1177,6 +1522,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Deferred high-risk permissions'**
   String get permissionGateDeferredTitle;
+
+  /// No description provided for @permissionGateStatusAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Built-in / available'**
+  String get permissionGateStatusAvailable;
+
+  /// No description provided for @permissionGateStatusGranted.
+  ///
+  /// In en, this message translates to:
+  /// **'Granted locally'**
+  String get permissionGateStatusGranted;
+
+  /// No description provided for @permissionGateStatusDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Denied locally'**
+  String get permissionGateStatusDenied;
+
+  /// No description provided for @permissionGateStatusRevoked.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoked locally'**
+  String get permissionGateStatusRevoked;
+
+  /// No description provided for @permissionGateActionGrant.
+  ///
+  /// In en, this message translates to:
+  /// **'Grant'**
+  String get permissionGateActionGrant;
+
+  /// No description provided for @permissionGateActionDeny.
+  ///
+  /// In en, this message translates to:
+  /// **'Deny'**
+  String get permissionGateActionDeny;
+
+  /// No description provided for @permissionGateActionRevoke.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke'**
+  String get permissionGateActionRevoke;
+
+  /// No description provided for @permissionGateActionDeferred.
+  ///
+  /// In en, this message translates to:
+  /// **'Deferred'**
+  String get permissionGateActionDeferred;
 
   /// No description provided for @agentPlatformTitle.
   ///
@@ -1565,7 +1958,7 @@ abstract class AppLocalizations {
   /// No description provided for @backupExportReadyStatus.
   ///
   /// In en, this message translates to:
-  /// **'Backup JSON is ready.'**
+  /// **'Safe backup JSON is ready.'**
   String get backupExportReadyStatus;
 
   /// No description provided for @backupSavedFileStatus.
@@ -1589,26 +1982,50 @@ abstract class AppLocalizations {
   /// No description provided for @backupExportSectionTitle.
   ///
   /// In en, this message translates to:
-  /// **'Export'**
+  /// **'Export and restore boundary'**
   String get backupExportSectionTitle;
 
   /// No description provided for @backupExportButton.
   ///
   /// In en, this message translates to:
-  /// **'Export JSON'**
+  /// **'Export safe restore JSON'**
   String get backupExportButton;
 
   /// No description provided for @backupExportEmpty.
   ///
   /// In en, this message translates to:
-  /// **'Export creates a versioned local backup JSON with manifest counts.'**
+  /// **'Export creates a safe, versioned restore JSON and a readable Owner Export Markdown projection.'**
   String get backupExportEmpty;
 
   /// No description provided for @backupSecretWarning.
   ///
   /// In en, this message translates to:
-  /// **'Backups include provider API keys. Keep exported JSON private.'**
+  /// **'Safe export omits provider API keys. Re-enter provider keys after restore.'**
   String get backupSecretWarning;
+
+  /// No description provided for @backupSafeRestoreBoundary.
+  ///
+  /// In en, this message translates to:
+  /// **'Safe restore JSON brings back records, Memory, todos, provider metadata, pack installs, permissions, runtime state, and traces. Provider keys are omitted.'**
+  String get backupSafeRestoreBoundary;
+
+  /// No description provided for @backupOwnerExportBoundary.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner Export Markdown is for reading and moving your data. It excludes secrets and is not a restore source.'**
+  String get backupOwnerExportBoundary;
+
+  /// No description provided for @backupFullSecretBoundary.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted full backup will be the secret-bearing path for restoring API keys. It has no action in this build.'**
+  String get backupFullSecretBoundary;
+
+  /// No description provided for @backupSafeOmittedProviderKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider keys omitted from safe export: {count}'**
+  String backupSafeOmittedProviderKeys(int count);
 
   /// No description provided for @backupManifestCountsTitle.
   ///
@@ -1661,13 +2078,13 @@ abstract class AppLocalizations {
   /// No description provided for @backupExportJsonTitle.
   ///
   /// In en, this message translates to:
-  /// **'Backup JSON'**
+  /// **'Safe backup JSON'**
   String get backupExportJsonTitle;
 
   /// No description provided for @backupExportMarkdownTitle.
   ///
   /// In en, this message translates to:
-  /// **'Readable Markdown'**
+  /// **'Owner Export Markdown'**
   String get backupExportMarkdownTitle;
 
   /// No description provided for @backupImportSectionTitle.
@@ -1693,6 +2110,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Import latest saved file'**
   String get backupImportLatestFileButton;
+
+  /// No description provided for @backupImportNeedsProviderKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Provider metadata restored. Re-enter 1 provider key before model calls can use it.} other{Provider metadata restored. Re-enter {count} provider keys before model calls can use them.}}'**
+  String backupImportNeedsProviderKeys(int count);
+
+  /// No description provided for @backupImportSecretsRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Secret-bearing backup restored provider credentials.'**
+  String get backupImportSecretsRestored;
+
+  /// No description provided for @backupImportNoProviderKeysNeeded.
+  ///
+  /// In en, this message translates to:
+  /// **'No provider keys need re-entry for this backup.'**
+  String get backupImportNoProviderKeysNeeded;
 }
 
 class _AppLocalizationsDelegate

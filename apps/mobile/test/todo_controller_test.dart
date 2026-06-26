@@ -5,7 +5,7 @@ import 'package:widenote_mobile/app/local_database.dart';
 import 'package:widenote_mobile/features/todos/application/todo_controller.dart';
 
 void main() {
-  test('todo controller completes and reopens durable todo rows', () {
+  test('todo controller hides completed rows and can reopen durable rows', () {
     final database = WideNoteLocalDatabase.inMemory();
     addTearDown(database.close);
     final now = DateTime.utc(2026, 6, 25, 8);
@@ -35,8 +35,8 @@ void main() {
 
     expect(database.todos.readById('todo-controller-1')!.status, 'completed');
     expect(
-      container.read(todoControllerProvider).items.single.isCompleted,
-      isTrue,
+      container.read(todoControllerProvider).items,
+      isEmpty,
     );
 
     container.read(todoControllerProvider.notifier).reopen('todo-controller-1');

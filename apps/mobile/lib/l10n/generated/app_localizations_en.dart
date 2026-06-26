@@ -36,6 +36,90 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeOpenMemoryTooltip => 'Open Memory';
 
   @override
+  String get homeOpenDailyRecapTooltip => 'Open Daily Recap';
+
+  @override
+  String get homeOpenSettingsTooltip => 'Open Settings';
+
+  @override
+  String get recapTitle => 'Daily Recap';
+
+  @override
+  String recapSubtitle(String date) {
+    return 'Today from local object truth · $date';
+  }
+
+  @override
+  String get recapBackTooltip => 'Close Daily Recap';
+
+  @override
+  String get recapUnavailableTitle => 'Daily Recap unavailable';
+
+  @override
+  String get recapEmptyTitle => 'Nothing recorded today yet.';
+
+  @override
+  String get recapEmptyBody =>
+      'Capture a thought, voice draft, camera photo, or gallery image. Today\'s recap will stay source-linked here.';
+
+  @override
+  String get recapCapturesMetric => 'captures';
+
+  @override
+  String get recapMemoryMetric => 'Memory';
+
+  @override
+  String get recapTodoOpenMetric => 'open todos';
+
+  @override
+  String get recapTodoCompletedMetric => 'completed';
+
+  @override
+  String get recapCardsMetric => 'cards';
+
+  @override
+  String get recapInsightsMetric => 'insights';
+
+  @override
+  String get recapRecordsTitle => 'Records today';
+
+  @override
+  String get recapMemoryTitle => 'Memory today';
+
+  @override
+  String get recapTodosTitle => 'Todo activity';
+
+  @override
+  String get recapCardsTitle => 'Cards';
+
+  @override
+  String get recapInsightsTitle => 'Insights';
+
+  @override
+  String get recapSectionEmpty =>
+      'No source-linked items in this section today.';
+
+  @override
+  String get recapEvidenceTitle => 'Local evidence';
+
+  @override
+  String recapEvidenceBody(int eventCount, int traceCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      eventCount,
+      locale: localeName,
+      other: '$eventCount events',
+      one: '1 event',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      traceCount,
+      locale: localeName,
+      other: '$traceCount traces',
+      one: '1 trace',
+    );
+    return '$_temp0 · $_temp1';
+  }
+
+  @override
   String get quickCaptureTitle => 'Quick Capture';
 
   @override
@@ -46,10 +130,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get captureModeText => 'Text';
 
   @override
-  String get captureModeVoice => 'Voice draft';
+  String get captureModeVoice => 'Voice';
 
   @override
-  String get captureModeImport => 'Import';
+  String get captureModeMedia => 'Media';
 
   @override
   String get captureModeTextTitle => 'Write first';
@@ -60,43 +144,56 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get captureVoiceHint =>
-      'Add optional context while a voice draft waits for transcript review...';
+      'Add context while the voice recording is attached as local raw media...';
 
   @override
-  String get captureVoiceDraftTitle => 'Voice draft';
+  String get captureVoiceTitle => 'Record voice';
 
   @override
-  String get captureVoiceDraftBody =>
-      'This slice uses a transcript draft adapter. No microphone permission starts here; save only after review.';
+  String get captureVoiceBody =>
+      'WideNote requests microphone permission, stores the raw audio locally, and keeps transcript generation as a later agent step.';
 
   @override
-  String get captureVoiceDraftButton => 'Add voice draft';
+  String get captureVoiceStartButton => 'Start recording';
 
   @override
-  String get captureImportHint =>
-      'Add context for an imported photo, link, or file...';
+  String get captureVoiceRecordingTitle => 'Recording';
 
   @override
-  String get captureImportTitle => 'Bring material in';
+  String get captureVoiceRecordingBody =>
+      'Stop to attach the recording, or cancel to discard it without creating a record.';
 
   @override
-  String get captureImportBody =>
-      'Attach a photo or shared item, keep the raw source, then let WideNote create source-linked Memory.';
+  String get captureVoiceStopButton => 'Stop';
 
   @override
-  String get captureImportPhotoButton => 'Add photo';
+  String get captureVoiceCancelButton => 'Cancel';
 
   @override
-  String get captureImportShareButton => 'Import item';
+  String get captureMediaHint =>
+      'Add context for a camera photo or gallery image...';
 
   @override
-  String get captureActionPhoto => 'Photo';
+  String get captureMediaTitle => 'Attach media';
+
+  @override
+  String get captureMediaBody =>
+      'Camera and gallery use platform pickers. WideNote stores a local file reference, hash, and source metadata.';
+
+  @override
+  String get captureMediaCameraButton => 'Camera';
+
+  @override
+  String get captureMediaGalleryButton => 'Gallery';
+
+  @override
+  String get captureActionCamera => 'Camera';
+
+  @override
+  String get captureActionGallery => 'Gallery';
 
   @override
   String get captureActionVoice => 'Voice';
-
-  @override
-  String get captureActionImport => 'Import';
 
   @override
   String get captureUseTranscriptButton => 'Use transcript';
@@ -563,6 +660,114 @@ class AppLocalizationsEn extends AppLocalizations {
   String get todosEmpty => 'No source-linked todos yet.';
 
   @override
+  String get settingsTitle => 'Settings';
+
+  @override
+  String get settingsSubtitle =>
+      'Privacy, permissions, models, backup, and traces.';
+
+  @override
+  String get settingsBackTooltip => 'Close Settings';
+
+  @override
+  String get settingsPrivacyTitle => 'Privacy';
+
+  @override
+  String get settingsPrivacyLocalFirstTitle => 'Local-first core';
+
+  @override
+  String get settingsPrivacyLocalFirstBody =>
+      'Records, Memory, todos, cards, chat, and traces stay on this device unless you choose backup, sync, or a provider.';
+
+  @override
+  String get settingsPrivacyLocalFirstStatus => 'no account';
+
+  @override
+  String get settingsPrivacyPermissionsTitle => 'Revocable permissions';
+
+  @override
+  String get settingsPrivacyPermissionsBody =>
+      'Built-in packs use narrow permissions; high-risk file, network, and script capabilities stay deferred until explicit approval exists.';
+
+  @override
+  String get settingsPrivacyPermissionsStatus => 'reviewable';
+
+  @override
+  String get settingsPrivacyBackupTitle => 'Backup secrets boundary';
+
+  @override
+  String get settingsPrivacyBackupBody =>
+      'Safe export omits provider API keys. Encrypted full backup is the future secret-bearing restore path and has no action in this build.';
+
+  @override
+  String get settingsPrivacyBackupStatus => 'safe export';
+
+  @override
+  String get settingsControlsTitle => 'Controls';
+
+  @override
+  String get settingsPermissionsTitle => 'Privacy & Permissions';
+
+  @override
+  String get settingsPermissionsSubtitle =>
+      'Review available pack permissions and deferred high-risk capabilities.';
+
+  @override
+  String get settingsPermissionsStatus => 'explicit';
+
+  @override
+  String settingsPermissionsStatusSummary(
+    int availableCount,
+    int deferredCount,
+  ) {
+    return '$availableCount available / $deferredCount deferred';
+  }
+
+  @override
+  String get settingsModelProvidersTitle => 'Model Providers';
+
+  @override
+  String get settingsModelProvidersSubtitle =>
+      'Configure local or BYOK model access for runtime and Agent Packs.';
+
+  @override
+  String get settingsBackupTitle => 'Backup & Restore';
+
+  @override
+  String get settingsBackupSubtitle =>
+      'Export or import local records, Memory, cards, providers, todos, and traces.';
+
+  @override
+  String get settingsBackupStatus => 'local';
+
+  @override
+  String get settingsBackupStatusSafeOnly => 'safe only';
+
+  @override
+  String get settingsBackupStatusExportReady => 'export ready';
+
+  @override
+  String get settingsBackupStatusRestored => 'restored';
+
+  @override
+  String get settingsBackupStatusNeedsReview => 'review needed';
+
+  @override
+  String get settingsTraceConsoleTitle => 'Trace Console';
+
+  @override
+  String get settingsTraceConsoleSubtitle =>
+      'Inspect local Agent Runtime runs, permission checks, and generated outputs.';
+
+  @override
+  String get settingsTraceConsoleStatus => 'read-only';
+
+  @override
+  String settingsTraceConsoleStatusSummary(int eventCount, int warningCount) {
+    return '$eventCount events / $warningCount warnings';
+  }
+
+  @override
   String get pluginsTitle => 'Packs';
 
   @override
@@ -675,13 +880,37 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get permissionGateSubtitle =>
-      'Review built-in pack permissions and deferred high-risk capabilities.';
+      'Review local pack permission state and deferred high-risk capabilities.';
 
   @override
-  String get permissionGateGrantedTitle => 'Granted built-in permissions';
+  String get permissionGateGrantedTitle => 'Built-in and available permissions';
 
   @override
   String get permissionGateDeferredTitle => 'Deferred high-risk permissions';
+
+  @override
+  String get permissionGateStatusAvailable => 'Built-in / available';
+
+  @override
+  String get permissionGateStatusGranted => 'Granted locally';
+
+  @override
+  String get permissionGateStatusDenied => 'Denied locally';
+
+  @override
+  String get permissionGateStatusRevoked => 'Revoked locally';
+
+  @override
+  String get permissionGateActionGrant => 'Grant';
+
+  @override
+  String get permissionGateActionDeny => 'Deny';
+
+  @override
+  String get permissionGateActionRevoke => 'Revoke';
+
+  @override
+  String get permissionGateActionDeferred => 'Deferred';
 
   @override
   String get agentPlatformTitle => 'Agent Observability';
@@ -914,7 +1143,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Local data stays on this device until you export or paste a backup.';
 
   @override
-  String get backupExportReadyStatus => 'Backup JSON is ready.';
+  String get backupExportReadyStatus => 'Safe backup JSON is ready.';
 
   @override
   String get backupSavedFileStatus => 'Backup files saved locally.';
@@ -928,18 +1157,35 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get backupExportSectionTitle => 'Export';
+  String get backupExportSectionTitle => 'Export and restore boundary';
 
   @override
-  String get backupExportButton => 'Export JSON';
+  String get backupExportButton => 'Export safe restore JSON';
 
   @override
   String get backupExportEmpty =>
-      'Export creates a versioned local backup JSON with manifest counts.';
+      'Export creates a safe, versioned restore JSON and a readable Owner Export Markdown projection.';
 
   @override
   String get backupSecretWarning =>
-      'Backups include provider API keys. Keep exported JSON private.';
+      'Safe export omits provider API keys. Re-enter provider keys after restore.';
+
+  @override
+  String get backupSafeRestoreBoundary =>
+      'Safe restore JSON brings back records, Memory, todos, provider metadata, pack installs, permissions, runtime state, and traces. Provider keys are omitted.';
+
+  @override
+  String get backupOwnerExportBoundary =>
+      'Owner Export Markdown is for reading and moving your data. It excludes secrets and is not a restore source.';
+
+  @override
+  String get backupFullSecretBoundary =>
+      'Encrypted full backup will be the secret-bearing path for restoring API keys. It has no action in this build.';
+
+  @override
+  String backupSafeOmittedProviderKeys(int count) {
+    return 'Provider keys omitted from safe export: $count';
+  }
 
   @override
   String get backupManifestCountsTitle => 'Manifest counts';
@@ -968,10 +1214,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backupCopiedStatus => 'Export copied.';
 
   @override
-  String get backupExportJsonTitle => 'Backup JSON';
+  String get backupExportJsonTitle => 'Safe backup JSON';
 
   @override
-  String get backupExportMarkdownTitle => 'Readable Markdown';
+  String get backupExportMarkdownTitle => 'Owner Export Markdown';
 
   @override
   String get backupImportSectionTitle => 'Import';
@@ -984,4 +1230,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backupImportLatestFileButton => 'Import latest saved file';
+
+  @override
+  String backupImportNeedsProviderKeys(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Provider metadata restored. Re-enter $count provider keys before model calls can use them.',
+      one:
+          'Provider metadata restored. Re-enter 1 provider key before model calls can use it.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backupImportSecretsRestored =>
+      'Secret-bearing backup restored provider credentials.';
+
+  @override
+  String get backupImportNoProviderKeysNeeded =>
+      'No provider keys need re-entry for this backup.';
 }

@@ -17,6 +17,11 @@ const _chatSessionsSection = 'chat_sessions';
 const _chatMessagesSection = 'chat_messages';
 const _modelProviderConfigsSection = 'model_provider_configs';
 const _todosSection = 'todos';
+const _runtimeTasksSection = 'runtime_tasks';
+const _runtimeRunsSection = 'runtime_runs';
+const _packInstallationsSection = 'pack_installations';
+const _permissionGrantsSection = 'permission_grants';
+const _contextPacketCacheSection = 'context_packet_cache';
 const _traceEventsSection = 'trace_events';
 
 const _backupSections = <String>[
@@ -31,15 +36,44 @@ const _backupSections = <String>[
   _chatMessagesSection,
   _modelProviderConfigsSection,
   _todosSection,
+  _runtimeTasksSection,
+  _runtimeRunsSection,
+  _packInstallationsSection,
+  _permissionGrantsSection,
+  _contextPacketCacheSection,
   _traceEventsSection,
 ];
 
+enum LocalBackupMode {
+  safe('safe'),
+  encryptedFull('encrypted_full');
+
+  const LocalBackupMode(this.wireName);
+
+  final String wireName;
+
+  static LocalBackupMode fromWireName(String value) {
+    return LocalBackupMode.values.firstWhere(
+      (mode) => mode.wireName == value,
+      orElse: () {
+        throw FormatException('Unsupported backup mode: $value.');
+      },
+    );
+  }
+}
+
 abstract final class LocalBackupCodec {
   static const formatId = 'widenote.local_data_backup';
-  static const currentFormatVersion = 2;
+  static const currentFormatVersion = 3;
   static const oldestSupportedFormatVersion = 1;
 
   static String encode(LocalDataBackup backup) {
+    if (backup.manifest.includesSecrets) {
+      throw UnsupportedError(
+        'Secret-bearing backup JSON export requires encryption and is not '
+        'available in this build.',
+      );
+    }
     return const JsonEncoder.withIndent('  ').convert(backup.toJson());
   }
 
@@ -53,9 +87,44 @@ final class LocalBackupManifest {
     required this.localDbSchemaVersion,
     required this.createdAt,
     required Map<String, int> recordCounts,
+    this.backupMode = LocalBackupMode.safe,
     this.format = LocalBackupCodec.formatId,
     this.formatVersion = LocalBackupCodec.currentFormatVersion,
-  }) : recordCounts = Map<String, int>.unmodifiable(recordCounts);
+    this.kind = 'backup_manifest',
+    this.schemaVersion = 1,
+    bool? includesSecrets,
+    JsonMap? encryption,
+  }) : includesSecrets =
+           includesSecrets ?? backupMode == LocalBackupMode.encryptedFull,
+       encryption = encryption == null
+           ? null
+           : Map<String, Object?>.unmodifiable(encryption),
+       recordCounts = Map<String, int>.unmodifiable(recordCounts) {
+    if (kind != 'backup_manifest') {
+      throw FormatException('Unsupported backup manifest kind: $kind.');
+    }
+    if (schemaVersion < 1) {
+      throw const FormatException(
+        'Backup manifest schema version must be positive.',
+      );
+    }
+    if (backupMode == LocalBackupMode.safe && this.includesSecrets) {
+      throw const FormatException('Safe backups cannot include secrets.');
+    }
+    if (backupMode == LocalBackupMode.encryptedFull && !this.includesSecrets) {
+      throw const FormatException(
+        'Full backups must declare included secrets.',
+      );
+    }
+    if (formatVersion >= 3 &&
+        backupMode == LocalBackupMode.encryptedFull &&
+        this.includesSecrets &&
+        this.encryption == null) {
+      throw const FormatException(
+        'Encrypted full backups must declare encryption metadata.',
+      );
+    }
+  }
 
   factory LocalBackupManifest.fromJson(JsonMap json) {
     final format = _requiredString(json, 'format');
@@ -72,9 +141,15 @@ final class LocalBackupManifest {
       );
     }
 
+    final backupMode = _backupModeFromJson(json, sourceFormatVersion);
     return LocalBackupManifest(
+      kind: _optionalManifestKind(json),
+      schemaVersion: _optionalManifestSchemaVersion(json),
       format: format,
       formatVersion: sourceFormatVersion,
+      backupMode: backupMode,
+      includesSecrets: _optionalIncludesSecrets(json, backupMode),
+      encryption: _optionalMap(json, 'encryption'),
       localDbSchemaVersion: _requiredInt(json, 'local_db_schema_version'),
       createdAt: _requiredDateTime(json, 'created_at'),
       recordCounts: _recordCountsFromJson(
@@ -84,16 +159,26 @@ final class LocalBackupManifest {
     );
   }
 
+  final String kind;
+  final int schemaVersion;
   final String format;
   final int formatVersion;
+  final LocalBackupMode backupMode;
+  final bool includesSecrets;
+  final JsonMap? encryption;
   final int localDbSchemaVersion;
   final DateTime createdAt;
   final Map<String, int> recordCounts;
 
   JsonMap toJson() {
     return <String, Object?>{
+      'kind': kind,
+      'schema_version': schemaVersion,
       'format': format,
       'format_version': formatVersion,
+      'backup_mode': backupMode.wireName,
+      'includes_secrets': includesSecrets,
+      'encryption': encryption,
       'local_db_schema_version': localDbSchemaVersion,
       'created_at': _dateTimeToJson(createdAt),
       'record_counts': recordCounts,
@@ -115,6 +200,11 @@ final class LocalDataBackup {
     required this.chatMessages,
     required this.modelProviderConfigs,
     required this.todos,
+    required this.runtimeTasks,
+    required this.runtimeRuns,
+    required this.packInstallations,
+    required this.permissionGrants,
+    required this.contextPacketCaches,
     required this.traceEvents,
   }) {
     _validateCounts();
@@ -171,6 +261,31 @@ final class LocalDataBackup {
         json,
         _todosSection,
       ).map(_todoFromJson).toList(growable: false),
+      runtimeTasks: _recordList(
+        json,
+        _runtimeTasksSection,
+        requiredSection: manifest.formatVersion >= 3,
+      ).map(_runtimeTaskFromJson).toList(growable: false),
+      runtimeRuns: _recordList(
+        json,
+        _runtimeRunsSection,
+        requiredSection: manifest.formatVersion >= 3,
+      ).map(_runtimeRunFromJson).toList(growable: false),
+      packInstallations: _recordList(
+        json,
+        _packInstallationsSection,
+        requiredSection: manifest.formatVersion >= 3,
+      ).map(_packInstallationFromJson).toList(growable: false),
+      permissionGrants: _recordList(
+        json,
+        _permissionGrantsSection,
+        requiredSection: manifest.formatVersion >= 3,
+      ).map(_permissionGrantFromJson).toList(growable: false),
+      contextPacketCaches: _recordList(
+        json,
+        _contextPacketCacheSection,
+        requiredSection: false,
+      ).map(_contextPacketCacheFromJson).toList(growable: false),
       traceEvents: _requiredRecordList(
         json,
         _traceEventsSection,
@@ -190,7 +305,18 @@ final class LocalDataBackup {
   final List<ChatMessageRecord> chatMessages;
   final List<ModelProviderConfigRecord> modelProviderConfigs;
   final List<TodoRecord> todos;
+  final List<RuntimeTaskRecord> runtimeTasks;
+  final List<RuntimeRunRecord> runtimeRuns;
+  final List<PackInstallationRecord> packInstallations;
+  final List<PermissionGrantRecord> permissionGrants;
+  final List<ContextPacketCacheRecord> contextPacketCaches;
   final List<TraceEventRecord> traceEvents;
+
+  List<ModelProviderConfigRecord> get providerConfigsNeedingCredentialReentry {
+    return modelProviderConfigs
+        .where((config) => config.hasApiKey && config.apiKey.isEmpty)
+        .toList(growable: false);
+  }
 
   JsonMap toJson() {
     return <String, Object?>{
@@ -218,6 +344,21 @@ final class LocalDataBackup {
           .map(_modelProviderConfigToJson)
           .toList(growable: false),
       _todosSection: todos.map(_todoToJson).toList(growable: false),
+      _runtimeTasksSection: runtimeTasks
+          .map(_runtimeTaskToJson)
+          .toList(growable: false),
+      _runtimeRunsSection: runtimeRuns
+          .map(_runtimeRunToJson)
+          .toList(growable: false),
+      _packInstallationsSection: packInstallations
+          .map(_packInstallationToJson)
+          .toList(growable: false),
+      _permissionGrantsSection: permissionGrants
+          .map(_permissionGrantToJson)
+          .toList(growable: false),
+      _contextPacketCacheSection: contextPacketCaches
+          .map(_contextPacketCacheToJson)
+          .toList(growable: false),
       _traceEventsSection: traceEvents
           .map(_traceEventToJson)
           .toList(growable: false),
@@ -237,6 +378,11 @@ final class LocalDataBackup {
       _chatMessagesSection: chatMessages.length,
       _modelProviderConfigsSection: modelProviderConfigs.length,
       _todosSection: todos.length,
+      _runtimeTasksSection: runtimeTasks.length,
+      _runtimeRunsSection: runtimeRuns.length,
+      _packInstallationsSection: packInstallations.length,
+      _permissionGrantsSection: permissionGrants.length,
+      _contextPacketCacheSection: contextPacketCaches.length,
       _traceEventsSection: traceEvents.length,
     };
     for (final entry in actualCounts.entries) {
@@ -254,6 +400,48 @@ final class LocalDataBackup {
   }
 }
 
+final class LocalBackupImportReport {
+  const LocalBackupImportReport({
+    required this.backupMode,
+    required this.includesSecrets,
+    required this.providerConfigsRestored,
+    required this.providerConfigsNeedingCredentialReentry,
+    required this.packInstallationsRestored,
+    required this.permissionGrantsRestored,
+    required this.runtimeTasksRestored,
+    required this.runtimeRunsRestored,
+    required this.contextPacketCachesRestored,
+  });
+
+  factory LocalBackupImportReport.fromBackup(LocalDataBackup backup) {
+    return LocalBackupImportReport(
+      backupMode: backup.manifest.backupMode,
+      includesSecrets: backup.manifest.includesSecrets,
+      providerConfigsRestored: backup.modelProviderConfigs.length,
+      providerConfigsNeedingCredentialReentry:
+          backup.providerConfigsNeedingCredentialReentry.length,
+      packInstallationsRestored: backup.packInstallations.length,
+      permissionGrantsRestored: backup.permissionGrants.length,
+      runtimeTasksRestored: backup.runtimeTasks.length,
+      runtimeRunsRestored: backup.runtimeRuns.length,
+      contextPacketCachesRestored: backup.contextPacketCaches.length,
+    );
+  }
+
+  final LocalBackupMode backupMode;
+  final bool includesSecrets;
+  final int providerConfigsRestored;
+  final int providerConfigsNeedingCredentialReentry;
+  final int packInstallationsRestored;
+  final int permissionGrantsRestored;
+  final int runtimeTasksRestored;
+  final int runtimeRunsRestored;
+  final int contextPacketCachesRestored;
+
+  bool get requiresCredentialReentry =>
+      providerConfigsNeedingCredentialReentry > 0;
+}
+
 final class LocalBackupService {
   LocalBackupService(this.database, {DateTime Function()? clock})
     : _clock = clock ?? DateTime.now;
@@ -261,7 +449,14 @@ final class LocalBackupService {
   final WideNoteLocalDatabase database;
   final DateTime Function() _clock;
 
-  LocalDataBackup exportBackup() {
+  LocalDataBackup exportBackup({LocalBackupMode mode = LocalBackupMode.safe}) {
+    if (mode == LocalBackupMode.encryptedFull) {
+      throw UnsupportedError(
+        'Encrypted full backup export requires encryption and is not '
+        'available in this build.',
+      );
+    }
+
     final eventLog = database.eventLog.readAll();
     final captures = database.captures.readAll();
     final attachments = database.attachments.readAll();
@@ -271,14 +466,23 @@ final class LocalBackupService {
     final insights = database.insights.readAll();
     final chatSessions = database.chatSessions.readAll();
     final chatMessages = database.chatMessages.readAll();
-    final modelProviderConfigs = database.modelProviderConfigs.readAll();
+    final modelProviderConfigs = database.modelProviderConfigs
+        .readAll()
+        .map((config) => _modelProviderConfigForBackup(config, mode))
+        .toList(growable: false);
     final todos = database.todos.readAll();
+    final runtimeTasks = database.runtimeTasks.readAll();
+    final runtimeRuns = database.runtimeRuns.readAll();
+    final packInstallations = database.packInstallations.readAll();
+    final permissionGrants = database.permissionGrants.readAll();
+    final contextPacketCaches = database.contextPacketCaches.readAll();
     final traceEvents = database.traceEvents.readAll();
 
     return LocalDataBackup(
       manifest: LocalBackupManifest(
         localDbSchemaVersion: database.schemaVersion,
         createdAt: _clock().toUtc(),
+        backupMode: mode,
         recordCounts: <String, int>{
           _eventLogSection: eventLog.length,
           _capturesSection: captures.length,
@@ -291,6 +495,11 @@ final class LocalBackupService {
           _chatMessagesSection: chatMessages.length,
           _modelProviderConfigsSection: modelProviderConfigs.length,
           _todosSection: todos.length,
+          _runtimeTasksSection: runtimeTasks.length,
+          _runtimeRunsSection: runtimeRuns.length,
+          _packInstallationsSection: packInstallations.length,
+          _permissionGrantsSection: permissionGrants.length,
+          _contextPacketCacheSection: contextPacketCaches.length,
           _traceEventsSection: traceEvents.length,
         },
       ),
@@ -305,19 +514,31 @@ final class LocalBackupService {
       chatMessages: chatMessages,
       modelProviderConfigs: modelProviderConfigs,
       todos: todos,
+      runtimeTasks: runtimeTasks,
+      runtimeRuns: runtimeRuns,
+      packInstallations: packInstallations,
+      permissionGrants: permissionGrants,
+      contextPacketCaches: contextPacketCaches,
       traceEvents: traceEvents,
     );
   }
 
-  String exportJson() {
-    return LocalBackupCodec.encode(exportBackup());
+  String exportJson({LocalBackupMode mode = LocalBackupMode.safe}) {
+    return LocalBackupCodec.encode(exportBackup(mode: mode));
   }
 
-  void importJson(String source) {
-    importBackup(LocalBackupCodec.decode(source));
+  LocalBackupImportReport importJson(String source) {
+    return importBackup(LocalBackupCodec.decode(source));
   }
 
-  void importBackup(LocalDataBackup backup) {
+  LocalBackupImportReport importBackup(LocalDataBackup backup) {
+    if (backup.manifest.includesSecrets ||
+        backup.manifest.backupMode == LocalBackupMode.encryptedFull) {
+      throw UnsupportedError(
+        'Secret-bearing backup import requires encrypted full restore and is '
+        'not available in this build.',
+      );
+    }
     if (backup.manifest.localDbSchemaVersion > LocalDbSchema.currentVersion) {
       throw UnsupportedError(
         'Backup DB schema ${backup.manifest.localDbSchemaVersion} is newer '
@@ -362,6 +583,21 @@ final class LocalBackupService {
       for (final todo in backup.todos) {
         database.todos.insert(todo);
       }
+      for (final installation in backup.packInstallations) {
+        database.packInstallations.insert(installation);
+      }
+      for (final grant in backup.permissionGrants) {
+        database.permissionGrants.insert(grant);
+      }
+      for (final task in backup.runtimeTasks) {
+        database.runtimeTasks.insert(task);
+      }
+      for (final run in backup.runtimeRuns) {
+        database.runtimeRuns.insert(run);
+      }
+      for (final cache in backup.contextPacketCaches) {
+        database.contextPacketCaches.insert(cache);
+      }
       for (final traceEvent in backup.traceEvents) {
         database.traceEvents.insert(traceEvent);
       }
@@ -373,6 +609,7 @@ final class LocalBackupService {
         );
       }
       rawDatabase.execute('COMMIT;');
+      return LocalBackupImportReport.fromBackup(backup);
     } catch (_) {
       rawDatabase.execute('ROLLBACK;');
       rethrow;
@@ -434,6 +671,31 @@ final class LocalBackupService {
       _todosSection,
       backup.todos.map((record) => record.id),
       (id) => database.todos.readById(id) != null,
+    );
+    _rejectExistingOrDuplicateIds(
+      _runtimeTasksSection,
+      backup.runtimeTasks.map((record) => record.id),
+      (id) => database.runtimeTasks.readById(id) != null,
+    );
+    _rejectExistingOrDuplicateIds(
+      _runtimeRunsSection,
+      backup.runtimeRuns.map((record) => record.id),
+      (id) => database.runtimeRuns.readById(id) != null,
+    );
+    _rejectExistingOrDuplicateIds(
+      _packInstallationsSection,
+      backup.packInstallations.map((record) => record.packId),
+      (id) => database.packInstallations.readById(id) != null,
+    );
+    _rejectExistingOrDuplicateIds(
+      _permissionGrantsSection,
+      backup.permissionGrants.map((record) => record.id),
+      (id) => database.permissionGrants.readById(id) != null,
+    );
+    _rejectExistingOrDuplicateIds(
+      _contextPacketCacheSection,
+      backup.contextPacketCaches.map((record) => record.id),
+      (id) => database.contextPacketCaches.readById(id) != null,
     );
     _rejectExistingOrDuplicateIds(
       _traceEventsSection,
@@ -834,6 +1096,230 @@ TodoRecord _todoFromJson(JsonMap json) {
   );
 }
 
+JsonMap _runtimeTaskToJson(RuntimeTaskRecord task) {
+  return <String, Object?>{
+    'id': task.id,
+    'schema_version': task.schemaVersion,
+    'pack_id': task.packId,
+    'pack_version': task.packVersion,
+    'agent_id': task.agentId,
+    'handler_id': task.handlerId,
+    'subscription_id': task.subscriptionId,
+    'trigger_event_id': task.triggerEventId,
+    'identity_key': task.effectiveIdentityKey,
+    'status': task.status,
+    'dependency_task_ids': task.dependencyTaskIds,
+    'missing_dependency_ids': task.missingDependencyIds,
+    'attempts': task.attempts,
+    'max_attempts': task.maxAttempts,
+    'lease_owner': task.leaseOwner,
+    'leased_until': _optionalDateTimeToJson(task.leasedUntil),
+    'error': task.error,
+    'payload': task.payload,
+    'created_at': _dateTimeToJson(task.createdAt),
+    'updated_at': _dateTimeToJson(task.updatedAt),
+  };
+}
+
+RuntimeTaskRecord _runtimeTaskFromJson(JsonMap json) {
+  return RuntimeTaskRecord(
+    id: _requiredString(json, 'id'),
+    schemaVersion: _requiredInt(json, 'schema_version'),
+    packId: _requiredString(json, 'pack_id'),
+    packVersion: _requiredString(json, 'pack_version'),
+    agentId: _requiredString(json, 'agent_id'),
+    handlerId: _requiredString(json, 'handler_id'),
+    subscriptionId: _requiredString(json, 'subscription_id'),
+    triggerEventId: _requiredString(json, 'trigger_event_id'),
+    identityKey: _requiredString(json, 'identity_key'),
+    status: _requiredString(json, 'status'),
+    dependencyTaskIds: _requiredList(json, 'dependency_task_ids'),
+    missingDependencyIds: _requiredList(json, 'missing_dependency_ids'),
+    attempts: _requiredInt(json, 'attempts'),
+    maxAttempts: _requiredInt(json, 'max_attempts'),
+    leaseOwner: _optionalString(json, 'lease_owner'),
+    leasedUntil: _optionalDateTime(json, 'leased_until'),
+    error: _optionalString(json, 'error'),
+    payload: _requiredMap(json, 'payload'),
+    createdAt: _requiredDateTime(json, 'created_at'),
+    updatedAt: _requiredDateTime(json, 'updated_at'),
+  );
+}
+
+JsonMap _runtimeRunToJson(RuntimeRunRecord run) {
+  return <String, Object?>{
+    'id': run.id,
+    'schema_version': run.schemaVersion,
+    'task_id': run.taskId,
+    'pack_id': run.packId,
+    'pack_version': run.packVersion,
+    'agent_id': run.agentId,
+    'handler_id': run.handlerId,
+    'status': run.status,
+    'attempt': run.attempt,
+    'output_event_ids': run.outputEventIds,
+    'error': run.error,
+    'payload': run.payload,
+    'started_at': _dateTimeToJson(run.startedAt),
+    'completed_at': _optionalDateTimeToJson(run.completedAt),
+  };
+}
+
+RuntimeRunRecord _runtimeRunFromJson(JsonMap json) {
+  return RuntimeRunRecord(
+    id: _requiredString(json, 'id'),
+    schemaVersion: _requiredInt(json, 'schema_version'),
+    taskId: _requiredString(json, 'task_id'),
+    packId: _requiredString(json, 'pack_id'),
+    packVersion: _requiredString(json, 'pack_version'),
+    agentId: _requiredString(json, 'agent_id'),
+    handlerId: _requiredString(json, 'handler_id'),
+    status: _requiredString(json, 'status'),
+    attempt: _requiredInt(json, 'attempt'),
+    outputEventIds: _requiredList(json, 'output_event_ids'),
+    error: _optionalString(json, 'error'),
+    payload: _requiredMap(json, 'payload'),
+    startedAt: _requiredDateTime(json, 'started_at'),
+    completedAt: _optionalDateTime(json, 'completed_at'),
+  );
+}
+
+JsonMap _packInstallationToJson(PackInstallationRecord installation) {
+  return <String, Object?>{
+    'pack_id': installation.packId,
+    'schema_version': installation.schemaVersion,
+    'name': installation.name,
+    'version': installation.version,
+    'publisher': installation.publisher,
+    'edition': installation.edition,
+    'status': installation.status,
+    'runtime_status': installation.runtimeStatus,
+    'entrypoint_kind': installation.entrypointKind,
+    'requested_permissions': installation.requestedPermissions,
+    'enabled_subscription_ids': installation.enabledSubscriptionIds,
+    'manifest': installation.manifest,
+    'payload': installation.payload,
+    'installed_at': _dateTimeToJson(installation.installedAt),
+    'updated_at': _dateTimeToJson(installation.updatedAt),
+  };
+}
+
+PackInstallationRecord _packInstallationFromJson(JsonMap json) {
+  return PackInstallationRecord(
+    packId: _requiredString(json, 'pack_id'),
+    schemaVersion: _requiredInt(json, 'schema_version'),
+    name: _requiredString(json, 'name'),
+    version: _requiredString(json, 'version'),
+    publisher: _requiredString(json, 'publisher'),
+    edition: _requiredString(json, 'edition'),
+    status: _requiredString(json, 'status'),
+    runtimeStatus: _requiredString(json, 'runtime_status'),
+    entrypointKind: _requiredString(json, 'entrypoint_kind'),
+    requestedPermissions: _requiredList(json, 'requested_permissions'),
+    enabledSubscriptionIds: _requiredList(json, 'enabled_subscription_ids'),
+    manifest: _requiredMap(json, 'manifest'),
+    payload: _requiredMap(json, 'payload'),
+    installedAt: _requiredDateTime(json, 'installed_at'),
+    updatedAt: _requiredDateTime(json, 'updated_at'),
+  );
+}
+
+JsonMap _permissionGrantToJson(PermissionGrantRecord grant) {
+  return <String, Object?>{
+    'id': grant.id,
+    'schema_version': grant.schemaVersion,
+    'pack_id': grant.packId,
+    'permission_id': grant.permissionId,
+    'status': grant.status,
+    'grant_kind': grant.grantKind,
+    'source_event_id': grant.sourceEventId,
+    'granted_at': _optionalDateTimeToJson(grant.grantedAt),
+    'revoked_at': _optionalDateTimeToJson(grant.revokedAt),
+    'reason': grant.reason,
+    'payload': grant.payload,
+    'created_at': _dateTimeToJson(grant.createdAt),
+    'updated_at': _dateTimeToJson(grant.updatedAt),
+  };
+}
+
+PermissionGrantRecord _permissionGrantFromJson(JsonMap json) {
+  return PermissionGrantRecord(
+    id: _requiredString(json, 'id'),
+    schemaVersion: _requiredInt(json, 'schema_version'),
+    packId: _requiredString(json, 'pack_id'),
+    permissionId: _requiredString(json, 'permission_id'),
+    status: _requiredString(json, 'status'),
+    grantKind: _requiredString(json, 'grant_kind'),
+    sourceEventId: _optionalString(json, 'source_event_id'),
+    grantedAt: _optionalDateTime(json, 'granted_at'),
+    revokedAt: _optionalDateTime(json, 'revoked_at'),
+    reason: _optionalString(json, 'reason'),
+    payload: _requiredMap(json, 'payload'),
+    createdAt: _requiredDateTime(json, 'created_at'),
+    updatedAt: _requiredDateTime(json, 'updated_at'),
+  );
+}
+
+JsonMap _contextPacketCacheToJson(ContextPacketCacheRecord cache) {
+  return <String, Object?>{
+    'id': cache.id,
+    'schema_version': cache.schemaVersion,
+    'surface': cache.surface,
+    'request_ref': cache.requestRef,
+    'subject_ref': cache.subjectRef,
+    'source_refs': cache.sourceRefs,
+    'source_versions': cache.sourceVersions,
+    'permission_scope': cache.permissionScope,
+    'disclosure_level': cache.disclosureLevel,
+    'generator_id': cache.generatorId,
+    'generator_version': cache.generatorVersion,
+    'prompt_version': cache.promptVersion,
+    'pack_id': cache.packId,
+    'pack_version': cache.packVersion,
+    'agent_id': cache.agentId,
+    'local_date': cache.localDate,
+    'privacy_profile': cache.privacyProfile,
+    'invalidation_keys': cache.invalidationKeys,
+    'cache_key': cache.cacheKey,
+    'status': cache.status,
+    'packet': cache.packet,
+    'expires_at': _optionalDateTimeToJson(cache.expiresAt),
+    'invalidated_at': _optionalDateTimeToJson(cache.invalidatedAt),
+    'created_at': _dateTimeToJson(cache.createdAt),
+    'updated_at': _dateTimeToJson(cache.updatedAt),
+  };
+}
+
+ContextPacketCacheRecord _contextPacketCacheFromJson(JsonMap json) {
+  return ContextPacketCacheRecord(
+    id: _requiredString(json, 'id'),
+    schemaVersion: _requiredInt(json, 'schema_version'),
+    surface: _requiredString(json, 'surface'),
+    requestRef: _requiredMap(json, 'request_ref'),
+    subjectRef: _requiredMap(json, 'subject_ref'),
+    sourceRefs: _requiredList(json, 'source_refs'),
+    sourceVersions: _requiredList(json, 'source_versions'),
+    permissionScope: _requiredString(json, 'permission_scope'),
+    disclosureLevel: _requiredString(json, 'disclosure_level'),
+    generatorId: _requiredString(json, 'generator_id'),
+    generatorVersion: _requiredString(json, 'generator_version'),
+    promptVersion: _requiredString(json, 'prompt_version'),
+    packId: _optionalString(json, 'pack_id'),
+    packVersion: _optionalString(json, 'pack_version'),
+    agentId: _optionalString(json, 'agent_id'),
+    localDate: _optionalString(json, 'local_date'),
+    privacyProfile: _requiredString(json, 'privacy_profile'),
+    invalidationKeys: _requiredList(json, 'invalidation_keys'),
+    cacheKey: _requiredString(json, 'cache_key'),
+    status: _requiredString(json, 'status'),
+    packet: _requiredMap(json, 'packet'),
+    expiresAt: _optionalDateTime(json, 'expires_at'),
+    invalidatedAt: _optionalDateTime(json, 'invalidated_at'),
+    createdAt: _requiredDateTime(json, 'created_at'),
+    updatedAt: _requiredDateTime(json, 'updated_at'),
+  );
+}
+
 JsonMap _traceEventToJson(TraceEventRecord trace) {
   return <String, Object?>{
     'id': trace.id,
@@ -886,8 +1372,7 @@ Map<String, int> _recordCountsFromJson(
 }) {
   final counts = <String, int>{};
   for (final section in _backupSections) {
-    if (section == _attachmentsSection &&
-        sourceFormatVersion < LocalBackupCodec.currentFormatVersion &&
+    if (_missingSectionAllowed(section, sourceFormatVersion) &&
         !json.containsKey(section)) {
       counts[section] = 0;
     } else {
@@ -896,6 +1381,187 @@ Map<String, int> _recordCountsFromJson(
   }
   return counts;
 }
+
+bool _missingSectionAllowed(String section, int sourceFormatVersion) {
+  if (section == _contextPacketCacheSection) {
+    return true;
+  }
+  if (section == _attachmentsSection && sourceFormatVersion < 2) {
+    return true;
+  }
+  if (_v3BackupSections.contains(section) && sourceFormatVersion < 3) {
+    return true;
+  }
+  return false;
+}
+
+const _v3BackupSections = <String>{
+  _runtimeTasksSection,
+  _runtimeRunsSection,
+  _packInstallationsSection,
+  _permissionGrantsSection,
+  _contextPacketCacheSection,
+};
+
+LocalBackupMode _backupModeFromJson(JsonMap json, int sourceFormatVersion) {
+  final value = json['backup_mode'];
+  if (value == null) {
+    return sourceFormatVersion < 3
+        ? LocalBackupMode.encryptedFull
+        : LocalBackupMode.safe;
+  }
+  if (value is String) {
+    return LocalBackupMode.fromWireName(value);
+  }
+  throw const FormatException('Backup field backup_mode must be a string.');
+}
+
+String _optionalManifestKind(JsonMap json) {
+  final value = json['kind'];
+  if (value == null) {
+    return 'backup_manifest';
+  }
+  if (value is String) {
+    return value;
+  }
+  throw const FormatException('Backup field kind must be a string.');
+}
+
+int _optionalManifestSchemaVersion(JsonMap json) {
+  final value = json['schema_version'];
+  if (value == null) {
+    return 1;
+  }
+  if (value is int) {
+    return value;
+  }
+  throw const FormatException(
+    'Backup field schema_version must be an integer.',
+  );
+}
+
+bool _optionalIncludesSecrets(JsonMap json, LocalBackupMode mode) {
+  final value = json['includes_secrets'];
+  if (value == null) {
+    return mode == LocalBackupMode.encryptedFull;
+  }
+  if (value is bool) {
+    return value;
+  }
+  throw const FormatException(
+    'Backup field includes_secrets must be a boolean.',
+  );
+}
+
+ModelProviderConfigRecord _modelProviderConfigForBackup(
+  ModelProviderConfigRecord config,
+  LocalBackupMode mode,
+) {
+  if (mode == LocalBackupMode.encryptedFull) {
+    return config;
+  }
+  return ModelProviderConfigRecord(
+    id: config.id,
+    schemaVersion: config.schemaVersion,
+    providerKind: config.providerKind,
+    displayName: config.displayName,
+    endpoint: config.endpoint,
+    model: config.model,
+    status: config.status,
+    isDefault: config.isDefault,
+    hasApiKey: config.hasApiKey,
+    apiKey: '',
+    capabilities: config.capabilities,
+    payload: _providerPayloadForBackup(config.payload, mode),
+    createdAt: config.createdAt,
+    updatedAt: config.updatedAt,
+  );
+}
+
+JsonMap _providerPayloadForBackup(JsonMap payload, LocalBackupMode mode) {
+  if (mode == LocalBackupMode.encryptedFull) {
+    return payload;
+  }
+  return _redactSecretPayloadMap(payload);
+}
+
+JsonMap _redactSecretPayloadMap(Map<String, Object?> payload) {
+  return payload.map((key, value) {
+    if (_isSecretPayloadKey(key)) {
+      return MapEntry(key, _redactedSecret);
+    }
+    return MapEntry(key, _redactSecretPayloadValue(value));
+  });
+}
+
+Object? _redactSecretPayloadValue(Object? value) {
+  if (value is Map<String, Object?>) {
+    return _redactSecretPayloadMap(value);
+  }
+  if (value is Map) {
+    return _redactSecretPayloadMap(
+      value.map((key, nestedValue) {
+        return MapEntry(key.toString(), nestedValue);
+      }),
+    );
+  }
+  if (value is List) {
+    return value.map(_redactSecretPayloadValue).toList(growable: false);
+  }
+  if (value is String) {
+    return _redactSecretPayloadString(value);
+  }
+  return value;
+}
+
+bool _isSecretPayloadKey(String key) {
+  final normalized = key
+      .trim()
+      .toLowerCase()
+      .replaceAll(RegExp('[^a-z0-9]+'), '_')
+      .replaceAll(RegExp('^_+|_+\$'), '');
+  if (normalized == 'secret_storage' ||
+      normalized == 'has_api_key' ||
+      normalized == 'api_key_present') {
+    return false;
+  }
+  return normalized == 'api_key' ||
+      normalized == 'apikey' ||
+      normalized.contains('api_key') ||
+      normalized.contains('apikey') ||
+      normalized.endsWith('_api_key') ||
+      normalized == 'token' ||
+      normalized.endsWith('_token') ||
+      normalized == 'secret' ||
+      normalized.endsWith('_secret') ||
+      normalized == 'password' ||
+      normalized.endsWith('_password') ||
+      normalized == 'authorization' ||
+      normalized == 'private_key' ||
+      normalized.endsWith('_private_key') ||
+      normalized == 'credential' ||
+      normalized.endsWith('_credential');
+}
+
+String _redactSecretPayloadString(String value) {
+  return value.replaceAllMapped(_secretAssignmentPattern, (match) {
+    final openingKeyQuote = match.group(1) ?? '';
+    final label = match.group(2) ?? 'secret';
+    final closingKeyQuote = match.group(3) ?? '';
+    final separator = match.group(4) ?? ':';
+    final openingValueQuote = match.group(5) ?? '';
+    final closingValueQuote = match.group(7) ?? openingValueQuote;
+    return '$openingKeyQuote$label$closingKeyQuote$separator'
+        '$openingValueQuote$_redactedSecret$closingValueQuote';
+  });
+}
+
+final _secretAssignmentPattern = RegExp(
+  r'''(["']?)(api[_ -]?key|apikey|token|access[_ -]?token|refresh[_ -]?token|id[_ -]?token|client[_ -]?secret|secret|password|authorization|private[_ -]?key|credential)(["']?)(\s*[:=]\s*)(["']?)([^"',}\s]+)(["']?)''',
+  caseSensitive: false,
+);
+
+const _redactedSecret = '[redacted_secret]';
 
 List<JsonMap> _requiredRecordList(JsonMap json, String key) {
   return _recordList(json, key, requiredSection: true);
@@ -934,6 +1600,17 @@ JsonMap _requiredMap(JsonMap json, String key) {
     return value;
   }
   throw FormatException('Backup field $key must be an object.');
+}
+
+JsonMap? _optionalMap(JsonMap json, String key) {
+  final value = json[key];
+  if (value == null) {
+    return null;
+  }
+  if (value is Map<String, Object?>) {
+    return value;
+  }
+  throw FormatException('Backup field $key must be an object or null.');
 }
 
 JsonList _requiredList(JsonMap json, String key) {
@@ -1010,6 +1687,22 @@ DateTime _requiredDateTime(JsonMap json, String key) {
   }
 }
 
+DateTime? _optionalDateTime(JsonMap json, String key) {
+  final value = _optionalString(json, key);
+  if (value == null) {
+    return null;
+  }
+  try {
+    return DateTime.parse(value).toUtc();
+  } on FormatException {
+    throw FormatException('Backup field $key must be an ISO-8601 timestamp.');
+  }
+}
+
 String _dateTimeToJson(DateTime value) {
   return value.toUtc().toIso8601String();
+}
+
+String? _optionalDateTimeToJson(DateTime? value) {
+  return value == null ? null : _dateTimeToJson(value);
 }

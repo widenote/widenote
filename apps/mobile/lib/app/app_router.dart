@@ -9,6 +9,8 @@ import '../features/model_providers/presentation/model_provider_settings_page.da
 import '../features/plugins/presentation/pack_library_page.dart';
 import '../features/plugins/presentation/permission_gate_page.dart';
 import '../features/plugins/presentation/plugins_page.dart';
+import '../features/recap/presentation/daily_recap_page.dart';
+import '../features/settings/presentation/settings_page.dart';
 import '../features/timeline/presentation/card_detail_page.dart';
 import '../features/timeline/presentation/timeline_item_detail_page.dart';
 import '../features/timeline/presentation/timeline_page.dart';
@@ -63,6 +65,36 @@ GoRouter createAppRouter() {
             path: '/memory',
             name: 'memory',
             builder: (context, state) => const MemoryPage(),
+          ),
+          GoRoute(
+            path: '/recap',
+            name: 'daily-recap',
+            builder: (context, state) => const DailyRecapPage(),
+          ),
+          GoRoute(
+            path: '/settings',
+            name: 'settings',
+            builder: (context, state) => const SettingsPage(),
+          ),
+          GoRoute(
+            path: '/settings/permissions',
+            name: 'settings-permissions',
+            builder: (context, state) => const PermissionGatePage(),
+          ),
+          GoRoute(
+            path: '/settings/model-providers',
+            name: 'settings-model-providers',
+            builder: (context, state) => const ModelProviderSettingsPage(),
+          ),
+          GoRoute(
+            path: '/settings/backup',
+            name: 'settings-backup',
+            builder: (context, state) => const BackupPage(),
+          ),
+          GoRoute(
+            path: '/settings/traces',
+            name: 'settings-traces',
+            builder: (context, state) => const TraceConsolePage(),
           ),
           GoRoute(
             path: '/todos',
@@ -128,40 +160,60 @@ class WideNoteShell extends StatelessWidget {
     return 0;
   }
 
+  bool get _isPluginsChildRoute {
+    return location.startsWith('/plugins/');
+  }
+
+  bool get _isSettingsChildRoute {
+    return location.startsWith('/settings/');
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return Scaffold(
-      body: SafeArea(child: child),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) => _openTab(context, index),
-        destinations: [
-          NavigationDestination(
-            key: const Key('tab-home'),
-            icon: const Icon(Icons.home_outlined),
-            selectedIcon: const Icon(Icons.home),
-            label: l10n.tabHome,
-          ),
-          NavigationDestination(
-            key: const Key('tab-chat'),
-            icon: const Icon(Icons.forum_outlined),
-            selectedIcon: const Icon(Icons.forum),
-            label: l10n.tabChat,
-          ),
-          NavigationDestination(
-            key: const Key('tab-todos'),
-            icon: const Icon(Icons.checklist_outlined),
-            selectedIcon: const Icon(Icons.checklist),
-            label: l10n.tabTodos,
-          ),
-          NavigationDestination(
-            key: const Key('tab-plugins'),
-            icon: const Icon(Icons.extension_outlined),
-            selectedIcon: const Icon(Icons.extension),
-            label: l10n.tabPlugins,
-          ),
-        ],
+    return PopScope<Object?>(
+      canPop: !_isPluginsChildRoute && !_isSettingsChildRoute,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && _isPluginsChildRoute) {
+          context.go('/plugins');
+          return;
+        }
+        if (!didPop && _isSettingsChildRoute) {
+          context.go('/settings');
+        }
+      },
+      child: Scaffold(
+        body: SafeArea(child: child),
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: _selectedIndex,
+          onDestinationSelected: (index) => _openTab(context, index),
+          destinations: [
+            NavigationDestination(
+              key: const Key('tab-home'),
+              icon: const Icon(Icons.home_outlined),
+              selectedIcon: const Icon(Icons.home),
+              label: l10n.tabHome,
+            ),
+            NavigationDestination(
+              key: const Key('tab-chat'),
+              icon: const Icon(Icons.forum_outlined),
+              selectedIcon: const Icon(Icons.forum),
+              label: l10n.tabChat,
+            ),
+            NavigationDestination(
+              key: const Key('tab-todos'),
+              icon: const Icon(Icons.checklist_outlined),
+              selectedIcon: const Icon(Icons.checklist),
+              label: l10n.tabTodos,
+            ),
+            NavigationDestination(
+              key: const Key('tab-plugins'),
+              icon: const Icon(Icons.extension_outlined),
+              selectedIcon: const Icon(Icons.extension),
+              label: l10n.tabPlugins,
+            ),
+          ],
+        ),
       ),
     );
   }

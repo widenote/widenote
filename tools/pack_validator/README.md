@@ -30,8 +30,10 @@ Current checks include:
 - Subscription dependency references and dependency cycles
 - Agent permission subset of pack permissions
 - Model profile references
+- Model profile routing field shape
 - Non-empty agent output events
 - Agent retry policy bounds
+- Tool permission subset of pack permissions
 - Phase-one script runtime and script side-effect rejection
 - `pack.default` and `pack.todo` phase-one guardrails
 
@@ -40,6 +42,8 @@ Validator self-tests:
 ```sh
 node tools/pack_validator/validate_test.mjs
 ```
+
+Self-tests also validate the current official default and todo manifests.
 
 ## Generated Artifacts
 

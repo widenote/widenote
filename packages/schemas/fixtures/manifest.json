@@ -1,0 +1,60 @@
+{
+  "fixtures": [
+    {
+      "schema": "../src/event/event.schema.json",
+      "fixture": "valid/event_capture_created.json"
+    },
+    {
+      "schema": "../src/memory/memory.schema.json",
+      "fixture": "valid/memory_candidate.json"
+    },
+    {
+      "schema": "../src/memory/memory.schema.json",
+      "fixture": "valid/memory_candidate_missing_evidence.json"
+    },
+    {
+      "schema": "../src/memory/memory.schema.json",
+      "fixture": "valid/memory_item_superseded.json"
+    },
+    {
+      "schema": "../src/agent_pack/agent_pack_manifest.schema.json",
+      "fixture": "valid/agent_pack_manifest.json"
+    },
+    {
+      "schema": "../src/permission/permission.schema.json",
+      "fixture": "valid/permission_declaration.json"
+    },
+    {
+      "schema": "../src/trace/trace.schema.json",
+      "fixture": "valid/trace_without_run.json"
+    },
+    {
+      "schema": "../src/runtime/runtime_task_run.schema.json",
+      "fixture": "valid/runtime_task.json"
+    },
+    {
+      "schema": "../src/runtime/runtime_task_run.schema.json",
+      "fixture": "valid/runtime_run.json"
+    },
+    {
+      "schema": "../src/context_packet/context_packet.schema.json",
+      "fixture": "valid/context_packet_chat.json"
+    },
+    {
+      "schema": "../src/backup_export/backup_export_manifest.schema.json",
+      "fixture": "valid/backup_manifest.json"
+    },
+    {
+      "schema": "../src/backup_export/backup_export_manifest.schema.json",
+      "fixture": "valid/owner_export_manifest.json"
+    },
+    {
+      "schema": "../src/model_provider/model_provider.schema.json",
+      "fixture": "valid/provider_metadata.json"
+    },
+    {
+      "schema": "../src/model_provider/model_provider.schema.json",
+      "fixture": "valid/model_profile_routing.json"
+    }
+  ]
+}

@@ -5,6 +5,22 @@ import { pathToFileURL } from "node:url";
 
 const TODO_PERMISSION = "todo.suggest";
 const TODO_OUTPUT_EVENT = "wn.todo.suggested";
+const MODEL_ROUTING_POLICIES = new Set([
+  "app_default",
+  "user_selected",
+  "pack_preferred",
+  "fixed_provider",
+]);
+const MODEL_CAPABILITIES = new Set([
+  "chat",
+  "completion",
+  "embedding",
+  "vision",
+  "audio",
+  "streaming",
+  "tool_use",
+  "toolUse",
+]);
 
 const requiredManifestFields = [
   "id",
@@ -95,6 +111,7 @@ export function validateManifest(manifest) {
   validateSubscriptions(subscriptions, agents, errors);
   validateSubscriptionDependencies(subscriptions, errors);
   validateAgentPermissions(agents, packPermissionSet, errors);
+  validateToolPermissions(tools, packPermissionSet, errors);
   validateModelProfileRefs(agents, modelProfiles, errors);
   validateOutputEvents(agents, errors);
   validateExecutableSafety(agents, tools, errors);
@@ -120,9 +137,9 @@ function validateBasicShape(manifest, errors) {
 
   if (
     "schema_version" in manifest &&
-    (!Number.isInteger(manifest.schema_version) || manifest.schema_version < 1)
+    (!Number.isInteger(manifest.schema_version) || manifest.schema_version !== 1)
   ) {
-    errors.push("schema_version must be an integer greater than or equal to 1");
+    errors.push("schema_version must be 1");
   }
 
   validateStringArrayField(manifest, "permissions", errors, { allowEmpty: true });
@@ -204,7 +221,44 @@ function validateBasicShape(manifest, errors) {
         return;
       }
 
-      validateStringValue(profile.id, `model_profiles[${index}].id`, errors);
+      const path = `model_profiles[${index}]`;
+      validateStringValue(profile.id, `${path}.id`, errors);
+      validateStringValue(profile.purpose, `${path}.purpose`, errors);
+
+      if ("required" in profile && typeof profile.required !== "boolean") {
+        errors.push(`${path}.required must be a boolean`);
+      }
+
+      if ("routing_policy" in profile) {
+        validateStringEnumValue(
+          profile.routing_policy,
+          `${path}.routing_policy`,
+          MODEL_ROUTING_POLICIES,
+          errors,
+        );
+      }
+
+      if ("provider_ref" in profile && profile.provider_ref !== null) {
+        validateStringValue(profile.provider_ref, `${path}.provider_ref`, errors);
+      }
+
+      if ("model_ref" in profile && profile.model_ref !== null) {
+        validateStringValue(profile.model_ref, `${path}.model_ref`, errors);
+      }
+
+      if ("required_capabilities" in profile) {
+        validateStringArrayEnumValue(
+          profile.required_capabilities,
+          `${path}.required_capabilities`,
+          MODEL_CAPABILITIES,
+          errors,
+          { allowEmpty: true },
+        );
+      }
+
+      if ("allow_fallback" in profile && typeof profile.allow_fallback !== "boolean") {
+        errors.push(`${path}.allow_fallback must be a boolean`);
+      }
     });
   }
 
@@ -355,6 +409,26 @@ function validateAgentPermissions(agents, packPermissionSet, errors) {
       if (typeof permission === "string" && !packPermissionSet.has(permission)) {
         errors.push(
           `agents[${index}].permissions contains permission not declared by pack: ${permission}`,
+        );
+      }
+    }
+  });
+}
+
+function validateToolPermissions(tools, packPermissionSet, errors) {
+  tools.forEach((tool, index) => {
+    if (!isPlainObject(tool)) {
+      return;
+    }
+
+    if (!Array.isArray(tool.permissions)) {
+      return;
+    }
+
+    for (const permission of tool.permissions) {
+      if (typeof permission === "string" && !packPermissionSet.has(permission)) {
+        errors.push(
+          `tools[${index}].permissions contains permission not declared by pack: ${permission}`,
         );
       }
     }
@@ -548,6 +622,35 @@ function validateStringArrayValue(value, path, errors, options = {}) {
   value.forEach((item, index) => {
     if (typeof item !== "string" || item.length === 0) {
       errors.push(`${path}[${index}] must be a non-empty string`);
+    }
+  });
+}
+
+function validateStringEnumValue(value, path, allowedValues, errors) {
+  validateStringValue(value, path, errors);
+  if (typeof value === "string" && !allowedValues.has(value)) {
+    errors.push(
+      `${path} must be one of: ${Array.from(allowedValues).join(", ")}`,
+    );
+  }
+}
+
+function validateStringArrayEnumValue(
+  value,
+  path,
+  allowedValues,
+  errors,
+  options = {},
+) {
+  validateStringArrayValue(value, path, errors, options);
+  if (!Array.isArray(value)) {
+    return;
+  }
+  value.forEach((item, index) => {
+    if (typeof item === "string" && !allowedValues.has(item)) {
+      errors.push(
+        `${path}[${index}] must be one of: ${Array.from(allowedValues).join(", ")}`,
+      );
     }
   });
 }

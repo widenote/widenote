@@ -1,0 +1,215 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://widenote.dev/schemas/model_provider.schema.json",
+  "title": "WideNote Model Provider Metadata And Routing",
+  "description": "Safe provider metadata and model profile routing contracts. Secrets are excluded from this schema.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/provider_metadata"
+    },
+    {
+      "$ref": "#/$defs/model_profile_routing"
+    }
+  ],
+  "$defs": {
+    "provider_metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id",
+        "schema_version",
+        "provider_kind",
+        "display_name",
+        "endpoint",
+        "model",
+        "status",
+        "capabilities",
+        "has_api_key",
+        "credential_policy"
+      ],
+      "properties": {
+        "kind": {
+          "const": "provider_metadata"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "schema_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "provider_kind": {
+          "$ref": "#/$defs/provider_kind"
+        },
+        "display_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "endpoint": {
+          "type": "string",
+          "format": "uri",
+          "minLength": 1
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "disabled",
+            "deleted",
+            "test_failed"
+          ]
+        },
+        "is_default": {
+          "type": "boolean"
+        },
+        "max_output_tokens": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "capabilities": {
+          "$ref": "#/$defs/capabilities"
+        },
+        "has_api_key": {
+          "type": "boolean"
+        },
+        "credential_policy": {
+          "type": "string",
+          "enum": [
+            "none",
+            "local_secret",
+            "encrypted_backup_eligible",
+            "excluded_from_owner_export"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "model_profile_routing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id",
+        "schema_version",
+        "model_profile_ref",
+        "routing_policy",
+        "required_capabilities",
+        "allow_fallback"
+      ],
+      "properties": {
+        "kind": {
+          "const": "model_profile_routing"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "schema_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "model_profile_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pack_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^pack\\.[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$"
+        },
+        "agent_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^agent\\.[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$"
+        },
+        "routing_policy": {
+          "type": "string",
+          "enum": [
+            "app_default",
+            "user_selected",
+            "pack_preferred",
+            "fixed_provider"
+          ]
+        },
+        "provider_ref": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "model_ref": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "required_capabilities": {
+          "$ref": "#/$defs/capabilities"
+        },
+        "allow_fallback": {
+          "type": "boolean"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "provider_kind": {
+      "type": "string",
+      "enum": [
+        "fake",
+        "openai_compatible",
+        "open_ai_compatible",
+        "anthropic_compatible",
+        "openAiCompatible",
+        "anthropicCompatible",
+        "mimo",
+        "kimi"
+      ]
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/capability"
+      },
+      "uniqueItems": true
+    },
+    "capability": {
+      "type": "string",
+      "enum": [
+        "chat",
+        "completion",
+        "embedding",
+        "vision",
+        "audio",
+        "streaming",
+        "tool_use",
+        "toolUse"
+      ]
+    }
+  }
+}

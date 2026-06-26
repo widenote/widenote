@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n.dart';
 import '../application/pack_catalog.dart';
 
-class PermissionGatePage extends StatelessWidget {
+class PermissionGatePage extends ConsumerWidget {
   const PermissionGatePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
+    final state = ref.watch(permissionGateControllerProvider);
+    final controller = ref.read(permissionGateControllerProvider.notifier);
     return ListView(
       key: const Key('permission-gate-page'),
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -21,13 +24,19 @@ class PermissionGatePage extends StatelessWidget {
         _PermissionSection(
           title: l10n.permissionGateGrantedTitle,
           icon: Icons.verified_user_outlined,
-          permissions: builtInPermissions,
+          permissions: state.builtInPermissions,
+          onGrant: controller.grant,
+          onDeny: controller.deny,
+          onRevoke: controller.revoke,
         ),
         const SizedBox(height: 16),
         _PermissionSection(
           title: l10n.permissionGateDeferredTitle,
           icon: Icons.lock_outline,
-          permissions: deferredHighRiskPermissions,
+          permissions: state.deferredPermissions,
+          onGrant: controller.grant,
+          onDeny: controller.deny,
+          onRevoke: controller.revoke,
         ),
       ],
     );
@@ -39,11 +48,17 @@ class _PermissionSection extends StatelessWidget {
     required this.title,
     required this.icon,
     required this.permissions,
+    required this.onGrant,
+    required this.onDeny,
+    required this.onRevoke,
   });
 
   final String title;
   final IconData icon;
-  final List<PermissionInfo> permissions;
+  final List<PermissionGatePermission> permissions;
+  final void Function(PermissionGatePermission permission) onGrant;
+  final void Function(PermissionGatePermission permission) onDeny;
+  final void Function(PermissionGatePermission permission) onRevoke;
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +69,12 @@ class _PermissionSection extends StatelessWidget {
         children: [
           for (var index = 0; index < permissions.length; index++) ...[
             if (index > 0) const Divider(height: 20),
-            _PermissionRow(permission: permissions[index]),
+            _PermissionRow(
+              permission: permissions[index],
+              onGrant: onGrant,
+              onDeny: onDeny,
+              onRevoke: onRevoke,
+            ),
           ],
         ],
       ),
@@ -63,17 +83,30 @@ class _PermissionSection extends StatelessWidget {
 }
 
 class _PermissionRow extends StatelessWidget {
-  const _PermissionRow({required this.permission});
+  const _PermissionRow({
+    required this.permission,
+    required this.onGrant,
+    required this.onDeny,
+    required this.onRevoke,
+  });
 
-  final PermissionInfo permission;
+  final PermissionGatePermission permission;
+  final void Function(PermissionGatePermission permission) onGrant;
+  final void Function(PermissionGatePermission permission) onDeny;
+  final void Function(PermissionGatePermission permission) onRevoke;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final statusLabel = _statusLabel(l10n, permission);
     return Row(
       key: Key('permission-row-${permission.permission}'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(Icons.key_outlined, color: Theme.of(context).colorScheme.primary),
+        Icon(
+          permission.isDeferred ? Icons.lock_outline : Icons.key_outlined,
+          color: Theme.of(context).colorScheme.primary,
+        ),
         const SizedBox(width: 10),
         Expanded(
           child: Column(
@@ -86,7 +119,7 @@ class _PermissionRow extends StatelessWidget {
                 ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 4),
-              Text(permission.status, style: _mutedStyle(context)),
+              Text(statusLabel, style: _mutedStyle(context)),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
@@ -96,10 +129,93 @@ class _PermissionRow extends StatelessWidget {
                   _Tag(label: permission.risk),
                 ],
               ),
+              const SizedBox(height: 8),
+              _PermissionActions(
+                permission: permission,
+                onGrant: onGrant,
+                onDeny: onDeny,
+                onRevoke: onRevoke,
+              ),
             ],
           ),
         ),
       ],
+    );
+  }
+}
+
+class _PermissionActions extends StatelessWidget {
+  const _PermissionActions({
+    required this.permission,
+    required this.onGrant,
+    required this.onDeny,
+    required this.onRevoke,
+  });
+
+  final PermissionGatePermission permission;
+  final void Function(PermissionGatePermission permission) onGrant;
+  final void Function(PermissionGatePermission permission) onDeny;
+  final void Function(PermissionGatePermission permission) onRevoke;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final suffix = _permissionKeySuffix(permission);
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        if (permission.canGrant)
+          _ActionButton(
+            key: Key('permission-action-grant-$suffix'),
+            icon: Icons.check_circle_outline,
+            label: l10n.permissionGateActionGrant,
+            onPressed: () => onGrant(permission),
+          ),
+        if (permission.canDeny)
+          _ActionButton(
+            key: Key('permission-action-deny-$suffix'),
+            icon: Icons.block_outlined,
+            label: l10n.permissionGateActionDeny,
+            onPressed: () => onDeny(permission),
+          ),
+        if (permission.canRevoke)
+          _ActionButton(
+            key: Key('permission-action-revoke-$suffix'),
+            icon: Icons.remove_circle_outline,
+            label: l10n.permissionGateActionRevoke,
+            onPressed: () => onRevoke(permission),
+          ),
+        if (permission.isDeferred)
+          OutlinedButton.icon(
+            key: Key('permission-action-deferred-$suffix'),
+            onPressed: null,
+            icon: const Icon(Icons.lock_clock_outlined),
+            label: Text(l10n.permissionGateActionDeferred),
+          ),
+      ],
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+    super.key,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon),
+      label: Text(label),
     );
   }
 }
@@ -199,4 +315,21 @@ TextStyle? _mutedStyle(BuildContext context) {
   return Theme.of(context).textTheme.bodyMedium?.copyWith(
     color: Theme.of(context).colorScheme.onSurfaceVariant,
   );
+}
+
+String _statusLabel(
+  AppLocalizations l10n,
+  PermissionGatePermission permission,
+) {
+  return switch (permission.decisionState) {
+    PermissionGateDecisionState.available => l10n.permissionGateStatusAvailable,
+    PermissionGateDecisionState.granted => l10n.permissionGateStatusGranted,
+    PermissionGateDecisionState.denied => l10n.permissionGateStatusDenied,
+    PermissionGateDecisionState.revoked => l10n.permissionGateStatusRevoked,
+    PermissionGateDecisionState.deferred => permission.fallbackStatus,
+  };
+}
+
+String _permissionKeySuffix(PermissionGatePermission permission) {
+  return '${permission.packId}-${permission.permission}';
 }

@@ -15,10 +15,11 @@ Owns local runtime execution. It must not own app UI, backend execution, or publ
 - `WnEvent`, `WnEventDraft`, `SubjectRef`, `WnActor`, `WnPrivacy`, and `WnEventTypes` for append-only runtime events.
 - `RuntimeKernel` for local event publication, subscription dispatch, task/run execution, and trace emission.
 - `EventStore` and `InMemoryEventStore` for testable event persistence boundaries.
+- `RuntimeStore` and `InMemoryRuntimeStore` for durable task, run, and pack-status boundaries.
 - `TraceSink`, `RuntimeTrace`, and `InMemoryTraceSink` for audit traces.
-- `PermissionBroker` and `InMemoryPermissionBroker` for explicit pack/tool permission checks.
+- `PermissionBroker`, `PermissionStore`, and `InMemoryPermissionBroker` for explicit durable grant/deny/revoke checks.
 - `ToolRegistry`, `ToolDefinition`, `ToolInvocation`, and `InMemoryToolRegistry` for permissioned local tools.
-- `AgentPack`, `Subscription`, `AgentDefinition`, `AgentHandler`, `AgentContext`, `ModelClient`, and `FakeModel` for local pack execution without a real LLM.
+- `AgentPackManifestBridge`, `AgentPack`, `PackRegistry`, `AgentPackManifestSnapshot`, `Subscription`, `AgentDefinition`, `AgentHandler`, `AgentContext`, `ModelClient`, and `FakeModel` for manifest-aligned local pack loading and execution without a real LLM.
 - `RuntimeTask`, `RuntimeRun`, `RetryPolicy`, and `RuntimePackStatus` for queued task/run inspection, retry, dependency, cancellation, permission-denied, and pack status surfaces.
 
 Script runtime kinds are represented as manifest/runtime configuration only. The local kernel rejects them with a denied run until a sandbox RFC is accepted and implemented.
@@ -49,7 +50,7 @@ Run from this directory:
 dart test
 ```
 
-The main vertical slice test publishes `wn.capture.created`, dispatches a subscribed pack, creates a task/run, emits memory proposal, card, insight, and todo events through a fake handler/model, and verifies trace output. Queue tests also cover dependency ordering, retry, cancellation, permission denial, tool-not-found, failure traces, and script-runtime rejection. No test needs a network connection or real API key.
+The main vertical slice test publishes `wn.capture.created`, dispatches a subscribed pack, creates a task/run, emits memory proposal, card, insight, and todo events through a fake handler/model, and verifies trace output. Queue tests also cover dependency ordering, retry, cancellation, permission denial, durable restart-and-drain, stale running lease recovery, dependency failure blocking, output event declaration failures, permission revocation gates, manifest/native pack alignment guardrails, atomic output append, trace redaction, tool-not-found, failure traces, and script-runtime rejection. No test needs a network connection or real API key.
 
 ## Related Context
 

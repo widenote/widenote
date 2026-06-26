@@ -1,6 +1,8 @@
 # Phase One Module Plan
 
-Status: draft
+Status: planning baseline; superseded for current implementation state by
+`docs/rfcs/phase-one-umbrella-technical-plan.md` and
+`docs/research/2026-06-26-w7-current-integration-state.md`
 
 Date: 2026-06-23
 

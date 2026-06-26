@@ -1,0 +1,244 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://widenote.dev/schemas/runtime_task_run.schema.json",
+  "title": "WideNote Runtime Task And Run",
+  "description": "Durable runtime task and run state for Agent Pack execution.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/runtime_task"
+    },
+    {
+      "$ref": "#/$defs/runtime_run"
+    }
+  ],
+  "$defs": {
+    "runtime_task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id",
+        "schema_version",
+        "pack_id",
+        "agent_id",
+        "subscription_id",
+        "trigger_event_id",
+        "status",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "kind": {
+          "const": "runtime_task"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "schema_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "pack_id": {
+          "$ref": "#/$defs/pack_id"
+        },
+        "agent_id": {
+          "$ref": "#/$defs/agent_id"
+        },
+        "subscription_id": {
+          "$ref": "#/$defs/subscription_id"
+        },
+        "trigger_event_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "idempotency_key": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "status": {
+          "$ref": "#/$defs/task_status"
+        },
+        "dependency_task_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "missing_dependency_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "attempts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_attempts": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "lease": {
+          "$ref": "#/$defs/task_lease"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "runtime_run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id",
+        "schema_version",
+        "task_id",
+        "pack_id",
+        "agent_id",
+        "status",
+        "started_at",
+        "attempt"
+      ],
+      "properties": {
+        "kind": {
+          "const": "runtime_run"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "schema_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "task_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pack_id": {
+          "$ref": "#/$defs/pack_id"
+        },
+        "agent_id": {
+          "$ref": "#/$defs/agent_id"
+        },
+        "status": {
+          "$ref": "#/$defs/run_status"
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "completed_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "output_event_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "task_status": {
+      "type": "string",
+      "enum": [
+        "queued",
+        "waiting",
+        "running",
+        "succeeded",
+        "failed",
+        "denied",
+        "canceled",
+        "blocked"
+      ]
+    },
+    "run_status": {
+      "type": "string",
+      "enum": [
+        "running",
+        "succeeded",
+        "failed",
+        "denied",
+        "canceled"
+      ]
+    },
+    "task_lease": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "required": [
+        "holder_id",
+        "expires_at"
+      ],
+      "properties": {
+        "holder_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "pack_id": {
+      "type": "string",
+      "pattern": "^pack\\.[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$"
+    },
+    "agent_id": {
+      "type": "string",
+      "pattern": "^agent\\.[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$"
+    },
+    "subscription_id": {
+      "type": "string",
+      "pattern": "^sub\\.[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$"
+    }
+  }
+}

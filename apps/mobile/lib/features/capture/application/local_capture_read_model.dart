@@ -103,7 +103,7 @@ localdb.AttachmentRecord _attachmentRecord(
   CaptureRecord record,
   CaptureAttachment attachment,
 ) {
-  final sha256 = _string(attachment.rawMetadata['sha256']);
+  final sha256 = _attachmentSha256(attachment.rawMetadata);
   return localdb.AttachmentRecord(
     id: attachment.id,
     captureId: record.id,
@@ -126,6 +126,18 @@ localdb.AttachmentRecord _attachmentRecord(
     createdAt: attachment.createdAt,
     updatedAt: DateTime.now().toUtc(),
   );
+}
+
+String? _attachmentSha256(Map<String, Object?> metadata) {
+  final topLevel = _string(metadata['sha256']);
+  if (topLevel != null) {
+    return topLevel;
+  }
+  final adapterMetadata = metadata['adapter_metadata'];
+  if (adapterMetadata is Map) {
+    return _string(adapterMetadata['sha256']);
+  }
+  return null;
 }
 
 CaptureRecord _captureView(localdb.CaptureRecord record) {

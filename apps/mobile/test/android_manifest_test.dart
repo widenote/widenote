@@ -13,6 +13,19 @@ void main() {
     );
   });
 
+  test('Android manifest declares phase-one capture permissions', () {
+    final manifest = File('android/app/src/main/AndroidManifest.xml');
+
+    expect(manifest.existsSync(), isTrue);
+    final contents = manifest.readAsStringSync();
+    expect(contents, contains('android.permission.CAMERA'));
+    expect(contents, contains('android.permission.RECORD_AUDIO'));
+    expect(
+      contents,
+      isNot(contains('android.permission.READ_EXTERNAL_STORAGE')),
+    );
+  });
+
   test('Android flavors separate development and production packages', () {
     final manifest = File('android/app/src/main/AndroidManifest.xml');
     final gradleFile = File('android/app/build.gradle.kts');

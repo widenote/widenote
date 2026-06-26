@@ -66,6 +66,7 @@ void main() {
     expect(find.byKey(const Key('timeline-item-capture-1')), findsOneWidget);
     expect(find.byKey(const Key('timeline-item-memory-1')), findsOneWidget);
     expect(find.byKey(const Key('timeline-item-todo-1')), findsOneWidget);
+    expect(find.byKey(const Key('timeline-item-evt-todo-1')), findsNothing);
 
     await tester.tap(find.byKey(const Key('timeline-item-card-1')));
     await tester.pumpAndSettle();
@@ -210,7 +211,7 @@ void _seedTimeline(WideNoteLocalDatabase database) {
 
   database.eventLog.append(
     EventLogEntry(
-      id: 'capture-1',
+      id: 'evt-capture-1',
       type: runtime.WnEventTypes.captureCreated,
       actor: 'user',
       subjectRef: const <String, Object?>{'kind': 'capture', 'id': 'capture-1'},
@@ -269,15 +270,29 @@ void _seedTimeline(WideNoteLocalDatabase database) {
   );
   database.eventLog.append(
     EventLogEntry(
-      id: 'todo-1',
+      id: 'evt-todo-1',
       type: runtime.WnEventTypes.todoSuggested,
       actor: 'agent',
-      causationId: 'capture-1',
+      causationId: 'evt-capture-1',
+      subjectRef: const <String, Object?>{'kind': 'capture', 'id': 'capture-1'},
       payload: const <String, Object?>{
         'text': 'Follow up Project Alpha with Chen.',
-        'source_event_id': 'capture-1',
+        'source_event_id': 'evt-capture-1',
       },
       createdAt: todoAt,
+    ),
+  );
+  database.todos.insert(
+    TodoRecord(
+      id: 'todo-1',
+      sourceCaptureId: 'capture-1',
+      sourceEventId: 'evt-todo-1',
+      status: 'suggested',
+      payload: const <String, Object?>{
+        'title': 'Follow up Project Alpha with Chen.',
+      },
+      createdAt: todoAt,
+      updatedAt: todoAt,
     ),
   );
 }

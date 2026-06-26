@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
+import 'package:widenote_local_db/widenote_local_db.dart';
 
 import '../../../l10n/l10n.dart';
 import '../application/backup_controller.dart';
@@ -87,11 +88,39 @@ class _ExportSurface extends ConsumerWidget {
             label: Text(l10n.backupExportButton),
           ),
           const SizedBox(height: 12),
-          _WarningLine(text: l10n.backupSecretWarning),
+          _BoundaryLine(
+            lineKey: const Key('backup-safe-restore-boundary'),
+            icon: Icons.restore_outlined,
+            text: l10n.backupSafeRestoreBoundary,
+          ),
+          const SizedBox(height: 8),
+          _BoundaryLine(
+            lineKey: const Key('backup-owner-export-boundary'),
+            icon: Icons.description_outlined,
+            text: l10n.backupOwnerExportBoundary,
+          ),
+          const SizedBox(height: 8),
+          _BoundaryLine(
+            lineKey: const Key('backup-full-secret-boundary'),
+            icon: Icons.lock_outline,
+            text: l10n.backupFullSecretBoundary,
+          ),
           const SizedBox(height: 12),
           if (state.exportedJson == null)
             Text(l10n.backupExportEmpty)
           else ...[
+            if (state.safeProviderSecretOmissionCount > 0) ...[
+              Text(
+                l10n.backupSafeOmittedProviderKeys(
+                  state.safeProviderSecretOmissionCount,
+                ),
+                key: const Key('backup-safe-provider-key-omissions'),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
             Text(
               l10n.backupManifestCountsTitle,
               style: Theme.of(
@@ -239,18 +268,54 @@ class _InlineOutcome extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final isFailure = state.outcome == BackupOutcome.failed;
-    return Text(
-      isFailure
-          ? l10n.backupFailedStatus(state.errorDetails ?? '')
-          : l10n.backupImportDoneStatus,
-      key: const Key('backup-inline-outcome'),
-      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-        color: isFailure
-            ? Theme.of(context).colorScheme.error
-            : Theme.of(context).colorScheme.primary,
-      ),
+    final reportText = isFailure
+        ? null
+        : _importReportText(l10n, state.lastImportReport);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          isFailure
+              ? l10n.backupFailedStatus(state.errorDetails ?? '')
+              : l10n.backupImportDoneStatus,
+          key: const Key('backup-inline-outcome'),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: isFailure
+                ? Theme.of(context).colorScheme.error
+                : Theme.of(context).colorScheme.primary,
+          ),
+        ),
+        if (reportText != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            reportText,
+            key: const Key('backup-import-report'),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ],
     );
   }
+}
+
+String? _importReportText(
+  AppLocalizations l10n,
+  LocalBackupImportReport? report,
+) {
+  if (report == null) {
+    return null;
+  }
+  if (report.requiresCredentialReentry) {
+    return l10n.backupImportNeedsProviderKeys(
+      report.providerConfigsNeedingCredentialReentry,
+    );
+  }
+  if (report.includesSecrets) {
+    return l10n.backupImportSecretsRestored;
+  }
+  return l10n.backupImportNoProviderKeysNeeded;
 }
 
 class _FilePathLine extends StatelessWidget {
@@ -272,28 +337,31 @@ class _FilePathLine extends StatelessWidget {
   }
 }
 
-class _WarningLine extends StatelessWidget {
-  const _WarningLine({required this.text});
+class _BoundaryLine extends StatelessWidget {
+  const _BoundaryLine({
+    required this.lineKey,
+    required this.icon,
+    required this.text,
+  });
 
+  final Key lineKey;
+  final IconData icon;
   final String text;
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Row(
-      key: const Key('backup-secret-warning'),
+      key: lineKey,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          Icons.lock_outline,
-          size: 18,
-          color: Theme.of(context).colorScheme.error,
-        ),
+        Icon(icon, size: 18, color: colorScheme.primary),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             text,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.error,
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
         ),

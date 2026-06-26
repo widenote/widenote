@@ -7,6 +7,13 @@ import 'package:widenote_model_providers/model_providers.dart';
 import '../../../l10n/l10n.dart';
 import '../application/model_provider_settings_controller.dart';
 
+const _visibleProviderKinds = <ModelProviderKind>[
+  ModelProviderKind.openAiCompatible,
+  ModelProviderKind.anthropicCompatible,
+  ModelProviderKind.mimo,
+  ModelProviderKind.kimi,
+];
+
 class ModelProviderSettingsPage extends ConsumerWidget {
   const ModelProviderSettingsPage({super.key});
 
@@ -386,8 +393,47 @@ class _ProviderActions extends ConsumerWidget {
           ),
           icon: const Icon(Icons.edit_outlined),
         ),
+        IconButton(
+          key: Key('provider-delete-${provider.id}'),
+          tooltip: 'Delete provider',
+          onPressed: () => unawaited(_confirmDeleteProvider(context, ref)),
+          icon: const Icon(Icons.delete_outline),
+        ),
       ],
     );
+  }
+
+  Future<void> _confirmDeleteProvider(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final l10n = context.l10n;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete provider?'),
+        content: Text(
+          'Remove "${provider.displayName}" from local model settings.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.cancelButton),
+          ),
+          FilledButton(
+            key: Key('provider-confirm-delete-${provider.id}'),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.memoryActionDelete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) {
+      return;
+    }
+    await ref
+        .read(modelProviderSettingsControllerProvider.notifier)
+        .deleteProvider(provider.id);
   }
 }
 
@@ -414,7 +460,10 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
   void initState() {
     super.initState();
     final existing = widget.existing;
-    _kind = existing?.kind ?? ModelProviderKind.openAiCompatible;
+    final existingKind = existing?.kind;
+    _kind = existingKind != null && _visibleProviderKinds.contains(existingKind)
+        ? existingKind
+        : ModelProviderKind.openAiCompatible;
     _nameController = TextEditingController(
       text: existing?.displayName ?? _kind.label,
     );
@@ -458,7 +507,7 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
                   labelText: l10n.providerFieldProviderType,
                 ),
                 items: [
-                  for (final kind in ModelProviderKind.values)
+                  for (final kind in _visibleProviderKinds)
                     DropdownMenuItem(value: kind, child: Text(kind.label)),
                 ],
                 onChanged: (kind) {

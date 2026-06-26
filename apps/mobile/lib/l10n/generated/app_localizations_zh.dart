@@ -36,6 +36,76 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeOpenMemoryTooltip => '打开记忆';
 
   @override
+  String get homeOpenDailyRecapTooltip => '打开每日回顾';
+
+  @override
+  String get homeOpenSettingsTooltip => '打开设置';
+
+  @override
+  String get recapTitle => '每日回顾';
+
+  @override
+  String recapSubtitle(String date) {
+    return '来自本地对象事实的今日概览 · $date';
+  }
+
+  @override
+  String get recapBackTooltip => '关闭每日回顾';
+
+  @override
+  String get recapUnavailableTitle => '每日回顾暂不可用';
+
+  @override
+  String get recapEmptyTitle => '今天还没有记录。';
+
+  @override
+  String get recapEmptyBody => '记录一个想法、语音草稿、相机照片或相册图片后，今天的回顾会在这里保留来源。';
+
+  @override
+  String get recapCapturesMetric => '记录';
+
+  @override
+  String get recapMemoryMetric => '记忆';
+
+  @override
+  String get recapTodoOpenMetric => '未完成待办';
+
+  @override
+  String get recapTodoCompletedMetric => '已完成';
+
+  @override
+  String get recapCardsMetric => '卡片';
+
+  @override
+  String get recapInsightsMetric => '洞察';
+
+  @override
+  String get recapRecordsTitle => '今天的记录';
+
+  @override
+  String get recapMemoryTitle => '今天的记忆';
+
+  @override
+  String get recapTodosTitle => '待办活动';
+
+  @override
+  String get recapCardsTitle => '卡片';
+
+  @override
+  String get recapInsightsTitle => '洞察';
+
+  @override
+  String get recapSectionEmpty => '今天这个分区还没有可溯源内容。';
+
+  @override
+  String get recapEvidenceTitle => '本地证据';
+
+  @override
+  String recapEvidenceBody(int eventCount, int traceCount) {
+    return '$eventCount 个事件 · $traceCount 条追踪';
+  }
+
+  @override
   String get quickCaptureTitle => '快速记录';
 
   @override
@@ -45,10 +115,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get captureModeText => '文字';
 
   @override
-  String get captureModeVoice => '语音草稿';
+  String get captureModeVoice => '语音';
 
   @override
-  String get captureModeImport => '导入';
+  String get captureModeMedia => '媒体';
 
   @override
   String get captureModeTextTitle => '先记录下来';
@@ -57,40 +127,52 @@ class AppLocalizationsZh extends AppLocalizations {
   String get captureModeTextBody => '默认保持低摩擦本地记录。原始记录保存后，智能体再进行整理。';
 
   @override
-  String get captureVoiceHint => '给语音草稿补充背景，转写内容需要复核后再保存...';
+  String get captureVoiceHint => '为录音补充背景，录音会作为本地原始媒体附件保存...';
 
   @override
-  String get captureVoiceDraftTitle => '语音草稿';
+  String get captureVoiceTitle => '录音';
 
   @override
-  String get captureVoiceDraftBody => '当前切片只使用转写草稿适配器，不会请求麦克风权限；复核后再保存。';
+  String get captureVoiceBody => 'WideNote 会请求麦克风权限，保存本地原始音频；转写生成留给后续智能体步骤。';
 
   @override
-  String get captureVoiceDraftButton => '添加语音草稿';
+  String get captureVoiceStartButton => '开始录音';
 
   @override
-  String get captureImportHint => '为导入的照片、链接或文件补充背景...';
+  String get captureVoiceRecordingTitle => '正在录音';
 
   @override
-  String get captureImportTitle => '导入材料';
+  String get captureVoiceRecordingBody => '停止后会附加录音；取消会丢弃录音且不会创建记录。';
 
   @override
-  String get captureImportBody => '附加照片或分享内容，保留原始来源，再交给 WideNote 生成可溯源 Memory。';
+  String get captureVoiceStopButton => '停止';
 
   @override
-  String get captureImportPhotoButton => '添加照片';
+  String get captureVoiceCancelButton => '取消';
 
   @override
-  String get captureImportShareButton => '导入项目';
+  String get captureMediaHint => '为相机照片或相册图片补充背景...';
 
   @override
-  String get captureActionPhoto => '照片';
+  String get captureMediaTitle => '附加媒体';
+
+  @override
+  String get captureMediaBody => '相机和相册使用系统选择器。WideNote 只保存本地文件引用、哈希和来源元数据。';
+
+  @override
+  String get captureMediaCameraButton => '相机';
+
+  @override
+  String get captureMediaGalleryButton => '相册';
+
+  @override
+  String get captureActionCamera => '相机';
+
+  @override
+  String get captureActionGallery => '相册';
 
   @override
   String get captureActionVoice => '语音';
-
-  @override
-  String get captureActionImport => '导入';
 
   @override
   String get captureUseTranscriptButton => '使用转写';
@@ -499,6 +581,110 @@ class AppLocalizationsZh extends AppLocalizations {
   String get todosEmpty => '还没有来源关联待办。';
 
   @override
+  String get settingsTitle => '设置';
+
+  @override
+  String get settingsSubtitle => '隐私、权限、模型、备份和追踪。';
+
+  @override
+  String get settingsBackTooltip => '关闭设置';
+
+  @override
+  String get settingsPrivacyTitle => '隐私';
+
+  @override
+  String get settingsPrivacyLocalFirstTitle => '本地优先核心';
+
+  @override
+  String get settingsPrivacyLocalFirstBody =>
+      '记录、Memory、待办、卡片、对话和追踪会留在这台设备上，除非你主动选择备份、同步或模型提供商。';
+
+  @override
+  String get settingsPrivacyLocalFirstStatus => '无需账号';
+
+  @override
+  String get settingsPrivacyPermissionsTitle => '权限可撤销';
+
+  @override
+  String get settingsPrivacyPermissionsBody =>
+      '内置插件只使用窄权限；高风险文件、网络和脚本能力会延期到显式授权链路就绪后。';
+
+  @override
+  String get settingsPrivacyPermissionsStatus => '可复核';
+
+  @override
+  String get settingsPrivacyBackupTitle => '备份密钥边界';
+
+  @override
+  String get settingsPrivacyBackupBody =>
+      '安全导出不会包含模型提供商 API Key。加密完整备份是未来含密钥恢复路径，本版本不提供操作入口。';
+
+  @override
+  String get settingsPrivacyBackupStatus => '安全导出';
+
+  @override
+  String get settingsControlsTitle => '控制入口';
+
+  @override
+  String get settingsPermissionsTitle => '隐私与权限';
+
+  @override
+  String get settingsPermissionsSubtitle => '复核可用的插件权限和延期的高风险能力。';
+
+  @override
+  String get settingsPermissionsStatus => '显式授权';
+
+  @override
+  String settingsPermissionsStatusSummary(
+    int availableCount,
+    int deferredCount,
+  ) {
+    return '$availableCount 可用 / $deferredCount 延期';
+  }
+
+  @override
+  String get settingsModelProvidersTitle => '模型提供商';
+
+  @override
+  String get settingsModelProvidersSubtitle =>
+      '为运行时和 Agent Pack 配置本地或自带密钥的模型访问。';
+
+  @override
+  String get settingsBackupTitle => '备份与恢复';
+
+  @override
+  String get settingsBackupSubtitle => '导出或导入本地记录、Memory、卡片、模型提供商、待办和追踪。';
+
+  @override
+  String get settingsBackupStatus => '本地';
+
+  @override
+  String get settingsBackupStatusSafeOnly => '仅安全备份';
+
+  @override
+  String get settingsBackupStatusExportReady => '可导出';
+
+  @override
+  String get settingsBackupStatusRestored => '已恢复';
+
+  @override
+  String get settingsBackupStatusNeedsReview => '需检查';
+
+  @override
+  String get settingsTraceConsoleTitle => '追踪控制台';
+
+  @override
+  String get settingsTraceConsoleSubtitle => '检查本地 Agent Runtime 运行、权限检查和生成输出。';
+
+  @override
+  String get settingsTraceConsoleStatus => '只读';
+
+  @override
+  String settingsTraceConsoleStatusSummary(int eventCount, int warningCount) {
+    return '$eventCount 事件 / $warningCount 警告';
+  }
+
+  @override
   String get pluginsTitle => '插件';
 
   @override
@@ -585,13 +771,37 @@ class AppLocalizationsZh extends AppLocalizations {
   String get permissionGateTitle => '权限门禁';
 
   @override
-  String get permissionGateSubtitle => '复核内置插件权限和延期的高风险能力。';
+  String get permissionGateSubtitle => '复核本地插件权限状态和延期的高风险能力。';
 
   @override
-  String get permissionGateGrantedTitle => '已授予的内置权限';
+  String get permissionGateGrantedTitle => '内置与可用权限';
 
   @override
   String get permissionGateDeferredTitle => '延期的高风险权限';
+
+  @override
+  String get permissionGateStatusAvailable => '内置 / 可用';
+
+  @override
+  String get permissionGateStatusGranted => '本地已授权';
+
+  @override
+  String get permissionGateStatusDenied => '本地已拒绝';
+
+  @override
+  String get permissionGateStatusRevoked => '本地已撤销';
+
+  @override
+  String get permissionGateActionGrant => '授权';
+
+  @override
+  String get permissionGateActionDeny => '拒绝';
+
+  @override
+  String get permissionGateActionRevoke => '撤销';
+
+  @override
+  String get permissionGateActionDeferred => '延期';
 
   @override
   String get agentPlatformTitle => '智能体观测';
@@ -810,7 +1020,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get backupIdleStatus => '本地数据会留在这台设备上，直到你导出或粘贴备份。';
 
   @override
-  String get backupExportReadyStatus => '备份 JSON 已准备好。';
+  String get backupExportReadyStatus => '安全备份 JSON 已准备好。';
 
   @override
   String get backupSavedFileStatus => '备份文件已保存到本地。';
@@ -824,16 +1034,34 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get backupExportSectionTitle => '导出';
+  String get backupExportSectionTitle => '导出与恢复边界';
 
   @override
-  String get backupExportButton => '导出 JSON';
+  String get backupExportButton => '导出安全恢复 JSON';
 
   @override
-  String get backupExportEmpty => '导出会创建带 manifest 计数的版本化本地备份 JSON。';
+  String get backupExportEmpty =>
+      '导出会创建带 manifest 计数的安全恢复 JSON，以及可读的 Owner Export Markdown 投影。';
 
   @override
-  String get backupSecretWarning => '备份会包含模型提供商 API Key。请妥善保管导出的 JSON。';
+  String get backupSecretWarning => '安全导出不会包含模型提供商 API Key，恢复后需要重新填写。';
+
+  @override
+  String get backupSafeRestoreBoundary =>
+      '安全恢复 JSON 会恢复记录、Memory、待办、模型提供商元数据、Pack 安装、权限、运行时状态和追踪，但不包含 Provider Key。';
+
+  @override
+  String get backupOwnerExportBoundary =>
+      'Owner Export Markdown 用来阅读和搬走你的数据；它不含密钥，也不是恢复源。';
+
+  @override
+  String get backupFullSecretBoundary =>
+      '加密完整备份会是恢复 API Key 的含密钥路径；当前版本不提供操作入口。';
+
+  @override
+  String backupSafeOmittedProviderKeys(int count) {
+    return '安全导出省略的 Provider Key 数：$count';
+  }
 
   @override
   String get backupManifestCountsTitle => 'Manifest 计数';
@@ -862,10 +1090,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get backupCopiedStatus => '导出内容已复制。';
 
   @override
-  String get backupExportJsonTitle => '备份 JSON';
+  String get backupExportJsonTitle => '安全备份 JSON';
 
   @override
-  String get backupExportMarkdownTitle => '可读 Markdown';
+  String get backupExportMarkdownTitle => 'Owner Export Markdown';
 
   @override
   String get backupImportSectionTitle => '导入';
@@ -878,4 +1106,21 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get backupImportLatestFileButton => '导入最近保存的文件';
+
+  @override
+  String backupImportNeedsProviderKeys(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '模型提供商元数据已恢复。模型调用前需要重新填写 $count 个 Provider Key。',
+      one: '模型提供商元数据已恢复。模型调用前需要重新填写 1 个 Provider Key。',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backupImportSecretsRestored => '含密钥备份已恢复模型提供商凭据。';
+
+  @override
+  String get backupImportNoProviderKeysNeeded => '这个备份不需要重新填写 Provider Key。';
 }
