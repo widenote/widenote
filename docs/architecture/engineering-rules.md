@@ -36,6 +36,7 @@ Single-file and single-function rules:
 ## Test Rules
 
 - Runtime, Memory, model routing, permissions, data storage, and migrations need unit tests.
+- Any non-UI behavior change needs detailed unit coverage for the changed branch, edge case, or regression.
 - Any UI view or interaction needs widget tests.
 - Any feature crossing capture, event dispatch, Agent Pack, Memory, cards, insights, or todos needs an orchestration test.
 - Tests must use deterministic fake agents and fake model clients by default.
@@ -49,6 +50,14 @@ UI test gate:
 - Widget tests should assert the user-visible result, not only that a widget type exists.
 - Golden tests are optional; they do not replace interaction and state coverage.
 - When a UI change depends on runtime/model output, use fake runtime events or fake model clients.
+- Pull requests with UI changes must list the widget tests that cover the changed rendering or interaction. If widget tests are skipped, the PR must explain why and name the remaining user-visible risk.
+
+Localization gate:
+
+- Every user-facing frontend string must go through Flutter localization resources. Do not hard-code display text in widgets, dialogs, sheets, buttons, empty states, errors, or navigation labels.
+- Update both `apps/mobile/lib/l10n/app_en.arb` and `apps/mobile/lib/l10n/app_zh.arb` when adding or changing display text.
+- Regenerate localization bindings with `flutter gen-l10n` when ARB files change.
+- Widget tests for changed UI should assert localized user-visible text through the normal localization path instead of relying on private constants.
 
 Validation gates:
 
@@ -58,6 +67,12 @@ Validation gates:
 - Android emulator validation is required for Android-specific behavior and high-risk mobile user journeys.
 - Android emulator validation must be serialized across agents; only one agent owns the emulator at a time.
 - If emulator validation is skipped, record why and list the remaining risk.
+
+PR gate:
+
+- PR titles and descriptions must be bilingual: Chinese and English.
+- PR descriptions must include the exact unit, widget, orchestration, emulator, simulator, schema, or docs checks that ran.
+- If any expected validation cannot run, the PR must explain the reason and the residual risk.
 
 ## Agent Runtime Test Minimum
 

@@ -94,6 +94,17 @@ the change crosses module boundaries or user-visible flows.
 If a check cannot run because of missing dependencies, device availability, or
 environment issues, record the exact reason and remaining risk.
 
+## Pull Request Requirements
+
+- PR titles and descriptions must be bilingual: Chinese and English. Put the
+  Chinese summary first when the product owner has not requested otherwise.
+- Before opening a PR, run detailed unit tests for non-UI behavior and widget
+  tests for every Flutter UI or user-interaction change. The PR description
+  must list the commands that ran and explain skipped checks with risk.
+- All user-facing frontend strings must use localization resources. Do not
+  hard-code display text in Flutter UI; update both English and Chinese ARB
+  files and regenerate localization bindings when strings change.
+
 ## Structure Constraints
 
 - Keep code structure clear, bounded, and navigable by humans and agents.
