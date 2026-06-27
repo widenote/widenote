@@ -1856,19 +1856,19 @@ abstract class AppLocalizations {
   /// No description provided for @pluginsTraceConsoleTitle.
   ///
   /// In en, this message translates to:
-  /// **'Log Center'**
+  /// **'Agent Console'**
   String get pluginsTraceConsoleTitle;
 
   /// No description provided for @pluginsTraceConsoleSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Review pack run logs, permissions, and generated outputs.'**
+  /// **'Inspect local runs, approvals, traces, and pack output.'**
   String get pluginsTraceConsoleSubtitle;
 
   /// No description provided for @pluginsTraceConsoleStatus.
   ///
   /// In en, this message translates to:
-  /// **'log-ready'**
+  /// **'local'**
   String get pluginsTraceConsoleStatus;
 
   /// No description provided for @packLibraryTitle.
@@ -1906,6 +1906,166 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 output} other{{count} outputs}}'**
   String packLibraryOutputCount(int count);
+
+  /// No description provided for @packLibraryEnabledCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 enabled} other{{count} enabled}}'**
+  String packLibraryEnabledCount(int count);
+
+  /// No description provided for @packLibraryDisabledCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 disabled} other{{count} disabled}}'**
+  String packLibraryDisabledCount(int count);
+
+  /// No description provided for @packLibraryDisableImpact.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabling affects future local tasks only. It does not delete records, traces, or derived outputs already stored on this device.'**
+  String get packLibraryDisableImpact;
+
+  /// No description provided for @packLibraryPublisher.
+  ///
+  /// In en, this message translates to:
+  /// **'publisher: {publisher}'**
+  String packLibraryPublisher(String publisher);
+
+  /// No description provided for @packLibraryEdition.
+  ///
+  /// In en, this message translates to:
+  /// **'edition: {edition}'**
+  String packLibraryEdition(String edition);
+
+  /// No description provided for @packLibraryEntrypoint.
+  ///
+  /// In en, this message translates to:
+  /// **'runtime: {entrypoint}'**
+  String packLibraryEntrypoint(String entrypoint);
+
+  /// No description provided for @packLibrarySubscriptionCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 subscription} other{{count} subscriptions}}'**
+  String packLibrarySubscriptionCount(int count);
+
+  /// No description provided for @packLibraryFailureCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 failure} other{{count} failures}}'**
+  String packLibraryFailureCount(int count);
+
+  /// No description provided for @packLibraryPermissionDecisionSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'permissions: {granted} granted / {denied} denied / {revoked} revoked'**
+  String packLibraryPermissionDecisionSummary(
+    int granted,
+    int denied,
+    int revoked,
+  );
+
+  /// No description provided for @packLibraryLastFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'Last failure: {message}'**
+  String packLibraryLastFailure(String message);
+
+  /// No description provided for @packLibraryStatusEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'enabled'**
+  String get packLibraryStatusEnabled;
+
+  /// No description provided for @packLibraryStatusDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'disabled'**
+  String get packLibraryStatusDisabled;
+
+  /// No description provided for @packLibraryStatusUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'status: {status}'**
+  String packLibraryStatusUnknown(String status);
+
+  /// No description provided for @packLibraryRuntimeIdle.
+  ///
+  /// In en, this message translates to:
+  /// **'runtime: idle'**
+  String get packLibraryRuntimeIdle;
+
+  /// No description provided for @packLibraryRuntimeQueued.
+  ///
+  /// In en, this message translates to:
+  /// **'runtime: queued'**
+  String get packLibraryRuntimeQueued;
+
+  /// No description provided for @packLibraryRuntimeRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'runtime: running'**
+  String get packLibraryRuntimeRunning;
+
+  /// No description provided for @packLibraryRuntimeSucceeded.
+  ///
+  /// In en, this message translates to:
+  /// **'runtime: succeeded'**
+  String get packLibraryRuntimeSucceeded;
+
+  /// No description provided for @packLibraryRuntimeFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'runtime: failed'**
+  String get packLibraryRuntimeFailed;
+
+  /// No description provided for @packLibraryRuntimeDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'runtime: denied'**
+  String get packLibraryRuntimeDenied;
+
+  /// No description provided for @packLibraryRuntimeCanceled.
+  ///
+  /// In en, this message translates to:
+  /// **'runtime: canceled'**
+  String get packLibraryRuntimeCanceled;
+
+  /// No description provided for @packLibraryRuntimeBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'runtime: blocked'**
+  String get packLibraryRuntimeBlocked;
+
+  /// No description provided for @packLibraryRuntimeUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'runtime: {status}'**
+  String packLibraryRuntimeUnknown(String status);
+
+  /// No description provided for @packDefaultName.
+  ///
+  /// In en, this message translates to:
+  /// **'Default Capture Loop'**
+  String get packDefaultName;
+
+  /// No description provided for @packDefaultDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Conservative built-in pack for capture cards, Memory candidates, and lightweight insight.'**
+  String get packDefaultDescription;
+
+  /// No description provided for @packTodoName.
+  ///
+  /// In en, this message translates to:
+  /// **'Todo Extraction Loop'**
+  String get packTodoName;
+
+  /// No description provided for @packTodoDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Built-in pack for source-linked todo suggestions.'**
+  String get packTodoDescription;
 
   /// No description provided for @permissionGateTitle.
   ///
@@ -1979,29 +2139,137 @@ abstract class AppLocalizations {
   /// **'Deferred'**
   String get permissionGateActionDeferred;
 
+  /// No description provided for @permissionGateImpactAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Grant or deny changes future local runs only.'**
+  String get permissionGateImpactAvailable;
+
+  /// No description provided for @permissionGateImpactGranted.
+  ///
+  /// In en, this message translates to:
+  /// **'Future local runs may use this permission until you revoke it.'**
+  String get permissionGateImpactGranted;
+
+  /// No description provided for @permissionGateImpactDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Future local runs needing this permission are blocked; existing records and traces remain.'**
+  String get permissionGateImpactDenied;
+
+  /// No description provided for @permissionGateImpactRevoked.
+  ///
+  /// In en, this message translates to:
+  /// **'Revocation blocks future use; existing records, traces, and derived outputs remain for review.'**
+  String get permissionGateImpactRevoked;
+
+  /// No description provided for @permissionGateImpactDeferred.
+  ///
+  /// In en, this message translates to:
+  /// **'This high-risk or external capability is disabled in the local L3 slice.'**
+  String get permissionGateImpactDeferred;
+
+  /// No description provided for @permissionGateRiskLow.
+  ///
+  /// In en, this message translates to:
+  /// **'low risk'**
+  String get permissionGateRiskLow;
+
+  /// No description provided for @permissionGateRiskMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'medium risk'**
+  String get permissionGateRiskMedium;
+
+  /// No description provided for @permissionGateRiskHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'high risk'**
+  String get permissionGateRiskHigh;
+
+  /// No description provided for @permissionGateCommunityPacks.
+  ///
+  /// In en, this message translates to:
+  /// **'community packs'**
+  String get permissionGateCommunityPacks;
+
+  /// No description provided for @permissionGateMediaPacks.
+  ///
+  /// In en, this message translates to:
+  /// **'media packs'**
+  String get permissionGateMediaPacks;
+
+  /// No description provided for @permissionGateContextPacks.
+  ///
+  /// In en, this message translates to:
+  /// **'context packs'**
+  String get permissionGateContextPacks;
+
+  /// No description provided for @permissionGateDeferredSandbox.
+  ///
+  /// In en, this message translates to:
+  /// **'Deferred until sandbox approval exists.'**
+  String get permissionGateDeferredSandbox;
+
+  /// No description provided for @permissionGateDeferredExternalTools.
+  ///
+  /// In en, this message translates to:
+  /// **'Deferred until external-tool permission design exists.'**
+  String get permissionGateDeferredExternalTools;
+
+  /// No description provided for @permissionGateDeferredPlatform.
+  ///
+  /// In en, this message translates to:
+  /// **'Deferred until platform permission review exists.'**
+  String get permissionGateDeferredPlatform;
+
+  /// No description provided for @permissionGateDeferredPrivacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Deferred until privacy decision coverage exists.'**
+  String get permissionGateDeferredPrivacy;
+
   /// No description provided for @agentPlatformTitle.
   ///
   /// In en, this message translates to:
-  /// **'Agent Observability'**
+  /// **'Agent Console'**
   String get agentPlatformTitle;
 
   /// No description provided for @agentPlatformSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Read-only local runtime evidence from real log events.'**
+  /// **'Local runtime control evidence from runs, tasks, approvals, and traces.'**
   String get agentPlatformSubtitle;
+
+  /// No description provided for @agentConsoleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent Console'**
+  String get agentConsoleTitle;
+
+  /// No description provided for @agentConsoleSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Local-first control for runs, tasks, approvals, packs, and redacted traces.'**
+  String get agentConsoleSubtitle;
 
   /// No description provided for @traceConsoleTitle.
   ///
   /// In en, this message translates to:
-  /// **'Log Center'**
+  /// **'Agent Console'**
   String get traceConsoleTitle;
 
   /// No description provided for @traceConsoleSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Review local Agent Runtime logs, permissions, and generated outputs.'**
+  /// **'Review local Agent Runtime runs, permissions, and generated outputs.'**
   String get traceConsoleSubtitle;
+
+  /// No description provided for @agentConsoleSummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Local control summary'**
+  String get agentConsoleSummaryTitle;
 
   /// No description provided for @traceConsoleSummaryTitle.
   ///
@@ -2036,7 +2304,7 @@ abstract class AppLocalizations {
   /// No description provided for @traceConsoleOpenButton.
   ///
   /// In en, this message translates to:
-  /// **'Open log center'**
+  /// **'Open Agent Console'**
   String get traceConsoleOpenButton;
 
   /// No description provided for @traceConsoleEventsTitle.
@@ -2080,6 +2348,300 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'duration: {duration} ms'**
   String traceConsoleDuration(num duration);
+
+  /// No description provided for @agentConsoleTotalCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Total: {count}'**
+  String agentConsoleTotalCount(int count);
+
+  /// No description provided for @agentConsoleActiveCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Active: {count}'**
+  String agentConsoleActiveCount(int count);
+
+  /// No description provided for @agentConsoleFailedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed: {count}'**
+  String agentConsoleFailedCount(int count);
+
+  /// No description provided for @agentConsoleDeniedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Denied: {count}'**
+  String agentConsoleDeniedCount(int count);
+
+  /// No description provided for @agentConsoleBlockedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked: {count}'**
+  String agentConsoleBlockedCount(int count);
+
+  /// No description provided for @agentConsoleTaskCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks: {count}'**
+  String agentConsoleTaskCount(int count);
+
+  /// No description provided for @agentConsolePendingApprovalCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Approvals: {count}'**
+  String agentConsolePendingApprovalCount(int count);
+
+  /// No description provided for @agentConsoleFilterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Status filter'**
+  String get agentConsoleFilterTitle;
+
+  /// No description provided for @agentConsoleFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get agentConsoleFilterAll;
+
+  /// No description provided for @agentConsoleFilterActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get agentConsoleFilterActive;
+
+  /// No description provided for @agentConsoleFilterFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get agentConsoleFilterFailed;
+
+  /// No description provided for @agentConsoleFilterDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Denied'**
+  String get agentConsoleFilterDenied;
+
+  /// No description provided for @agentConsoleFilterBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked'**
+  String get agentConsoleFilterBlocked;
+
+  /// No description provided for @approvalQueueTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Approval Queue'**
+  String get approvalQueueTitle;
+
+  /// No description provided for @approvalQueueEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No pending local action approvals.'**
+  String get approvalQueueEmpty;
+
+  /// No description provided for @approvalQueueScaffoldBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Approval requests will stay paused here once a persisted approval store is available. This page does not approve or deny fake runtime work.'**
+  String get approvalQueueScaffoldBody;
+
+  /// No description provided for @agentConsoleRunsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs'**
+  String get agentConsoleRunsTitle;
+
+  /// No description provided for @agentConsoleRunsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No local runs match this filter.'**
+  String get agentConsoleRunsEmpty;
+
+  /// No description provided for @agentConsoleTasksTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks'**
+  String get agentConsoleTasksTitle;
+
+  /// No description provided for @agentConsoleTasksEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No local tasks match this filter.'**
+  String get agentConsoleTasksEmpty;
+
+  /// No description provided for @agentConsoleStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'status: {status}'**
+  String agentConsoleStatus(String status);
+
+  /// No description provided for @agentConsoleSeverity.
+  ///
+  /// In en, this message translates to:
+  /// **'severity: {severity}'**
+  String agentConsoleSeverity(String severity);
+
+  /// No description provided for @agentConsoleTask.
+  ///
+  /// In en, this message translates to:
+  /// **'task: {taskId}'**
+  String agentConsoleTask(String taskId);
+
+  /// No description provided for @agentConsoleEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'event: {eventId}'**
+  String agentConsoleEvent(String eventId);
+
+  /// No description provided for @agentConsoleParentTrace.
+  ///
+  /// In en, this message translates to:
+  /// **'parent trace: {traceId}'**
+  String agentConsoleParentTrace(String traceId);
+
+  /// No description provided for @agentConsoleAttempt.
+  ///
+  /// In en, this message translates to:
+  /// **'attempt: {attempt}'**
+  String agentConsoleAttempt(int attempt);
+
+  /// No description provided for @agentConsoleTaskAttempts.
+  ///
+  /// In en, this message translates to:
+  /// **'attempts: {attempts}/{maxAttempts}'**
+  String agentConsoleTaskAttempts(int attempts, int maxAttempts);
+
+  /// No description provided for @agentConsoleMissingDependencies.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 missing dependency} other{{count} missing dependencies}}'**
+  String agentConsoleMissingDependencies(int count);
+
+  /// No description provided for @agentConsoleOutputCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 output} other{{count} outputs}}'**
+  String agentConsoleOutputCount(int count);
+
+  /// No description provided for @agentConsoleStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'started: {time}'**
+  String agentConsoleStarted(String time);
+
+  /// No description provided for @agentConsoleCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'completed: {time}'**
+  String agentConsoleCompleted(String time);
+
+  /// No description provided for @agentConsoleCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'created: {time}'**
+  String agentConsoleCreated(String time);
+
+  /// No description provided for @agentConsoleNotCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'not completed'**
+  String get agentConsoleNotCompleted;
+
+  /// No description provided for @agentConsoleError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error: {message}'**
+  String agentConsoleError(String message);
+
+  /// No description provided for @agentConsoleRetryAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get agentConsoleRetryAction;
+
+  /// No description provided for @agentConsoleCancelAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get agentConsoleCancelAction;
+
+  /// No description provided for @agentConsoleControlsUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry and cancel are disabled until the mobile app exposes a live RuntimeKernel control provider. No fake success is performed here.'**
+  String get agentConsoleControlsUnavailable;
+
+  /// No description provided for @agentConsoleRunTracesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trace list'**
+  String get agentConsoleRunTracesTitle;
+
+  /// No description provided for @agentConsoleRunNoTraces.
+  ///
+  /// In en, this message translates to:
+  /// **'No traces recorded for this run yet.'**
+  String get agentConsoleRunNoTraces;
+
+  /// No description provided for @agentConsoleRunModeReadOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'run mode: read-only'**
+  String get agentConsoleRunModeReadOnly;
+
+  /// No description provided for @agentConsoleRunModeConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'run mode: confirm'**
+  String get agentConsoleRunModeConfirm;
+
+  /// No description provided for @agentConsoleRunModeAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'run mode: auto'**
+  String get agentConsoleRunModeAuto;
+
+  /// No description provided for @agentConsoleRunModeUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'run mode: unknown'**
+  String get agentConsoleRunModeUnknown;
+
+  /// No description provided for @traceConsoleOpenSourceButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Open source'**
+  String get traceConsoleOpenSourceButton;
+
+  /// No description provided for @traceConsoleNoSource.
+  ///
+  /// In en, this message translates to:
+  /// **'No source reference is available for this trace.'**
+  String get traceConsoleNoSource;
+
+  /// No description provided for @traceConsolePayloadTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Redacted payload'**
+  String get traceConsolePayloadTitle;
+
+  /// No description provided for @traceConsolePayloadEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No payload recorded.'**
+  String get traceConsolePayloadEmpty;
+
+  /// No description provided for @traceConsolePayloadRedactedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 sensitive field redacted} other{{count} sensitive fields redacted}}'**
+  String traceConsolePayloadRedactedCount(int count);
+
+  /// No description provided for @traceConsoleRedactedValue.
+  ///
+  /// In en, this message translates to:
+  /// **'[redacted]'**
+  String get traceConsoleRedactedValue;
 
   /// No description provided for @providerSettingsTitle.
   ///

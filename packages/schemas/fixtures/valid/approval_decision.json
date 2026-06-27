@@ -1,0 +1,31 @@
+{
+  "kind": "approval_decision",
+  "id": "approval_decision_synthetic_001",
+  "schema_version": 1,
+  "request_id": "approval_req_synthetic_001",
+  "decision": "approve_once",
+  "reason": "Synthetic approval for contract validation.",
+  "pack_id": "pack.synthetic_contract",
+  "agent_id": "agent.synthetic_capture",
+  "task_id": "task_synthetic_001",
+  "run_id": "run_synthetic_001",
+  "tool_id": "tool.memory.propose",
+  "source_refs": [
+    {
+      "kind": "capture",
+      "id": "cap_synthetic_001",
+      "source_version": 1,
+      "content_hash": "sha256:synthetic-capture",
+      "event_id": "evt_synthetic_capture_created_001",
+      "uri": null
+    }
+  ],
+  "redacted_input_keys": [
+    "capture_text"
+  ],
+  "grant_expires_at": "2026-06-26T08:05:00Z",
+  "decided_at": "2026-06-26T08:00:30Z",
+  "metadata": {
+    "fixture": true
+  }
+}

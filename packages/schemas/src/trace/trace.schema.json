@@ -37,6 +37,9 @@
         "permission_checked",
         "model_called",
         "tool_invoked",
+        "tool_denied",
+        "approval_requested",
+        "approval_decided",
         "error"
       ]
     },
@@ -115,6 +118,35 @@
         "error"
       ]
     },
+    "run_mode": {
+      "$ref": "#/$defs/run_mode"
+    },
+    "tool_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "tool_access": {
+      "$ref": "#/$defs/tool_access_or_null"
+    },
+    "tool_risk": {
+      "$ref": "#/$defs/tool_risk_or_null"
+    },
+    "tool_locality": {
+      "$ref": "#/$defs/tool_locality_or_null"
+    },
+    "approval_request_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "approval_decision": {
+      "$ref": "#/$defs/approval_decision_or_null"
+    },
     "message": {
       "type": [
         "string",
@@ -132,6 +164,14 @@
       "type": "object",
       "additionalProperties": true
     },
+    "redacted_payload": {
+      "description": "Optional redacted payload projection for trace review. Raw tool input and secret values must not be stored here.",
+      "type": "object",
+      "additionalProperties": true
+    },
+    "redaction": {
+      "$ref": "#/$defs/redaction"
+    },
     "created_at": {
       "type": "string",
       "format": "date-time"
@@ -139,6 +179,94 @@
     "metadata": {
       "type": "object",
       "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "run_mode": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "read_only",
+        "confirm",
+        "auto",
+        null
+      ]
+    },
+    "tool_access_or_null": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "read",
+        "write",
+        "read_write",
+        null
+      ]
+    },
+    "tool_risk_or_null": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        null
+      ]
+    },
+    "tool_locality_or_null": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "local",
+        "external",
+        null
+      ]
+    },
+    "approval_decision_or_null": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "approve_once",
+        "deny",
+        null
+      ]
+    },
+    "redaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contains_raw_tool_input",
+        "redacted_keys"
+      ],
+      "properties": {
+        "contains_raw_tool_input": {
+          "const": false
+        },
+        "redacted_keys": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "policy": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        }
+      }
     }
   }
 }

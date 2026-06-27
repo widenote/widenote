@@ -316,8 +316,12 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('pack.default'), findsWidgets);
-    expect(find.text('medium'), findsOneWidget);
+    expect(find.text('medium risk'), findsOneWidget);
     expect(find.text('Built-in / available'), findsWidgets);
+    expect(
+      find.text('Grant or deny changes future local runs only.'),
+      findsWidgets,
+    );
     expect(find.text('Built-in and available permissions'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.byKey(const Key('permission-row-script.execute')),
@@ -343,6 +347,51 @@ void main() {
       ),
       findsNothing,
     );
+    expect(
+      find.text(
+        'This high-risk or external capability is disabled in the local L3 slice.',
+      ),
+      findsWidgets,
+    );
+  });
+
+  testWidgets('pack library persists enable and disable state', (tester) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    await _pumpLocalizedPage(
+      tester,
+      const PackLibraryPage(),
+      database: database,
+    );
+
+    expect(
+      database.packInstallations.readById('pack.default')!.status,
+      'enabled',
+    );
+    expect(find.text('1 enabled'), findsNothing);
+    expect(find.text('2 enabled'), findsOneWidget);
+    expect(
+      find.textContaining('Disabling affects future local tasks only'),
+      findsOneWidget,
+    );
+
+    await _tapPermissionAction(tester, const Key('pack-toggle-pack.default'));
+
+    expect(
+      database.packInstallations.readById('pack.default')!.status,
+      'disabled',
+    );
+    expect(find.text('1 disabled'), findsOneWidget);
+    expect(find.byKey(const Key('pack-status-pack.default')), findsOneWidget);
+    expect(find.text('disabled'), findsOneWidget);
+
+    await _tapPermissionAction(tester, const Key('pack-toggle-pack.default'));
+
+    expect(
+      database.packInstallations.readById('pack.default')!.status,
+      'enabled',
+    );
+    expect(find.text('2 enabled'), findsOneWidget);
   });
 
   testWidgets('permission gate persists grant deny and revoke decisions', (
@@ -377,6 +426,12 @@ void main() {
     expect(record!.status, 'granted');
     expect(record.grantKind, 'user');
     expect(find.text('Granted locally'), findsOneWidget);
+    expect(
+      find.text(
+        'Future local runs may use this permission until you revoke it.',
+      ),
+      findsOneWidget,
+    );
 
     var broker = runtime.InMemoryPermissionBroker(
       store: LocalDbPermissionStore(database),
@@ -394,6 +449,12 @@ void main() {
     expect(record!.status, 'revoked');
     expect(record.revokedAt, isNotNull);
     expect(find.text('Revoked locally'), findsOneWidget);
+    expect(
+      find.text(
+        'Revocation blocks future use; existing records, traces, and derived outputs remain for review.',
+      ),
+      findsOneWidget,
+    );
 
     broker = runtime.InMemoryPermissionBroker(
       store: LocalDbPermissionStore(database),
@@ -418,6 +479,12 @@ void main() {
     expect(denied!.status, 'denied');
     expect(denied.reason, 'user_denied_from_permission_gate');
     expect(find.text('Denied locally'), findsOneWidget);
+    expect(
+      find.text(
+        'Future local runs needing this permission are blocked; existing records and traces remain.',
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets(
@@ -469,7 +536,7 @@ void main() {
       _expectButtonSemantics(
         tester,
         const Key('trace-console-entry'),
-        'Log Center',
+        'Agent Console',
       );
     } finally {
       semantics.dispose();

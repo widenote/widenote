@@ -27,6 +27,7 @@ It should stay short. It points to the right local context instead of duplicatin
 
 ## Research
 
+- `docs/research/2026-06-27-agent-runtime-roadmap-research.md`
 - `docs/research/2026-06-27-ai-native-project-structure-patterns.md`
 - `docs/research/2026-06-27-agent-instruction-patterns.md`
 - `docs/research/2026-06-26-w7-current-integration-state.md`
@@ -74,6 +75,7 @@ It should stay short. It points to the right local context instead of duplicatin
 
 ## RFCs
 
+- `docs/rfcs/agent-runtime-capability-boundaries.md`
 - `docs/rfcs/memory-model.md`
 - `docs/rfcs/agent-pack-schema.md`
 - `docs/rfcs/model-provider-settings.md`

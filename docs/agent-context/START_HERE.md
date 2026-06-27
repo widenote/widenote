@@ -25,7 +25,11 @@ The default loop is:
 quick capture -> timeline / cards -> memory -> insight
 ```
 
-Backend, sync, runner, exports, todos, documents, and graphical agent flows are optional enhancements or Agent Packs.
+Backend services, sync, runners, exports, todos, documents, graphical agent
+flows, external tools, and continuous-capture surfaces are planned extension
+surfaces. They must enhance the local-first core instead of becoming
+prerequisites for capture, local persistence, Memory, trace review, and the
+first user experience.
 
 ## Context Shape
 

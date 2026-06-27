@@ -18,6 +18,7 @@ more ADRs. Do not leave an implemented phase-one RFC listed as merely open.
 | [Model Provider Settings](./model-provider-settings.md) | Accepted phase-one slice; amended by W7 safe-backup boundary |
 | [Memory Model](./memory-model.md) | Accepted phase-one contract; follow-ups open |
 | [Agent Pack Schema](./agent-pack-schema.md) | Accepted phase-one contract; scripted/community runtime deferred |
+| [Agent Runtime Capability Boundaries](./agent-runtime-capability-boundaries.md) | Proposed implementation guardrail under ADR-0011 |
 | [Mobile Entry Closure](./mobile-entry-closure.md) | Implemented phase-one slice; current status superseded by W7 integration state |
 | [Mobile Visual Style](./mobile-visual-style.md) | Accepted |
 

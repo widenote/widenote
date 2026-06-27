@@ -19,6 +19,7 @@ final class WideNoteLocalDatabase {
       todos = TodosDao(_database),
       runtimeTasks = RuntimeTasksDao(_database),
       runtimeRuns = RuntimeRunsDao(_database),
+      runtimeApprovals = RuntimeApprovalsDao(_database),
       packInstallations = PackInstallationsDao(_database),
       permissionGrants = PermissionGrantsDao(_database),
       contextPacketCaches = ContextPacketCachesDao(_database),
@@ -57,6 +58,7 @@ final class WideNoteLocalDatabase {
   final TodosDao todos;
   final RuntimeTasksDao runtimeTasks;
   final RuntimeRunsDao runtimeRuns;
+  final RuntimeApprovalsDao runtimeApprovals;
   final PackInstallationsDao packInstallations;
   final PermissionGrantsDao permissionGrants;
   final ContextPacketCachesDao contextPacketCaches;

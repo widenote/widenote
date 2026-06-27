@@ -1,9 +1,11 @@
 import 'package:widenote_core/widenote_core.dart';
 
+import 'approval.dart';
 import 'event.dart';
 import 'model.dart';
 import 'pack.dart';
 import 'permissions.dart';
+import 'run_mode.dart';
 import 'store.dart';
 import 'task.dart';
 import 'tools.dart';
@@ -19,6 +21,8 @@ final class RuntimeKernel {
     required this.clock,
     required this.model,
     required this.deviceId,
+    this.runMode = RunMode.auto,
+    this.approvalBroker,
     RuntimeStore? runtimeStore,
     PackRegistry? packRegistry,
     this.runLeaseDuration = const Duration(minutes: 5),
@@ -34,6 +38,8 @@ final class RuntimeKernel {
   final WnClock clock;
   final ModelClient model;
   final String deviceId;
+  final RunMode runMode;
+  final ApprovalBroker? approvalBroker;
   final RuntimeStore runtimeStore;
   final PackRegistry packRegistry;
   final Duration runLeaseDuration;
@@ -416,7 +422,11 @@ final class RuntimeKernel {
       }
       final result = await handler.handle(context, triggerEvent);
       _validateOutputEvents(definition, result.events);
-      final outputEvents = _materializeOutputs(result.events, triggerEvent);
+      final outputEvents = _materializeOutputs(
+        definition,
+        result.events,
+        triggerEvent,
+      );
       await eventStore.appendAll(outputEvents);
       for (final output in outputEvents) {
         await _traceOutput(task, run, output);
@@ -455,17 +465,43 @@ final class RuntimeKernel {
         error: error.message,
       );
       await _traceOutputRejected(failedTask, failedRun, error);
-    } catch (error) {
+    } on OutputSourceRefValidationException catch (error) {
       final failedRun = await _replaceRun(
         run,
         RuntimeRunStatus.failed,
-        error: '$error',
+        error: error.message,
+      );
+      final failedTask = await _replaceTask(
+        task,
+        RuntimeTaskStatus.failed,
+        error: error.message,
+      );
+      await _traceOutputSourceRefRejected(failedTask, failedRun, error);
+    } on ApprovalPendingException catch (error) {
+      final safeError = _safeTraceError(error.message);
+      final failedRun = await _replaceRun(
+        run,
+        RuntimeRunStatus.failed,
+        error: safeError,
+      );
+      final failedTask = await _replaceTask(
+        task,
+        RuntimeTaskStatus.failed,
+        error: safeError,
+      );
+      await _traceRunApprovalPending(failedTask, failedRun, error);
+    } catch (error) {
+      final safeError = _safeTraceError('$error');
+      final failedRun = await _replaceRun(
+        run,
+        RuntimeRunStatus.failed,
+        error: safeError,
       );
       if (task.canRetry) {
         final retryTask = await _replaceTask(
           task,
           RuntimeTaskStatus.queued,
-          error: '$error',
+          error: safeError,
         );
         await _traceRunFailed(retryTask, failedRun, error);
         await _traceTaskRetryQueued(retryTask);
@@ -475,7 +511,7 @@ final class RuntimeKernel {
       final failedTask = await _replaceTask(
         task,
         RuntimeTaskStatus.failed,
-        error: '$error',
+        error: safeError,
       );
       await _traceRunFailed(failedTask, failedRun, error);
     }
@@ -747,6 +783,7 @@ final class RuntimeKernel {
       status: RuntimeRunStatus.running,
       startedAt: startedAt,
       attempt: task.attempts,
+      runMode: runMode,
       leaseExpiresAt: startedAt.add(runLeaseDuration),
     );
   }
@@ -757,6 +794,7 @@ final class RuntimeKernel {
       agentId: task.agentId,
       task: task,
       run: run,
+      runMode: run.runMode,
       model: _PermissionCheckedModelClient(
         packId: task.packId,
         taskId: task.id,
@@ -773,6 +811,10 @@ final class RuntimeKernel {
         agentId: task.agentId,
         permissionBroker: permissionBroker,
         toolRegistry: toolRegistry,
+        runMode: run.runMode,
+        approvalBroker: approvalBroker,
+        idGenerator: idGenerator,
+        clock: clock,
         trace: _trace,
       ),
     );
@@ -828,11 +870,17 @@ final class RuntimeKernel {
   }
 
   List<WnEvent> _materializeOutputs(
+    AgentDefinition definition,
     Iterable<WnEventDraft> drafts,
     WnEvent causedBy,
   ) {
     return drafts
-        .map((draft) => _materialize(draft, causedBy: causedBy))
+        .map(
+          (draft) => _materialize(
+            _ensureOutputSourceRefs(definition, draft, causedBy),
+            causedBy: causedBy,
+          ),
+        )
         .toList();
   }
 
@@ -860,6 +908,94 @@ final class RuntimeKernel {
         );
       }
     }
+  }
+
+  WnEventDraft _ensureOutputSourceRefs(
+    AgentDefinition definition,
+    WnEventDraft draft,
+    WnEvent causedBy,
+  ) {
+    if (!_requiresSourceRefs(draft.type)) {
+      return draft;
+    }
+    final refs = _validatedSourceRefs(
+      definition.id,
+      draft.type,
+      draft.payload['source_refs'],
+    );
+    if (refs.isNotEmpty) {
+      return draft;
+    }
+    return _copyDraftWithPayload(draft, <String, Object?>{
+      ...draft.payload,
+      'source_refs': <Object?>[_eventSourceRef(causedBy)],
+    });
+  }
+
+  bool _requiresSourceRefs(String eventType) {
+    return _sourceRefRequiredOutputTypes.contains(eventType);
+  }
+
+  List<Object?> _validatedSourceRefs(
+    String agentId,
+    String eventType,
+    Object? value,
+  ) {
+    if (value == null) {
+      return const <Object?>[];
+    }
+    if (value is! List) {
+      throw OutputSourceRefValidationException(
+        agentId: agentId,
+        eventType: eventType,
+        reason: 'source_refs must be a list.',
+      );
+    }
+    for (final ref in value) {
+      if (!_isSourceRef(ref)) {
+        throw OutputSourceRefValidationException(
+          agentId: agentId,
+          eventType: eventType,
+          reason:
+              'source_refs must contain objects with kind/id or source_type/source_id.',
+        );
+      }
+    }
+    return value;
+  }
+
+  bool _isSourceRef(Object? value) {
+    if (value is! Map) {
+      return false;
+    }
+    final kind = value['kind'] ?? value['source_type'];
+    final id = value['id'] ?? value['source_id'];
+    return kind is String && kind.isNotEmpty && id is String && id.isNotEmpty;
+  }
+
+  JsonMap _eventSourceRef(WnEvent event) {
+    return <String, Object?>{
+      'kind': 'event',
+      'id': event.id,
+      'source_type': 'event',
+      'source_id': event.id,
+      'event_type': event.type,
+    };
+  }
+
+  WnEventDraft _copyDraftWithPayload(WnEventDraft draft, JsonMap payload) {
+    return WnEventDraft(
+      type: draft.type,
+      actor: draft.actor,
+      schemaVersion: draft.schemaVersion,
+      payload: payload,
+      privacy: draft.privacy,
+      packId: draft.packId,
+      agentId: draft.agentId,
+      subjectRef: draft.subjectRef,
+      causationId: draft.causationId,
+      correlationId: draft.correlationId,
+    );
   }
 
   WnEvent _materialize(WnEventDraft draft, {WnEvent? causedBy}) {
@@ -1089,6 +1225,7 @@ final class RuntimeKernel {
       details: <String, Object?>{
         'trace_type': 'run_started',
         'attempt': run.attempt,
+        'run_mode': run.runMode.name,
         'lease_expires_at': run.leaseExpiresAt?.toIso8601String(),
       },
     );
@@ -1132,6 +1269,28 @@ final class RuntimeKernel {
     );
   }
 
+  Future<void> _traceOutputSourceRefRejected(
+    RuntimeTask task,
+    RuntimeRun run,
+    OutputSourceRefValidationException error,
+  ) {
+    return _trace(
+      name: 'runtime.handler.output_rejected',
+      message: 'Handler emitted output without valid source refs.',
+      level: TraceLevel.error,
+      taskId: task.id,
+      runId: run.id,
+      packId: task.packId,
+      agentId: task.agentId,
+      details: <String, Object?>{
+        'trace_type': 'error',
+        'event_type': error.eventType,
+        'error_code': 'invalid_source_refs',
+        'error': error.message,
+      },
+    );
+  }
+
   Future<void> _traceRunCompleted(RuntimeTask task, RuntimeRun run) {
     return _trace(
       name: 'runtime.run.completed',
@@ -1159,7 +1318,8 @@ final class RuntimeKernel {
       agentId: task.agentId,
       details: <String, Object?>{
         'trace_type': 'error',
-        'error': '$error',
+        'error': _safeTraceError('$error'),
+        'error_type': error.runtimeType.toString(),
         'attempt': run.attempt,
       },
     );
@@ -1273,7 +1433,54 @@ final class RuntimeKernel {
       details: <String, Object?>{'trace_type': 'failed', 'error': error},
     );
   }
+
+  Future<void> _traceRunApprovalPending(
+    RuntimeTask task,
+    RuntimeRun run,
+    ApprovalPendingException error,
+  ) {
+    return _trace(
+      name: 'runtime.run.approval_pending',
+      message: 'Agent run stopped because tool approval is pending.',
+      level: TraceLevel.warning,
+      taskId: task.id,
+      runId: run.id,
+      packId: task.packId,
+      agentId: task.agentId,
+      details: <String, Object?>{
+        'trace_type': 'approval',
+        'error_code': 'approval_pending',
+        'approval_request_id': error.request.id,
+        'tool_name': error.request.toolName,
+        'decision_state': error.decision.state.name,
+      },
+    );
+  }
 }
+
+String _safeTraceError(String value) {
+  var redacted = value.replaceAllMapped(
+    RegExp(
+      r'((api[_-]?key|token|secret|password|authorization|credential|raw[_-]?db)\s*[:=]\s*)([^\s,;]+)',
+      caseSensitive: false,
+    ),
+    (match) => '${match.group(1)}[redacted]',
+  );
+  redacted = redacted.replaceAllMapped(
+    RegExp(r'\bBearer\s+[^\s,;]+', caseSensitive: false),
+    (_) => 'Bearer [redacted]',
+  );
+  redacted = redacted.replaceAllMapped(
+    RegExp(r'\b(sk|tp)-[A-Za-z0-9][A-Za-z0-9_-]{8,}\b'),
+    (match) => '${match.group(1)}-[redacted]',
+  );
+  if (redacted.length > _maxTraceErrorLength) {
+    redacted = '${redacted.substring(0, _maxTraceErrorLength)}...';
+  }
+  return redacted;
+}
+
+const _maxTraceErrorLength = 2048;
 
 final class _TaskRequest {
   const _TaskRequest({
@@ -1500,6 +1707,10 @@ final class _RuntimeToolInvoker implements ToolInvoker {
     required this.agentId,
     required this.permissionBroker,
     required this.toolRegistry,
+    required this.runMode,
+    required this.approvalBroker,
+    required this.idGenerator,
+    required this.clock,
     required this.trace,
   });
 
@@ -1509,6 +1720,10 @@ final class _RuntimeToolInvoker implements ToolInvoker {
   final String agentId;
   final PermissionBroker permissionBroker;
   final ToolRegistry toolRegistry;
+  final RunMode runMode;
+  final ApprovalBroker? approvalBroker;
+  final WnIdGenerator idGenerator;
+  final WnClock clock;
   final _TraceRecorder trace;
 
   @override
@@ -1516,6 +1731,8 @@ final class _RuntimeToolInvoker implements ToolInvoker {
     String name, {
     JsonMap input = const <String, Object?>{},
   }) async {
+    final inputKeys = _sorted(input.keys);
+    final definition = toolRegistry.lookup(name);
     await trace(
       name: 'runtime.tool.requested',
       message: 'Tool invocation requested.',
@@ -1523,13 +1740,8 @@ final class _RuntimeToolInvoker implements ToolInvoker {
       runId: runId,
       packId: packId,
       agentId: agentId,
-      details: <String, Object?>{
-        'trace_type': 'tool',
-        'tool_name': name,
-        'input_keys': input.keys.toList(growable: false),
-      },
+      details: _toolTraceDetails(name, definition, inputKeys),
     );
-    final definition = toolRegistry.lookup(name);
     if (definition == null) {
       await trace(
         name: 'runtime.tool.failed',
@@ -1540,8 +1752,7 @@ final class _RuntimeToolInvoker implements ToolInvoker {
         packId: packId,
         agentId: agentId,
         details: <String, Object?>{
-          'trace_type': 'tool',
-          'tool_name': name,
+          ..._toolTraceDetails(name, definition, inputKeys),
           'error_code': 'tool_not_found',
         },
       );
@@ -1566,8 +1777,8 @@ final class _RuntimeToolInvoker implements ToolInvoker {
         packId: packId,
         agentId: agentId,
         details: <String, Object?>{
+          ..._toolTraceDetails(name, definition, inputKeys),
           'trace_type': 'permission_checked',
-          'tool_name': name,
           'missing_permissions': missing,
         },
       );
@@ -1578,6 +1789,14 @@ final class _RuntimeToolInvoker implements ToolInvoker {
           details: <String, Object?>{'missing_permissions': missing},
         ),
       );
+    }
+    final policyFailure = await _toolPolicyFailure(
+      definition,
+      input: input,
+      inputKeys: inputKeys,
+    );
+    if (policyFailure != null) {
+      return WnResult<JsonMap>.err(policyFailure);
     }
     final result = await toolRegistry.invoke(
       ToolInvocation(
@@ -1596,12 +1815,276 @@ final class _RuntimeToolInvoker implements ToolInvoker {
       packId: packId,
       agentId: agentId,
       details: <String, Object?>{
-        'trace_type': 'tool',
-        'tool_name': name,
+        ..._toolTraceDetails(name, definition, inputKeys),
         'error_code': result.isErr ? result.failure.code : null,
       },
     );
     return result;
+  }
+
+  Future<WnFailure?> _toolPolicyFailure(
+    ToolDefinition definition, {
+    required JsonMap input,
+    required List<String> inputKeys,
+  }) async {
+    if (runMode == RunMode.readOnly && !definition.isReadOnlySafe) {
+      await trace(
+        name: 'runtime.tool.run_mode_denied',
+        message: 'Read-only mode denied tool invocation.',
+        level: TraceLevel.warning,
+        taskId: taskId,
+        runId: runId,
+        packId: packId,
+        agentId: agentId,
+        details: <String, Object?>{
+          ..._toolTraceDetails(definition.name, definition, inputKeys),
+          'error_code': 'run_mode_denied',
+          'denial_reason': 'read_only_mode',
+        },
+      );
+      return WnFailure(
+        code: 'run_mode_denied',
+        message:
+            'Read-only mode cannot run tools that mutate, export, or are high risk.',
+        details: _toolFailureDetails(definition, inputKeys),
+      );
+    }
+
+    if (runMode == RunMode.confirm && definition.requiresApproval) {
+      return _approvalFailure(definition, input: input, inputKeys: inputKeys);
+    }
+
+    if (runMode == RunMode.auto && !definition.canAutoExecute) {
+      return _approvalFailure(definition, input: input, inputKeys: inputKeys);
+    }
+
+    return null;
+  }
+
+  Future<WnFailure?> _approvalFailure(
+    ToolDefinition definition, {
+    required JsonMap input,
+    required List<String> inputKeys,
+  }) async {
+    final broker = approvalBroker;
+    final requestedAt = clock.now();
+    final request = ApprovalRequest(
+      id: idGenerator.nextId('approval'),
+      packId: packId,
+      agentId: agentId,
+      taskId: taskId,
+      runId: runId,
+      toolName: definition.name,
+      runMode: runMode,
+      toolAccess: definition.access,
+      toolRisk: definition.risk,
+      isExternal: definition.external,
+      requiredPermissions: _sorted(definition.requiredPermissions),
+      inputKeys: inputKeys,
+      createdAt: requestedAt,
+      expiresAt: requestedAt.add(_approvalRequestTtl),
+      sourceRefs: _sourceRefsFromInput(input),
+      actionSummary: 'Approve one ${definition.name} tool invocation.',
+      reason:
+          'Tool requires approval for write, external, high-risk, or explicit approval-gated access.',
+    );
+
+    if (broker == null) {
+      await trace(
+        name: 'runtime.tool.approval_unavailable',
+        message: 'Tool approval is required but no broker is available.',
+        level: TraceLevel.warning,
+        taskId: taskId,
+        runId: runId,
+        packId: packId,
+        agentId: agentId,
+        details: <String, Object?>{
+          ..._approvalTraceDetails(request),
+          'error_code': 'approval_unavailable',
+        },
+      );
+      return WnFailure(
+        code: 'approval_unavailable',
+        message:
+            'Tool approval is required, but no approval broker is available.',
+        details: _toolFailureDetails(definition, inputKeys),
+      );
+    }
+
+    await trace(
+      name: 'runtime.tool.approval_requested',
+      message: 'Tool approval requested.',
+      taskId: taskId,
+      runId: runId,
+      packId: packId,
+      agentId: agentId,
+      details: _approvalTraceDetails(request),
+    );
+
+    final ApprovalDecision decision;
+    try {
+      decision = await broker.requestApproval(request);
+    } catch (error) {
+      await trace(
+        name: 'runtime.tool.approval_failed',
+        message: 'Tool approval broker failed.',
+        level: TraceLevel.warning,
+        taskId: taskId,
+        runId: runId,
+        packId: packId,
+        agentId: agentId,
+        details: <String, Object?>{
+          ..._approvalTraceDetails(request),
+          'error_code': 'approval_failed',
+          'error_type': error.runtimeType.toString(),
+        },
+      );
+      return WnFailure(
+        code: 'approval_failed',
+        message: 'Tool approval failed before execution.',
+        details: _toolFailureDetails(definition, inputKeys),
+      );
+    }
+
+    await trace(
+      name: decision.isPending
+          ? 'runtime.tool.approval_pending'
+          : decision.isApproved
+          ? 'runtime.tool.approval_approved'
+          : 'runtime.tool.approval_denied',
+      message: decision.isPending
+          ? 'Tool approval is pending user review.'
+          : decision.isApproved
+          ? 'Tool approval granted.'
+          : 'Tool approval denied.',
+      level: decision.isApproved ? TraceLevel.info : TraceLevel.warning,
+      taskId: taskId,
+      runId: runId,
+      packId: packId,
+      agentId: agentId,
+      details: <String, Object?>{
+        ..._approvalTraceDetails(request),
+        'decision_state': decision.state.name,
+      },
+    );
+
+    if (decision.isPending) {
+      throw ApprovalPendingException(request: request, decision: decision);
+    }
+
+    if (decision.isApproved) {
+      return null;
+    }
+
+    final failureCode = switch (decision.state) {
+      ApprovalDecisionState.denied => 'approval_denied',
+      ApprovalDecisionState.canceled => 'approval_canceled',
+      ApprovalDecisionState.expired => 'approval_expired',
+      ApprovalDecisionState.pending => 'approval_pending',
+      ApprovalDecisionState.approved => 'approval_denied',
+    };
+
+    return WnFailure(
+      code: failureCode,
+      message: 'Tool approval did not allow execution.',
+      details: _toolFailureDetails(definition, inputKeys),
+    );
+  }
+
+  JsonMap _toolTraceDetails(
+    String name,
+    ToolDefinition? definition,
+    List<String> inputKeys,
+  ) {
+    return <String, Object?>{
+      'trace_type': 'tool',
+      'tool_name': name,
+      'run_mode': runMode.name,
+      'input_keys': inputKeys,
+      if (definition != null) ...<String, Object?>{
+        'tool_access': definition.access.name,
+        'tool_risk': definition.risk.name,
+        'tool_external': definition.external,
+        'tool_high_risk': definition.isHighRisk,
+        'approval_required': _requiresApprovalForRunMode(definition),
+        'required_permissions': _sorted(definition.requiredPermissions),
+      },
+    };
+  }
+
+  JsonMap _approvalTraceDetails(ApprovalRequest request) {
+    return <String, Object?>{
+      'trace_type': 'approval',
+      'approval_request_id': request.id,
+      'tool_name': request.toolName,
+      'run_mode': request.runMode.name,
+      'input_keys': request.inputKeys,
+      'tool_access': request.toolAccess.name,
+      'tool_risk': request.toolRisk.name,
+      'tool_external': request.isExternal,
+      'tool_high_risk': request.isHighRisk,
+      'required_permissions': request.requiredPermissions,
+      'source_refs': request.sourceRefs,
+      'action_summary': request.actionSummary,
+      'expires_at': request.expiresAt?.toUtc().toIso8601String(),
+    };
+  }
+
+  JsonMap _toolFailureDetails(
+    ToolDefinition definition,
+    List<String> inputKeys,
+  ) {
+    return <String, Object?>{
+      'tool_name': definition.name,
+      'run_mode': runMode.name,
+      'input_keys': inputKeys,
+      'tool_access': definition.access.name,
+      'tool_risk': definition.risk.name,
+      'tool_external': definition.external,
+      'tool_high_risk': definition.isHighRisk,
+      'approval_required': _requiresApprovalForRunMode(definition),
+      'required_permissions': _sorted(definition.requiredPermissions),
+    };
+  }
+
+  bool _requiresApprovalForRunMode(ToolDefinition definition) {
+    return switch (runMode) {
+      RunMode.readOnly => false,
+      RunMode.confirm => definition.requiresApproval,
+      RunMode.auto => !definition.canAutoExecute,
+    };
+  }
+
+  List<String> _sorted(Iterable<String> values) {
+    return values.toList(growable: false)..sort();
+  }
+
+  List<Object?> _sourceRefsFromInput(JsonMap input) {
+    final refs = <Object?>[];
+    final sourceRefs = input['source_refs'];
+    if (sourceRefs is Iterable) {
+      for (final ref in sourceRefs) {
+        if (ref is Map) {
+          final kind = ref['kind'] ?? ref['source_type'];
+          final id = ref['id'] ?? ref['source_id'];
+          if (kind is String &&
+              kind.isNotEmpty &&
+              id is String &&
+              id.isNotEmpty) {
+            refs.add(<String, Object?>{'kind': kind, 'id': id});
+          }
+        }
+      }
+    }
+    final sourceEventId = input['source_event_id'];
+    if (sourceEventId is String && sourceEventId.isNotEmpty) {
+      refs.add(<String, Object?>{'kind': 'event', 'id': sourceEventId});
+    }
+    final sourceCaptureId = input['source_capture_id'];
+    if (sourceCaptureId is String && sourceCaptureId.isNotEmpty) {
+      refs.add(<String, Object?>{'kind': 'capture', 'id': sourceCaptureId});
+    }
+    return List<Object?>.unmodifiable(refs);
   }
 }
 
@@ -1617,6 +2100,15 @@ typedef _TraceRecorder =
       String? agentId,
       JsonMap details,
     });
+
+const _sourceRefRequiredOutputTypes = <String>{
+  WnEventTypes.memoryProposed,
+  WnEventTypes.cardCreated,
+  WnEventTypes.insightCreated,
+  WnEventTypes.todoSuggested,
+};
+
+const _approvalRequestTtl = Duration(minutes: 15);
 
 final class OutputEventValidationException implements Exception {
   OutputEventValidationException({
@@ -1638,6 +2130,23 @@ final class OutputEventValidationException implements Exception {
   String toString() => message;
 }
 
+final class OutputSourceRefValidationException implements Exception {
+  OutputSourceRefValidationException({
+    required this.agentId,
+    required this.eventType,
+    required this.reason,
+  }) : message =
+           'Agent $agentId emitted derived output $eventType without valid source refs: $reason';
+
+  final String agentId;
+  final String eventType;
+  final String reason;
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
 final class RuntimePermissionDeniedException implements Exception {
   RuntimePermissionDeniedException({
     required this.packId,
@@ -1648,6 +2157,20 @@ final class RuntimePermissionDeniedException implements Exception {
 
   final String packId;
   final List<String> permissions;
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
+final class ApprovalPendingException implements Exception {
+  ApprovalPendingException({required this.request, required this.decision})
+    : message =
+          'Approval pending for tool ${request.toolName} '
+          'in run ${request.runId}.';
+
+  final ApprovalRequest request;
+  final ApprovalDecision decision;
   final String message;
 
   @override

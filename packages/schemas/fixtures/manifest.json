@@ -29,12 +29,24 @@
       "fixture": "valid/trace_without_run.json"
     },
     {
+      "schema": "../src/trace/trace.schema.json",
+      "fixture": "valid/trace_tool_approval.json"
+    },
+    {
       "schema": "../src/runtime/runtime_task_run.schema.json",
       "fixture": "valid/runtime_task.json"
     },
     {
       "schema": "../src/runtime/runtime_task_run.schema.json",
       "fixture": "valid/runtime_run.json"
+    },
+    {
+      "schema": "../src/runtime/approval.schema.json",
+      "fixture": "valid/approval_request.json"
+    },
+    {
+      "schema": "../src/runtime/approval.schema.json",
+      "fixture": "valid/approval_decision.json"
     },
     {
       "schema": "../src/context_packet/context_packet.schema.json",

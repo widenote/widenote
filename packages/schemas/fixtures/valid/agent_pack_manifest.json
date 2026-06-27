@@ -13,8 +13,10 @@
     "schema_version": 1
   },
   "entrypoint_kind": "native",
+  "default_run_mode": "confirm",
   "permissions": [
     "source.read.text",
+    "memory.read",
     "memory.propose",
     "model.complete"
   ],
@@ -37,12 +39,16 @@
       "name": "Synthetic Capture Agent",
       "prompt_ref": null,
       "model_profile_ref": "synthetic_chat",
+      "run_mode": "confirm",
       "permissions": [
         "source.read.text",
+        "memory.read",
         "memory.propose",
         "model.complete"
       ],
-      "tools": [],
+      "tools": [
+        "tool.memory.read"
+      ],
       "output_events": [
         "wn.memory.proposed"
       ],
@@ -66,7 +72,32 @@
       "allow_fallback": true
     }
   ],
-  "tools": [],
+  "tools": [
+    {
+      "id": "tool.memory.read",
+      "capability_kind": "memory",
+      "permissions": [
+        "memory.read"
+      ],
+      "required_permissions": [
+        "memory.read"
+      ],
+      "access": "read",
+      "risk": "low",
+      "locality": "local",
+      "approval_requirement": "none",
+      "execution": "local",
+      "side_effect": "none",
+      "input_schema": {
+        "type": "object",
+        "additionalProperties": false
+      },
+      "output_schema": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    }
+  ],
   "ui_blocks": [],
   "storage_quota": {
     "local_bytes": 0

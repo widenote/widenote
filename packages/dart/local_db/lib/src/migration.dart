@@ -1,7 +1,7 @@
 import 'package:sqlite3/sqlite3.dart';
 
 abstract final class LocalDbSchema {
-  static const currentVersion = 8;
+  static const currentVersion = 9;
 }
 
 final class LocalDbMigrator {
@@ -64,6 +64,10 @@ final class LocalDbMigrator {
       if (currentVersion < 8 && targetVersion >= 8) {
         _migrateToV8(database);
         database.execute('PRAGMA user_version = 8;');
+      }
+      if (currentVersion < 9 && targetVersion >= 9) {
+        _migrateToV9(database);
+        database.execute('PRAGMA user_version = 9;');
       }
       database.execute('COMMIT;');
     } catch (_) {
@@ -647,6 +651,55 @@ ON context_packet_cache(surface, status, updated_at);
       ..execute('''
 CREATE INDEX IF NOT EXISTS context_packet_cache_pack_idx
 ON context_packet_cache(pack_id, agent_id, status);
+''');
+  }
+
+  static void _migrateToV9(Database database) {
+    database
+      ..execute('''
+CREATE TABLE IF NOT EXISTS runtime_approval_requests (
+  id TEXT PRIMARY KEY,
+  schema_version INTEGER NOT NULL,
+  pack_id TEXT NOT NULL,
+  agent_id TEXT NOT NULL,
+  task_id TEXT NOT NULL,
+  run_id TEXT NOT NULL,
+  tool_name TEXT NOT NULL,
+  run_mode TEXT NOT NULL,
+  tool_access TEXT NOT NULL,
+  tool_risk TEXT NOT NULL,
+  is_external INTEGER NOT NULL,
+  required_permissions_json TEXT NOT NULL,
+  input_keys_json TEXT NOT NULL,
+  source_refs_json TEXT NOT NULL,
+  action_summary TEXT NOT NULL,
+  status TEXT NOT NULL,
+  requested_at TEXT NOT NULL,
+  expires_at TEXT,
+  decided_at TEXT,
+  decision TEXT,
+  reason TEXT,
+  payload_json TEXT NOT NULL,
+  FOREIGN KEY(pack_id) REFERENCES pack_installations(pack_id) ON DELETE CASCADE,
+  FOREIGN KEY(task_id) REFERENCES runtime_tasks(id) ON DELETE CASCADE,
+  FOREIGN KEY(run_id) REFERENCES runtime_runs(id) ON DELETE CASCADE
+);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS runtime_approvals_pack_status_idx
+ON runtime_approval_requests(pack_id, status, requested_at);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS runtime_approvals_run_status_idx
+ON runtime_approval_requests(run_id, status, requested_at);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS runtime_approvals_task_status_idx
+ON runtime_approval_requests(task_id, status, requested_at);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS runtime_approvals_tool_idx
+ON runtime_approval_requests(tool_name, requested_at);
 ''');
   }
 }

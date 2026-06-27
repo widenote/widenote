@@ -202,7 +202,7 @@ final class AnthropicCompatibleModelProvider implements ModelProvider {
     final httpResponse = await _sendRequest(
       id,
       () => httpClient.postJson(
-        config.endpoint,
+        _anthropicMessagesEndpoint(config.endpoint),
         headers: <String, String>{
           'content-type': 'application/json',
           'anthropic-version': '2023-06-01',
@@ -290,6 +290,25 @@ final class AnthropicCompatibleModelProvider implements ModelProvider {
       message: 'Provider config is invalid: ${validation.summary}.',
     );
   }
+}
+
+Uri _anthropicMessagesEndpoint(Uri endpoint) {
+  final segments = endpoint.pathSegments
+      .where((segment) => segment.isNotEmpty)
+      .toList(growable: false);
+  if (_endsWithMessagesPath(segments)) {
+    return endpoint;
+  }
+  if (segments.isNotEmpty && segments.last == 'v1') {
+    return endpoint.replace(pathSegments: <String>[...segments, 'messages']);
+  }
+  return endpoint.replace(
+    pathSegments: <String>[...segments, 'v1', 'messages'],
+  );
+}
+
+bool _endsWithMessagesPath(List<String> segments) {
+  return segments.isNotEmpty && segments.last == 'messages';
 }
 
 String _openAiRole(ModelMessageRole role) {

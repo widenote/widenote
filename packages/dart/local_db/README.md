@@ -7,7 +7,8 @@ Pure Dart SQLite local truth package for local-first WideNote storage.
 This package owns local tables, migration bootstrap, and DAO APIs for the
 minimum phase-one record surfaces: events, captures, Memory, cards, insights,
 todos, attachment metadata, durable runtime state, Agent Pack install state,
-permission grants/revocations, context packet caches, and traces.
+permission grants/revocations, runtime approval queue metadata, context packet
+caches, and traces.
 
 ## Ownership Boundary
 
@@ -37,13 +38,16 @@ rendering.
 - `TodosDao`
 - `RuntimeTasksDao`
 - `RuntimeRunsDao`
+- `RuntimeApprovalsDao`
 - `PackInstallationsDao`
 - `PermissionGrantsDao`
 - `ContextPacketCachesDao`
 - `TraceEventsDao`
 - `LocalDbEventStore`
 - `LocalDbTraceSink`
+- `LocalDbApprovalStore`
 - `LocalDbMemoryRepository`
+- `LocalDbCoreToolCatalog`
 - `JsonMap`
 - record models for each DAO
 
@@ -138,15 +142,25 @@ candidate storage, source-linked card and insight storage, chat sessions and
 messages, provider metadata, attachment metadata, Memory review
 accept/edit/reject transitions, the SQLite-backed Memory repository adapter,
 todo status updates, trace reads, in-memory schema bootstrap, file-path reopen
-persistence, v1-to-current migrations, v8 runtime/pack/permission/context-cache
-tables, migration indexes/foreign keys/repeated bootstrap/failure rollback,
-pagination, capture/event/task transactional enqueue, permission revoke terminal
-state, backup import/export, cache-tolerant restore, tombstone restore behavior,
+persistence, v1-to-current migrations, v9 runtime/pack/approval/permission/
+context-cache tables, migration indexes/foreign keys/repeated bootstrap/failure
+rollback, pagination, capture/event/task transactional enqueue, permission revoke terminal
+state, pending approval storage, approval decisions, canceled/expired approval
+records, backup import/export, cache-tolerant restore, tombstone restore behavior,
 secret-boundary manifest validation, safe-backup provider credential re-entry
 reports, encrypted-full guardrails, and runtime EventStore/TraceSink adapters.
 Backup tests also cover the
 Markdown projection and verify that provider API key values and Context Packet
 cache contents stay out of the readable export.
+Core tool catalog tests cover DB-backed Context Packet, Memory read/propose,
+todo suggestion, and redacted trace read tools, including required permission
+metadata, source refs, limits, redaction, and invalid-input behavior.
+
+The runtime approval store is a persistence boundary, not an execution bridge.
+It records pending approval requests and decisions with redacted metadata only.
+Approved decisions must be claimed by a future RuntimeKernel control provider in
+the same unit of work that resumes or creates the affected run; this package
+does not execute approved tools by itself.
 
 ## Related Context
 

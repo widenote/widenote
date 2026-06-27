@@ -68,6 +68,10 @@ void main() {
         expect(output.agentId, 'agent.capture');
         expect(output.causationId, capture.id);
         expect(output.correlationId, capture.id);
+        final sourceRefs = output.payload['source_refs']! as List;
+        expect(sourceRefs, isNotEmpty);
+        expect((sourceRefs.single as Map)['kind'], 'event');
+        expect((sourceRefs.single as Map)['id'], capture.id);
       }
       expect(outputs.first.payload['state'], 'proposed');
 
@@ -115,6 +119,46 @@ void main() {
       expect(completedTrace.details['output_event_count'], 4);
     },
   );
+
+  test('derived output with malformed source refs is rejected', () async {
+    final permissions = InMemoryPermissionBroker()
+      ..grantAll('pack.default', <String>{
+        ModelPermissions.complete,
+        'memory.propose',
+        'card.write',
+        'insight.write',
+        'todo.suggest',
+      });
+    final store = InMemoryEventStore();
+    final traceSink = InMemoryTraceSink();
+    final kernel = _kernel(
+      store: store,
+      traceSink: traceSink,
+      permissions: permissions,
+      model: FakeModel(),
+      handler: const _MalformedSourceRefsHandler(),
+    );
+
+    await kernel.publish(
+      const WnEventDraft(
+        type: WnEventTypes.captureCreated,
+        actor: WnActor.user,
+        payload: <String, Object?>{'text': 'Bad refs should fail.'},
+      ),
+    );
+
+    expect(await store.readByType(WnEventTypes.insightCreated), isEmpty);
+    expect(kernel.tasks.single.status, RuntimeTaskStatus.failed);
+    expect(kernel.runs.single.status, RuntimeRunStatus.failed);
+    expect(kernel.runs.single.error, contains('without valid source refs'));
+
+    final rejected = (await traceSink.readAll()).singleWhere(
+      (trace) =>
+          trace.name == 'runtime.handler.output_rejected' &&
+          trace.details['error_code'] == 'invalid_source_refs',
+    );
+    expect(rejected.details['event_type'], WnEventTypes.insightCreated);
+  });
 
   test('unmatched event appends without creating a task or run', () async {
     final store = InMemoryEventStore();
@@ -1638,7 +1682,7 @@ void main() {
   );
 
   test(
-    'trace details preserve handler errors without content keyword redaction',
+    'trace details and persisted errors redact sensitive handler failures',
     () async {
       final traceSink = InMemoryTraceSink();
       final kernel =
@@ -1671,8 +1715,12 @@ void main() {
       final failedTrace = (await traceSink.readAll()).singleWhere(
         (trace) => trace.name == 'runtime.run.failed',
       );
-      expect(failedTrace.details['error'], contains('api_key=super-secret'));
-      expect(failedTrace.details['error'], isNot(contains('<redacted>')));
+      expect(failedTrace.details['error'], contains('api_key=[redacted]'));
+      expect(failedTrace.details['error'], contains('raw_db=[redacted]'));
+      expect(failedTrace.details['error'], isNot(contains('super-secret')));
+      expect(failedTrace.details['error_type'], 'StateError');
+      expect(kernel.tasks.single.error, isNot(contains('super-secret')));
+      expect(kernel.runs.single.error, isNot(contains('super-secret')));
     },
   );
 
@@ -2115,6 +2163,24 @@ final class _UndeclaredOutputHandler implements AgentHandler {
   Future<AgentHandlerResult> handle(AgentContext context, WnEvent event) async {
     return AgentHandlerResult(
       events: <WnEventDraft>[context.emit(type: WnEventTypes.todoSuggested)],
+    );
+  }
+}
+
+final class _MalformedSourceRefsHandler implements AgentHandler {
+  const _MalformedSourceRefsHandler();
+
+  @override
+  Future<AgentHandlerResult> handle(AgentContext context, WnEvent event) async {
+    return AgentHandlerResult(
+      events: <WnEventDraft>[
+        context.emit(
+          type: WnEventTypes.insightCreated,
+          payload: const <String, Object?>{
+            'source_refs': <Object?>['not-a-source-ref'],
+          },
+        ),
+      ],
     );
   }
 }

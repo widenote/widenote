@@ -63,6 +63,9 @@
         "script"
       ]
     },
+    "default_run_mode": {
+      "$ref": "#/$defs/run_mode"
+    },
     "permissions": {
       "type": "array",
       "items": {
@@ -220,6 +223,9 @@
             "script"
           ]
         },
+        "run_mode": {
+          "$ref": "#/$defs/run_mode"
+        },
         "name": {
           "type": "string"
         },
@@ -346,12 +352,21 @@
       "additionalProperties": false,
       "required": [
         "id",
-        "permissions"
+        "permissions",
+        "required_permissions",
+        "access",
+        "risk",
+        "locality",
+        "approval_requirement",
+        "execution"
       ],
       "properties": {
         "id": {
           "type": "string",
           "minLength": 1
+        },
+        "capability_kind": {
+          "$ref": "#/$defs/tool_capability_kind"
         },
         "permissions": {
           "type": "array",
@@ -359,6 +374,28 @@
             "$ref": "#/$defs/permission_id"
           },
           "uniqueItems": true
+        },
+        "required_permissions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/permission_id"
+          },
+          "uniqueItems": true
+        },
+        "access": {
+          "$ref": "#/$defs/tool_access"
+        },
+        "risk": {
+          "$ref": "#/$defs/tool_risk"
+        },
+        "locality": {
+          "$ref": "#/$defs/tool_locality"
+        },
+        "approval_requirement": {
+          "$ref": "#/$defs/tool_approval_requirement"
+        },
+        "execution": {
+          "$ref": "#/$defs/tool_execution"
         },
         "side_effect": {
           "type": "string",
@@ -371,6 +408,15 @@
             "file_access",
             "script_execution"
           ]
+        },
+        "input_schema": {
+          "description": "JSON-schema-like input shape. Do not include raw fixture input values.",
+          "type": "object",
+          "additionalProperties": true
+        },
+        "output_schema": {
+          "type": "object",
+          "additionalProperties": true
         }
       }
     },
@@ -421,6 +467,75 @@
           ]
         }
       }
+    },
+    "run_mode": {
+      "type": "string",
+      "enum": [
+        "read_only",
+        "confirm",
+        "auto"
+      ]
+    },
+    "tool_access": {
+      "type": "string",
+      "enum": [
+        "read",
+        "write",
+        "read_write"
+      ]
+    },
+    "tool_risk": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "tool_locality": {
+      "type": "string",
+      "enum": [
+        "local",
+        "external"
+      ]
+    },
+    "tool_approval_requirement": {
+      "type": "string",
+      "enum": [
+        "none",
+        "per_call",
+        "deferred"
+      ]
+    },
+    "tool_execution": {
+      "type": "string",
+      "enum": [
+        "local",
+        "fake",
+        "deferred",
+        "disabled"
+      ]
+    },
+    "tool_capability_kind": {
+      "type": "string",
+      "enum": [
+        "local_core",
+        "context_packet",
+        "memory",
+        "todo",
+        "trace",
+        "settings",
+        "model",
+        "http",
+        "mcp",
+        "web",
+        "file",
+        "network",
+        "shell",
+        "script",
+        "runner",
+        "webhook"
+      ]
     }
   }
 }
