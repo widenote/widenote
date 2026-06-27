@@ -15,8 +15,8 @@ void main() {
     expect(find.text('Packs'), findsOneWidget);
     expect(find.text('WideNote'), findsOneWidget);
     expect(find.text('WideNote / 广记'), findsNothing);
-    expect(find.text('Quick Capture'), findsOneWidget);
-    expect(find.text('Record'), findsOneWidget);
+    expect(find.text('New record'), findsOneWidget);
+    expect(find.text('Background voice'), findsOneWidget);
 
     await _openTab(tester, const Key('tab-chat'));
     expect(find.text('History'), findsOneWidget);
@@ -40,9 +40,9 @@ void main() {
     expect(find.text('插件'), findsOneWidget);
     expect(find.text('广记'), findsOneWidget);
     expect(find.text('WideNote / 广记'), findsNothing);
-    expect(find.text('快速记录'), findsOneWidget);
+    expect(find.text('新记录'), findsOneWidget);
+    expect(find.text('后台录音'), findsOneWidget);
     expect(find.text('记录'), findsWidgets);
-    expect(find.text('0 条已关联'), findsOneWidget);
 
     await _openTab(tester, const Key('tab-chat'));
     expect(find.text('历史会话'), findsOneWidget);

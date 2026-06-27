@@ -131,7 +131,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'quick capture -> timeline -> memory -> insight'**
+  /// **'new records -> timeline -> memory -> insight'**
   String get homeSubtitle;
 
   /// No description provided for @homeOpenTimelineTooltip.
@@ -163,6 +163,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open Settings'**
   String get homeOpenSettingsTooltip;
+
+  /// No description provided for @homeNewRecordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New record'**
+  String get homeNewRecordTitle;
+
+  /// No description provided for @homeNewRecordBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a focused note, then attach photos or local source files.'**
+  String get homeNewRecordBody;
+
+  /// No description provided for @homeBackgroundVoiceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Background voice'**
+  String get homeBackgroundVoiceTitle;
+
+  /// No description provided for @homeBackgroundVoiceBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Record audio in the background, then add context before saving.'**
+  String get homeBackgroundVoiceBody;
+
+  /// No description provided for @homeBackgroundVoiceActiveBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording is already running.'**
+  String get homeBackgroundVoiceActiveBody;
+
+  /// No description provided for @homeSummaryRecords.
+  ///
+  /// In en, this message translates to:
+  /// **'Records'**
+  String get homeSummaryRecords;
+
+  /// No description provided for @homeSummaryMemory.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory'**
+  String get homeSummaryMemory;
+
+  /// No description provided for @homeSummaryInsights.
+  ///
+  /// In en, this message translates to:
+  /// **'Insights'**
+  String get homeSummaryInsights;
+
+  /// No description provided for @newRecordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New record'**
+  String get newRecordTitle;
+
+  /// No description provided for @newRecordSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Original input stays local and is never overwritten by AI.'**
+  String get newRecordSubtitle;
+
+  /// No description provided for @newRecordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a thought, feeling, project context, meeting fragment, or life event...'**
+  String get newRecordHint;
+
+  /// No description provided for @saveRecordButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save record'**
+  String get saveRecordButton;
+
+  /// No description provided for @backgroundVoiceActiveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording in background'**
+  String get backgroundVoiceActiveTitle;
+
+  /// No description provided for @backgroundVoiceActiveBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio is being preserved as local source material. Stop to review the draft and add context.'**
+  String get backgroundVoiceActiveBody;
+
+  /// No description provided for @backgroundVoiceTimerPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'REC'**
+  String get backgroundVoiceTimerPlaceholder;
+
+  /// No description provided for @backgroundVoiceComposerBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'A background recording is still running. Stop it before saving this record.'**
+  String get backgroundVoiceComposerBusy;
 
   /// No description provided for @recapTitle.
   ///

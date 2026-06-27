@@ -16,6 +16,26 @@ This RFC turns the gap audit into a phase-one implementation slice. It keeps
 WideNote's own local-first design and uses MemeX only as a public capability
 reference under ADR-0006.
 
+## 2026-06-27 Capture Input Amendment
+
+The home capture surface now follows the interaction option selected in
+[Capture Input Interaction Options](../research/2026-06-27-capture-input-interaction-options.html):
+
+- Home keeps capture entry focused on two primary scenarios: a modal new-record
+  composer for immersive text/photo input, and a separate background voice
+  recording action.
+- The composer owns text entry, camera/gallery attachments, validation errors,
+  and submit state. It does not expose the previous mode selector or an inline
+  voice-recording button.
+- Background voice recording starts from the home surface, can continue while
+  the composer is closed, and opens the composer after stop so the user can
+  review the audio attachment and add context before saving.
+- Memory candidates are not shown on the home surface. Phase-one Memory should
+  auto-accept normal generated Memory and use dedicated Memory surfaces for
+  later correction or management.
+- Todo rows and todo metrics stay out of the home surface because Todos already
+  has a dedicated tab for source-linked actions.
+
 ## Goals
 
 - Make every visible phase-one entry complete a user outcome.

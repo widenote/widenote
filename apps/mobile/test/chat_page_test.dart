@@ -276,6 +276,8 @@ Future<void> _sendChat(WidgetTester tester, String text) async {
 }
 
 Future<void> _submitQuickCapture(WidgetTester tester, String text) async {
+  await tester.tap(find.byKey(const Key('open-new-record-button')));
+  await tester.pumpAndSettle();
   await tester.enterText(find.byKey(const Key('quick-capture-field')), text);
   await tester.tap(find.byKey(const Key('record-capture-button')));
   await tester.pumpAndSettle();

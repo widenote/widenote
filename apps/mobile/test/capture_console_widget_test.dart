@@ -13,15 +13,17 @@ import 'package:widenote_mobile/features/capture/domain/capture_models.dart';
 import 'package:widenote_mobile/features/capture/media/capture_media.dart';
 
 void main() {
-  testWidgets('record button shows empty and saved feedback', (tester) async {
+  testWidgets('new record sheet shows empty and saved feedback', (
+    tester,
+  ) async {
     await _pumpApp(tester);
+
+    expect(find.byKey(const Key('quick-capture-field')), findsNothing);
+    await _openNewRecordSheet(tester);
 
     await tester.tap(find.byKey(const Key('record-capture-button')));
     await tester.pumpAndSettle();
-    expect(
-      find.text('Add text or an attachment before saving.'),
-      findsOneWidget,
-    );
+    expect(find.text('Add text or an attachment before saving.'), findsWidgets);
 
     await tester.enterText(
       find.byKey(const Key('quick-capture-field')),
@@ -32,16 +34,18 @@ void main() {
 
     await tester.tap(find.byKey(const Key('record-capture-button')));
     await tester.pumpAndSettle();
+    expect(find.byKey(const Key('capture-sheet')), findsNothing);
     expect(
       find.text('Record saved. Local agents are organizing it now.'),
       findsOneWidget,
     );
   });
 
-  testWidgets('quick capture uses a regular multiline keyboard', (
+  testWidgets('new record sheet uses a regular multiline keyboard', (
     tester,
   ) async {
     await _pumpApp(tester);
+    await _openNewRecordSheet(tester);
 
     final field = tester.widget<TextField>(
       find.byKey(const Key('quick-capture-field')),
@@ -57,6 +61,7 @@ void main() {
 
   testWidgets('camera attachment can be previewed and removed', (tester) async {
     await _pumpApp(tester);
+    await _openNewRecordSheet(tester);
 
     await tester.tap(find.byKey(const Key('add-camera-attachment-button')));
     await tester.pumpAndSettle();
@@ -65,10 +70,6 @@ void main() {
     expect(attachment.kind, CaptureAssetKind.photo);
     expect(find.text('Camera photo sample.jpg'), findsOneWidget);
     expect(find.textContaining('Camera photo saved locally'), findsOneWidget);
-    expect(
-      find.text('Photo attached. Review it, then save the record.'),
-      findsOneWidget,
-    );
 
     final semantics = tester.ensureSemantics();
     try {
@@ -91,103 +92,81 @@ void main() {
     expect(find.text('Camera photo sample.jpg'), findsNothing);
   });
 
-  testWidgets('voice recording starts, blocks submit, stops, then saves', (
+  testWidgets('background voice starts, blocks save, stops, then saves', (
     tester,
   ) async {
     await _pumpApp(tester);
 
-    await tester.tap(find.byKey(const Key('add-voice-recording-button')));
+    await tester.tap(
+      find.byKey(const Key('start-background-recording-button')),
+    );
     await tester.pumpAndSettle();
 
     var inputState = _readCaptureInputState(tester);
     expect(inputState.isRecordingVoice, isTrue);
-    expect(find.text('Recording'), findsOneWidget);
+    expect(find.byKey(const Key('background-voice-card')), findsOneWidget);
+    expect(find.text('Recording in background'), findsOneWidget);
 
-    ProviderScope.containerOf(
-      tester.element(find.byType(WideNoteApp)),
-    ).read(captureInputControllerProvider.notifier).markSubmitBlocked();
+    await _openNewRecordSheet(tester);
+    await tester.enterText(
+      find.byKey(const Key('quick-capture-field')),
+      'This should wait for the recording to stop.',
+    );
+    await tester.tap(find.byKey(const Key('record-capture-button')));
     await tester.pumpAndSettle();
     expect(
       _readCaptureInputState(tester).errorMessage,
       'Stop or cancel the voice recording before saving.',
     );
+    await tester.tap(find.byKey(const Key('capture-sheet-close-button')));
+    await tester.pumpAndSettle();
 
-    final recordButton = find.byKey(const Key('record-capture-button'));
-
-    final stopButton = find.byKey(const Key('capture-voice-stop-button'));
-    await _scrollHomeActionIntoView(tester, stopButton);
-    await tester.tap(stopButton);
+    await tester.tap(find.byKey(const Key('background-voice-stop-button')));
     await tester.pumpAndSettle();
 
     inputState = _readCaptureInputState(tester);
     final attachment = inputState.attachments.single;
     expect(inputState.isRecordingVoice, isFalse);
     expect(attachment.kind, CaptureAssetKind.voice);
+    expect(find.byKey(const Key('capture-sheet')), findsOneWidget);
     expect(find.text('Voice recording sample.m4a'), findsOneWidget);
     expect(find.textContaining('Ready'), findsOneWidget);
-    expect(find.textContaining('Transcript needs review'), findsNothing);
 
-    await _scrollHomeActionIntoView(tester, recordButton);
-    await tester.tap(recordButton);
+    await tester.tap(find.byKey(const Key('record-capture-button')));
     await tester.pumpAndSettle();
 
     final state = _readCaptureState(tester);
-    expect(state.records.single.body, contains('Voice recording captured'));
+    expect(
+      state.records.single.body,
+      contains('This should wait for the recording to stop.'),
+    );
     expect(_readCaptureInputState(tester).attachments, isEmpty);
   });
 
-  testWidgets('capture mode switch is UI-only until explicit voice action', (
+  testWidgets('new record sheet foregrounds camera and gallery only', (
     tester,
   ) async {
     await _pumpApp(tester);
+    await _openNewRecordSheet(tester);
 
-    expect(_readCaptureInputState(tester).mode, CaptureMode.text);
-
-    await tester.tap(find.text('Voice').first);
-    await tester.pumpAndSettle();
-
-    var inputState = _readCaptureInputState(tester);
-    expect(inputState.mode, CaptureMode.voice);
-    expect(inputState.attachments, isEmpty);
-    expect(inputState.isRecordingVoice, isFalse);
-    expect(find.byKey(const Key('capture-mode-voice-panel')), findsOneWidget);
+    expect(find.byKey(const Key('capture-mode-selector')), findsNothing);
+    expect(find.byKey(const Key('add-voice-recording-button')), findsNothing);
     expect(
-      find.textContaining('requests microphone permission'),
+      find.byKey(const Key('add-camera-attachment-button')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('add-gallery-attachment-button')),
       findsOneWidget,
     );
 
-    await tester.tap(find.byKey(const Key('capture-voice-start-button')));
+    await tester.tap(find.byKey(const Key('add-gallery-attachment-button')));
     await tester.pumpAndSettle();
 
-    inputState = _readCaptureInputState(tester);
-    expect(inputState.isRecordingVoice, isTrue);
-    expect(inputState.attachments, isEmpty);
-  });
-
-  testWidgets('media mode foregrounds camera and gallery only', (tester) async {
-    await _pumpApp(tester);
-
-    await tester.tap(find.text('Media').first);
-    await tester.pumpAndSettle();
-
-    var inputState = _readCaptureInputState(tester);
-    expect(inputState.mode, CaptureMode.media);
-    expect(inputState.attachments, isEmpty);
-    expect(find.byKey(const Key('capture-mode-media-panel')), findsOneWidget);
-
-    await tester.tap(find.byKey(const Key('capture-media-gallery-button')));
-    await tester.pumpAndSettle();
-
-    inputState = _readCaptureInputState(tester);
+    final inputState = _readCaptureInputState(tester);
     expect(inputState.attachments.single.kind, CaptureAssetKind.photo);
     expect(find.text('Gallery photo sample.jpg'), findsOneWidget);
     expect(find.textContaining('Gallery photo saved locally'), findsOneWidget);
-    expect(
-      find.text('Photo attached. Review it, then save the record.'),
-      findsOneWidget,
-    );
-    expect(find.byKey(const Key('capture-import-share-button')), findsNothing);
-    expect(find.byKey(const Key('add-share-import-button')), findsNothing);
   });
 
   testWidgets('permission denied and cancelled states are visible', (
@@ -199,12 +178,17 @@ void main() {
       voiceAdapter: const FakeVoiceCaptureAdapter(mode: FakeVoiceMode.denied),
     );
 
+    await _openNewRecordSheet(tester);
     await tester.tap(find.byKey(const Key('add-camera-attachment-button')));
     await tester.pumpAndSettle();
     expect(find.text('Camera permission denied.'), findsOneWidget);
     expect(_readCaptureInputState(tester).attachments, isEmpty);
+    await tester.tap(find.byKey(const Key('capture-sheet-close-button')));
+    await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const Key('add-voice-recording-button')));
+    await tester.tap(
+      find.byKey(const Key('start-background-recording-button')),
+    );
     await tester.pumpAndSettle();
     expect(find.text('Microphone permission denied.'), findsOneWidget);
     expect(_readCaptureInputState(tester).attachments, isEmpty);
@@ -223,21 +207,10 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('Media').first);
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('capture-media-gallery-button')));
+    await _openNewRecordSheet(tester);
+    await tester.tap(find.byKey(const Key('add-gallery-attachment-button')));
     await tester.pumpAndSettle();
 
-    expect(_readCaptureInputState(tester).mode, CaptureMode.media);
-    expect(find.byKey(const Key('capture-mode-media-panel')), findsOneWidget);
-    expect(
-      find.byKey(const Key('capture-media-camera-button')),
-      findsOneWidget,
-    );
-    expect(
-      find.byKey(const Key('capture-media-gallery-button')),
-      findsOneWidget,
-    );
     expect(find.text('Gallery selection cancelled.'), findsOneWidget);
     expect(_readCaptureInputState(tester).attachments, isEmpty);
     expect(_readCaptureState(tester).records, isEmpty);
@@ -246,14 +219,17 @@ void main() {
   testWidgets('review attachment blocks submit until accepted', (tester) async {
     await _pumpApp(tester, voiceAdapter: const _ReviewVoiceAdapter());
 
-    await tester.tap(find.byKey(const Key('add-voice-recording-button')));
+    await tester.tap(
+      find.byKey(const Key('start-background-recording-button')),
+    );
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('capture-voice-stop-button')));
+    await tester.tap(find.byKey(const Key('background-voice-stop-button')));
     await tester.pumpAndSettle();
 
     var inputState = _readCaptureInputState(tester);
     final attachment = inputState.attachments.single;
     expect(attachment.state, CaptureAttachmentState.needsReview);
+    expect(find.byKey(const Key('capture-sheet')), findsOneWidget);
     expect(find.textContaining('Transcript needs review'), findsOneWidget);
 
     final recordButton = find.byKey(const Key('record-capture-button'));
@@ -282,6 +258,7 @@ void main() {
     final database = WideNoteLocalDatabase.inMemory();
     await _pumpApp(tester, database: database);
 
+    await _openNewRecordSheet(tester);
     await tester.tap(find.byKey(const Key('add-camera-attachment-button')));
     await tester.pumpAndSettle();
 
@@ -304,14 +281,17 @@ void main() {
   ) async {
     await _pumpApp(tester);
 
-    await tester.tap(find.byKey(const Key('add-voice-recording-button')));
+    await tester.tap(
+      find.byKey(const Key('start-background-recording-button')),
+    );
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('capture-voice-cancel-button')));
+    await tester.tap(find.byKey(const Key('background-voice-cancel-button')));
     await tester.pumpAndSettle();
 
     expect(find.text('Voice recording cancelled.'), findsOneWidget);
     expect(_readCaptureInputState(tester).attachments, isEmpty);
 
+    await _openNewRecordSheet(tester);
     final recordButton = find.byKey(const Key('record-capture-button'));
     await _scrollHomeActionIntoView(tester, recordButton);
     await tester.tap(recordButton);
@@ -324,6 +304,7 @@ void main() {
   ) async {
     await _pumpApp(tester);
 
+    await _openNewRecordSheet(tester);
     final recordButton = find.byKey(const Key('record-capture-button'));
     await _scrollHomeActionIntoView(tester, recordButton);
     await tester.tap(recordButton);
@@ -331,10 +312,6 @@ void main() {
     expect(_readCaptureState(tester).records, isEmpty);
 
     final longText = 'Long local-first capture. ${'detail ' * 180}';
-    await _scrollHomeActionIntoView(
-      tester,
-      find.byKey(const Key('quick-capture-field')),
-    );
     await tester.enterText(
       find.byKey(const Key('quick-capture-field')),
       longText,
@@ -356,6 +333,7 @@ void main() {
     );
     await _pumpApp(tester, draftRepository: draftRepository);
 
+    await _openNewRecordSheet(tester);
     await tester.enterText(
       find.byKey(const Key('quick-capture-field')),
       'Draft survives a rebuild.',
@@ -369,6 +347,7 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
     await _pumpApp(tester, draftRepository: draftRepository);
+    await _openNewRecordSheet(tester);
 
     expect(_captureFieldText(tester), 'Draft survives a rebuild.');
 
@@ -382,24 +361,23 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
     await _pumpApp(tester, draftRepository: draftRepository);
+    await _openNewRecordSheet(tester);
 
     expect(_captureFieldText(tester), isEmpty);
   });
 
-  testWidgets('capture console renders localized Chinese mode labels', (
+  testWidgets('home and new record sheet render localized Chinese labels', (
     tester,
   ) async {
     await _pumpApp(tester, locale: const Locale('zh'));
 
-    expect(find.text('文字'), findsOneWidget);
-    expect(find.text('语音'), findsWidgets);
-    expect(find.text('媒体'), findsOneWidget);
+    expect(find.text('新记录'), findsOneWidget);
+    expect(find.text('后台录音'), findsOneWidget);
 
-    await tester.tap(find.text('语音').first);
-    await tester.pumpAndSettle();
+    await _openNewRecordSheet(tester);
 
-    expect(find.text('开始录音'), findsOneWidget);
-    expect(find.textContaining('请求麦克风权限'), findsOneWidget);
+    expect(find.text('保存记录'), findsOneWidget);
+    expect(find.textContaining('原始输入留在本地'), findsOneWidget);
   });
 }
 
@@ -429,6 +407,12 @@ Future<void> _pumpApp(
     ),
   );
   await tester.pumpAndSettle();
+}
+
+Future<void> _openNewRecordSheet(WidgetTester tester) async {
+  await tester.tap(find.byKey(const Key('open-new-record-button')));
+  await tester.pumpAndSettle();
+  expect(find.byKey(const Key('capture-sheet')), findsOneWidget);
 }
 
 Future<void> _scrollHomeActionIntoView(
