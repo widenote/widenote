@@ -726,6 +726,54 @@
       }
     }
   },
+  "packLibraryMarketplaceSource": "source: {source}",
+  "@packLibraryMarketplaceSource": {
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "packLibraryTrustLevel": "trust: {trust}",
+  "@packLibraryTrustLevel": {
+    "placeholders": {
+      "trust": {
+        "type": "String"
+      }
+    }
+  },
+  "packLibraryCategories": "categories: {categories}",
+  "@packLibraryCategories": {
+    "placeholders": {
+      "categories": {
+        "type": "String"
+      }
+    }
+  },
+  "packLibraryCapabilities": "capabilities: {capabilities}",
+  "@packLibraryCapabilities": {
+    "placeholders": {
+      "capabilities": {
+        "type": "String"
+      }
+    }
+  },
+  "packLibraryReplacementSlots": "replacement slots: {slots}",
+  "@packLibraryReplacementSlots": {
+    "placeholders": {
+      "slots": {
+        "type": "String"
+      }
+    }
+  },
+  "packLibraryAdditiveSlots": "additive slots: {slots}",
+  "@packLibraryAdditiveSlots": {
+    "placeholders": {
+      "slots": {
+        "type": "String"
+      }
+    }
+  },
   "packLibraryEntrypoint": "runtime: {entrypoint}",
   "@packLibraryEntrypoint": {
     "placeholders": {

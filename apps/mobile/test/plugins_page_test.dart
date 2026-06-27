@@ -9,6 +9,7 @@ import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
 import 'package:widenote_local_db/widenote_local_db.dart';
 import 'package:widenote_mobile/app/local_database.dart';
 import 'package:widenote_mobile/app/widenote_app.dart';
+import 'package:widenote_mobile/features/capture/application/capture_controller.dart';
 import 'package:widenote_mobile/features/plugins/application/official_pack_manifests.dart';
 import 'package:widenote_mobile/features/plugins/application/pack_catalog.dart';
 import 'package:widenote_mobile/features/plugins/presentation/pack_library_page.dart';
@@ -40,7 +41,7 @@ void main() {
   test('catalog entries and available permissions are manifest-derived', () {
     expect(
       builtInPacks.map((pack) => pack.id).toList(growable: false),
-      <String>['pack.default', 'pack.todo'],
+      <String>['pack.default', 'pack.todo', 'pack.pkm_library'],
     );
 
     final defaultPack = builtInPacks.singleWhere(
@@ -64,6 +65,12 @@ void main() {
     expect(todoPack.permissions, <String>['todo.suggest']);
     expect(todoPack.outputEvents, <String>['wn.todo.suggested']);
 
+    final pkmPack = builtInPacks.singleWhere(
+      (pack) => pack.id == 'pack.pkm_library',
+    );
+    expect(pkmPack.permissions, <String>['model.complete', 'artifact.write']);
+    expect(pkmPack.outputEvents, <String>['wn.artifact.created']);
+
     expect(
       builtInPermissions
           .map((permission) => '${permission.packId}:${permission.permission}')
@@ -74,15 +81,29 @@ void main() {
         'pack.default:memory.propose',
         'pack.default:insight.write',
         'pack.todo:todo.suggest',
+        'pack.pkm_library:model.complete',
+        'pack.pkm_library:artifact.write',
       ],
     );
     expect(
       builtInPermissions
           .singleWhere(
-            (permission) => permission.permission == 'model.complete',
+            (permission) =>
+                permission.packId == 'pack.default' &&
+                permission.permission == 'model.complete',
           )
           .risk,
       'medium',
+    );
+    expect(
+      builtInPermissions
+          .singleWhere(
+            (permission) =>
+                permission.packId == 'pack.pkm_library' &&
+                permission.permission == 'artifact.write',
+          )
+          .risk,
+      'low',
     );
     expect(
       builtInPermissions.map((permission) => permission.status).toSet(),
@@ -118,6 +139,7 @@ void main() {
       () => parseOfficialPackManifestSources(<String, String>{
         'pack.default': officialPackManifestSource('pack.default'),
         'pack.todo': '[]',
+        'pack.pkm_library': officialPackManifestSource('pack.pkm_library'),
       }),
       throwsA(isA<FormatException>()),
     );
@@ -128,6 +150,7 @@ void main() {
       () => parseOfficialPackManifestSources(<String, String>{
         'pack.default': officialPackManifestSource('pack.default'),
         'pack.todo': jsonEncode(unsupportedSchema),
+        'pack.pkm_library': officialPackManifestSource('pack.pkm_library'),
       }),
       throwsA(isA<FormatException>()),
     );
@@ -136,6 +159,7 @@ void main() {
       () => parseOfficialPackManifestSources(<String, String>{
         'pack.default': officialPackManifestSource('pack.default'),
         'pack.todo': officialPackManifestSource('pack.default'),
+        'pack.pkm_library': officialPackManifestSource('pack.pkm_library'),
       }),
       throwsA(
         isA<ArgumentError>().having(
@@ -301,22 +325,51 @@ void main() {
     expect(find.byKey(const Key('pack-library-page')), findsOneWidget);
     expect(find.byKey(const Key('pack-row-pack.default')), findsOneWidget);
     expect(find.byKey(const Key('pack-row-pack.todo')), findsOneWidget);
+    expect(find.byKey(const Key('pack-row-pack.pkm_library')), findsOneWidget);
     expect(find.text('Default Capture Loop'), findsOneWidget);
     expect(find.text('Todo Extraction Loop'), findsOneWidget);
-    expect(find.text('v0.1.0'), findsNWidgets(2));
+    expect(find.text('PKM Personal Library'), findsOneWidget);
+    expect(find.text('v0.1.0'), findsNWidgets(3));
     expect(find.text('4 permissions'), findsOneWidget);
     expect(find.text('3 outputs'), findsOneWidget);
     expect(find.text('1 permission'), findsOneWidget);
-    expect(find.text('1 output'), findsOneWidget);
+    expect(find.text('2 permissions'), findsOneWidget);
+    expect(find.text('1 output'), findsNWidgets(2));
+    expect(
+      find.byKey(const Key('pack-marketplace-source-pack.pkm_library')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('pack-trust-pack.pkm_library')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('pack-categories-pack.pkm_library')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('pack-capabilities-pack.pkm_library')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('pack-additive-slots-pack.pkm_library')),
+      findsOneWidget,
+    );
 
     await _pumpLocalizedPage(tester, const PermissionGatePage());
     expect(find.byKey(const Key('permission-gate-page')), findsOneWidget);
     expect(
-      find.byKey(const Key('permission-row-model.complete')),
+      find.byKey(const Key('permission-row-pack.default-model.complete')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('permission-row-pack.pkm_library-model.complete')),
       findsOneWidget,
     );
     expect(find.text('pack.default'), findsWidgets);
-    expect(find.text('medium risk'), findsOneWidget);
+    expect(find.text('pack.pkm_library'), findsWidgets);
+    expect(find.text('medium risk'), findsNWidgets(2));
+    expect(find.text('low risk'), findsWidgets);
     expect(find.text('Built-in / available'), findsWidgets);
     expect(
       find.text('Grant or deny changes future local runs only.'),
@@ -324,13 +377,13 @@ void main() {
     );
     expect(find.text('Built-in and available permissions'), findsOneWidget);
     await tester.scrollUntilVisible(
-      find.byKey(const Key('permission-row-script.execute')),
+      find.byKey(const Key('permission-row-community packs-script.execute')),
       120,
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
     expect(
-      find.byKey(const Key('permission-row-script.execute')),
+      find.byKey(const Key('permission-row-community packs-script.execute')),
       findsOneWidget,
     );
     expect(find.text('Deferred high-risk permissions'), findsOneWidget);
@@ -369,7 +422,7 @@ void main() {
       'enabled',
     );
     expect(find.text('1 enabled'), findsNothing);
-    expect(find.text('2 enabled'), findsOneWidget);
+    expect(find.text('3 enabled'), findsOneWidget);
     expect(
       find.textContaining('Disabling affects future local tasks only'),
       findsOneWidget,
@@ -382,6 +435,7 @@ void main() {
       'disabled',
     );
     expect(find.text('1 disabled'), findsOneWidget);
+    expect(find.text('2 enabled'), findsOneWidget);
     expect(find.byKey(const Key('pack-status-pack.default')), findsOneWidget);
     expect(find.text('disabled'), findsOneWidget);
 
@@ -391,7 +445,40 @@ void main() {
       database.packInstallations.readById('pack.default')!.status,
       'enabled',
     );
-    expect(find.text('2 enabled'), findsOneWidget);
+    expect(find.text('3 enabled'), findsOneWidget);
+  });
+
+  test('pack disable rebuilds capture runtime without disabled pack', () async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    final container = ProviderContainer(
+      overrides: <Override>[localDatabaseProvider.overrideWithValue(database)],
+    );
+    addTearDown(container.dispose);
+
+    expect(
+      container
+          .read(captureOrchestratorProvider)
+          .debugRegisteredPacks()
+          .map((pack) => pack.id),
+      contains('pack.pkm_library'),
+    );
+
+    await container
+        .read(packLibraryControllerProvider.notifier)
+        .setEnabled('pack.pkm_library', false);
+
+    expect(
+      database.packInstallations.readById('pack.pkm_library')!.status,
+      'disabled',
+    );
+    expect(
+      container
+          .read(captureOrchestratorProvider)
+          .debugRegisteredPacks()
+          .map((pack) => pack.id),
+      isNot(contains('pack.pkm_library')),
+    );
   });
 
   testWidgets('permission gate persists grant deny and revoke decisions', (
@@ -610,6 +697,7 @@ String _officialManifestPath(String packId) {
   return switch (packId) {
     'pack.default' => '../../packs/official/default/manifest.json',
     'pack.todo' => '../../packs/official/todo/manifest.json',
+    'pack.pkm_library' => '../../packs/official/pkm_library/manifest.json',
     _ => throw ArgumentError.value(packId, 'packId', 'Unknown official pack'),
   };
 }

@@ -11,6 +11,7 @@ void main() {
   test('official manifest files decode and align with native registry', () {
     final defaultManifest = bridge.loadFile(_officialDefaultPath);
     final todoManifest = bridge.loadFile(_officialTodoPath);
+    final pkmManifest = bridge.loadFile(_officialPkmPath);
 
     expect(defaultManifest.id, 'pack.default');
     expect(defaultManifest.name, 'Default Capture Loop');
@@ -53,12 +54,35 @@ void main() {
       WnEventTypes.todoSuggested,
     });
 
+    expect(pkmManifest.id, 'pack.pkm_library');
+    expect(pkmManifest.requiredPermissions, <String>{
+      ModelPermissions.complete,
+      'artifact.write',
+    });
+    expect(_manifestOutputEvents(pkmManifest), <String>{
+      WnEventTypes.artifactCreated,
+    });
+    expect(
+      pkmManifest
+          .agentDefinitions['agent.pkm_profile_builder']
+          ?.modelProfileRef,
+      'local_or_user_selected_model',
+    );
+
     final registry = InMemoryPackRegistry()
       ..register(
         bridge.buildNativePack(
           defaultManifest,
           nativeHandlers: const <String, AgentHandler>{
             'agent.capture_loop': _OfficialDefaultHandler(),
+          },
+        ),
+      )
+      ..register(
+        bridge.buildNativePack(
+          pkmManifest,
+          nativeHandlers: const <String, AgentHandler>{
+            'agent.pkm_profile_builder': _OfficialPkmHandler(),
           },
         ),
       )
@@ -73,6 +97,7 @@ void main() {
 
     expect(registry.checkManifestAlignment(defaultManifest).isAligned, isTrue);
     expect(registry.checkManifestAlignment(todoManifest).isAligned, isTrue);
+    expect(registry.checkManifestAlignment(pkmManifest).isAligned, isTrue);
   });
 
   test(
@@ -80,21 +105,30 @@ void main() {
     () async {
       final defaultManifest = bridge.loadFile(_officialDefaultPath);
       final todoManifest = bridge.loadFile(_officialTodoPath);
+      final pkmManifest = bridge.loadFile(_officialPkmPath);
       final store = InMemoryEventStore();
       final permissions = InMemoryPermissionBroker()
         ..grantAll(defaultManifest.id, defaultManifest.requiredPermissions)
-        ..grantAll(todoManifest.id, todoManifest.requiredPermissions);
+        ..grantAll(todoManifest.id, todoManifest.requiredPermissions)
+        ..grantAll(pkmManifest.id, pkmManifest.requiredPermissions);
       final kernel = _kernel(store: store, permissions: permissions);
 
       bridge.registerNativePacks(
         kernel,
-        manifests: <AgentPackManifestSnapshot>[defaultManifest, todoManifest],
+        manifests: <AgentPackManifestSnapshot>[
+          defaultManifest,
+          todoManifest,
+          pkmManifest,
+        ],
         nativeHandlersByPackId: const <String, Map<String, AgentHandler>>{
           'pack.default': <String, AgentHandler>{
             'agent.capture_loop': _OfficialDefaultHandler(),
           },
           'pack.todo': <String, AgentHandler>{
             'agent.todo_loop': _OfficialTodoHandler(),
+          },
+          'pack.pkm_library': <String, AgentHandler>{
+            'agent.pkm_profile_builder': _OfficialPkmHandler(),
           },
         },
       );
@@ -108,7 +142,7 @@ void main() {
         ),
       );
 
-      expect(kernel.tasks, hasLength(2));
+      expect(kernel.tasks, hasLength(3));
       final identityKeys = kernel.tasks
           .map((task) => task.identityKey)
           .join('\n');
@@ -123,6 +157,12 @@ void main() {
         contains('pack.todo::0.1.0::sub.todo_capture_created::agent.todo_loop'),
       );
       expect(
+        identityKeys,
+        contains(
+          'pack.pkm_library::0.1.0::sub.pkm_capture_created::agent.pkm_profile_builder',
+        ),
+      );
+      expect(
         kernel.runs.map((run) => run.status),
         everyElement(RuntimeRunStatus.succeeded),
       );
@@ -132,6 +172,7 @@ void main() {
         WnEventTypes.cardCreated,
         WnEventTypes.insightCreated,
         WnEventTypes.todoSuggested,
+        WnEventTypes.artifactCreated,
       ]);
     },
   );
@@ -355,6 +396,32 @@ void main() {
         (json) => json['entrypoint_kind'] = 'plugin',
         'entrypoint_kind',
       );
+      _expectManifestFails(
+        'bad marketplace trust',
+        (json) => (json['marketplace'] as JsonMap)['trust_level'] = 'trusted',
+        'marketplace.trust_level',
+      );
+      _expectManifestFails(
+        'bad additive slot mode',
+        (json) => json['additive_slots'] = <Object?>[
+          <String, Object?>{
+            'id': 'knowledge.organization',
+            'mode': 'replace',
+            'description': 'wrong mode',
+          },
+        ],
+        'additive_slots.knowledge.organization.mode',
+      );
+      _expectManifestFails('community replacement slot', (json) {
+        json['edition'] = 'community';
+        json['replacement_slots'] = <Object?>[
+          <String, Object?>{
+            'id': 'memory.write',
+            'mode': 'replace',
+            'description': 'unsafe replacement',
+          },
+        ];
+      }, 'replacement_slots');
       _expectManifestFails(
         'bad runtime',
         (json) => _firstAgent(json)['runtime'] = 'python',
@@ -682,6 +749,7 @@ void main() {
 
 const _officialDefaultPath = '../../../packs/official/default/manifest.json';
 const _officialTodoPath = '../../../packs/official/todo/manifest.json';
+const _officialPkmPath = '../../../packs/official/pkm_library/manifest.json';
 
 RuntimeKernel _kernel({
   required EventStore store,
@@ -844,6 +912,28 @@ final class _OfficialTodoHandler implements AgentHandler {
           type: WnEventTypes.todoSuggested,
           subjectRef: event.subjectRef,
           payload: const <String, Object?>{'text': 'Review capture.'},
+        ),
+      ],
+    );
+  }
+}
+
+final class _OfficialPkmHandler implements AgentHandler {
+  const _OfficialPkmHandler();
+
+  @override
+  Future<AgentHandlerResult> handle(AgentContext context, WnEvent event) async {
+    return AgentHandlerResult(
+      events: <WnEventDraft>[
+        context.emit(
+          type: WnEventTypes.artifactCreated,
+          subjectRef: event.subjectRef,
+          payload: const <String, Object?>{
+            'artifact_id': 'artifact.bridge.pkm',
+            'artifact_kind': 'pkm_profile_entry',
+            'title': 'Bridge PKM profile entry',
+            'body': 'Source-linked bridge artifact.',
+          },
         ),
       ],
     );

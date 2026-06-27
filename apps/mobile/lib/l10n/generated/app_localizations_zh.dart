@@ -1289,6 +1289,36 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String packLibraryMarketplaceSource(String source) {
+    return '来源：$source';
+  }
+
+  @override
+  String packLibraryTrustLevel(String trust) {
+    return '信任：$trust';
+  }
+
+  @override
+  String packLibraryCategories(String categories) {
+    return '分类：$categories';
+  }
+
+  @override
+  String packLibraryCapabilities(String capabilities) {
+    return '能力：$capabilities';
+  }
+
+  @override
+  String packLibraryReplacementSlots(String slots) {
+    return '替换槽：$slots';
+  }
+
+  @override
+  String packLibraryAdditiveSlots(String slots) {
+    return '附加槽：$slots';
+  }
+
+  @override
   String packLibraryEntrypoint(String entrypoint) {
     return '运行时：$entrypoint';
   }

@@ -54,6 +54,23 @@
     "compatibility": {
       "$ref": "#/$defs/compatibility"
     },
+    "marketplace": {
+      "$ref": "#/$defs/marketplace"
+    },
+    "replacement_slots": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/slot_declaration"
+      },
+      "uniqueItems": true
+    },
+    "additive_slots": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/slot_declaration"
+      },
+      "uniqueItems": true
+    },
     "entrypoint_kind": {
       "type": "string",
       "enum": [
@@ -157,6 +174,119 @@
           "minimum": 1
         }
       }
+    },
+    "marketplace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "trust_level",
+        "categories",
+        "capabilities"
+      ],
+      "properties": {
+        "source": {
+          "type": "string",
+          "enum": [
+            "bundled",
+            "github",
+            "local_dev"
+          ]
+        },
+        "trust_level": {
+          "type": "string",
+          "enum": [
+            "official",
+            "reviewed",
+            "community",
+            "local_dev"
+          ]
+        },
+        "install_mode": {
+          "type": "string",
+          "enum": [
+            "bundled",
+            "manifest_url",
+            "local_file",
+            "deferred"
+          ]
+        },
+        "repository_url": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "docs_path": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "icon_path": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "categories": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/marketplace_tag"
+          },
+          "uniqueItems": true
+        },
+        "capabilities": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/marketplace_tag"
+          },
+          "uniqueItems": true
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "available",
+            "preview",
+            "deferred",
+            "disabled"
+          ]
+        }
+      }
+    },
+    "slot_declaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "mode"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/slot_id"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "reserved",
+            "exclusive",
+            "additive"
+          ]
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "marketplace_tag": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$"
+    },
+    "slot_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
     },
     "subscription": {
       "type": "object",

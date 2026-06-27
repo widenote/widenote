@@ -2,7 +2,8 @@
 
 ## Purpose
 
-Lightweight Agent Pack manifest validation for phase-one official packs.
+Lightweight Agent Pack manifest and marketplace index validation for phase-one
+official packs.
 
 ## Ownership Boundary
 
@@ -14,10 +15,10 @@ Uses only the Node.js standard library. It must not add repository package depen
 
 ## Public Surface
 
-Run the validator with one or more manifest paths:
+Run the validator with one or more manifest or marketplace index paths:
 
 ```sh
-node tools/pack_validator/validate.mjs packs/official/default/manifest.json packs/official/todo/manifest.json
+node tools/pack_validator/validate.mjs packs/official/default/manifest.json packs/official/todo/manifest.json packs/official/pkm_library/manifest.json packs/marketplace/index.json
 ```
 
 Current checks include:
@@ -36,6 +37,11 @@ Current checks include:
 - Tool permission subset of pack permissions
 - Agent tool references
 - Run mode values and read-only/confirm/auto tool boundaries
+- Marketplace metadata values and tag shape
+- Additive and replacement slot declaration shape
+- Reserved replacement slots limited to official or local-dev packs
+- Marketplace index parseability, duplicate pack ids, manifest path existence,
+  and index-to-manifest metadata alignment
 - Tool capability metadata: access, risk, locality, approval requirement,
   execution mode, and required permission consistency
 - Fail-closed handling for HTTP, MCP, web, file, network, shell, runner,
@@ -49,7 +55,8 @@ Validator self-tests:
 node tools/pack_validator/validate_test.mjs
 ```
 
-Self-tests also validate the current official default and todo manifests.
+Self-tests also validate the current official default, todo, PKM manifests, and
+the GitHub-first marketplace index.
 
 ## Generated Artifacts
 

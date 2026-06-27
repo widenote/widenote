@@ -12,6 +12,28 @@
     "widenote_max": null,
     "schema_version": 1
   },
+  "marketplace": {
+    "source": "local_dev",
+    "trust_level": "local_dev",
+    "install_mode": "local_file",
+    "repository_url": null,
+    "docs_path": null,
+    "icon_path": null,
+    "categories": [
+      "test"
+    ],
+    "capabilities": [
+      "memory.read"
+    ],
+    "status": "preview"
+  },
+  "additive_slots": [
+    {
+      "id": "knowledge.organization",
+      "mode": "additive",
+      "description": "Synthetic additive organization slot."
+    }
+  ],
   "entrypoint_kind": "native",
   "default_run_mode": "confirm",
   "permissions": [

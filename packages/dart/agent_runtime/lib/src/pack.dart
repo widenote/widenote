@@ -170,6 +170,19 @@ final class AgentPackManifestSnapshot {
     final edition = _requiredEnum(json, 'edition', _editionValues);
     _optionalString(json, 'description', 'description');
     _validateCompatibility(json['compatibility']);
+    _validateMarketplace(json['marketplace']);
+    _validateSlotDeclarations(
+      json['replacement_slots'],
+      'replacement_slots',
+      edition: edition,
+      replacement: true,
+    );
+    _validateSlotDeclarations(
+      json['additive_slots'],
+      'additive_slots',
+      edition: edition,
+      replacement: false,
+    );
     if (json.containsKey('entrypoint_kind')) {
       _runtimeKindAt(json['entrypoint_kind'], 'entrypoint_kind');
     }
@@ -493,6 +506,9 @@ const Set<String> _manifestKeys = <String>{
   'edition',
   'description',
   'compatibility',
+  'marketplace',
+  'replacement_slots',
+  'additive_slots',
   'entrypoint_kind',
   'permissions',
   'subscriptions',
@@ -569,6 +585,38 @@ const Set<String> _modelCapabilityValues = <String>{
   'tool_use',
   'toolUse',
 };
+const Set<String> _marketplaceSourceValues = <String>{
+  'bundled',
+  'github',
+  'local_dev',
+};
+const Set<String> _marketplaceTrustValues = <String>{
+  'official',
+  'reviewed',
+  'community',
+  'local_dev',
+};
+const Set<String> _marketplaceInstallModeValues = <String>{
+  'bundled',
+  'manifest_url',
+  'local_file',
+  'deferred',
+};
+const Set<String> _marketplaceStatusValues = <String>{
+  'available',
+  'preview',
+  'deferred',
+  'disabled',
+};
+const Set<String> _slotModeValues = <String>{
+  'reserved',
+  'exclusive',
+  'additive',
+};
+final RegExp _marketplaceTagPattern = RegExp(
+  r'^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$',
+);
+final RegExp _slotIdPattern = RegExp(r'^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$');
 
 String _requiredString(JsonMap json, String key) {
   final value = json[key];
@@ -607,11 +655,16 @@ int _requiredInt(JsonMap json, String key, {int? min, int? max}) {
 
 String _requiredEnum(JsonMap json, String key, Set<String> values) {
   final value = _requiredString(json, key);
+  _requiredEnumValue(value, key, values);
+  return value;
+}
+
+void _requiredEnumValue(String value, String path, Set<String> values) {
   if (values.contains(value)) {
-    return value;
+    return;
   }
   throw FormatException(
-    'Manifest field $key must be one of ${_formatSet(values)}.',
+    'Manifest field $path must be one of ${_formatSet(values)}.',
   );
 }
 
@@ -885,6 +938,107 @@ void _validateCompatibility(Object? value) {
   if (json.containsKey('schema_version')) {
     _requiredInt(json, 'schema_version', min: 1);
   }
+}
+
+void _validateMarketplace(Object? value) {
+  if (value == null) {
+    return;
+  }
+  final json = _requiredJsonMap(
+    value,
+    'Manifest field marketplace must be an object.',
+  );
+  _rejectUnknownFields(json, 'marketplace', const <String>{
+    'source',
+    'trust_level',
+    'install_mode',
+    'repository_url',
+    'docs_path',
+    'icon_path',
+    'categories',
+    'capabilities',
+    'status',
+  });
+  _requiredEnumValue(
+    _requiredString(json, 'source'),
+    'marketplace.source',
+    _marketplaceSourceValues,
+  );
+  _requiredEnumValue(
+    _requiredString(json, 'trust_level'),
+    'marketplace.trust_level',
+    _marketplaceTrustValues,
+  );
+  _optionalEnum(
+    json,
+    'install_mode',
+    'marketplace.install_mode',
+    _marketplaceInstallModeValues,
+  );
+  _optionalString(json, 'repository_url', 'marketplace.repository_url');
+  _optionalString(json, 'docs_path', 'marketplace.docs_path');
+  _optionalString(json, 'icon_path', 'marketplace.icon_path');
+  _requiredStringSet(
+    json,
+    'categories',
+    minItems: 1,
+    pattern: _marketplaceTagPattern,
+  );
+  _requiredStringSet(
+    json,
+    'capabilities',
+    minItems: 1,
+    pattern: _marketplaceTagPattern,
+  );
+  _optionalEnum(json, 'status', 'marketplace.status', _marketplaceStatusValues);
+}
+
+void _validateSlotDeclarations(
+  Object? value,
+  String path, {
+  required String edition,
+  required bool replacement,
+}) {
+  if (value == null) {
+    return;
+  }
+  if (value is! List<Object?>) {
+    throw FormatException('Manifest field $path must be an object array.');
+  }
+  final seenIds = <String>{};
+  for (var index = 0; index < value.length; index += 1) {
+    final json = _requiredJsonMap(
+      value[index],
+      'Manifest field $path[$index] must be an object.',
+    );
+    _rejectUnknownFields(json, '$path[$index]', const <String>{
+      'id',
+      'mode',
+      'description',
+    });
+    final id = _requiredString(json, 'id');
+    _expectPattern(id, '$path[$index].id', _slotIdPattern);
+    if (!seenIds.add(id)) {
+      throw FormatException(
+        'Manifest field $path contains duplicate slot id: $id.',
+      );
+    }
+    final mode = _requiredString(json, 'mode');
+    _requiredEnumValue(mode, '$path.$id.mode', _slotModeValues);
+    _optionalString(json, 'description', '$path.$id.description');
+    if (!replacement && mode != 'additive') {
+      throw FormatException(
+        'Manifest field $path.$id.mode must be additive for additive_slots.',
+      );
+    }
+  }
+  if (!replacement || edition == 'official' || edition == 'local_dev') {
+    return;
+  }
+  throw FormatException(
+    'Manifest field replacement_slots is reserved for official or local_dev '
+    'packs in this slice.',
+  );
 }
 
 void _validateUiBlocks(Object? value) {

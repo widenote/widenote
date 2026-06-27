@@ -1,0 +1,62 @@
+{
+  "$schema": "../../packages/schemas/src/agent_pack/agent_pack_marketplace.schema.json",
+  "schema_version": 1,
+  "source": "github",
+  "updated_at": "2026-06-28",
+  "packs": [
+    {
+      "id": "pack.default",
+      "manifest_path": "../official/default/manifest.json",
+      "publisher": "widenote",
+      "edition": "official",
+      "trust_level": "official",
+      "status": "available",
+      "categories": [
+        "capture",
+        "memory"
+      ],
+      "capabilities": [
+        "memory.propose",
+        "card.write",
+        "insight.write"
+      ],
+      "repository_url": "https://github.com/widenote/widenote",
+      "docs_path": "packs/official/default/README.md"
+    },
+    {
+      "id": "pack.todo",
+      "manifest_path": "../official/todo/manifest.json",
+      "publisher": "widenote",
+      "edition": "official",
+      "trust_level": "official",
+      "status": "available",
+      "categories": [
+        "task",
+        "capture"
+      ],
+      "capabilities": [
+        "todo.suggest"
+      ],
+      "repository_url": "https://github.com/widenote/widenote",
+      "docs_path": "packs/official/todo/README.md"
+    },
+    {
+      "id": "pack.pkm_library",
+      "manifest_path": "../official/pkm_library/manifest.json",
+      "publisher": "widenote",
+      "edition": "official",
+      "trust_level": "official",
+      "status": "available",
+      "categories": [
+        "pkm",
+        "knowledge"
+      ],
+      "capabilities": [
+        "derived_artifact",
+        "knowledge.organization"
+      ],
+      "repository_url": "https://github.com/widenote/widenote",
+      "docs_path": "packs/official/pkm_library/README.md"
+    }
+  ]
+}

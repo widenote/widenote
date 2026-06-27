@@ -172,6 +172,7 @@ void main() {
       containsAll(<String>[
         'pack.default/agent.capture_loop',
         'pack.todo/agent.todo_loop',
+        'pack.pkm_library/agent.pkm_profile_builder',
       ]),
     );
   });
@@ -502,6 +503,7 @@ void main() {
           runtime.WnEventTypes.cardCreated,
           runtime.WnEventTypes.insightCreated,
           runtime.WnEventTypes.todoSuggested,
+          runtime.WnEventTypes.artifactCreated,
         ]),
       );
       expect(
@@ -510,6 +512,15 @@ void main() {
             .single
             .packId,
         'pack.todo',
+      );
+      expect(
+        events
+            .where(
+              (event) => event.type == runtime.WnEventTypes.artifactCreated,
+            )
+            .single
+            .packId,
+        'pack.pkm_library',
       );
       expect(
         events
@@ -529,7 +540,7 @@ void main() {
         traces
             .where((trace) => trace.name == 'runtime.run.completed')
             .map((trace) => trace.packId),
-        containsAll(<String>['pack.default', 'pack.todo']),
+        containsAll(<String>['pack.default', 'pack.todo', 'pack.pkm_library']),
       );
       expect(
         database.traceEvents
@@ -543,6 +554,14 @@ void main() {
       expect(
         database.insights.readAll(status: 'active'),
         hasLength(greaterThanOrEqualTo(4)),
+      );
+      final pkmArtifact = database.derivedArtifacts
+          .readAll(artifactKind: 'pkm_profile_entry')
+          .single;
+      expect(pkmArtifact.sourceRefs, isNotEmpty);
+      expect(
+        pkmArtifact.generatorId,
+        'pack.pkm_library/agent.pkm_profile_builder',
       );
       expect(
         (database.cards.readAll(status: 'active').first.sourceRefs.first

@@ -21,6 +21,10 @@
       "fixture": "valid/agent_pack_manifest.json"
     },
     {
+      "schema": "../src/agent_pack/agent_pack_marketplace.schema.json",
+      "fixture": "valid/agent_pack_marketplace.json"
+    },
+    {
       "schema": "../src/permission/permission.schema.json",
       "fixture": "valid/permission_declaration.json"
     },

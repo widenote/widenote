@@ -64,6 +64,39 @@ final class CapturePipelineException implements Exception {
 
 abstract interface class CaptureKnowledgeSink {
   Future<void> save(cards.MemoryFirstCardBundle bundle);
+  Future<void> saveArtifacts(List<CaptureDerivedArtifact> artifacts);
+}
+
+final class CaptureDerivedArtifact {
+  const CaptureDerivedArtifact({
+    required this.id,
+    required this.sourceCaptureId,
+    required this.sourceEventId,
+    required this.artifactKind,
+    required this.title,
+    required this.body,
+    required this.sourceRefs,
+    required this.generatorId,
+    required this.generatorVersion,
+    required this.payload,
+    required this.createdAt,
+    this.sensitivity = 'low',
+    this.confidence = 'medium',
+  });
+
+  final String id;
+  final String sourceCaptureId;
+  final String sourceEventId;
+  final String artifactKind;
+  final String title;
+  final String body;
+  final List<Object?> sourceRefs;
+  final String sensitivity;
+  final String confidence;
+  final String generatorId;
+  final String generatorVersion;
+  final Map<String, Object?> payload;
+  final DateTime createdAt;
 }
 
 final class CaptureOrchestrator {
@@ -92,6 +125,7 @@ final class CaptureOrchestrator {
     memory.MemoryRepository? memoryRepository,
     CaptureKnowledgeSink? knowledgeSink,
     bool autoGrantOfficialPermissions = true,
+    Iterable<String>? enabledPackIds,
   }) {
     final localClock = clock ?? const SystemWnClock();
     final runtimeEventStore = eventStore ?? runtime.InMemoryEventStore();
@@ -99,9 +133,13 @@ final class CaptureOrchestrator {
     final runtimeIdGenerator =
         idGenerator ?? MonotonicWnIdGenerator(clock: localClock);
     final permissions = permissionBroker ?? runtime.InMemoryPermissionBroker();
+    final registeredManifests = _enabledOfficialManifests(enabledPackIds);
+    final registeredPackIds = registeredManifests
+        .map((manifest) => manifest.id)
+        .toSet();
     if (autoGrantOfficialPermissions &&
         permissions is runtime.InMemoryPermissionBroker) {
-      for (final manifest in officialPackManifestSnapshots) {
+      for (final manifest in registeredManifests) {
         permissions.grantAll(manifest.id, manifest.requiredPermissions);
       }
     }
@@ -118,7 +156,11 @@ final class CaptureOrchestrator {
     );
     registerOfficialNativePacks(
       kernel,
-      nativeHandlersByPackId: _officialNativeHandlersByPackId,
+      manifests: registeredManifests,
+      nativeHandlersByPackId: <String, Map<String, runtime.AgentHandler>>{
+        for (final entry in _officialNativeHandlersByPackId.entries)
+          if (registeredPackIds.contains(entry.key)) entry.key: entry.value,
+      },
     );
 
     final localMemoryRepository =
@@ -143,12 +185,17 @@ final class CaptureOrchestrator {
   static const _defaultAgentId = 'agent.capture_loop';
   static const _todoPackId = 'pack.todo';
   static const _todoAgentId = 'agent.todo_loop';
+  static const _pkmPackId = 'pack.pkm_library';
+  static const _pkmAgentId = 'agent.pkm_profile_builder';
   static const _officialNativeHandlersByPackId =
       <String, Map<String, runtime.AgentHandler>>{
         _defaultPackId: <String, runtime.AgentHandler>{
           _defaultAgentId: _CaptureAgent(),
         },
         _todoPackId: <String, runtime.AgentHandler>{_todoAgentId: _TodoAgent()},
+        _pkmPackId: <String, runtime.AgentHandler>{
+          _pkmAgentId: _PkmProfileAgent(),
+        },
       };
 
   final runtime.RuntimeKernel _kernel;
@@ -195,6 +242,7 @@ final class CaptureOrchestrator {
 
     final allEvents = await _eventStore.readAll();
     final newEvents = allEvents.skip(priorEventCount).toList(growable: false);
+    await _knowledgeSink?.saveArtifacts(_derivedArtifactsFromEvents(newEvents));
     final memoryResult = await _writeFirstMemoryProposal(newEvents);
     final todo = _todoFromEvents(newEvents, capture);
     final traces = await _newTraceViews(priorTraceCount, capture);
@@ -447,6 +495,26 @@ final class CaptureOrchestrator {
   }
 }
 
+List<runtime.AgentPackManifestSnapshot> _enabledOfficialManifests(
+  Iterable<String>? enabledPackIds,
+) {
+  if (enabledPackIds == null) {
+    return officialPackManifestSnapshots;
+  }
+  final enabled = enabledPackIds.toSet();
+  final unknown = enabled.difference(
+    officialPackManifestSnapshotsById.keys.toSet(),
+  );
+  if (unknown.isNotEmpty) {
+    throw ArgumentError(
+      'Unknown official pack id(s): ${unknown.toList(growable: false).join(', ')}.',
+    );
+  }
+  return officialPackManifestSnapshots
+      .where((manifest) => enabled.contains(manifest.id))
+      .toList(growable: false);
+}
+
 runtime.WnEvent? _firstEventOfType(List<runtime.WnEvent> events, String type) {
   for (final event in events) {
     if (event.type == type) {
@@ -454,6 +522,108 @@ runtime.WnEvent? _firstEventOfType(List<runtime.WnEvent> events, String type) {
     }
   }
   return null;
+}
+
+List<CaptureDerivedArtifact> _derivedArtifactsFromEvents(
+  List<runtime.WnEvent> events,
+) {
+  return events
+      .where((event) => event.type == runtime.WnEventTypes.artifactCreated)
+      .map(_derivedArtifactFromEvent)
+      .whereType<CaptureDerivedArtifact>()
+      .toList(growable: false);
+}
+
+CaptureDerivedArtifact? _derivedArtifactFromEvent(runtime.WnEvent event) {
+  final subject = event.subjectRef;
+  final payload = event.payload;
+  final sourceCaptureId =
+      _string(payload['source_capture_id'], fallback: '') == ''
+      ? subject?.kind == 'capture'
+            ? subject!.id
+            : ''
+      : _string(payload['source_capture_id'], fallback: '');
+  final sourceEventId = _string(
+    payload['source_event_id'],
+    fallback: event.causationId ?? event.id,
+  );
+  if (sourceCaptureId.isEmpty || sourceEventId.isEmpty) {
+    return null;
+  }
+  final sourceRefs = _artifactSourceRefs(
+    payload['source_refs'],
+    sourceCaptureId: sourceCaptureId,
+    sourceEventId: sourceEventId,
+    excerpt: _string(payload['source_excerpt'], fallback: ''),
+  );
+  return CaptureDerivedArtifact(
+    id: _string(payload['artifact_id'], fallback: 'artifact.${event.id}'),
+    sourceCaptureId: sourceCaptureId,
+    sourceEventId: sourceEventId,
+    artifactKind: _string(
+      payload['artifact_kind'],
+      fallback: 'generated_artifact',
+    ),
+    title: _string(payload['title'], fallback: 'Generated artifact'),
+    body: _string(payload['body'], fallback: 'Generated artifact body.'),
+    sourceRefs: sourceRefs,
+    sensitivity: _string(payload['sensitivity'], fallback: 'low'),
+    confidence: _string(payload['confidence'], fallback: 'medium'),
+    generatorId: _string(
+      payload['generator_id'],
+      fallback:
+          '${event.packId ?? 'pack.unknown'}/${event.agentId ?? 'agent.unknown'}',
+    ),
+    generatorVersion: _string(payload['generator_version'], fallback: '0.1.0'),
+    payload: <String, Object?>{
+      for (final entry in payload.entries)
+        if (!const <String>{
+          'artifact_id',
+          'artifact_kind',
+          'title',
+          'body',
+          'source_capture_id',
+          'source_event_id',
+          'source_refs',
+          'source_excerpt',
+          'sensitivity',
+          'confidence',
+          'generator_id',
+          'generator_version',
+        }.contains(entry.key))
+          entry.key: entry.value,
+    },
+    createdAt: event.createdAt,
+  );
+}
+
+List<Object?> _artifactSourceRefs(
+  Object? value, {
+  required String sourceCaptureId,
+  required String sourceEventId,
+  required String excerpt,
+}) {
+  final refs = value is List<Object?> ? value : const <Object?>[];
+  final ids = refs
+      .whereType<Map>()
+      .map((ref) => ref['id'])
+      .whereType<String>()
+      .toSet();
+  return <Object?>[
+    ...refs,
+    if (!ids.contains(sourceCaptureId))
+      <String, Object?>{
+        'kind': 'capture',
+        'id': sourceCaptureId,
+        if (excerpt.isNotEmpty) 'excerpt': excerpt,
+      },
+    if (!ids.contains(sourceEventId))
+      <String, Object?>{
+        'kind': 'event',
+        'id': sourceEventId,
+        if (excerpt.isNotEmpty) 'excerpt': excerpt,
+      },
+  ];
 }
 
 MemoryReviewCandidate _reviewCandidateView(
@@ -862,6 +1032,192 @@ _MemoryCandidateEnvelope _memoryCandidate(runtime.ModelResponse response) {
     durability: durability,
     policyReasons: reasons,
   );
+}
+
+final class _PkmProfileAgent implements runtime.AgentHandler {
+  const _PkmProfileAgent();
+
+  @override
+  Future<runtime.AgentHandlerResult> handle(
+    runtime.AgentContext context,
+    runtime.WnEvent event,
+  ) async {
+    final text = _captureTextFromPayload(event.payload);
+    final subject =
+        event.subjectRef ?? runtime.SubjectRef(kind: 'capture', id: event.id);
+    final response = await context.model.complete(
+      runtime.ModelRequest(
+        prompt: buildPkmProfilePrompt(text: text, sourceEventId: event.id),
+        context: <String, Object?>{
+          'prompt_ref': pkmProfilePromptRef,
+          'source_event_id': event.id,
+        },
+      ),
+    );
+    final entry = _pkmProfileEntry(response, fallbackText: text);
+    final sourceExcerpt = previewText(
+      entry.sourceExcerpt.isEmpty ? text : entry.sourceExcerpt,
+    );
+    final sourceRefs = <Object?>[
+      <String, Object?>{
+        'kind': 'capture',
+        'id': subject.id,
+        'excerpt': sourceExcerpt,
+      },
+      <String, Object?>{
+        'kind': 'event',
+        'id': event.id,
+        'excerpt': sourceExcerpt,
+      },
+    ];
+
+    return runtime.AgentHandlerResult(
+      events: <runtime.WnEventDraft>[
+        context.emit(
+          type: runtime.WnEventTypes.artifactCreated,
+          subjectRef: subject,
+          payload: <String, Object?>{
+            'artifact_id': 'artifact.${subject.id}.pkm_profile_entry',
+            'artifact_kind': 'pkm_profile_entry',
+            'title': entry.title,
+            'body': entry.body,
+            'source_capture_id': subject.id,
+            'source_event_id': event.id,
+            'source_excerpt': sourceExcerpt,
+            'source_refs': sourceRefs,
+            'sensitivity': entry.sensitivity,
+            'confidence': entry.confidence,
+            'generator_id': 'pack.pkm_library/agent.pkm_profile_builder',
+            'generator_version': '0.1.0',
+            'topics': entry.topics,
+            'people': entry.people,
+            'projects': entry.projects,
+            'derived_output': true,
+            'source_truth': 'raw_capture_and_memory_remain_canonical',
+            if (entry.policyReasons.isNotEmpty)
+              'policy_reasons': entry.policyReasons,
+          },
+        ),
+      ],
+    );
+  }
+}
+
+final class _PkmProfileEntry {
+  const _PkmProfileEntry({
+    required this.title,
+    required this.body,
+    required this.topics,
+    required this.people,
+    required this.projects,
+    required this.sourceExcerpt,
+    required this.confidence,
+    required this.sensitivity,
+    required this.policyReasons,
+  });
+
+  final String title;
+  final String body;
+  final List<String> topics;
+  final List<String> people;
+  final List<String> projects;
+  final String sourceExcerpt;
+  final String confidence;
+  final String sensitivity;
+  final List<String> policyReasons;
+}
+
+_PkmProfileEntry _pkmProfileEntry(
+  runtime.ModelResponse response, {
+  required String fallbackText,
+}) {
+  final parsed = _jsonObject(response.text);
+  final raw = response.raw;
+  final title =
+      _metadataString(parsed, 'title') ??
+      _metadataString(raw, 'title') ??
+      'PKM profile entry';
+  final summary =
+      _metadataString(parsed, 'summary') ??
+      _metadataString(raw, 'summary') ??
+      _legacyCandidateText(response.text);
+  final sourceExcerpt =
+      _metadataString(parsed, 'source_excerpt') ??
+      _metadataString(raw, 'source_excerpt') ??
+      previewText(fallbackText);
+  final confidence = _normalizedPkmValue(
+    _metadataString(parsed, 'confidence') ?? _metadataString(raw, 'confidence'),
+    const <String>{'high', 'medium', 'low'},
+    fallback: 'medium',
+  );
+  final sensitivity = _normalizedPkmValue(
+    _metadataString(parsed, 'sensitivity') ??
+        _metadataString(raw, 'sensitivity'),
+    const <String>{'high', 'medium', 'low'},
+    fallback: 'low',
+  );
+  final reasons = <String>[
+    if (parsed == null) 'model_output_unstructured',
+    if (summary.trim().isEmpty) 'model_summary_missing',
+  ];
+  return _PkmProfileEntry(
+    title: previewText(title, maxLength: 48),
+    body: _pkmBody(
+      title: title,
+      summary: summary.trim().isEmpty ? previewText(fallbackText) : summary,
+      topics: _metadataStringList(parsed, raw, 'topics'),
+      people: _metadataStringList(parsed, raw, 'people'),
+      projects: _metadataStringList(parsed, raw, 'projects'),
+    ),
+    topics: _metadataStringList(parsed, raw, 'topics'),
+    people: _metadataStringList(parsed, raw, 'people'),
+    projects: _metadataStringList(parsed, raw, 'projects'),
+    sourceExcerpt: sourceExcerpt,
+    confidence: confidence,
+    sensitivity: sensitivity,
+    policyReasons: reasons,
+  );
+}
+
+String _pkmBody({
+  required String title,
+  required String summary,
+  required List<String> topics,
+  required List<String> people,
+  required List<String> projects,
+}) {
+  final lines = <String>[
+    '# ${previewText(title, maxLength: 64)}',
+    '',
+    summary,
+    if (topics.isNotEmpty) '',
+    if (topics.isNotEmpty) 'Topics: ${topics.join(', ')}',
+    if (people.isNotEmpty) 'People: ${people.join(', ')}',
+    if (projects.isNotEmpty) 'Projects: ${projects.join(', ')}',
+  ];
+  return lines.where((line) => line.trim().isNotEmpty).join('\n');
+}
+
+List<String> _metadataStringList(
+  Map<String, Object?>? parsed,
+  Map<String, Object?> raw,
+  String key,
+) {
+  return <String>{
+    ..._stringList(parsed?[key]),
+    ..._stringList(raw[key]),
+  }.toList(growable: false);
+}
+
+String _normalizedPkmValue(
+  String? value,
+  Set<String> allowed, {
+  required String fallback,
+}) {
+  if (value != null && allowed.contains(value)) {
+    return value;
+  }
+  return fallback;
 }
 
 Map<String, Object?>? _jsonObject(String value) {

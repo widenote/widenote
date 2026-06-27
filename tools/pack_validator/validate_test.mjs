@@ -3,7 +3,12 @@
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
 
-import { validateManifest, validateManifestPath } from "./validate.mjs";
+import {
+  validateDocumentPath,
+  validateManifest,
+  validateManifestPath,
+  validateMarketplaceIndex,
+} from "./validate.mjs";
 
 const baseManifest = Object.freeze({
   id: "pack.test",
@@ -58,6 +63,20 @@ const baseManifest = Object.freeze({
       approval_requirement: "none",
       execution: "local",
       side_effect: "none",
+    },
+  ],
+  marketplace: {
+    source: "local_dev",
+    trust_level: "local_dev",
+    install_mode: "local_file",
+    categories: ["test"],
+    capabilities: ["memory.read"],
+    status: "preview",
+  },
+  additive_slots: [
+    {
+      id: "knowledge.organization",
+      mode: "additive",
     },
   ],
 });
@@ -373,19 +392,114 @@ expectError(
   "approval_requirement must not be none",
 );
 
+expectError(
+  {
+    ...clone(baseManifest),
+    marketplace: {
+      ...clone(baseManifest).marketplace,
+      trust_level: "unsafe",
+    },
+  },
+  "marketplace.trust_level must be one of",
+);
+
+expectError(
+  {
+    ...clone(baseManifest),
+    additive_slots: [
+      {
+        id: "knowledge.organization",
+        mode: "exclusive",
+      },
+    ],
+  },
+  "mode must be additive for additive_slots",
+);
+
+expectError(
+  {
+    ...clone(baseManifest),
+    edition: "community",
+    replacement_slots: [
+      {
+        id: "memory.write_policy",
+        mode: "reserved",
+      },
+    ],
+  },
+  "replacement_slots are reserved",
+);
+
 const officialManifestPaths = [
   "../../packs/official/default/manifest.json",
   "../../packs/official/todo/manifest.json",
+  "../../packs/official/pkm_library/manifest.json",
 ].map((path) => fileURLToPath(new URL(path, import.meta.url)));
 
 for (const manifestPath of officialManifestPaths) {
   assert.deepEqual(validateManifestPath(manifestPath), []);
 }
 
+const marketplaceIndexPath = fileURLToPath(
+  new URL("../../packs/marketplace/index.json", import.meta.url),
+);
+assert.deepEqual(validateDocumentPath(marketplaceIndexPath), []);
+
+const validMarketplaceIndex = {
+  schema_version: 1,
+  source: "github",
+  updated_at: "2026-06-28",
+  packs: [
+    {
+      id: "pack.test",
+      manifest_path: "../official/test/manifest.json",
+      publisher: "widenote",
+      edition: "local_dev",
+      trust_level: "local_dev",
+      status: "preview",
+      categories: ["test"],
+      capabilities: ["memory.read"],
+    },
+  ],
+};
+assert.deepEqual(validateMarketplaceIndex(clone(validMarketplaceIndex)), []);
+
+expectMarketplaceError(
+  {
+    ...clone(validMarketplaceIndex),
+    packs: [
+      ...clone(validMarketplaceIndex).packs,
+      clone(validMarketplaceIndex).packs[0],
+    ],
+  },
+  "duplicates pack id",
+);
+
+expectMarketplaceError(
+  {
+    ...clone(validMarketplaceIndex),
+    packs: [
+      {
+        ...clone(validMarketplaceIndex).packs[0],
+        trust_level: "trusted_by_vibes",
+      },
+    ],
+  },
+  "trust_level must be one of",
+);
+
 console.log("tools/pack_validator/validate_test.mjs: ok");
 
 function expectError(manifest, expected) {
   const errors = validateManifest(manifest);
+  assert(
+    errors.some((error) => error.includes(expected)),
+    `Expected error containing "${expected}", got: ${errors.join("; ")}`,
+  );
+}
+
+function expectMarketplaceError(index, expected) {
+  const errors = validateMarketplaceIndex(index);
   assert(
     errors.some((error) => error.includes(expected)),
     `Expected error containing "${expected}", got: ${errors.join("; ")}`,

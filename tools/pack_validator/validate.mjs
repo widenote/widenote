@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const TODO_PERMISSION = "todo.suggest";
@@ -27,6 +28,32 @@ const TOOL_RISK = new Set(["low", "medium", "high"]);
 const TOOL_LOCALITY = new Set(["local", "external"]);
 const TOOL_APPROVAL_REQUIREMENTS = new Set(["none", "per_call", "deferred"]);
 const TOOL_EXECUTIONS = new Set(["local", "fake", "deferred", "disabled"]);
+const EDITIONS = new Set(["official", "store", "community", "local_dev"]);
+const MARKETPLACE_SOURCES = new Set(["bundled", "github", "local_dev"]);
+const MARKETPLACE_TRUST_LEVELS = new Set([
+  "official",
+  "reviewed",
+  "community",
+  "local_dev",
+]);
+const MARKETPLACE_INSTALL_MODES = new Set([
+  "bundled",
+  "manifest_url",
+  "local_file",
+  "deferred",
+]);
+const MARKETPLACE_STATUSES = new Set([
+  "available",
+  "preview",
+  "deferred",
+  "disabled",
+]);
+const MARKETPLACE_INDEX_SOURCES = new Set(["github"]);
+const SLOT_MODES = new Set(["reserved", "exclusive", "additive"]);
+const REPLACEMENT_SLOT_ALLOWED_EDITIONS = new Set(["official", "local_dev"]);
+const TAG_PATTERN = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
+const PACK_ID_PATTERN = /^pack\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
+const SLOT_ID_PATTERN = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/;
 const TOOL_CAPABILITY_KINDS = new Set([
   "local_core",
   "context_packet",
@@ -100,7 +127,7 @@ function runCli(manifestPaths) {
   let failureCount = 0;
 
   for (const manifestPath of manifestPaths) {
-    const errors = validateManifestPath(manifestPath);
+    const errors = validateDocumentPath(manifestPath);
 
     if (errors.length > 0) {
       failureCount += errors.length;
@@ -136,6 +163,34 @@ export function validateManifestPath(manifestPath) {
   return validateManifest(manifest);
 }
 
+export function validateDocumentPath(documentPath) {
+  let document;
+
+  try {
+    document = JSON.parse(readFileSync(documentPath, "utf8"));
+  } catch (error) {
+    return [`JSON parse failed: ${error.message}`];
+  }
+
+  if (isPlainObject(document) && Array.isArray(document.packs)) {
+    return validateMarketplaceIndex(document, { indexPath: documentPath });
+  }
+
+  return validateManifest(document);
+}
+
+export function validateMarketplaceIndexPath(indexPath) {
+  let index;
+
+  try {
+    index = JSON.parse(readFileSync(indexPath, "utf8"));
+  } catch (error) {
+    return [`JSON parse failed: ${error.message}`];
+  }
+
+  return validateMarketplaceIndex(index, { indexPath });
+}
+
 export function validateManifest(manifest) {
   const errors = [];
 
@@ -161,6 +216,8 @@ export function validateManifest(manifest) {
   validateAgentIds(agents, errors);
   validateSubscriptions(subscriptions, agents, errors);
   validateSubscriptionDependencies(subscriptions, errors);
+  validateMarketplace(manifest, errors);
+  validateSlotDeclarations(manifest, errors);
   validateAgentPermissions(agents, packPermissionSet, errors);
   validateToolPermissions(tools, packPermissionSet, errors);
   validateAgentToolRefs(agents, tools, errors);
@@ -187,6 +244,9 @@ function validateBasicShape(manifest, errors) {
   validateStringField(manifest, "version", errors);
   validateStringField(manifest, "publisher", errors);
   validateStringField(manifest, "edition", errors);
+  if ("edition" in manifest) {
+    validateStringEnumValue(manifest.edition, "edition", EDITIONS, errors);
+  }
   if ("default_run_mode" in manifest) {
     validateStringEnumValue(
       manifest.default_run_mode,
@@ -215,6 +275,22 @@ function validateBasicShape(manifest, errors) {
 
   if ("tools" in manifest) {
     validateObjectArrayField(manifest, "tools", errors, { allowEmpty: true });
+  }
+
+  if ("marketplace" in manifest && !isPlainObject(manifest.marketplace)) {
+    errors.push("marketplace must be an object");
+  }
+
+  if ("replacement_slots" in manifest) {
+    validateObjectArrayField(manifest, "replacement_slots", errors, {
+      allowEmpty: true,
+    });
+  }
+
+  if ("additive_slots" in manifest) {
+    validateObjectArrayField(manifest, "additive_slots", errors, {
+      allowEmpty: true,
+    });
   }
 
   if (Array.isArray(manifest.subscriptions)) {
@@ -514,6 +590,114 @@ function visitSubscription(id, byId, visiting, visited, errors) {
   }
   visiting.delete(id);
   visited.add(id);
+}
+
+function validateMarketplace(manifest, errors) {
+  if (!isPlainObject(manifest.marketplace)) {
+    return;
+  }
+
+  const marketplace = manifest.marketplace;
+  validateStringEnumValue(
+    marketplace.source,
+    "marketplace.source",
+    MARKETPLACE_SOURCES,
+    errors,
+  );
+  validateStringEnumValue(
+    marketplace.trust_level,
+    "marketplace.trust_level",
+    MARKETPLACE_TRUST_LEVELS,
+    errors,
+  );
+  if ("install_mode" in marketplace) {
+    validateStringEnumValue(
+      marketplace.install_mode,
+      "marketplace.install_mode",
+      MARKETPLACE_INSTALL_MODES,
+      errors,
+    );
+  }
+  if ("repository_url" in marketplace && marketplace.repository_url !== null) {
+    validateStringValue(
+      marketplace.repository_url,
+      "marketplace.repository_url",
+      errors,
+    );
+  }
+  if ("docs_path" in marketplace && marketplace.docs_path !== null) {
+    validateStringValue(marketplace.docs_path, "marketplace.docs_path", errors);
+  }
+  if ("icon_path" in marketplace && marketplace.icon_path !== null) {
+    validateStringValue(marketplace.icon_path, "marketplace.icon_path", errors);
+  }
+  validateStringArrayPatternValue(
+    marketplace.categories,
+    "marketplace.categories",
+    TAG_PATTERN,
+    errors,
+  );
+  validateStringArrayPatternValue(
+    marketplace.capabilities,
+    "marketplace.capabilities",
+    TAG_PATTERN,
+    errors,
+  );
+  if ("status" in marketplace) {
+    validateStringEnumValue(
+      marketplace.status,
+      "marketplace.status",
+      MARKETPLACE_STATUSES,
+      errors,
+    );
+  }
+}
+
+function validateSlotDeclarations(manifest, errors) {
+  validateSlotList(manifest.replacement_slots, "replacement_slots", errors, {
+    replacement: true,
+    edition: manifest.edition,
+  });
+  validateSlotList(manifest.additive_slots, "additive_slots", errors, {
+    replacement: false,
+    edition: manifest.edition,
+  });
+}
+
+function validateSlotList(value, path, errors, options) {
+  if (!Array.isArray(value)) {
+    return;
+  }
+  const seenIds = new Set();
+  value.forEach((slot, index) => {
+    if (!isPlainObject(slot)) {
+      return;
+    }
+    validateStringPatternValue(slot.id, `${path}[${index}].id`, SLOT_ID_PATTERN, errors);
+    validateStringEnumValue(slot.mode, `${path}[${index}].mode`, SLOT_MODES, errors);
+    if ("description" in slot) {
+      validateStringValue(slot.description, `${path}[${index}].description`, errors);
+    }
+    if (typeof slot.id === "string") {
+      if (seenIds.has(slot.id)) {
+        errors.push(`${path}[${index}].id duplicates slot id: ${slot.id}`);
+      }
+      seenIds.add(slot.id);
+    }
+    if (!options.replacement && slot.mode !== "additive") {
+      errors.push(`${path}[${index}].mode must be additive for additive_slots`);
+    }
+  });
+
+  if (
+    options.replacement &&
+    value.length > 0 &&
+    !REPLACEMENT_SLOT_ALLOWED_EDITIONS.has(options.edition)
+  ) {
+    errors.push(
+      "replacement_slots are reserved for official or local_dev packs in this slice",
+    );
+  }
 }
 
 function validateAgentPermissions(agents, packPermissionSet, errors) {
@@ -869,6 +1053,128 @@ function validatePhaseOneGuardrails(manifest, agents, errors) {
   }
 }
 
+export function validateMarketplaceIndex(index, options = {}) {
+  const errors = [];
+
+  if (!isPlainObject(index)) {
+    return ["marketplace index must be a JSON object"];
+  }
+
+  if (
+    "schema_version" in index &&
+    (!Number.isInteger(index.schema_version) || index.schema_version !== 1)
+  ) {
+    errors.push("schema_version must be 1");
+  }
+  if (!("schema_version" in index)) {
+    errors.push("missing required field: schema_version");
+  }
+  validateStringEnumValue(index.source, "source", MARKETPLACE_INDEX_SOURCES, errors);
+  validateStringValue(index.updated_at, "updated_at", errors);
+  validateObjectArrayField(index, "packs", errors, { allowEmpty: true });
+
+  const seenPackIds = new Set();
+  const indexDir = options.indexPath ? dirname(options.indexPath) : null;
+  const entries = Array.isArray(index.packs) ? index.packs : [];
+
+  entries.forEach((entry, indexInList) => {
+    if (!isPlainObject(entry)) {
+      return;
+    }
+    const path = `packs[${indexInList}]`;
+    validateStringPatternValue(entry.id, `${path}.id`, PACK_ID_PATTERN, errors);
+    validateStringValue(entry.manifest_path, `${path}.manifest_path`, errors);
+    validateStringValue(entry.publisher, `${path}.publisher`, errors);
+    validateStringEnumValue(entry.edition, `${path}.edition`, EDITIONS, errors);
+    validateStringEnumValue(
+      entry.trust_level,
+      `${path}.trust_level`,
+      MARKETPLACE_TRUST_LEVELS,
+      errors,
+    );
+    validateStringEnumValue(
+      entry.status,
+      `${path}.status`,
+      MARKETPLACE_STATUSES,
+      errors,
+    );
+    validateStringArrayPatternValue(
+      entry.categories,
+      `${path}.categories`,
+      TAG_PATTERN,
+      errors,
+    );
+    validateStringArrayPatternValue(
+      entry.capabilities,
+      `${path}.capabilities`,
+      TAG_PATTERN,
+      errors,
+    );
+    if ("repository_url" in entry && entry.repository_url !== null) {
+      validateStringValue(entry.repository_url, `${path}.repository_url`, errors);
+    }
+    if ("docs_path" in entry && entry.docs_path !== null) {
+      validateStringValue(entry.docs_path, `${path}.docs_path`, errors);
+    }
+    if (typeof entry.id === "string") {
+      if (seenPackIds.has(entry.id)) {
+        errors.push(`${path}.id duplicates pack id: ${entry.id}`);
+      }
+      seenPackIds.add(entry.id);
+    }
+    if (indexDir && typeof entry.manifest_path === "string") {
+      validateIndexedManifest(entry, indexDir, path, errors);
+    }
+  });
+
+  return errors;
+}
+
+function validateIndexedManifest(entry, indexDir, path, errors) {
+  const manifestPath = resolve(indexDir, entry.manifest_path);
+  if (!existsSync(manifestPath)) {
+    errors.push(`${path}.manifest_path does not exist: ${entry.manifest_path}`);
+    return;
+  }
+  const manifestErrors = validateManifestPath(manifestPath);
+  if (manifestErrors.length > 0) {
+    errors.push(
+      `${path}.manifest_path points to invalid manifest: ${manifestErrors.join("; ")}`,
+    );
+    return;
+  }
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+  if (manifest.id !== entry.id) {
+    errors.push(`${path}.id does not match manifest id: ${manifest.id}`);
+  }
+  if (manifest.publisher !== entry.publisher) {
+    errors.push(`${path}.publisher does not match manifest publisher`);
+  }
+  if (manifest.edition !== entry.edition) {
+    errors.push(`${path}.edition does not match manifest edition`);
+  }
+  const marketplace = isPlainObject(manifest.marketplace)
+    ? manifest.marketplace
+    : null;
+  if (marketplace) {
+    if (marketplace.trust_level !== entry.trust_level) {
+      errors.push(`${path}.trust_level does not match manifest marketplace trust`);
+    }
+    compareStringArrays(
+      entry.categories,
+      marketplace.categories,
+      `${path}.categories`,
+      errors,
+    );
+    compareStringArrays(
+      entry.capabilities,
+      marketplace.capabilities,
+      `${path}.capabilities`,
+      errors,
+    );
+  }
+}
+
 function validateStringField(object, field, errors) {
   if (field in object) {
     validateStringValue(object[field], field, errors);
@@ -961,6 +1267,13 @@ function validateStringEnumValue(value, path, allowedValues, errors) {
   }
 }
 
+function validateStringPatternValue(value, path, pattern, errors) {
+  validateStringValue(value, path, errors);
+  if (typeof value === "string" && !pattern.test(value)) {
+    errors.push(`${path} has invalid value: ${value}`);
+  }
+}
+
 function validateStringArrayEnumValue(
   value,
   path,
@@ -977,6 +1290,18 @@ function validateStringArrayEnumValue(
       errors.push(
         `${path}[${index}] must be one of: ${Array.from(allowedValues).join(", ")}`,
       );
+    }
+  });
+}
+
+function validateStringArrayPatternValue(value, path, pattern, errors) {
+  validateStringArrayValue(value, path, errors);
+  if (!Array.isArray(value)) {
+    return;
+  }
+  value.forEach((item, index) => {
+    if (typeof item === "string" && !pattern.test(item)) {
+      errors.push(`${path}[${index}] has invalid value: ${item}`);
     }
   });
 }
@@ -1020,4 +1345,13 @@ function sameStringSet(left, right) {
 
   const rightSet = new Set(rightStrings);
   return leftStrings.every((item) => rightSet.has(item));
+}
+
+function compareStringArrays(left, right, path, errors) {
+  if (!Array.isArray(left) || !Array.isArray(right)) {
+    return;
+  }
+  if (!sameStringSet(left, right)) {
+    errors.push(`${path} does not match manifest marketplace metadata`);
+  }
 }

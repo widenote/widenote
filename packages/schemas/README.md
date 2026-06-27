@@ -32,6 +32,7 @@ Current source schemas:
 | Event envelope | `src/event/event.schema.json` |
 | Memory candidate/item | `src/memory/memory.schema.json` |
 | Agent Pack manifest | `src/agent_pack/agent_pack_manifest.schema.json` |
+| Agent Pack marketplace index | `src/agent_pack/agent_pack_marketplace.schema.json` |
 | Permission declaration | `src/permission/permission.schema.json` |
 | Trace event | `src/trace/trace.schema.json` |
 | Runtime task/run | `src/runtime/runtime_task_run.schema.json` |
@@ -116,6 +117,13 @@ node tools/pack_validator/validate_test.mjs
 ```
 
 This is a lightweight validator, not a complete JSON Schema validator. Full JSON Schema validation should be introduced under repo tooling when schema codegen or installable pack loading lands.
+
+The Agent Pack marketplace index schema defines the GitHub-first catalog shape
+for `packs/marketplace/index.json`. The same lightweight pack validator checks
+manifest paths, duplicate ids, edition/trust/status values, and the L1-L3
+guardrails that keep community entries from declaring live script, remote,
+HTTP, MCP, webhook, runner, or reserved replacement behavior before later RFCs
+accept those execution paths.
 
 ## Related Context
 

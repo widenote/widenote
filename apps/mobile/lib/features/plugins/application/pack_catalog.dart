@@ -4,6 +4,7 @@ import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
 import 'package:widenote_local_db/widenote_local_db.dart';
 
 import '../../../app/local_database.dart';
+import '../../capture/application/capture_controller.dart';
 import 'official_pack_manifests.dart';
 
 final permissionGateControllerProvider =
@@ -61,6 +62,12 @@ final class PackLibraryPack {
     required this.entrypointKind,
     required this.permissions,
     required this.outputEvents,
+    required this.marketplaceSource,
+    required this.trustLevel,
+    required this.categories,
+    required this.capabilities,
+    required this.replacementSlots,
+    required this.additiveSlots,
     required this.enabledSubscriptionCount,
     required this.failureCount,
     required this.permissionDecisionCounts,
@@ -78,6 +85,12 @@ final class PackLibraryPack {
   final String entrypointKind;
   final List<String> permissions;
   final List<String> outputEvents;
+  final String marketplaceSource;
+  final String trustLevel;
+  final List<String> categories;
+  final List<String> capabilities;
+  final List<String> replacementSlots;
+  final List<String> additiveSlots;
   final int enabledSubscriptionCount;
   final int failureCount;
   final PackPermissionDecisionCounts permissionDecisionCounts;
@@ -232,6 +245,7 @@ final class PackLibraryController extends Notifier<PackLibraryState> {
         'last_mobile_control_action': enabled ? 'enabled' : 'disabled',
       },
     );
+    ref.invalidate(captureOrchestratorProvider);
     state = _load(database);
   }
 
@@ -259,6 +273,10 @@ final class PackLibraryController extends Notifier<PackLibraryState> {
     PackInstallationRecord installation,
   ) {
     final manifest = officialPackManifestSnapshotsById[installation.packId];
+    final rawManifest = installation.manifest.isEmpty && manifest != null
+        ? officialPackManifestMap(installation.packId)
+        : installation.manifest;
+    final marketplace = _mapValue(rawManifest['marketplace']);
     final requestedPermissions = installation.requestedPermissions
         .whereType<String>()
         .toList(growable: false);
@@ -292,6 +310,18 @@ final class PackLibraryController extends Notifier<PackLibraryState> {
       outputEvents: manifest == null
           ? const <String>[]
           : _manifestOutputEvents(manifest),
+      marketplaceSource:
+          _stringValue(marketplace['source']) ??
+          _stringValue(installation.payload['marketplace_source']) ??
+          'local',
+      trustLevel:
+          _stringValue(marketplace['trust_level']) ??
+          _stringValue(installation.payload['trust_level']) ??
+          installation.edition,
+      categories: _stringListValue(marketplace['categories']),
+      capabilities: _stringListValue(marketplace['capabilities']),
+      replacementSlots: _slotIds(rawManifest['replacement_slots']),
+      additiveSlots: _slotIds(rawManifest['additive_slots']),
       enabledSubscriptionCount: installation.enabledSubscriptionIds.length,
       failureCount: taskFailureCount == 0 ? runFailureCount : taskFailureCount,
       permissionDecisionCounts: permissionCounts,
@@ -476,9 +506,45 @@ List<String> _manifestOutputEvents(runtime.AgentPackManifestSnapshot manifest) {
       .toList(growable: false);
 }
 
+Map<String, Object?> _mapValue(Object? value) {
+  if (value is Map<String, Object?>) {
+    return value;
+  }
+  if (value is Map) {
+    return value.cast<String, Object?>();
+  }
+  return const <String, Object?>{};
+}
+
+String? _stringValue(Object? value) {
+  if (value is String && value.trim().isNotEmpty) {
+    return value.trim();
+  }
+  return null;
+}
+
+List<String> _stringListValue(Object? value) {
+  if (value is! List) {
+    return const <String>[];
+  }
+  return value.whereType<String>().toList(growable: false);
+}
+
+List<String> _slotIds(Object? value) {
+  if (value is! List) {
+    return const <String>[];
+  }
+  return value
+      .whereType<Map>()
+      .map((slot) => slot['id'])
+      .whereType<String>()
+      .toList(growable: false);
+}
+
 String _permissionRisk(String permission) {
   return switch (permission) {
     'model.complete' => 'medium',
+    'artifact.write' => 'low',
     _ => 'low',
   };
 }

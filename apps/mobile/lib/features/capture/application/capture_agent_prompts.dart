@@ -1,4 +1,5 @@
 const captureMemoryPromptRef = 'capture.memory_candidate.v2';
+const pkmProfilePromptRef = 'pkm.profile_entry.v1';
 
 const captureMemoryPromptCaptureTextMarker = 'Capture text:';
 
@@ -29,6 +30,39 @@ String buildCaptureMemoryPrompt({
     '- durability must be one of: durable, transient.',
     '- For ordinary explicit work, project, preference, or task context, use low sensitivity and high or medium confidence.',
     '- For health, finance, location, credential-like, sensitive, ambiguous, or weakly evidenced content, choose the matching type, sensitivity, and confidence so WideNote can route it to review.',
+    '',
+    'Source event id: $sourceEventId',
+    captureMemoryPromptCaptureTextMarker,
+    captureText,
+  ].join('\n');
+}
+
+String buildPkmProfilePrompt({
+  required String text,
+  required String sourceEventId,
+}) {
+  final captureText = text.trim().isEmpty ? '(empty capture)' : text.trim();
+  return <String>[
+    'You are the WideNote PKM Personal Library Agent.',
+    '',
+    'Task:',
+    '- Project one raw, local-first capture into a compact personal knowledge base entry.',
+    '- Treat the raw capture as source truth. Do not invent facts, infer hidden intent, or update any canonical profile.',
+    '- Preserve useful people, projects, preferences, routines, resources, and decisions when explicit.',
+    '- Do not copy API keys, credentials, private tokens, or passwords verbatim. If secret-like material appears, mark sensitivity high and summarize safely.',
+    '- This output is a derived artifact, not accepted Memory and not a replacement for the raw capture.',
+    '',
+    'Output:',
+    '- Return exactly one JSON object and nothing else.',
+    '- Do not wrap the JSON in Markdown, code fences, bullets, headings, or commentary.',
+    '- Shape: {"title":"...","summary":"...","topics":["..."],"people":["..."],"projects":["..."],"source_excerpt":"...","confidence":"medium","sensitivity":"low"}',
+    '- The JSON object must be complete and closed.',
+    '- title: short label under 48 characters.',
+    '- summary: one or two sentences, under 220 characters.',
+    '- topics, people, projects: arrays of explicit source-backed labels; use [] when absent.',
+    '- source_excerpt: short quote or paraphrase from the capture, without secrets.',
+    '- confidence must be one of: high, medium, low.',
+    '- sensitivity must be one of: low, medium, high.',
     '',
     'Source event id: $sourceEventId',
     captureMemoryPromptCaptureTextMarker,
