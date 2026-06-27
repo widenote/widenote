@@ -9,6 +9,12 @@ runtime, memory, sync, privacy, Agent Packs, plugin permissions, or public APIs.
 When an RFC resolves into durable policy, record the final decision as one or
 more ADRs. Do not leave an implemented phase-one RFC listed as merely open.
 
+When an accepted RFC is used as an implementation baseline, make sure the
+current target-state rules that agents should follow are also reflected in
+[`docs/architecture/current-contracts.md`](../architecture/current-contracts.md).
+Use the RFC for proposal detail and implementation rationale; use current
+contracts for the default development state.
+
 ## Current Phase-One RFC State
 
 | RFC | Status |

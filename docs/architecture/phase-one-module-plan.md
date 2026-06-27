@@ -442,25 +442,28 @@ Likely later additions:
 AI agents should load context in layers:
 
 1. Read root instructions and `docs/agent-context/START_HERE.md`.
-2. Read `docs/decisions/index.md`.
-3. Read `docs/agent-context/project-map.md`.
-4. Read the nearest area README.
-5. Read the target module README.
-6. Read related ADRs/RFCs linked from that module.
-7. Read only source files needed for the task.
+2. Read `docs/architecture/current-contracts.md` for current target-state
+   contracts.
+3. Read `docs/decisions/index.md`.
+4. Read `docs/agent-context/project-map.md`.
+5. Read the nearest area README.
+6. Read the target module README.
+7. Read related ADRs/RFCs linked from that module when changing a contract,
+   resolving ambiguity, or needing rationale.
+8. Read only source files needed for the task.
 
 Task-specific context:
 
 | Task Type | Required Context |
 | --- | --- |
-| Product/default UX | `docs/product/positioning.md`, phase-one technical plan, relevant app/pack README |
-| Schema change | `packages/schemas/README.md`, relevant schema family, generated artifact docs, ADR/RFC |
-| Runtime change | `docs/architecture/runtime.md`, ADR-0003, `packages/dart/agent_runtime/README.md`, affected schema docs |
-| Memory change | Memory RFC when present, ADR-0005, `packages/dart/memory/README.md`, `packages/dart/local_db/README.md` |
-| Local DB change | ADR-0002, phase-one technical plan, `packages/dart/local_db/README.md`, migration docs |
+| Product/default UX | `docs/architecture/current-contracts.md`, `docs/product/positioning.md`, phase-one technical plan, relevant app/pack README |
+| Schema change | `docs/architecture/current-contracts.md`, `packages/schemas/README.md`, relevant schema family, generated artifact docs, ADR/RFC |
+| Runtime change | `docs/architecture/current-contracts.md`, `docs/architecture/runtime.md`, ADR-0003, `packages/dart/agent_runtime/README.md`, affected schema docs |
+| Memory change | `docs/architecture/current-contracts.md`, Memory RFC when present, ADR-0005, `packages/dart/memory/README.md`, `packages/dart/local_db/README.md` |
+| Local DB change | `docs/architecture/current-contracts.md`, ADR-0002, phase-one technical plan, `packages/dart/local_db/README.md`, migration docs |
 | Model provider change | BYOK RFC when present, `packages/dart/model_providers/README.md`, privacy docs |
-| Mobile UI change | `apps/mobile/README.md`, relevant `feature_*` README, app routing/bootstrap files |
-| Agent Pack change | `packs/README.md`, target pack README, Agent Pack schema docs, permission schema docs |
+| Mobile UI change | `docs/architecture/current-contracts.md`, `apps/mobile/README.md`, relevant `feature_*` README, app routing/bootstrap files |
+| Agent Pack change | `docs/architecture/current-contracts.md`, `packs/README.md`, target pack README, Agent Pack schema docs, permission schema docs |
 | Runner/API change | Target app README, `packages/ts/*` README, relevant schema docs |
 | Generated file change | Source-of-truth schema/template and generation command before reading output files |
 

@@ -14,6 +14,13 @@ Owns Memory items, proposals, default write policy, repository interface, in-mem
 
 It must not own Flutter UI, extraction prompts, local database migrations, vector indexes, sync protocols, or generated public schemas.
 
+The current contract is in `docs/architecture/current-contracts.md`: durable,
+low-risk, source-linked, non-conflicting Memory is auto-accepted by default;
+low-confidence, conflicting, highly sensitive, credential-like, or
+policy-unclear Memory goes to review. This package owns that default policy and
+the service behavior that makes auto-accept safe through provenance, revision,
+review, and deletion semantics.
+
 ## Public Surface
 
 - `MemoryItem`
@@ -48,6 +55,8 @@ review actions, conflict routing, merge review actions, and deletion tombstones.
 
 ## Related Context
 
+- `docs/architecture/current-contracts.md`
 - `docs/decisions/0005-use-memory-first-instead-of-pkm-core.md`
+- `docs/rfcs/memory-model.md`
 - `docs/architecture/engineering-rules.md`
 - `docs/architecture/phase-one-technical-plan.md`

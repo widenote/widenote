@@ -41,4 +41,11 @@ Core records and generated outputs should be represented as events and durable o
 
 ## Context as Architecture
 
-The repository uses progressive context structure as part of the architecture. Root docs, area READMEs, module READMEs, and `docs/agent-context/project-map.md` must stay aligned so that agents can inspect the project gradually instead of loading the whole repository for every task.
+The repository uses progressive context structure as part of the architecture.
+Root docs, current architecture contracts, area READMEs, module READMEs, and
+`docs/agent-context/project-map.md` must stay aligned so that agents can inspect
+the project gradually instead of loading the whole repository for every task.
+
+Use `docs/architecture/current-contracts.md` for the current target-state
+contracts agents should maintain by default. Use ADRs and RFCs for history,
+tradeoffs, and rationale.

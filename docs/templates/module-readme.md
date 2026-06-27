@@ -22,6 +22,7 @@ List generated files, source of truth, generator command, and whether generated 
 
 ## Related Context
 
+- Current contracts:
 - ADRs:
 - RFCs:
 - Parent context:

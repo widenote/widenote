@@ -12,10 +12,14 @@ agent-context/    Entry points for future AI agents working in this repo.
 templates/        Reusable ADR, RFC, and conversation-summary templates.
 ```
 
-For current decisions, start with [decisions/index.md](./decisions/index.md).
+For current target-state contracts, start with
+[Current Architecture Contracts](./architecture/current-contracts.md). For
+historical decisions, rationale, and supersession history, use
+[decisions/index.md](./decisions/index.md).
 
 ## Current Phase-One State And Plans
 
+- [Current Architecture Contracts](./architecture/current-contracts.md)
 - [W7 Current Integration State](./research/2026-06-26-w7-current-integration-state.md)
 - [W7 Integration QA](./research/2026-06-26-w7-integration-qa.md)
 - [Cross-Platform Long Conversation Test Plan](./research/2026-06-27-cross-platform-long-conversation-test-plan.md)
@@ -65,6 +69,7 @@ For current decisions, start with [decisions/index.md](./decisions/index.md).
 
 ## Contract Sources
 
+- [Current Architecture Contracts](./architecture/current-contracts.md)
 - [Schema sources](../packages/schemas/README.md)
 - [Official default Agent Pack manifest](../packs/official/default/manifest.json)
 - [Official todo Agent Pack manifest](../packs/official/todo/manifest.json)
@@ -84,6 +89,8 @@ This is a lightweight validator, not a complete JSON Schema validator.
 Project context should be discoverable in layers:
 
 - Root docs explain the whole project.
+- Current architecture contracts state the target-state rules agents should
+  maintain by default.
 - Area READMEs explain top-level directories.
 - Module READMEs explain ownership boundaries and generated artifacts.
 - `agent-context/project-map.md` points to the current context entrypoints.

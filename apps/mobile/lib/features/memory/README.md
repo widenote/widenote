@@ -11,6 +11,11 @@ This feature presents and updates accepted Memory items through
 `packages/dart/local_db`. It does not define public Memory contracts, Memory
 policy, extraction prompts, sync semantics, or Agent Pack behavior.
 
+The page implements the visibility and correction side of the current Memory
+contract in `docs/architecture/current-contracts.md`: accepted Memory should be
+visible, source-linked, editable, deletable through tombstone/revision, and easy
+to correct so low-risk auto-accept remains safe.
+
 Memory delete is reversible in this slice: rows are tombstoned and their
 revision is incremented instead of being physically removed.
 
@@ -36,5 +41,6 @@ None.
 
 ## Related Context
 
+- `docs/architecture/current-contracts.md`
 - `docs/rfcs/memory-model.md`
 - `docs/rfcs/mobile-entry-closure.md`

@@ -27,6 +27,13 @@ source material with metadata, hashes, and source refs before any AI processing.
 The quick-capture text field disables autocorrect, suggestions, smart dashes,
 and smart quotes so platform input helpers do not rewrite literal raw records.
 
+Capture implements current contracts from
+`docs/architecture/current-contracts.md`: original records remain source truth,
+AI outputs are derived and source-linked, and low-risk source-linked
+non-conflicting Memory should flow through the Memory policy as auto-accepted by
+default. Review is reserved for low-confidence, conflicting, sensitive,
+credential-like, or policy-unclear Memory.
+
 ## Dependencies
 
 - Flutter Material
@@ -56,3 +63,11 @@ and smart quotes so platform input helpers do not rewrite literal raw records.
 ## Generated Artifacts
 
 None.
+
+## Related Context
+
+- `docs/architecture/current-contracts.md`
+- `docs/rfcs/memory-model.md`
+- `docs/decisions/0005-use-memory-first-instead-of-pkm-core.md`
+- `docs/decisions/0009-use-object-truth-and-context-packets.md`
+- `docs/architecture/engineering-rules.md`

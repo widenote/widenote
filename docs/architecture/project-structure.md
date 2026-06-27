@@ -53,7 +53,7 @@ At minimum, a module README should describe:
 - Public surface
 - Dependencies
 - Generated artifacts
-- Related ADRs or RFCs
+- Related current contracts, ADRs, or RFCs
 
 When a module changes shape, update the module README and the parent directory README in the same change.
 
