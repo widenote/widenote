@@ -31,11 +31,17 @@ Before architectural, product, runtime, schema, privacy, plugin, or UX changes,
 read these in order:
 
 1. `docs/agent-context/START_HERE.md`
-2. `docs/decisions/index.md`
-3. `docs/agent-context/project-map.md`
-4. The nearest area or module `README.md`
-5. Any ADR or RFC related to the files you plan to touch
-6. `widenote_project_brief.md` only when product intent is unclear
+2. `docs/architecture/current-contracts.md`
+3. `docs/decisions/index.md`
+4. `docs/agent-context/project-map.md`
+5. The nearest area or module `README.md`
+6. Any ADR or RFC related to the files you plan to touch when changing a
+   contract, resolving ambiguity, or needing historical rationale
+7. `widenote_project_brief.md` only when product intent is unclear
+
+`docs/architecture/current-contracts.md` is the current target-state contract
+layer. ADRs and RFCs preserve historical decisions, tradeoffs, and provenance;
+the current contracts file states the state agents should maintain by default.
 
 For narrow edits, load only the context needed for the touched area. Do not make
 agents or humans read the whole repository by default.
@@ -61,17 +67,17 @@ agents or humans read the whole repository by default.
 
 | Task type | Start with |
 | --- | --- |
-| Repo orientation | `docs/agent-context/START_HERE.md`, `docs/agent-context/project-map.md`, `README.md` |
-| Product or default UX | `docs/product/positioning.md`, `widenote_project_brief.md`, relevant RFCs |
-| Mobile UI or user flow | `apps/mobile/README.md`, `apps/mobile/lib/README.md`, `docs/architecture/engineering-rules.md` |
-| Flutter feature module | Nearest `apps/mobile/lib/features/*/README.md` |
-| Local runtime or Memory | `docs/architecture/runtime.md`, `packages/dart/agent_runtime/README.md`, `packages/dart/memory/README.md` |
-| Local persistence or backup | `packages/dart/local_db/README.md`, backup/export research and RFCs |
-| Schemas or generated bindings | `packages/schemas/README.md`, `docs/rfcs/agent-pack-schema.md` |
-| Agent Pack behavior | `packs/README.md`, target pack README, `docs/rfcs/agent-pack-schema.md` |
+| Repo orientation | `docs/agent-context/START_HERE.md`, `docs/architecture/current-contracts.md`, `docs/agent-context/project-map.md`, `README.md` |
+| Product or default UX | `docs/architecture/current-contracts.md`, `docs/product/positioning.md`, `widenote_project_brief.md`, relevant RFCs |
+| Mobile UI or user flow | `docs/architecture/current-contracts.md`, `apps/mobile/README.md`, `apps/mobile/lib/README.md`, `docs/architecture/engineering-rules.md` |
+| Flutter feature module | `docs/architecture/current-contracts.md`, nearest `apps/mobile/lib/features/*/README.md` |
+| Local runtime or Memory | `docs/architecture/current-contracts.md`, `docs/architecture/runtime.md`, `packages/dart/agent_runtime/README.md`, `packages/dart/memory/README.md` |
+| Local persistence or backup | `docs/architecture/current-contracts.md`, `packages/dart/local_db/README.md`, backup/export research and RFCs |
+| Schemas or generated bindings | `docs/architecture/current-contracts.md`, `packages/schemas/README.md`, `docs/rfcs/agent-pack-schema.md` |
+| Agent Pack behavior | `docs/architecture/current-contracts.md`, `packs/README.md`, target pack README, `docs/rfcs/agent-pack-schema.md` |
 | API or remote runner | `apps/api/README.md`, `apps/runner-ts/README.md`, `packages/ts/*/README.md` |
-| Docs, ADRs, or RFCs | `docs/README.md`, `docs/templates/`, `docs/decisions/README.md`, `docs/rfcs/README.md` |
-| Privacy, secrets, permissions | `docs/architecture/privacy.md`, relevant ADRs/RFCs, `docs/architecture/engineering-rules.md` |
+| Docs, ADRs, or RFCs | `docs/architecture/current-contracts.md`, `docs/README.md`, `docs/templates/`, `docs/decisions/README.md`, `docs/rfcs/README.md` |
+| Privacy, secrets, permissions | `docs/architecture/current-contracts.md`, `docs/architecture/privacy.md`, relevant ADRs/RFCs, `docs/architecture/engineering-rules.md` |
 
 ## Change-Type Validation Matrix
 
@@ -146,9 +152,12 @@ environment issues, record the exact reason and remaining risk.
 
 If a change affects schema, runtime, memory, sync, privacy, plugin permissions,
 Agent Packs, technology stack, licensing, or default UX, update or create an
-ADR/RFC.
+ADR/RFC and update `docs/architecture/current-contracts.md` when the accepted
+target state changes.
 
 Do not treat raw conversation history as an authoritative decision. Summarize it
 into `docs/research/`, then link it from ADRs or RFCs.
 
 Research notes are evidence. ADRs and accepted RFCs are decisions.
+`docs/architecture/current-contracts.md` is the operational current-state view
+derived from those decisions.

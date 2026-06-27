@@ -62,6 +62,9 @@ Localization gate:
 Validation gates:
 
 - Docs-only changes can use lightweight checks such as `rg` link/text checks.
+- Changes that affect a current architecture contract must update
+  `docs/architecture/current-contracts.md`, the nearest module README, and at
+  least one executable or documented verification path.
 - Code changes should run the narrowest useful unit/widget/orchestration tests for the touched surface.
 - Changes to cross-layer flows should include at least one end-to-end or orchestration proof with deterministic fakes.
 - Android emulator validation is required for Android-specific behavior and high-risk mobile user journeys.

@@ -11,6 +11,7 @@ It should stay short. It points to the right local context instead of duplicatin
 
 ## Architecture
 
+- `docs/architecture/current-contracts.md`
 - `docs/architecture/overview.md`
 - `docs/architecture/project-structure.md`
 - `docs/architecture/context-structure.md`
@@ -87,6 +88,7 @@ It should stay short. It points to the right local context instead of duplicatin
 
 ## Contract Sources
 
+- `docs/architecture/current-contracts.md`
 - `packages/schemas/src/`
 - `packs/official/default/manifest.json`
 - `packs/official/todo/manifest.json`
@@ -138,3 +140,7 @@ It should stay short. It points to the right local context instead of duplicatin
 ## Maintenance Rule
 
 When a durable module is added, moved, renamed, or deleted, update this map in the same change.
+
+When an accepted decision changes a current target-state contract, update
+`docs/architecture/current-contracts.md` in the same change and link it from any
+module README that implements the contract.

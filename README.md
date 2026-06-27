@@ -19,8 +19,10 @@ Privacy, safe backup / restore, real media permission handling, Daily Recap,
 timeline / search / detail surfaces, and cross-platform QA evidence. Safe
 backup restore rejects secret-bearing `encrypted_full` imports until a real
 encryption and credential-restore boundary exists. Use
+[Current Architecture Contracts](./docs/architecture/current-contracts.md)
+for the target-state contracts agents should maintain by default, use
 [W7 Current Integration State](./docs/research/2026-06-26-w7-current-integration-state.md)
-for the current boundary, and keep the original product brief in
+for the current implementation boundary, and keep the original product brief in
 [widenote_project_brief.md](./widenote_project_brief.md) for product intent.
 
 ## Repository Map
@@ -47,6 +49,7 @@ tools/                 Repository automation, validation scripts, and generation
 ## Read First
 
 - [Project positioning](./docs/product/positioning.md)
+- [Current architecture contracts](./docs/architecture/current-contracts.md)
 - [Architecture overview](./docs/architecture/overview.md)
 - [Project structure](./docs/architecture/project-structure.md)
 - [Context structure](./docs/architecture/context-structure.md)

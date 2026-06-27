@@ -13,6 +13,9 @@ root context
   docs/agent-context/START_HERE.md
   docs/agent-context/project-map.md
 
+current contract context
+  docs/architecture/current-contracts.md
+
 area context
   apps/README.md
   packages/README.md
@@ -33,6 +36,9 @@ file context
 ## Rules
 
 - Root documents explain the whole project at low resolution.
+- Current architecture contracts state the target state to maintain during
+  normal development. ADRs and RFCs remain the historical decision log and
+  rationale source.
 - Area READMEs explain how a directory is divided.
 - Module READMEs explain ownership, public surface, dependencies, generated artifacts, and related decisions.
 - Files should be understandable from their module context and imports. Add file headers only for complex boundary files.
@@ -56,5 +62,6 @@ When adding a new directory, package, app, runner, schema family, Agent Pack, or
 1. Add or update the nearest `README.md`.
 2. Update `docs/agent-context/project-map.md`.
 3. Link related ADRs or RFCs.
-4. Document generated artifacts and source-of-truth relationships.
-
+4. Update `docs/architecture/current-contracts.md` if the target-state contract
+   changes or the new module implements an existing contract.
+5. Document generated artifacts and source-of-truth relationships.
