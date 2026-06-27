@@ -12,7 +12,8 @@ const baseManifest = Object.freeze({
   schema_version: 1,
   publisher: "widenote",
   edition: "local_dev",
-  permissions: ["model.complete", "insight.write"],
+  default_run_mode: "confirm",
+  permissions: ["model.complete", "insight.write", "memory.read"],
   subscriptions: [
     {
       id: "sub.capture",
@@ -24,7 +25,9 @@ const baseManifest = Object.freeze({
     {
       id: "agent.capture",
       runtime: "native",
-      permissions: ["model.complete", "insight.write"],
+      run_mode: "confirm",
+      permissions: ["model.complete", "insight.write", "memory.read"],
+      tools: ["tool.memory.read"],
       output_events: ["wn.insight.created"],
       retry_policy: {
         max_attempts: 2,
@@ -43,7 +46,20 @@ const baseManifest = Object.freeze({
       allow_fallback: true,
     },
   ],
-  tools: [],
+  tools: [
+    {
+      id: "tool.memory.read",
+      capability_kind: "memory",
+      permissions: ["memory.read"],
+      required_permissions: ["memory.read"],
+      access: "read",
+      risk: "low",
+      locality: "local",
+      approval_requirement: "none",
+      execution: "local",
+      side_effect: "none",
+    },
+  ],
 });
 
 assert.deepEqual(validateManifest(clone(baseManifest)), []);
@@ -123,10 +139,23 @@ expectError(
 expectError(
   {
     ...clone(baseManifest),
+    agents: [
+      {
+        ...clone(baseManifest).agents[0],
+        tools: ["tool.unsafe"],
+      },
+    ],
     tools: [
       {
         id: "tool.unsafe",
         permissions: ["tool.run_script"],
+        required_permissions: ["tool.run_script"],
+        capability_kind: "script",
+        access: "write",
+        risk: "high",
+        locality: "local",
+        approval_requirement: "deferred",
+        execution: "disabled",
         side_effect: "script_execution",
       },
     ],
@@ -164,14 +193,184 @@ expectError(
 expectError(
   {
     ...clone(baseManifest),
+    agents: [
+      {
+        ...clone(baseManifest).agents[0],
+        tools: ["tool.trace"],
+      },
+    ],
     tools: [
       {
-        id: "tool.memory",
-        permissions: ["memory.read"],
+        id: "tool.trace",
+        permissions: ["trace.read"],
+        required_permissions: ["trace.read"],
+        capability_kind: "trace",
+        access: "read",
+        risk: "low",
+        locality: "local",
+        approval_requirement: "none",
+        execution: "local",
+        side_effect: "none",
       },
     ],
   },
-  "tools[0].permissions contains permission not declared by pack: memory.read",
+  "tools[0].permissions contains permission not declared by pack: trace.read",
+);
+
+expectError(
+  {
+    ...clone(baseManifest),
+    default_run_mode: "auto",
+    permissions: ["model.complete", "insight.write", "web.fetch.public"],
+    agents: [
+      {
+        ...clone(baseManifest).agents[0],
+        run_mode: "auto",
+        permissions: ["model.complete", "insight.write", "web.fetch.public"],
+        tools: ["tool.web.fetch"],
+      },
+    ],
+    tools: [
+      {
+        id: "tool.web.fetch",
+        capability_kind: "web",
+        permissions: ["web.fetch.public"],
+        required_permissions: ["web.fetch.public"],
+        access: "read",
+        risk: "medium",
+        locality: "external",
+        approval_requirement: "deferred",
+        execution: "deferred",
+        side_effect: "network",
+      },
+    ],
+  },
+  "run_mode auto cannot use external tool: tool.web.fetch",
+);
+
+expectError(
+  {
+    ...clone(baseManifest),
+    permissions: ["model.complete", "insight.write", "web.fetch.public"],
+    agents: [
+      {
+        ...clone(baseManifest).agents[0],
+        permissions: ["model.complete", "insight.write", "web.fetch.public"],
+        tools: ["tool.http.live"],
+      },
+    ],
+    tools: [
+      {
+        id: "tool.http.live",
+        capability_kind: "http",
+        permissions: ["web.fetch.public"],
+        required_permissions: ["web.fetch.public"],
+        access: "read_write",
+        risk: "high",
+        locality: "external",
+        approval_requirement: "per_call",
+        execution: "local",
+        side_effect: "network",
+      },
+    ],
+  },
+  "execution must be fake, deferred, or disabled",
+);
+
+expectError(
+  {
+    ...clone(baseManifest),
+    agents: [
+      {
+        ...clone(baseManifest).agents[0],
+        run_mode: "read_only",
+        tools: ["tool.memory.write"],
+      },
+    ],
+    tools: [
+      {
+        id: "tool.memory.write",
+        capability_kind: "memory",
+        permissions: ["memory.read"],
+        required_permissions: ["memory.read"],
+        access: "write",
+        risk: "low",
+        locality: "local",
+        approval_requirement: "per_call",
+        execution: "local",
+        side_effect: "local_write",
+      },
+    ],
+  },
+  "run_mode read_only cannot use write-capable tool: tool.memory.write",
+);
+
+assert.deepEqual(
+  validateManifest({
+    ...clone(baseManifest),
+    default_run_mode: "auto",
+    permissions: [
+      "model.complete",
+      "insight.write",
+      "memory.read",
+      "memory.propose",
+    ],
+    agents: [
+      {
+        ...clone(baseManifest).agents[0],
+        run_mode: "auto",
+        permissions: [
+          "model.complete",
+          "insight.write",
+          "memory.read",
+          "memory.propose",
+        ],
+        tools: ["tool.memory.propose"],
+      },
+    ],
+    tools: [
+      {
+        id: "tool.memory.propose",
+        capability_kind: "memory",
+        permissions: ["memory.propose"],
+        required_permissions: ["memory.propose"],
+        access: "write",
+        risk: "low",
+        locality: "local",
+        approval_requirement: "none",
+        execution: "local",
+        side_effect: "local_write",
+      },
+    ],
+  }),
+  [],
+);
+
+expectError(
+  {
+    ...clone(baseManifest),
+    agents: [
+      {
+        ...clone(baseManifest).agents[0],
+        tools: ["tool.memory.bulk_delete"],
+      },
+    ],
+    tools: [
+      {
+        id: "tool.memory.bulk_delete",
+        capability_kind: "memory",
+        permissions: ["memory.read"],
+        required_permissions: ["memory.read"],
+        access: "write",
+        risk: "high",
+        locality: "local",
+        approval_requirement: "none",
+        execution: "local",
+        side_effect: "local_write",
+      },
+    ],
+  },
+  "approval_requirement must not be none",
 );
 
 const officialManifestPaths = [

@@ -16,6 +16,7 @@ part 'daos_model_provider_configs.dart';
 part 'daos_todos.dart';
 part 'daos_runtime_tasks.dart';
 part 'daos_runtime_runs.dart';
+part 'daos_runtime_approvals.dart';
 part 'daos_pack_installations.dart';
 part 'daos_permission_grants.dart';
 part 'daos_context_packet_cache.dart';

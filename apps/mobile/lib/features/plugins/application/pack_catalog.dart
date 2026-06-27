@@ -11,6 +11,11 @@ final permissionGateControllerProvider =
       PermissionGateController.new,
     );
 
+final packLibraryControllerProvider =
+    NotifierProvider<PackLibraryController, PackLibraryState>(
+      PackLibraryController.new,
+    );
+
 @immutable
 final class BuiltInPackInfo {
   const BuiltInPackInfo({
@@ -30,6 +35,81 @@ final class BuiltInPackInfo {
   final String status;
   final List<String> permissions;
   final List<String> outputEvents;
+}
+
+@immutable
+final class PackLibraryState {
+  const PackLibraryState({required this.packs});
+
+  final List<PackLibraryPack> packs;
+
+  int get enabledCount => packs.where((pack) => pack.isEnabled).length;
+  int get disabledCount => packs.where((pack) => !pack.isEnabled).length;
+}
+
+@immutable
+final class PackLibraryPack {
+  const PackLibraryPack({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.version,
+    required this.publisher,
+    required this.edition,
+    required this.status,
+    required this.runtimeStatus,
+    required this.entrypointKind,
+    required this.permissions,
+    required this.outputEvents,
+    required this.enabledSubscriptionCount,
+    required this.failureCount,
+    required this.permissionDecisionCounts,
+    this.lastFailure,
+  });
+
+  final String id;
+  final String name;
+  final String description;
+  final String version;
+  final String publisher;
+  final String edition;
+  final String status;
+  final String runtimeStatus;
+  final String entrypointKind;
+  final List<String> permissions;
+  final List<String> outputEvents;
+  final int enabledSubscriptionCount;
+  final int failureCount;
+  final PackPermissionDecisionCounts permissionDecisionCounts;
+  final PackLibraryFailure? lastFailure;
+
+  bool get isEnabled => status == 'enabled';
+}
+
+@immutable
+final class PackPermissionDecisionCounts {
+  const PackPermissionDecisionCounts({
+    required this.granted,
+    required this.denied,
+    required this.revoked,
+  });
+
+  final int granted;
+  final int denied;
+  final int revoked;
+}
+
+@immutable
+final class PackLibraryFailure {
+  const PackLibraryFailure({
+    required this.message,
+    required this.isRedacted,
+    required this.occurredAt,
+  });
+
+  final String message;
+  final bool isRedacted;
+  final DateTime occurredAt;
 }
 
 @immutable
@@ -131,6 +211,95 @@ final class PermissionGateState {
   int get deferredCount => deferredPermissions.length;
 }
 
+final class PackLibraryController extends Notifier<PackLibraryState> {
+  @override
+  PackLibraryState build() {
+    final database = ref.watch(localDatabaseProvider);
+    ensureBuiltInPackInstallations(database);
+    return _load(database);
+  }
+
+  Future<void> setEnabled(String packId, bool enabled) async {
+    final database = ref.read(localDatabaseProvider);
+    ensureBuiltInPackInstallations(database);
+    if (database.packInstallations.readById(packId) == null) {
+      return;
+    }
+    database.packInstallations.updateStatus(
+      packId,
+      enabled ? 'enabled' : 'disabled',
+      payloadUpdates: <String, Object?>{
+        'last_mobile_control_action': enabled ? 'enabled' : 'disabled',
+      },
+    );
+    state = _load(database);
+  }
+
+  PackLibraryState _load(WideNoteLocalDatabase database) {
+    final installationsById = <String, PackInstallationRecord>{
+      for (final installation in database.packInstallations.readAll())
+        installation.packId: installation,
+    };
+    final ordered = <PackInstallationRecord>[
+      for (final id in officialPackManifestIds)
+        if (installationsById[id] != null) installationsById[id]!,
+      ...installationsById.entries
+          .where((entry) => !officialPackManifestIds.contains(entry.key))
+          .map((entry) => entry.value),
+    ];
+    return PackLibraryState(
+      packs: ordered
+          .map((installation) => _packFromInstallation(database, installation))
+          .toList(growable: false),
+    );
+  }
+
+  PackLibraryPack _packFromInstallation(
+    WideNoteLocalDatabase database,
+    PackInstallationRecord installation,
+  ) {
+    final manifest = officialPackManifestSnapshotsById[installation.packId];
+    final requestedPermissions = installation.requestedPermissions
+        .whereType<String>()
+        .toList(growable: false);
+    final permissionCounts = _permissionCounts(
+      database.permissionGrants.readByPack(installation.packId),
+    );
+    final failures = _failureCandidates(database, installation.packId);
+    final taskFailureCount = database.runtimeTasks
+        .readByPack(installation.packId, status: 'failed')
+        .length;
+    final runFailureCount = database.runtimeRuns
+        .readAll(status: 'failed')
+        .where((run) => run.packId == installation.packId)
+        .length;
+
+    return PackLibraryPack(
+      id: installation.packId,
+      name: installation.name,
+      description: manifest == null
+          ? ''
+          : officialPackManifestDescription(installation.packId),
+      version: installation.version,
+      publisher: installation.publisher,
+      edition: installation.edition,
+      status: installation.status,
+      runtimeStatus: installation.runtimeStatus,
+      entrypointKind: installation.entrypointKind,
+      permissions: requestedPermissions.isEmpty && manifest != null
+          ? manifest.requiredPermissions.toList(growable: false)
+          : requestedPermissions,
+      outputEvents: manifest == null
+          ? const <String>[]
+          : _manifestOutputEvents(manifest),
+      enabledSubscriptionCount: installation.enabledSubscriptionIds.length,
+      failureCount: taskFailureCount == 0 ? runFailureCount : taskFailureCount,
+      permissionDecisionCounts: permissionCounts,
+      lastFailure: failures.isEmpty ? null : failures.first,
+    );
+  }
+}
+
 final class PermissionGateController extends Notifier<PermissionGateState> {
   @override
   PermissionGateState build() {
@@ -170,7 +339,7 @@ final class PermissionGateController extends Notifier<PermissionGateState> {
       return;
     }
     final database = ref.read(localDatabaseProvider);
-    _ensureBuiltInPackInstallations(database);
+    ensureBuiltInPackInstallations(database);
     await LocalDbPermissionStore(database).upsert(
       runtime.PermissionDecision(
         packId: permission.packId,
@@ -184,6 +353,7 @@ final class PermissionGateController extends Notifier<PermissionGateState> {
   }
 
   PermissionGateState _load(WideNoteLocalDatabase database) {
+    ensureBuiltInPackInstallations(database);
     return PermissionGateState(
       builtInPermissions: builtInPermissions
           .map((permission) {
@@ -209,34 +379,34 @@ final class PermissionGateController extends Notifier<PermissionGateState> {
           .toList(growable: false),
     );
   }
+}
 
-  void _ensureBuiltInPackInstallations(WideNoteLocalDatabase database) {
-    final now = DateTime.now().toUtc();
-    for (final manifest in officialPackManifestSnapshots) {
-      if (database.packInstallations.readById(manifest.id) != null) {
-        continue;
-      }
-      database.packInstallations.insert(
-        PackInstallationRecord(
-          packId: manifest.id,
-          name: manifest.name,
-          version: manifest.version,
-          publisher: manifest.publisher,
-          edition: manifest.edition,
-          status: 'enabled',
-          runtimeStatus: 'idle',
-          entrypointKind: 'native',
-          requestedPermissions: <Object?>[...manifest.requiredPermissions],
-          enabledSubscriptionIds: <Object?>[
-            for (final subscription in manifest.subscriptions) subscription.id,
-          ],
-          manifest: officialPackManifestMap(manifest.id),
-          payload: const <String, Object?>{'source': 'mobile_permission_gate'},
-          installedAt: now,
-          updatedAt: now,
-        ),
-      );
+void ensureBuiltInPackInstallations(WideNoteLocalDatabase database) {
+  final now = DateTime.now().toUtc();
+  for (final manifest in officialPackManifestSnapshots) {
+    if (database.packInstallations.readById(manifest.id) != null) {
+      continue;
     }
+    database.packInstallations.insert(
+      PackInstallationRecord(
+        packId: manifest.id,
+        name: manifest.name,
+        version: manifest.version,
+        publisher: manifest.publisher,
+        edition: manifest.edition,
+        status: 'enabled',
+        runtimeStatus: 'idle',
+        entrypointKind: 'native',
+        requestedPermissions: <Object?>[...manifest.requiredPermissions],
+        enabledSubscriptionIds: <Object?>[
+          for (final subscription in manifest.subscriptions) subscription.id,
+        ],
+        manifest: officialPackManifestMap(manifest.id),
+        payload: const <String, Object?>{'source': 'mobile_pack_control'},
+        installedAt: now,
+        updatedAt: now,
+      ),
+    );
   }
 }
 
@@ -321,3 +491,58 @@ PermissionGateDecisionState _stateFromRecord(PermissionGrantRecord? record) {
     _ => PermissionGateDecisionState.available,
   };
 }
+
+PackPermissionDecisionCounts _permissionCounts(
+  List<PermissionGrantRecord> grants,
+) {
+  return PackPermissionDecisionCounts(
+    granted: grants.where((grant) => grant.status == 'granted').length,
+    denied: grants.where((grant) => grant.status == 'denied').length,
+    revoked: grants.where((grant) => grant.status == 'revoked').length,
+  );
+}
+
+List<PackLibraryFailure> _failureCandidates(
+  WideNoteLocalDatabase database,
+  String packId,
+) {
+  final failures = <PackLibraryFailure>[
+    for (final task in database.runtimeTasks.readByPack(
+      packId,
+      status: 'failed',
+    ))
+      if (task.error != null)
+        _failureFromMessage(task.error!, occurredAt: task.updatedAt),
+    for (final run
+        in database.runtimeRuns
+            .readAll(status: 'failed')
+            .where((run) => run.packId == packId))
+      if (run.error != null)
+        _failureFromMessage(
+          run.error!,
+          occurredAt: run.completedAt ?? run.startedAt,
+        ),
+  ]..sort((a, b) => b.occurredAt.compareTo(a.occurredAt));
+  return failures;
+}
+
+PackLibraryFailure _failureFromMessage(
+  String message, {
+  required DateTime occurredAt,
+}) {
+  final isRedacted = _isSensitiveText(message);
+  return PackLibraryFailure(
+    message: isRedacted ? '' : message,
+    isRedacted: isRedacted,
+    occurredAt: occurredAt,
+  );
+}
+
+bool _isSensitiveText(String value) {
+  return _sensitivePattern.hasMatch(value);
+}
+
+final _sensitivePattern = RegExp(
+  r'(api[_-]?key|authorization|bearer|token|secret|credential)',
+  caseSensitive: false,
+);

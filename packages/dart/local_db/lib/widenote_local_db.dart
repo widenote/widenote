@@ -2,6 +2,7 @@ library;
 
 export 'src/daos.dart';
 export 'src/backup_export.dart';
+export 'src/core_tool_catalog.dart';
 export 'src/context_packet_builder.dart';
 export 'src/database.dart';
 export 'src/json.dart';

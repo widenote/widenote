@@ -126,6 +126,15 @@ void main() {
       packId: 'pack.default',
       agentId: 'agent.capture_loop',
     );
+    final sourceEventId = result.record.sourceEventId;
+    expect(sourceEventId, isNotNull);
+    final memoryEvent = result.events.singleWhere(
+      (event) => event.type == runtime.WnEventTypes.memoryProposed,
+    );
+    expect(
+      _sourceRefIds(memoryEvent.payload['source_refs']! as List<Object?>),
+      containsAll(<String>[result.record.id, sourceEventId!]),
+    );
     _expectEventOrigin(
       result.events,
       runtime.WnEventTypes.cardCreated,
@@ -645,6 +654,14 @@ void _expectEventOrigin(
   final event = events.singleWhere((event) => event.type == type);
   expect(event.packId, packId);
   expect(event.agentId, agentId);
+}
+
+Set<String> _sourceRefIds(List<Object?> sourceRefs) {
+  return sourceRefs
+      .whereType<Map>()
+      .map((sourceRef) => sourceRef['id'])
+      .whereType<String>()
+      .toSet();
 }
 
 Map<String, Object?> _mutableManifest(String packId) {

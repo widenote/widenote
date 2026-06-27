@@ -6,6 +6,7 @@
   "pack_id": "pack.synthetic_contract",
   "agent_id": "agent.synthetic_capture",
   "status": "succeeded",
+  "run_mode": "confirm",
   "started_at": "2026-06-26T08:00:03Z",
   "completed_at": "2026-06-26T08:00:04Z",
   "attempt": 1,

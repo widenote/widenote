@@ -21,6 +21,57 @@ const MODEL_CAPABILITIES = new Set([
   "tool_use",
   "toolUse",
 ]);
+const RUN_MODES = new Set(["read_only", "confirm", "auto"]);
+const TOOL_ACCESS = new Set(["read", "write", "read_write"]);
+const TOOL_RISK = new Set(["low", "medium", "high"]);
+const TOOL_LOCALITY = new Set(["local", "external"]);
+const TOOL_APPROVAL_REQUIREMENTS = new Set(["none", "per_call", "deferred"]);
+const TOOL_EXECUTIONS = new Set(["local", "fake", "deferred", "disabled"]);
+const TOOL_CAPABILITY_KINDS = new Set([
+  "local_core",
+  "context_packet",
+  "memory",
+  "todo",
+  "trace",
+  "settings",
+  "model",
+  "http",
+  "mcp",
+  "web",
+  "file",
+  "network",
+  "shell",
+  "script",
+  "runner",
+  "webhook",
+]);
+const TOOL_SIDE_EFFECTS = new Set([
+  "none",
+  "local_write",
+  "external_write",
+  "network",
+  "model_call",
+  "file_access",
+  "script_execution",
+]);
+const DEFERRED_ONLY_CAPABILITY_KINDS = new Set([
+  "http",
+  "mcp",
+  "web",
+  "file",
+  "network",
+  "shell",
+  "script",
+  "runner",
+  "webhook",
+]);
+const DEFERRED_ONLY_SIDE_EFFECTS = new Set([
+  "external_write",
+  "network",
+  "file_access",
+  "script_execution",
+]);
+const NON_LIVE_EXECUTIONS = new Set(["fake", "deferred", "disabled"]);
 
 const requiredManifestFields = [
   "id",
@@ -112,8 +163,10 @@ export function validateManifest(manifest) {
   validateSubscriptionDependencies(subscriptions, errors);
   validateAgentPermissions(agents, packPermissionSet, errors);
   validateToolPermissions(tools, packPermissionSet, errors);
+  validateAgentToolRefs(agents, tools, errors);
   validateModelProfileRefs(agents, modelProfiles, errors);
   validateOutputEvents(agents, errors);
+  validateRunModeToolBoundaries(manifest, agents, tools, errors);
   validateExecutableSafety(agents, tools, errors);
   validatePhaseOneGuardrails(manifest, agents, errors);
 
@@ -134,6 +187,14 @@ function validateBasicShape(manifest, errors) {
   validateStringField(manifest, "version", errors);
   validateStringField(manifest, "publisher", errors);
   validateStringField(manifest, "edition", errors);
+  if ("default_run_mode" in manifest) {
+    validateStringEnumValue(
+      manifest.default_run_mode,
+      "default_run_mode",
+      RUN_MODES,
+      errors,
+    );
+  }
 
   if (
     "schema_version" in manifest &&
@@ -191,6 +252,9 @@ function validateBasicShape(manifest, errors) {
       const path = `agents[${index}]`;
       validateStringValue(agent.id, `${path}.id`, errors);
       validateStringValue(agent.runtime, `${path}.runtime`, errors);
+      if ("run_mode" in agent) {
+        validateStringEnumValue(agent.run_mode, `${path}.run_mode`, RUN_MODES, errors);
+      }
 
       if ("permissions" in agent) {
         validateStringArrayValue(
@@ -199,6 +263,12 @@ function validateBasicShape(manifest, errors) {
           errors,
           { allowEmpty: true },
         );
+      }
+
+      if ("tools" in agent) {
+        validateStringArrayValue(agent.tools, `${path}.tools`, errors, {
+          allowEmpty: true,
+        });
       }
 
       if ("model_profile_ref" in agent && agent.model_profile_ref !== null) {
@@ -270,11 +340,62 @@ function validateBasicShape(manifest, errors) {
 
       const path = `tools[${index}]`;
       validateStringValue(tool.id, `${path}.id`, errors);
+      validateRequiredToolFields(tool, path, errors);
+      if ("capability_kind" in tool) {
+        validateStringEnumValue(
+          tool.capability_kind,
+          `${path}.capability_kind`,
+          TOOL_CAPABILITY_KINDS,
+          errors,
+        );
+      }
       if ("permissions" in tool) {
         validateStringArrayValue(tool.permissions, `${path}.permissions`, errors);
       }
+      if ("required_permissions" in tool) {
+        validateStringArrayValue(
+          tool.required_permissions,
+          `${path}.required_permissions`,
+          errors,
+        );
+      }
+      if ("access" in tool) {
+        validateStringEnumValue(tool.access, `${path}.access`, TOOL_ACCESS, errors);
+      }
+      if ("risk" in tool) {
+        validateStringEnumValue(tool.risk, `${path}.risk`, TOOL_RISK, errors);
+      }
+      if ("locality" in tool) {
+        validateStringEnumValue(
+          tool.locality,
+          `${path}.locality`,
+          TOOL_LOCALITY,
+          errors,
+        );
+      }
+      if ("approval_requirement" in tool) {
+        validateStringEnumValue(
+          tool.approval_requirement,
+          `${path}.approval_requirement`,
+          TOOL_APPROVAL_REQUIREMENTS,
+          errors,
+        );
+      }
+      if ("execution" in tool) {
+        validateStringEnumValue(
+          tool.execution,
+          `${path}.execution`,
+          TOOL_EXECUTIONS,
+          errors,
+        );
+      }
       if ("side_effect" in tool) {
-        validateStringValue(tool.side_effect, `${path}.side_effect`, errors);
+        validateStringEnumValue(
+          tool.side_effect,
+          `${path}.side_effect`,
+          TOOL_SIDE_EFFECTS,
+          errors,
+        );
       }
     });
   }
@@ -421,14 +542,49 @@ function validateToolPermissions(tools, packPermissionSet, errors) {
       return;
     }
 
-    if (!Array.isArray(tool.permissions)) {
+    for (const field of ["permissions", "required_permissions"]) {
+      if (!Array.isArray(tool[field])) {
+        continue;
+      }
+
+      for (const permission of tool[field]) {
+        if (typeof permission === "string" && !packPermissionSet.has(permission)) {
+          errors.push(
+            `tools[${index}].${field} contains permission not declared by pack: ${permission}`,
+          );
+        }
+      }
+    }
+
+    if (
+      Array.isArray(tool.permissions) &&
+      Array.isArray(tool.required_permissions) &&
+      !sameStringSet(tool.permissions, tool.required_permissions)
+    ) {
+      errors.push(
+        `tools[${index}].required_permissions must match tools[${index}].permissions`,
+      );
+    }
+  });
+}
+
+function validateAgentToolRefs(agents, tools, errors) {
+  const toolIds = new Set(
+    tools
+      .filter((tool) => isPlainObject(tool))
+      .map((tool) => tool.id)
+      .filter((toolId) => typeof toolId === "string"),
+  );
+
+  agents.forEach((agent, index) => {
+    if (!isPlainObject(agent) || !Array.isArray(agent.tools)) {
       return;
     }
 
-    for (const permission of tool.permissions) {
-      if (typeof permission === "string" && !packPermissionSet.has(permission)) {
+    for (const toolId of agent.tools) {
+      if (typeof toolId === "string" && !toolIds.has(toolId)) {
         errors.push(
-          `tools[${index}].permissions contains permission not declared by pack: ${permission}`,
+          `agents[${index}].tools references missing tool: ${toolId}`,
         );
       }
     }
@@ -473,6 +629,145 @@ function validateOutputEvents(agents, errors) {
       errors,
     );
   });
+}
+
+function validateRunModeToolBoundaries(manifest, agents, tools, errors) {
+  const toolsById = new Map(
+    tools
+      .filter((tool) => isPlainObject(tool) && typeof tool.id === "string")
+      .map((tool) => [tool.id, tool]),
+  );
+  const defaultRunMode =
+    typeof manifest.default_run_mode === "string"
+      ? manifest.default_run_mode
+      : "confirm";
+
+  tools.forEach((tool, index) => {
+    if (!isPlainObject(tool)) {
+      return;
+    }
+
+    if (isDeferredOnlyTool(tool) && !NON_LIVE_EXECUTIONS.has(tool.execution)) {
+      errors.push(
+        `tools[${index}].execution must be fake, deferred, or disabled for deferred-only capability ${tool.capability_kind ?? tool.side_effect}`,
+      );
+    }
+
+    if (tool.locality === "external" && tool.execution === "local") {
+      errors.push(
+        `tools[${index}].execution local is not allowed for external tools in L1-L3`,
+      );
+    }
+
+    if (requiresExplicitApproval(tool) && tool.approval_requirement === "none") {
+      errors.push(
+        `tools[${index}].approval_requirement must not be none for external, high-risk, or deferred-only tools`,
+      );
+    }
+  });
+
+  agents.forEach((agent, agentIndex) => {
+    if (!isPlainObject(agent) || !Array.isArray(agent.tools)) {
+      return;
+    }
+
+    const runMode =
+      typeof agent.run_mode === "string" ? agent.run_mode : defaultRunMode;
+
+    agent.tools.forEach((toolId) => {
+      const tool = toolsById.get(toolId);
+      if (!tool) {
+        return;
+      }
+
+      if (runMode === "read_only") {
+        validateReadOnlyTool(agentIndex, tool, errors);
+        return;
+      }
+
+      if (runMode === "confirm") {
+        validateConfirmTool(agentIndex, tool, errors);
+        return;
+      }
+
+      if (runMode === "auto") {
+        validateAutoTool(agentIndex, tool, errors);
+      }
+    });
+  });
+}
+
+function validateReadOnlyTool(agentIndex, tool, errors) {
+  if (tool.access === "write" || tool.access === "read_write") {
+    errors.push(
+      `agents[${agentIndex}].run_mode read_only cannot use write-capable tool: ${tool.id}`,
+    );
+  }
+
+  if (tool.locality === "external") {
+    errors.push(
+      `agents[${agentIndex}].run_mode read_only cannot use external tool: ${tool.id}`,
+    );
+  }
+
+  if (tool.risk === "high") {
+    errors.push(
+      `agents[${agentIndex}].run_mode read_only cannot use high-risk tool: ${tool.id}`,
+    );
+  }
+}
+
+function validateConfirmTool(agentIndex, tool, errors) {
+  if (!requiresExplicitApproval(tool)) {
+    return;
+  }
+
+  if (tool.execution === "deferred" || tool.execution === "disabled") {
+    if (tool.approval_requirement !== "deferred") {
+      errors.push(
+        `agents[${agentIndex}].run_mode confirm requires deferred approval metadata for deferred tool: ${tool.id}`,
+      );
+    }
+    return;
+  }
+
+  if (tool.approval_requirement !== "per_call") {
+    errors.push(
+      `agents[${agentIndex}].run_mode confirm requires per_call approval for external, high-risk, or explicit approval-gated tool: ${tool.id}`,
+    );
+  }
+}
+
+function validateAutoTool(agentIndex, tool, errors) {
+  if (tool.risk !== "low") {
+    errors.push(
+      `agents[${agentIndex}].run_mode auto can only use low-risk tools: ${tool.id}`,
+    );
+  }
+
+  if (tool.locality === "external") {
+    errors.push(
+      `agents[${agentIndex}].run_mode auto cannot use external tool: ${tool.id}`,
+    );
+  }
+
+  if (isDeferredOnlyTool(tool)) {
+    errors.push(
+      `agents[${agentIndex}].run_mode auto cannot use deferred-only live capability: ${tool.id}`,
+    );
+  }
+
+  if (tool.execution === "deferred" || tool.execution === "disabled") {
+    errors.push(
+      `agents[${agentIndex}].run_mode auto cannot automatically execute deferred or disabled tool: ${tool.id}`,
+    );
+  }
+
+  if (tool.approval_requirement !== "none") {
+    errors.push(
+      `agents[${agentIndex}].run_mode auto cannot use approval-gated tool: ${tool.id}`,
+    );
+  }
 }
 
 function validateExecutableSafety(agents, tools, errors) {
@@ -596,6 +891,37 @@ function validateRetryPolicy(value, path, errors) {
   }
 }
 
+function validateRequiredToolFields(tool, path, errors) {
+  for (const field of [
+    "permissions",
+    "required_permissions",
+    "access",
+    "risk",
+    "locality",
+    "approval_requirement",
+    "execution",
+  ]) {
+    if (!(field in tool)) {
+      errors.push(`${path}.${field} is required for tool capability metadata`);
+    }
+  }
+}
+
+function isDeferredOnlyTool(tool) {
+  return (
+    DEFERRED_ONLY_CAPABILITY_KINDS.has(tool.capability_kind) ||
+    DEFERRED_ONLY_SIDE_EFFECTS.has(tool.side_effect)
+  );
+}
+
+function requiresExplicitApproval(tool) {
+  return (
+    tool.risk === "high" ||
+    tool.locality === "external" ||
+    isDeferredOnlyTool(tool)
+  );
+}
+
 function validateStringValue(value, path, errors) {
   if (typeof value !== "string" || value.length === 0) {
     errors.push(`${path} must be a non-empty string`);
@@ -683,4 +1009,15 @@ function isPlainObject(value) {
 
 function arrayIncludes(value, expected) {
   return Array.isArray(value) && value.includes(expected);
+}
+
+function sameStringSet(left, right) {
+  const leftStrings = left.filter((item) => typeof item === "string");
+  const rightStrings = right.filter((item) => typeof item === "string");
+  if (leftStrings.length !== rightStrings.length) {
+    return false;
+  }
+
+  const rightSet = new Set(rightStrings);
+  return leftStrings.every((item) => rightSet.has(item));
 }

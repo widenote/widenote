@@ -95,6 +95,84 @@ void main() {
   });
 
   test(
+    'modelClientProvider routes Anthropic-compatible defaults through messages endpoint',
+    () async {
+      late String requestPath;
+      late String? apiKeyHeader;
+      late String? authorizationHeader;
+      late String? versionHeader;
+      late Map<String, Object?> requestBody;
+      final endpoint = await _serve((request) async {
+        requestPath = request.uri.path;
+        apiKeyHeader = request.headers.value('x-api-key');
+        authorizationHeader = request.headers.value('authorization');
+        versionHeader = request.headers.value('anthropic-version');
+        requestBody =
+            jsonDecode(await utf8.decodeStream(request))
+                as Map<String, Object?>;
+        request.response
+          ..statusCode = HttpStatus.ok
+          ..headers.contentType = ContentType.json
+          ..write(
+            jsonEncode(<String, Object?>{
+              'id': 'deepseek-like-response',
+              'model': 'deepseek-v4-flash',
+              'stop_reason': 'end_turn',
+              'content': <Map<String, Object?>>[
+                <String, Object?>{
+                  'type': 'text',
+                  'text': 'DeepSeek-backed memory.',
+                },
+              ],
+              'usage': <String, Object?>{
+                'input_tokens': 11,
+                'output_tokens': 3,
+              },
+            }),
+          );
+        await request.response.close();
+      }, path: '/anthropic');
+      final database = WideNoteLocalDatabase.inMemory();
+      addTearDown(database.close);
+      _insertProvider(
+        database,
+        id: 'deepseek-default',
+        providerKind: ModelProviderKind.anthropicCompatible.name,
+        displayName: 'DeepSeek QA',
+        endpoint: endpoint,
+        model: 'deepseek-v4-flash',
+      );
+      final container = ProviderContainer(
+        overrides: [localDatabaseProvider.overrideWithValue(database)],
+      );
+      addTearDown(container.dispose);
+
+      final response = await container
+          .read(modelClientProvider)
+          .complete(
+            const runtime.ModelRequest(
+              prompt: 'Summarize capture for Memory: DeepSeek provider test',
+            ),
+          );
+
+      expect(requestPath, '/anthropic/v1/messages');
+      expect(apiKeyHeader, 'provider-secret');
+      expect(authorizationHeader, isNull);
+      expect(versionHeader, '2023-06-01');
+      expect(requestBody['model'], 'deepseek-v4-flash');
+      expect(response.text, 'DeepSeek-backed memory.');
+      expect(response.raw['provider_id'], 'deepseek-default');
+      expect(response.raw['model'], 'deepseek-v4-flash');
+      expect(response.raw['usage'], <String, Object?>{
+        'input_tokens': 11,
+        'output_tokens': 3,
+        'total_tokens': 14,
+      });
+      expect(response.raw.toString(), isNot(contains('provider-secret')));
+    },
+  );
+
+  test(
     'setting default refreshes model client dependents without app restart',
     () async {
       final oldEndpoint = await _providerEndpoint('Old provider memory.');
@@ -691,7 +769,7 @@ Local sources:
 
 typedef _RequestHandler = Future<void> Function(HttpRequest request);
 
-Future<Uri> _serve(_RequestHandler handler) async {
+Future<Uri> _serve(_RequestHandler handler, {String path = '/messages'}) async {
   final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
   addTearDown(() async {
     await server.close(force: true);
@@ -701,7 +779,7 @@ Future<Uri> _serve(_RequestHandler handler) async {
       await handler(request);
     }
   }());
-  return Uri.parse('http://${server.address.host}:${server.port}/messages');
+  return Uri.parse('http://${server.address.host}:${server.port}$path');
 }
 
 Future<Uri> _providerEndpoint(String text) {
@@ -732,6 +810,7 @@ void _insertProvider(
   WideNoteLocalDatabase database, {
   required Uri endpoint,
   String id = 'provider-default',
+  String providerKind = 'openAiCompatible',
   String displayName = 'Provider default',
   String model = 'local-provider-model',
   String apiKey = 'provider-secret',
@@ -742,7 +821,7 @@ void _insertProvider(
   database.modelProviderConfigs.insert(
     ModelProviderConfigRecord(
       id: id,
-      providerKind: 'openAiCompatible',
+      providerKind: providerKind,
       displayName: displayName,
       endpoint: endpoint.toString(),
       model: model,

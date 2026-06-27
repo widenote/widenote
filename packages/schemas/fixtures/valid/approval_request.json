@@ -1,0 +1,35 @@
+{
+  "kind": "approval_request",
+  "id": "approval_req_synthetic_001",
+  "schema_version": 1,
+  "status": "pending",
+  "pack_id": "pack.synthetic_contract",
+  "agent_id": "agent.synthetic_capture",
+  "task_id": "task_synthetic_001",
+  "run_id": "run_synthetic_001",
+  "tool_id": "tool.memory.propose",
+  "source_refs": [
+    {
+      "kind": "capture",
+      "id": "cap_synthetic_001",
+      "source_version": 1,
+      "content_hash": "sha256:synthetic-capture",
+      "event_id": "evt_synthetic_capture_created_001",
+      "uri": null
+    }
+  ],
+  "action_summary": "Create a source-linked Memory proposal from approved capture context.",
+  "reason": "confirm mode requires approval before this local write tool runs.",
+  "approval_options": [
+    "approve_once",
+    "deny"
+  ],
+  "expires_at": "2026-06-26T08:05:00Z",
+  "redacted_input_keys": [
+    "capture_text"
+  ],
+  "requested_at": "2026-06-26T08:00:03Z",
+  "metadata": {
+    "fixture": true
+  }
+}

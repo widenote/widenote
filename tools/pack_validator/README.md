@@ -34,6 +34,12 @@ Current checks include:
 - Non-empty agent output events
 - Agent retry policy bounds
 - Tool permission subset of pack permissions
+- Agent tool references
+- Run mode values and read-only/confirm/auto tool boundaries
+- Tool capability metadata: access, risk, locality, approval requirement,
+  execution mode, and required permission consistency
+- Fail-closed handling for HTTP, MCP, web, file, network, shell, runner,
+  webhook, and other deferred-only live capabilities
 - Phase-one script runtime and script side-effect rejection
 - `pack.default` and `pack.todo` phase-one guardrails
 

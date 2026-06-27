@@ -1,0 +1,44 @@
+{
+  "id": "trace_synthetic_approval_requested_001",
+  "schema_version": 1,
+  "trace_type": "approval_requested",
+  "name": "runtime.tool.approval_requested",
+  "level": "info",
+  "run_id": "run_synthetic_001",
+  "task_id": "task_synthetic_001",
+  "pack_id": "pack.synthetic_contract",
+  "agent_id": "agent.synthetic_capture",
+  "event_id": "evt_synthetic_capture_created_001",
+  "parent_trace_id": "trace_synthetic_tool_invoked_001",
+  "severity": "info",
+  "status": "ok",
+  "run_mode": "confirm",
+  "tool_id": "tool.memory.propose",
+  "tool_access": "write",
+  "tool_risk": "medium",
+  "tool_locality": "local",
+  "approval_request_id": "approval_req_synthetic_001",
+  "approval_decision": null,
+  "message": "Confirm mode paused a local write tool for approval.",
+  "duration_ms": null,
+  "payload": {
+    "input_keys": [
+      "capture_text"
+    ],
+    "source_ref_count": 1
+  },
+  "redacted_payload": {
+    "capture_text": "[redacted]"
+  },
+  "redaction": {
+    "contains_raw_tool_input": false,
+    "redacted_keys": [
+      "capture_text"
+    ],
+    "policy": "fixture_redaction"
+  },
+  "created_at": "2026-06-26T08:00:03Z",
+  "metadata": {
+    "fixture": true
+  }
+}

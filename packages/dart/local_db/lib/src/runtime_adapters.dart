@@ -295,6 +295,96 @@ final class LocalDbPermissionStore implements runtime.PermissionStore {
   }
 }
 
+final class LocalDbApprovalStore implements runtime.ApprovalStore {
+  const LocalDbApprovalStore(this._database);
+
+  final WideNoteLocalDatabase _database;
+
+  @override
+  Future<void> saveRequest(runtime.ApprovalRequest request) {
+    final existing = _database.runtimeApprovals.readById(request.id);
+    _database.runtimeApprovals.save(
+      _approvalRequestToRecord(request, existing: existing),
+    );
+    return Future<void>.value();
+  }
+
+  @override
+  Future<runtime.ApprovalRequest?> readRequest(String id) {
+    final record = _database.runtimeApprovals.readById(id);
+    return Future<runtime.ApprovalRequest?>.value(
+      record == null ? null : _approvalRequestFromRecord(record),
+    );
+  }
+
+  @override
+  Future<List<runtime.ApprovalRequest>> readPending({
+    DateTime? now,
+    String? packId,
+    String? runId,
+  }) {
+    return Future<List<runtime.ApprovalRequest>>.value(
+      List<runtime.ApprovalRequest>.unmodifiable(
+        _database.runtimeApprovals
+            .readPending(now: now, packId: packId, runId: runId)
+            .map(_approvalRequestFromRecord),
+      ),
+    );
+  }
+
+  @override
+  Future<void> saveDecision(runtime.ApprovalDecision decision) {
+    final existing = _database.runtimeApprovals.readById(decision.requestId);
+    if (existing == null) {
+      throw StateError('Approval request not found: ${decision.requestId}');
+    }
+    switch (decision.state) {
+      case runtime.ApprovalDecisionState.pending:
+        _database.runtimeApprovals.save(
+          existing.copyWith(
+            status: 'pending',
+            decidedAt: decision.decidedAt,
+            reason: decision.reason,
+            clearDecision: true,
+          ),
+        );
+      case runtime.ApprovalDecisionState.approved:
+        _database.runtimeApprovals.approveOnce(
+          decision.requestId,
+          reason: decision.reason,
+          decidedAt: decision.decidedAt,
+        );
+      case runtime.ApprovalDecisionState.denied:
+        _database.runtimeApprovals.deny(
+          decision.requestId,
+          reason: decision.reason,
+          decidedAt: decision.decidedAt,
+        );
+      case runtime.ApprovalDecisionState.canceled:
+        _database.runtimeApprovals.cancel(
+          decision.requestId,
+          reason: decision.reason,
+          decidedAt: decision.decidedAt,
+        );
+      case runtime.ApprovalDecisionState.expired:
+        _database.runtimeApprovals.expire(
+          decision.requestId,
+          reason: decision.reason,
+          decidedAt: decision.decidedAt,
+        );
+    }
+    return Future<void>.value();
+  }
+
+  @override
+  Future<runtime.ApprovalDecision?> readDecision(String requestId) {
+    final record = _database.runtimeApprovals.readById(requestId);
+    return Future<runtime.ApprovalDecision?>.value(
+      record == null ? null : _approvalDecisionFromRecord(record),
+    );
+  }
+}
+
 EventLogEntry _eventToRecord(runtime.WnEvent event) {
   return EventLogEntry(
     id: event.id,
@@ -402,8 +492,9 @@ RuntimeRunRecord _runToRecord(
     attempt: run.attempt,
     outputEventIds: <Object?>[...run.outputEventIds],
     error: run.error,
-    payload: _runPayloadWithLease(
+    payload: _runPayload(
       existing?.payload ?? const <String, Object?>{},
+      run.runMode,
       run.leaseExpiresAt,
     ),
     startedAt: run.startedAt,
@@ -421,6 +512,7 @@ runtime.RuntimeRun _runFromRecord(RuntimeRunRecord record) {
     status: _runtimeRunStatus(record.status),
     startedAt: record.startedAt,
     attempt: record.attempt,
+    runMode: _runtimeRunModeFromPayload(record.payload),
     completedAt: record.completedAt,
     leaseExpiresAt: _dateTimeFromJson(
       record.payload[_runtimeRunLeaseExpiresAtKey],
@@ -515,6 +607,107 @@ runtime.PermissionDecision _permissionDecisionFromRecord(
   );
 }
 
+RuntimeApprovalRecord _approvalRequestToRecord(
+  runtime.ApprovalRequest request, {
+  RuntimeApprovalRecord? existing,
+}) {
+  return RuntimeApprovalRecord(
+    id: request.id,
+    schemaVersion: existing?.schemaVersion ?? 1,
+    packId: request.packId,
+    agentId: request.agentId,
+    taskId: request.taskId,
+    runId: request.runId,
+    toolName: request.toolName,
+    runMode: request.runMode.wireName,
+    toolAccess: request.toolAccess.name,
+    toolRisk: request.toolRisk.name,
+    isExternal: request.isExternal,
+    requiredPermissions: <Object?>[...request.requiredPermissions],
+    inputKeys: <Object?>[...request.inputKeys],
+    sourceRefs: <Object?>[...request.sourceRefs],
+    actionSummary: request.actionSummary ?? '',
+    status: existing?.status ?? 'pending',
+    requestedAt: request.requestedAt,
+    expiresAt: request.expiresAt,
+    decidedAt: existing?.decidedAt,
+    decision: existing?.decision,
+    reason: existing?.reason ?? request.reason,
+    payload: existing?.payload ?? const <String, Object?>{},
+  );
+}
+
+runtime.ApprovalRequest _approvalRequestFromRecord(
+  RuntimeApprovalRecord record,
+) {
+  return runtime.ApprovalRequest(
+    id: record.id,
+    packId: record.packId,
+    agentId: record.agentId,
+    taskId: record.taskId,
+    runId: record.runId,
+    toolName: record.toolName,
+    runMode: runtime.runModeFromWireName(record.runMode),
+    toolAccess: _toolAccess(record.toolAccess),
+    toolRisk: _toolRisk(record.toolRisk),
+    isExternal: record.isExternal,
+    requiredPermissions: _requiredStringList(
+      record.requiredPermissions,
+      'runtime_approval_requests.required_permissions_json',
+    ),
+    inputKeys: _requiredStringList(
+      record.inputKeys,
+      'runtime_approval_requests.input_keys_json',
+    ),
+    sourceRefs: record.sourceRefs,
+    actionSummary: record.actionSummary.isEmpty ? null : record.actionSummary,
+    createdAt: record.requestedAt,
+    expiresAt: record.expiresAt,
+    reason: record.reason,
+  );
+}
+
+runtime.ApprovalDecision _approvalDecisionFromRecord(
+  RuntimeApprovalRecord record,
+) {
+  return switch (record.status) {
+    'pending' => runtime.ApprovalDecision.pending(
+      requestId: record.id,
+      reason: record.reason,
+      decidedAt: record.decidedAt,
+    ),
+    'approved' => runtime.ApprovalDecision.approved(
+      requestId: record.id,
+      reason: record.reason,
+      decidedAt: record.decidedAt,
+    ),
+    'denied' => runtime.ApprovalDecision.denied(
+      requestId: record.id,
+      reason: record.reason,
+      decidedAt: record.decidedAt,
+    ),
+    'canceled' => runtime.ApprovalDecision.canceled(
+      requestId: record.id,
+      reason: record.reason,
+      decidedAt: record.decidedAt,
+    ),
+    'expired' => runtime.ApprovalDecision.expired(
+      requestId: record.id,
+      reason: record.reason,
+      decidedAt: record.decidedAt,
+    ),
+    _ => throw StateError('Unknown approval status: ${record.status}'),
+  };
+}
+
+runtime.ToolAccess _toolAccess(String value) {
+  return _enumByName(runtime.ToolAccess.values, value, 'tool access');
+}
+
+runtime.ToolRisk _toolRisk(String value) {
+  return _enumByName(runtime.ToolRisk.values, value, 'tool risk');
+}
+
 runtime.WnActor _actorFromRecord(String value) {
   return runtime.WnActor.values.firstWhere(
     (actor) => actor.name == value,
@@ -592,8 +785,13 @@ List<String> _requiredStringList(JsonList values, String fieldName) {
   return List<String>.unmodifiable(strings);
 }
 
-JsonMap _runPayloadWithLease(JsonMap payload, DateTime? leaseExpiresAt) {
+JsonMap _runPayload(
+  JsonMap payload,
+  runtime.RunMode runMode,
+  DateTime? leaseExpiresAt,
+) {
   final next = <String, Object?>{...payload};
+  next[_runtimeRunModeKey] = runMode.name;
   if (leaseExpiresAt == null) {
     next.remove(_runtimeRunLeaseExpiresAtKey);
   } else {
@@ -602,6 +800,23 @@ JsonMap _runPayloadWithLease(JsonMap payload, DateTime? leaseExpiresAt) {
         .toIso8601String();
   }
   return next;
+}
+
+runtime.RunMode _runtimeRunModeFromPayload(JsonMap payload) {
+  final value = payload[_runtimeRunModeKey];
+  if (value == null) {
+    return runtime.RunMode.auto;
+  }
+  if (value is String) {
+    final normalized = value.replaceAll('-', '_');
+    return switch (normalized) {
+      'read_only' || 'readOnly' => runtime.RunMode.readOnly,
+      'confirm' => runtime.RunMode.confirm,
+      'auto' => runtime.RunMode.auto,
+      _ => throw StateError('Unknown runtime run mode: $value'),
+    };
+  }
+  throw StateError('$_runtimeRunModeKey must be a string.');
 }
 
 DateTime? _dateTimeFromJson(Object? value) {
@@ -671,6 +886,10 @@ String _schemaTraceType(String runtimeName) {
       runtimeName == 'chat.model.failed') {
     return 'model';
   }
+  if (runtimeName.startsWith('runtime.tool.approval') ||
+      runtimeName == 'runtime.run.approval_pending') {
+    return 'approval';
+  }
   return switch (runtimeName) {
     'runtime.run.started' => 'run_started',
     'runtime.run.completed' => 'run_completed',
@@ -683,6 +902,7 @@ String _schemaTraceType(String runtimeName) {
 }
 
 const _runtimeRunLeaseExpiresAtKey = 'runtime_run_lease_expires_at';
+const _runtimeRunModeKey = 'runtime_run_mode';
 const _runtimePackCountsKey = 'runtime_status_counts';
 const _runtimePackEdition = 'runtime';
 const _runtimePackPublisher = 'runtime';

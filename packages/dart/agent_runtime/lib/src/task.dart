@@ -1,3 +1,5 @@
+import 'run_mode.dart';
+
 enum RuntimeTaskStatus {
   queued,
   waiting,
@@ -126,6 +128,7 @@ final class RuntimeRun {
     required this.status,
     required this.startedAt,
     required this.attempt,
+    this.runMode = RunMode.auto,
     this.completedAt,
     this.leaseExpiresAt,
     this.outputEventIds = const <String>[],
@@ -140,6 +143,7 @@ final class RuntimeRun {
   final RuntimeRunStatus status;
   final DateTime startedAt;
   final int attempt;
+  final RunMode runMode;
   final DateTime? completedAt;
   final DateTime? leaseExpiresAt;
   final List<String> outputEventIds;
@@ -160,6 +164,7 @@ final class RuntimeRun {
       status: status ?? this.status,
       startedAt: startedAt,
       attempt: attempt,
+      runMode: runMode,
       completedAt: completedAt ?? this.completedAt,
       leaseExpiresAt: leaseExpiresAt,
       outputEventIds: outputEventIds ?? this.outputEventIds,

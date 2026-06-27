@@ -19,10 +19,11 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
 
-    expect(find.text('Agent Observability'), findsOneWidget);
+    expect(find.text('Agent Console'), findsWidgets);
     expect(find.text('Log events: 2'), findsWidgets);
     expect(find.text('Runs: 1'), findsWidgets);
-    expect(find.text('Warnings: 1'), findsWidgets);
+    expect(find.text('Tasks: 0'), findsWidgets);
+    expect(find.text('Failed: 0'), findsWidgets);
     expect(
       find.byKey(const Key('agent-platform-trace-trace-warning')),
       findsOneWidget,
@@ -41,11 +42,35 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('trace-console-page')), findsOneWidget);
-    expect(find.text('Runtime summary'), findsOneWidget);
+    expect(find.text('Local control summary'), findsOneWidget);
+    await _scrollTo(tester, const Key('trace-console-row-trace-warning'));
     expect(find.text('runtime.permission.denied'), findsOneWidget);
+    await _tap(tester, const Key('trace-console-row-trace-warning'));
     expect(find.text('pack: pack.default'), findsWidgets);
     expect(find.text('agent: agent.capture_loop'), findsWidgets);
     expect(find.textContaining('duration: 8'), findsWidgets);
+  });
+
+  testWidgets('trace source navigation opens timeline source route', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    _seedTraceEvents(database);
+    await _pumpApp(tester, database);
+
+    await tester.tap(find.byKey(const Key('tab-plugins')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('trace-console-entry')));
+    await tester.pumpAndSettle();
+
+    await _tap(tester, const Key('trace-console-row-trace-ok'));
+    await _tap(tester, const Key('trace-console-open-source-trace-ok'));
+
+    expect(find.byKey(const Key('timeline-item-detail-page')), findsOneWidget);
+    expect(
+      find.byKey(const Key('timeline-item-detail-not-found')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('trace console renders empty state without fake runs', (
@@ -59,10 +84,41 @@ void main() {
     await tester.tap(find.byKey(const Key('trace-console-entry')));
     await tester.pumpAndSettle();
 
+    await _scrollTo(tester, const Key('trace-console-empty'));
     expect(find.byKey(const Key('trace-console-empty')), findsOneWidget);
     expect(find.textContaining('task-queued-capture'), findsNothing);
     expect(find.textContaining('fake executor'), findsNothing);
   });
+}
+
+Future<void> _tap(WidgetTester tester, Key key) async {
+  await _scrollTo(tester, key);
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(key));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _scrollTo(WidgetTester tester, Key key) async {
+  final finder = find.byKey(key);
+  if (finder.evaluate().isNotEmpty) {
+    await tester.ensureVisible(finder);
+    await tester.pumpAndSettle();
+    return;
+  }
+  try {
+    await tester.scrollUntilVisible(
+      finder,
+      220,
+      scrollable: find.byType(Scrollable).first,
+    );
+  } catch (_) {
+    await tester.scrollUntilVisible(
+      finder,
+      -220,
+      scrollable: find.byType(Scrollable).first,
+    );
+  }
+  await tester.pumpAndSettle();
 }
 
 Future<void> _pumpApp(
@@ -91,6 +147,7 @@ void _seedTraceEvents(WideNoteLocalDatabase database) {
         runIdOverride: 'run-trace',
         severityOverride: 'info',
         message: 'Generated Memory proposal',
+        sourceEventId: 'capture-source',
         packId: 'pack.default',
         agentId: 'agent.capture_loop',
         durationMs: 8,

@@ -943,13 +943,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pluginsBackupStatus => '本地优先';
 
   @override
-  String get pluginsTraceConsoleTitle => '日志中心';
+  String get pluginsTraceConsoleTitle => 'Agent Console';
 
   @override
-  String get pluginsTraceConsoleSubtitle => '查看插件运行日志、权限和生成结果。';
+  String get pluginsTraceConsoleSubtitle => '检查本地运行、审批、追踪和插件输出。';
 
   @override
-  String get pluginsTraceConsoleStatus => '日志就绪';
+  String get pluginsTraceConsoleStatus => '本地';
 
   @override
   String get packLibraryTitle => '插件库';
@@ -974,6 +974,111 @@ class AppLocalizationsZh extends AppLocalizations {
   String packLibraryOutputCount(int count) {
     return '$count 个输出';
   }
+
+  @override
+  String packLibraryEnabledCount(int count) {
+    return '$count 个已启用';
+  }
+
+  @override
+  String packLibraryDisabledCount(int count) {
+    return '$count 个已停用';
+  }
+
+  @override
+  String get packLibraryDisableImpact =>
+      '停用只影响后续本地任务，不会删除已存储在这台设备上的记录、追踪或派生输出。';
+
+  @override
+  String packLibraryPublisher(String publisher) {
+    return '发布者：$publisher';
+  }
+
+  @override
+  String packLibraryEdition(String edition) {
+    return '版本类型：$edition';
+  }
+
+  @override
+  String packLibraryEntrypoint(String entrypoint) {
+    return '运行时：$entrypoint';
+  }
+
+  @override
+  String packLibrarySubscriptionCount(int count) {
+    return '$count 个订阅';
+  }
+
+  @override
+  String packLibraryFailureCount(int count) {
+    return '$count 次失败';
+  }
+
+  @override
+  String packLibraryPermissionDecisionSummary(
+    int granted,
+    int denied,
+    int revoked,
+  ) {
+    return '权限：$granted 已授权 / $denied 已拒绝 / $revoked 已撤销';
+  }
+
+  @override
+  String packLibraryLastFailure(String message) {
+    return '最近失败：$message';
+  }
+
+  @override
+  String get packLibraryStatusEnabled => '已启用';
+
+  @override
+  String get packLibraryStatusDisabled => '已停用';
+
+  @override
+  String packLibraryStatusUnknown(String status) {
+    return '状态：$status';
+  }
+
+  @override
+  String get packLibraryRuntimeIdle => '运行时：空闲';
+
+  @override
+  String get packLibraryRuntimeQueued => '运行时：排队中';
+
+  @override
+  String get packLibraryRuntimeRunning => '运行时：运行中';
+
+  @override
+  String get packLibraryRuntimeSucceeded => '运行时：已成功';
+
+  @override
+  String get packLibraryRuntimeFailed => '运行时：失败';
+
+  @override
+  String get packLibraryRuntimeDenied => '运行时：已拒绝';
+
+  @override
+  String get packLibraryRuntimeCanceled => '运行时：已取消';
+
+  @override
+  String get packLibraryRuntimeBlocked => '运行时：已阻塞';
+
+  @override
+  String packLibraryRuntimeUnknown(String status) {
+    return '运行时：$status';
+  }
+
+  @override
+  String get packDefaultName => '默认记录循环';
+
+  @override
+  String get packDefaultDescription => '保守的内置插件，用于记录卡片、Memory 候选和轻量洞察。';
+
+  @override
+  String get packTodoName => '待办提取循环';
+
+  @override
+  String get packTodoDescription => '内置插件，用于生成带来源的待办建议。';
 
   @override
   String get permissionGateTitle => '权限门禁';
@@ -1012,16 +1117,70 @@ class AppLocalizationsZh extends AppLocalizations {
   String get permissionGateActionDeferred => '延期';
 
   @override
-  String get agentPlatformTitle => '智能体观测';
+  String get permissionGateImpactAvailable => '授权或拒绝只会改变后续本地运行。';
 
   @override
-  String get agentPlatformSubtitle => '基于真实本地日志事件的只读运行证据。';
+  String get permissionGateImpactGranted => '后续本地运行可以使用此权限，直到你撤销它。';
 
   @override
-  String get traceConsoleTitle => '日志中心';
+  String get permissionGateImpactDenied => '需要此权限的后续本地运行会被阻止；既有记录和追踪会保留。';
 
   @override
-  String get traceConsoleSubtitle => '查看本地 Agent Runtime 日志、权限和生成输出。';
+  String get permissionGateImpactRevoked => '撤销会阻止后续使用；既有记录、追踪和派生输出会保留以便复核。';
+
+  @override
+  String get permissionGateImpactDeferred => '此高风险或外部能力在本地 L3 切片中保持禁用。';
+
+  @override
+  String get permissionGateRiskLow => '低风险';
+
+  @override
+  String get permissionGateRiskMedium => '中风险';
+
+  @override
+  String get permissionGateRiskHigh => '高风险';
+
+  @override
+  String get permissionGateCommunityPacks => '社区插件';
+
+  @override
+  String get permissionGateMediaPacks => '媒体插件';
+
+  @override
+  String get permissionGateContextPacks => '上下文插件';
+
+  @override
+  String get permissionGateDeferredSandbox => '沙箱审批就绪前延期。';
+
+  @override
+  String get permissionGateDeferredExternalTools => '外部工具权限设计就绪前延期。';
+
+  @override
+  String get permissionGateDeferredPlatform => '平台权限复核就绪前延期。';
+
+  @override
+  String get permissionGateDeferredPrivacy => '隐私决策覆盖前延期。';
+
+  @override
+  String get agentPlatformTitle => 'Agent Console';
+
+  @override
+  String get agentPlatformSubtitle => '来自运行、任务、审批和追踪的本地运行控制证据。';
+
+  @override
+  String get agentConsoleTitle => 'Agent Console';
+
+  @override
+  String get agentConsoleSubtitle => '本地优先地控制运行、任务、审批、插件和脱敏追踪。';
+
+  @override
+  String get traceConsoleTitle => 'Agent Console';
+
+  @override
+  String get traceConsoleSubtitle => '查看本地 Agent Runtime 运行、权限和生成输出。';
+
+  @override
+  String get agentConsoleSummaryTitle => '本地控制摘要';
 
   @override
   String get traceConsoleSummaryTitle => '运行摘要';
@@ -1045,7 +1204,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get traceConsoleRefreshButton => '刷新';
 
   @override
-  String get traceConsoleOpenButton => '打开日志中心';
+  String get traceConsoleOpenButton => '打开 Agent Console';
 
   @override
   String get traceConsoleEventsTitle => '事件';
@@ -1075,6 +1234,197 @@ class AppLocalizationsZh extends AppLocalizations {
   String traceConsoleDuration(num duration) {
     return '耗时：$duration ms';
   }
+
+  @override
+  String agentConsoleTotalCount(int count) {
+    return '总数：$count';
+  }
+
+  @override
+  String agentConsoleActiveCount(int count) {
+    return '活跃：$count';
+  }
+
+  @override
+  String agentConsoleFailedCount(int count) {
+    return '失败：$count';
+  }
+
+  @override
+  String agentConsoleDeniedCount(int count) {
+    return '已拒绝：$count';
+  }
+
+  @override
+  String agentConsoleBlockedCount(int count) {
+    return '已阻塞：$count';
+  }
+
+  @override
+  String agentConsoleTaskCount(int count) {
+    return '任务：$count';
+  }
+
+  @override
+  String agentConsolePendingApprovalCount(int count) {
+    return '审批：$count';
+  }
+
+  @override
+  String get agentConsoleFilterTitle => '状态过滤';
+
+  @override
+  String get agentConsoleFilterAll => '全部';
+
+  @override
+  String get agentConsoleFilterActive => '活跃';
+
+  @override
+  String get agentConsoleFilterFailed => '失败';
+
+  @override
+  String get agentConsoleFilterDenied => '拒绝';
+
+  @override
+  String get agentConsoleFilterBlocked => '阻塞';
+
+  @override
+  String get approvalQueueTitle => '审批队列';
+
+  @override
+  String get approvalQueueEmpty => '暂无待审批本地行动。';
+
+  @override
+  String get approvalQueueScaffoldBody =>
+      '持久审批存储就绪后，请求会在这里暂停等待处理。本页不会批准或拒绝假的运行结果。';
+
+  @override
+  String get agentConsoleRunsTitle => '运行';
+
+  @override
+  String get agentConsoleRunsEmpty => '没有符合当前过滤条件的本地运行。';
+
+  @override
+  String get agentConsoleTasksTitle => '任务';
+
+  @override
+  String get agentConsoleTasksEmpty => '没有符合当前过滤条件的本地任务。';
+
+  @override
+  String agentConsoleStatus(String status) {
+    return '状态：$status';
+  }
+
+  @override
+  String agentConsoleSeverity(String severity) {
+    return '级别：$severity';
+  }
+
+  @override
+  String agentConsoleTask(String taskId) {
+    return '任务：$taskId';
+  }
+
+  @override
+  String agentConsoleEvent(String eventId) {
+    return '事件：$eventId';
+  }
+
+  @override
+  String agentConsoleParentTrace(String traceId) {
+    return '父追踪：$traceId';
+  }
+
+  @override
+  String agentConsoleAttempt(int attempt) {
+    return '第 $attempt 次尝试';
+  }
+
+  @override
+  String agentConsoleTaskAttempts(int attempts, int maxAttempts) {
+    return '尝试：$attempts/$maxAttempts';
+  }
+
+  @override
+  String agentConsoleMissingDependencies(int count) {
+    return '$count 个缺失依赖';
+  }
+
+  @override
+  String agentConsoleOutputCount(int count) {
+    return '$count 个输出';
+  }
+
+  @override
+  String agentConsoleStarted(String time) {
+    return '开始：$time';
+  }
+
+  @override
+  String agentConsoleCompleted(String time) {
+    return '完成：$time';
+  }
+
+  @override
+  String agentConsoleCreated(String time) {
+    return '创建：$time';
+  }
+
+  @override
+  String get agentConsoleNotCompleted => '尚未完成';
+
+  @override
+  String agentConsoleError(String message) {
+    return '错误：$message';
+  }
+
+  @override
+  String get agentConsoleRetryAction => '重试';
+
+  @override
+  String get agentConsoleCancelAction => '取消';
+
+  @override
+  String get agentConsoleControlsUnavailable =>
+      '移动端暴露实时 RuntimeKernel 控制 provider 前，重试和取消保持禁用。这里不会执行假的成功操作。';
+
+  @override
+  String get agentConsoleRunTracesTitle => '追踪列表';
+
+  @override
+  String get agentConsoleRunNoTraces => '这个运行还没有记录追踪。';
+
+  @override
+  String get agentConsoleRunModeReadOnly => '运行模式：只读';
+
+  @override
+  String get agentConsoleRunModeConfirm => '运行模式：需确认';
+
+  @override
+  String get agentConsoleRunModeAuto => '运行模式：自动';
+
+  @override
+  String get agentConsoleRunModeUnknown => '运行模式：未知';
+
+  @override
+  String get traceConsoleOpenSourceButton => '打开来源';
+
+  @override
+  String get traceConsoleNoSource => '这条追踪没有可打开的来源引用。';
+
+  @override
+  String get traceConsolePayloadTitle => '脱敏 payload';
+
+  @override
+  String get traceConsolePayloadEmpty => '没有记录 payload。';
+
+  @override
+  String traceConsolePayloadRedactedCount(int count) {
+    return '$count 个敏感字段已脱敏';
+  }
+
+  @override
+  String get traceConsoleRedactedValue => '[已脱敏]';
 
   @override
   String get providerSettingsTitle => '模型提供商';

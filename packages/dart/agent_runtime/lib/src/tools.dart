@@ -2,18 +2,50 @@ import 'package:widenote_core/widenote_core.dart';
 
 typedef ToolHandler = Future<JsonMap> Function(ToolInvocation invocation);
 
+enum ToolAccess { read, write }
+
+enum ToolRisk { low, high }
+
+enum ToolApprovalRequirement { automatic, always }
+
 final class ToolDefinition {
   const ToolDefinition({
     required this.name,
     required this.description,
     required this.handler,
     this.requiredPermissions = const <String>{},
+    this.access = ToolAccess.read,
+    this.external = false,
+    this.risk = ToolRisk.low,
+    this.approvalRequirement = ToolApprovalRequirement.automatic,
   });
 
   final String name;
   final String description;
   final Set<String> requiredPermissions;
+  final ToolAccess access;
+  final bool external;
+  final ToolRisk risk;
+  final ToolApprovalRequirement approvalRequirement;
   final ToolHandler handler;
+
+  bool get mutates => access == ToolAccess.write;
+  bool get isHighRisk => risk == ToolRisk.high;
+  bool get isReadOnlySafe => !mutates && !external && !isHighRisk;
+
+  bool get requiresExplicitApproval {
+    return approvalRequirement == ToolApprovalRequirement.always ||
+        external ||
+        isHighRisk;
+  }
+
+  bool get requiresApproval {
+    return requiresExplicitApproval || mutates;
+  }
+
+  bool get canAutoExecute {
+    return !requiresExplicitApproval;
+  }
 }
 
 final class ToolInvocation {

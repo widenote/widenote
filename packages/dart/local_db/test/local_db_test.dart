@@ -684,6 +684,28 @@ void main() {
             completedAt: updatedAt,
           ),
         );
+        database.runtimeApprovals.insert(
+          RuntimeApprovalRecord(
+            id: 'approval-runtime-1',
+            packId: 'pack.default',
+            agentId: 'agent.capture_loop',
+            taskId: 'task-runtime-1',
+            runId: 'run-runtime-1',
+            toolName: 'memory.propose',
+            runMode: 'confirm',
+            toolAccess: 'write',
+            toolRisk: 'low',
+            isExternal: false,
+            requiredPermissions: const <Object?>['memory.propose'],
+            inputKeys: const <Object?>['source_refs', 'body'],
+            sourceRefs: const <Object?>[
+              <String, Object?>{'kind': 'event', 'id': 'event-runtime-1'},
+            ],
+            actionSummary: 'Approve one memory.propose tool invocation.',
+            requestedAt: createdAt,
+            expiresAt: createdAt.add(const Duration(minutes: 15)),
+          ),
+        );
         database.contextPacketCaches.insert(
           ContextPacketCacheRecord(
             id: 'cache-runtime-1',
@@ -745,6 +767,10 @@ void main() {
               .single
               .outputEventIds,
           ['event-output-1'],
+        );
+        expect(
+          database.runtimeApprovals.readPending(now: updatedAt),
+          hasLength(1),
         );
         expect(
           database.packInstallations.readById('pack.default')!.status,
@@ -1249,6 +1275,21 @@ void main() {
             completedAt: timestamp,
           ),
         );
+        database.runtimeApprovals.insert(
+          RuntimeApprovalRecord(
+            id: 'approval-$index',
+            packId: 'pack.$index',
+            agentId: 'agent.$index',
+            taskId: 'task-$index',
+            runId: 'run-$index',
+            toolName: 'todo.suggest',
+            runMode: 'confirm',
+            toolAccess: 'write',
+            toolRisk: 'low',
+            isExternal: false,
+            requestedAt: timestamp,
+          ),
+        );
         database.contextPacketCaches.insert(
           ContextPacketCacheRecord(
             id: 'cache-$index',
@@ -1339,6 +1380,10 @@ void main() {
         'run-1',
       );
       expect(
+        database.runtimeApprovals.readAll(limit: 1, offset: 1).single.id,
+        'approval-1',
+      );
+      expect(
         database.contextPacketCaches.readAll(limit: 1, offset: 1).single.id,
         'cache-1',
       );
@@ -1425,6 +1470,7 @@ INSERT INTO trace_events (
       expect(migrated.modelProviderConfigs.readAll(), isEmpty);
       expect(migrated.runtimeTasks.readAll(), isEmpty);
       expect(migrated.runtimeRuns.readAll(), isEmpty);
+      expect(migrated.runtimeApprovals.readAll(), isEmpty);
       expect(migrated.packInstallations.readAll(), isEmpty);
       expect(migrated.permissionGrants.readAll(), isEmpty);
       expect(migrated.contextPacketCaches.readAll(), isEmpty);
@@ -1442,6 +1488,8 @@ INSERT INTO trace_events (
           'runtime_tasks_identity_key_idx',
           'runtime_tasks_pack_status_idx',
           'runtime_runs_task_idx',
+          'runtime_approvals_pack_status_idx',
+          'runtime_approvals_run_status_idx',
           'pack_installations_status_idx',
           'permission_grants_pack_status_idx',
           'context_packet_cache_key_idx',
@@ -1464,6 +1512,16 @@ INSERT INTO trace_events (
             .select('PRAGMA foreign_key_list(permission_grants);')
             .map((row) => row['table']),
         contains('pack_installations'),
+      );
+      expect(
+        rawDatabase
+            .select('PRAGMA foreign_key_list(runtime_approval_requests);')
+            .map((row) => row['table']),
+        containsAll(<String>[
+          'pack_installations',
+          'runtime_tasks',
+          'runtime_runs',
+        ]),
       );
       LocalDbMigrator.bootstrap(rawDatabase);
       expect(migrated.schemaVersion, LocalDbSchema.currentVersion);

@@ -120,13 +120,19 @@ class _PermissionRow extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(statusLabel, style: _mutedStyle(context)),
+              const SizedBox(height: 4),
+              Text(
+                _impactLabel(l10n, permission),
+                key: Key('permission-impact-${permission.permission}'),
+                style: _mutedStyle(context),
+              ),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
                 runSpacing: 4,
                 children: [
-                  _Tag(label: permission.packId),
-                  _Tag(label: permission.risk),
+                  _Tag(label: _packLabel(l10n, permission.packId)),
+                  _Tag(label: _riskLabel(l10n, permission.risk)),
                 ],
               ),
               const SizedBox(height: 8),
@@ -326,10 +332,55 @@ String _statusLabel(
     PermissionGateDecisionState.granted => l10n.permissionGateStatusGranted,
     PermissionGateDecisionState.denied => l10n.permissionGateStatusDenied,
     PermissionGateDecisionState.revoked => l10n.permissionGateStatusRevoked,
-    PermissionGateDecisionState.deferred => permission.fallbackStatus,
+    PermissionGateDecisionState.deferred => _deferredStatusLabel(
+      l10n,
+      permission.permission,
+    ),
   };
 }
 
 String _permissionKeySuffix(PermissionGatePermission permission) {
   return '${permission.packId}-${permission.permission}';
+}
+
+String _impactLabel(
+  AppLocalizations l10n,
+  PermissionGatePermission permission,
+) {
+  return switch (permission.decisionState) {
+    PermissionGateDecisionState.available => l10n.permissionGateImpactAvailable,
+    PermissionGateDecisionState.granted => l10n.permissionGateImpactGranted,
+    PermissionGateDecisionState.denied => l10n.permissionGateImpactDenied,
+    PermissionGateDecisionState.revoked => l10n.permissionGateImpactRevoked,
+    PermissionGateDecisionState.deferred => l10n.permissionGateImpactDeferred,
+  };
+}
+
+String _riskLabel(AppLocalizations l10n, String risk) {
+  return switch (risk) {
+    'low' => l10n.permissionGateRiskLow,
+    'medium' => l10n.permissionGateRiskMedium,
+    'high' => l10n.permissionGateRiskHigh,
+    _ => risk,
+  };
+}
+
+String _packLabel(AppLocalizations l10n, String packId) {
+  return switch (packId) {
+    'community packs' => l10n.permissionGateCommunityPacks,
+    'media packs' => l10n.permissionGateMediaPacks,
+    'context packs' => l10n.permissionGateContextPacks,
+    _ => packId,
+  };
+}
+
+String _deferredStatusLabel(AppLocalizations l10n, String permission) {
+  return switch (permission) {
+    'file.read.broad' => l10n.permissionGateDeferredSandbox,
+    'network.call.arbitrary_host' => l10n.permissionGateDeferredExternalTools,
+    'script.execute' => l10n.permissionGateDeferredSandbox,
+    'audio.capture.continuous' => l10n.permissionGateDeferredPlatform,
+    'location.read.background' => l10n.permissionGateDeferredPrivacy,
+    _ => l10n.permissionGateImpactDeferred,
+  };
 }

@@ -62,8 +62,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('trace-console-page')), findsOneWidget);
-    expect(find.text('Log Center'), findsOneWidget);
-    expect(find.text('model'), findsOneWidget);
+    expect(find.text('Agent Console'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Chat model request failed.'),
+      400,
+      scrollable: find.byType(Scrollable).last,
+    );
     expect(find.text('Chat model request failed.'), findsOneWidget);
   });
 

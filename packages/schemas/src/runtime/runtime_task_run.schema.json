@@ -24,6 +24,7 @@
         "subscription_id",
         "trigger_event_id",
         "status",
+        "run_mode",
         "created_at",
         "updated_at"
       ],
@@ -61,6 +62,9 @@
         },
         "status": {
           "$ref": "#/$defs/task_status"
+        },
+        "run_mode": {
+          "$ref": "#/$defs/run_mode"
         },
         "dependency_task_ids": {
           "type": "array",
@@ -121,6 +125,7 @@
         "pack_id",
         "agent_id",
         "status",
+        "run_mode",
         "started_at",
         "attempt"
       ],
@@ -148,6 +153,9 @@
         },
         "status": {
           "$ref": "#/$defs/run_status"
+        },
+        "run_mode": {
+          "$ref": "#/$defs/run_mode"
         },
         "started_at": {
           "type": "string",
@@ -205,6 +213,15 @@
         "failed",
         "denied",
         "canceled"
+      ]
+    },
+    "run_mode": {
+      "description": "Public JSON run mode names. Dart bindings may map read_only to RunMode.readOnly.",
+      "type": "string",
+      "enum": [
+        "read_only",
+        "confirm",
+        "auto"
       ]
     },
     "task_lease": {

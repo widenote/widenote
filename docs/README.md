@@ -22,6 +22,7 @@ For current decisions, start with [decisions/index.md](./decisions/index.md).
 - [Cross-Platform Core Smoke Results](./research/2026-06-27-cross-platform-core-smoke-results.md)
 - [Live LLM Long Journey QA](./research/2026-06-27-live-llm-long-journey-qa.md)
 - [Local Semantic Rule Audit](./research/2026-06-27-local-semantic-rule-audit.md)
+- [Agent Runtime Roadmap Research](./research/2026-06-27-agent-runtime-roadmap-research.md)
 - [Phase One Technical Plan](./architecture/phase-one-technical-plan.md) is a planning baseline; use W7 current state and the umbrella RFC for current implementation status.
 - [Phase One Module Plan](./architecture/phase-one-module-plan.md) is a planning baseline; update module READMEs and project map as modules land.
 - [Engineering Rules](./architecture/engineering-rules.md) for complexity budgets, test gates, subagent collaboration, external review boundaries, and emulator validation
@@ -57,6 +58,7 @@ For current decisions, start with [decisions/index.md](./decisions/index.md).
 - [Model Provider Settings](./rfcs/model-provider-settings.md): accepted provider-settings slice, amended by W7 safe-backup boundary.
 - [Memory Model](./rfcs/memory-model.md): accepted phase-one contract with follow-ups open.
 - [Agent Pack Schema](./rfcs/agent-pack-schema.md): accepted phase-one contract; scripted/community runtime deferred.
+- [Agent Runtime Capability Boundaries](./rfcs/agent-runtime-capability-boundaries.md): proposed implementation guardrail under ADR-0011.
 - [Mobile Entry Closure](./rfcs/mobile-entry-closure.md): implemented slice; current status superseded by W7 integration state.
 - [Mobile Visual Style](./rfcs/mobile-visual-style.md): accepted.
 

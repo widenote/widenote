@@ -231,6 +231,35 @@ RuntimeRunRecord _runtimeRunFromRow(Row row) {
   );
 }
 
+RuntimeApprovalRecord _runtimeApprovalFromRow(Row row) {
+  return RuntimeApprovalRecord(
+    id: _text(row, 'id'),
+    schemaVersion: _integer(row, 'schema_version'),
+    packId: _text(row, 'pack_id'),
+    agentId: _text(row, 'agent_id'),
+    taskId: _text(row, 'task_id'),
+    runId: _text(row, 'run_id'),
+    toolName: _text(row, 'tool_name'),
+    runMode: _text(row, 'run_mode'),
+    toolAccess: _text(row, 'tool_access'),
+    toolRisk: _text(row, 'tool_risk'),
+    isExternal: _bool(row, 'is_external'),
+    requiredPermissions: decodeJsonList(
+      _text(row, 'required_permissions_json'),
+    ),
+    inputKeys: decodeJsonList(_text(row, 'input_keys_json')),
+    sourceRefs: decodeJsonList(_text(row, 'source_refs_json')),
+    actionSummary: _text(row, 'action_summary'),
+    status: _text(row, 'status'),
+    requestedAt: _dateTime(row, 'requested_at'),
+    expiresAt: _nullableDateTime(row, 'expires_at'),
+    decidedAt: _nullableDateTime(row, 'decided_at'),
+    decision: _nullableText(row, 'decision'),
+    reason: _nullableText(row, 'reason'),
+    payload: decodeJsonMap(_text(row, 'payload_json')),
+  );
+}
+
 PackInstallationRecord _packInstallationFromRow(Row row) {
   return PackInstallationRecord(
     packId: _text(row, 'pack_id'),

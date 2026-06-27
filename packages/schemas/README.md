@@ -35,6 +35,7 @@ Current source schemas:
 | Permission declaration | `src/permission/permission.schema.json` |
 | Trace event | `src/trace/trace.schema.json` |
 | Runtime task/run | `src/runtime/runtime_task_run.schema.json` |
+| Runtime approval request/decision | `src/runtime/approval.schema.json` |
 | Context Packet | `src/context_packet/context_packet.schema.json` |
 | Provider metadata and model routing | `src/model_provider/model_provider.schema.json` |
 | Backup and Owner Export manifest | `src/backup_export/backup_export_manifest.schema.json` |
@@ -76,13 +77,27 @@ Current lightweight Agent Pack manifest validation checks parseability, basic sh
 node tools/pack_validator/validate.mjs packs/official/default/manifest.json packs/official/todo/manifest.json
 ```
 
+The runtime task/run contract uses public JSON run modes
+`read_only`, `confirm`, and `auto`. Dart bindings may map these to native enum
+names such as `RunMode.readOnly`, but schema fixtures keep the wire contract in
+snake case.
+
 The Agent Pack manifest currently includes subscription dependencies through
 `depends_on[]` and deterministic retry bounds through
 `agents[].retry_policy.max_attempts`. It also exposes model profile routing
 fields such as `routing_policy`, `provider_ref`, `model_ref`, and
-`required_capabilities[]`. Script runtime and script side effects are described
-only as deferred contract values; phase-one validation rejects them until a
-sandbox RFC is accepted.
+`required_capabilities[]`. Tool declarations include capability metadata:
+`access`, `risk`, `locality`, `approval_requirement`, `execution`, and required
+permission ids. HTTP, MCP, web, file, network, shell, runner, webhook, and
+script-like live capabilities are L1/L3 contract declarations only; current
+validation allows them only as fake, deferred, or disabled. Script runtime and
+script side effects are described only as deferred contract values; phase-one
+validation rejects them until a sandbox RFC is accepted.
+
+Approval request and decision fixtures intentionally store action summaries,
+reasons, expiry, pack/agent/task/run/tool/source refs, and
+`redacted_input_keys` only. Do not add raw tool input, credentials, provider
+keys, or private records to approval or trace fixtures.
 
 Agent Pack `model_profiles[]` may omit routing fields while packs are still
 declarative. A materialized provider routing object should apply conservative

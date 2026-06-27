@@ -8,6 +8,7 @@
   "trigger_event_id": "evt_synthetic_capture_created_001",
   "idempotency_key": "evt_synthetic_capture_created_001:sub.synthetic_capture:pack.synthetic_contract:agent.synthetic_capture",
   "status": "queued",
+  "run_mode": "confirm",
   "dependency_task_ids": [],
   "missing_dependency_ids": [],
   "attempts": 0,

@@ -25,14 +25,14 @@ class AgentPlatformPanel extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _Header(
-              title: l10n.agentPlatformTitle,
+              title: l10n.agentConsoleTitle,
               trailing: _StatusChip(
                 label: l10n.traceConsoleEventCount(snapshot.items.length),
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              l10n.agentPlatformSubtitle,
+              l10n.agentConsoleSubtitle,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -46,7 +46,10 @@ class AgentPlatformPanel extends ConsumerWidget {
                   label: l10n.traceConsoleRunCount(snapshot.runCount),
                 ),
                 _StatusChip(
-                  label: l10n.traceConsoleWarningCount(snapshot.warningCount),
+                  label: l10n.agentConsoleTaskCount(snapshot.taskCount),
+                ),
+                _StatusChip(
+                  label: l10n.agentConsoleFailedCount(snapshot.summary.failed),
                 ),
                 OutlinedButton.icon(
                   key: const Key('agent-platform-open-traces-button'),
@@ -109,9 +112,11 @@ class _TracePreview extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  item.message.isEmpty
+                  item.message.isRedacted
+                      ? context.l10n.traceConsoleRedactedValue
+                      : item.message.value.isEmpty
                       ? context.l10n.traceConsoleNoMessage
-                      : item.message,
+                      : item.message.value,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodySmall,

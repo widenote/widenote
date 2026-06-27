@@ -707,6 +707,18 @@ final class _CaptureAgent implements runtime.AgentHandler {
             'text': summary.text,
             'source_event_id': event.id,
             'source_excerpt': previewText(text),
+            'source_refs': <Object?>[
+              <String, Object?>{
+                'kind': 'capture',
+                'id': subject.id,
+                'excerpt': previewText(text),
+              },
+              <String, Object?>{
+                'kind': 'event',
+                'id': event.id,
+                'excerpt': previewText(text),
+              },
+            ],
             if (_modelMetadataString(summary, 'memory_type') != null)
               'memory_type': _modelMetadataString(summary, 'memory_type'),
             if (_modelMetadataValue(summary, 'confidence') != null)

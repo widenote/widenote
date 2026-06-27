@@ -838,6 +838,119 @@ final class PermissionGrantRecord {
   }
 }
 
+final class RuntimeApprovalRecord {
+  const RuntimeApprovalRecord({
+    required this.id,
+    required this.packId,
+    required this.agentId,
+    required this.taskId,
+    required this.runId,
+    required this.toolName,
+    required this.runMode,
+    required this.toolAccess,
+    required this.toolRisk,
+    required this.isExternal,
+    required this.requestedAt,
+    this.schemaVersion = 1,
+    this.requiredPermissions = const <Object?>[],
+    this.inputKeys = const <Object?>[],
+    this.sourceRefs = const <Object?>[],
+    this.actionSummary = '',
+    this.status = 'pending',
+    this.expiresAt,
+    this.decidedAt,
+    this.decision,
+    this.reason,
+    this.payload = const <String, Object?>{},
+  });
+
+  final String id;
+  final int schemaVersion;
+  final String packId;
+  final String agentId;
+  final String taskId;
+  final String runId;
+  final String toolName;
+  final String runMode;
+  final String toolAccess;
+  final String toolRisk;
+  final bool isExternal;
+  final JsonList requiredPermissions;
+  final JsonList inputKeys;
+  final JsonList sourceRefs;
+  final String actionSummary;
+  final String status;
+  final DateTime requestedAt;
+  final DateTime? expiresAt;
+  final DateTime? decidedAt;
+  final String? decision;
+  final String? reason;
+  final JsonMap payload;
+
+  bool get isPending => status == 'pending';
+
+  bool isPendingAt(DateTime now) {
+    if (!isPending) {
+      return false;
+    }
+    final expires = expiresAt;
+    return expires == null || expires.isAfter(now.toUtc());
+  }
+
+  RuntimeApprovalRecord copyWith({
+    int? schemaVersion,
+    String? packId,
+    String? agentId,
+    String? taskId,
+    String? runId,
+    String? toolName,
+    String? runMode,
+    String? toolAccess,
+    String? toolRisk,
+    bool? isExternal,
+    JsonList? requiredPermissions,
+    JsonList? inputKeys,
+    JsonList? sourceRefs,
+    String? actionSummary,
+    String? status,
+    DateTime? requestedAt,
+    DateTime? expiresAt,
+    DateTime? decidedAt,
+    String? decision,
+    String? reason,
+    JsonMap? payload,
+    bool clearExpiresAt = false,
+    bool clearDecidedAt = false,
+    bool clearDecision = false,
+    bool clearReason = false,
+  }) {
+    return RuntimeApprovalRecord(
+      id: id,
+      schemaVersion: schemaVersion ?? this.schemaVersion,
+      packId: packId ?? this.packId,
+      agentId: agentId ?? this.agentId,
+      taskId: taskId ?? this.taskId,
+      runId: runId ?? this.runId,
+      toolName: toolName ?? this.toolName,
+      runMode: runMode ?? this.runMode,
+      toolAccess: toolAccess ?? this.toolAccess,
+      toolRisk: toolRisk ?? this.toolRisk,
+      isExternal: isExternal ?? this.isExternal,
+      requiredPermissions: requiredPermissions ?? this.requiredPermissions,
+      inputKeys: inputKeys ?? this.inputKeys,
+      sourceRefs: sourceRefs ?? this.sourceRefs,
+      actionSummary: actionSummary ?? this.actionSummary,
+      status: status ?? this.status,
+      requestedAt: requestedAt ?? this.requestedAt,
+      expiresAt: clearExpiresAt ? null : expiresAt ?? this.expiresAt,
+      decidedAt: clearDecidedAt ? null : decidedAt ?? this.decidedAt,
+      decision: clearDecision ? null : decision ?? this.decision,
+      reason: clearReason ? null : reason ?? this.reason,
+      payload: payload ?? this.payload,
+    );
+  }
+}
+
 final class ContextPacketCacheRecord {
   const ContextPacketCacheRecord({
     required this.id,

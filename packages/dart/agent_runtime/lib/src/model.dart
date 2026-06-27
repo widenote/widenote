@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'package:widenote_core/widenote_core.dart';
 
 import 'event.dart';
+import 'run_mode.dart';
 import 'task.dart';
 
 final class ModelRequest {
@@ -63,6 +64,7 @@ final class AgentContext {
     required this.run,
     required this.model,
     required this.tools,
+    this.runMode = RunMode.auto,
   });
 
   final String packId;
@@ -71,6 +73,7 @@ final class AgentContext {
   final RuntimeRun run;
   final ModelClient model;
   final ToolInvoker tools;
+  final RunMode runMode;
 
   WnEventDraft emit({
     required String type,

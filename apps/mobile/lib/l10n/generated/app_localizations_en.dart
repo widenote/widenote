@@ -1067,14 +1067,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pluginsBackupStatus => 'local-first';
 
   @override
-  String get pluginsTraceConsoleTitle => 'Log Center';
+  String get pluginsTraceConsoleTitle => 'Agent Console';
 
   @override
   String get pluginsTraceConsoleSubtitle =>
-      'Review pack run logs, permissions, and generated outputs.';
+      'Inspect local runs, approvals, traces, and pack output.';
 
   @override
-  String get pluginsTraceConsoleStatus => 'log-ready';
+  String get pluginsTraceConsoleStatus => 'local';
 
   @override
   String get packLibraryTitle => 'Pack Library';
@@ -1114,6 +1114,137 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String packLibraryEnabledCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count enabled',
+      one: '1 enabled',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String packLibraryDisabledCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count disabled',
+      one: '1 disabled',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get packLibraryDisableImpact =>
+      'Disabling affects future local tasks only. It does not delete records, traces, or derived outputs already stored on this device.';
+
+  @override
+  String packLibraryPublisher(String publisher) {
+    return 'publisher: $publisher';
+  }
+
+  @override
+  String packLibraryEdition(String edition) {
+    return 'edition: $edition';
+  }
+
+  @override
+  String packLibraryEntrypoint(String entrypoint) {
+    return 'runtime: $entrypoint';
+  }
+
+  @override
+  String packLibrarySubscriptionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count subscriptions',
+      one: '1 subscription',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String packLibraryFailureCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count failures',
+      one: '1 failure',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String packLibraryPermissionDecisionSummary(
+    int granted,
+    int denied,
+    int revoked,
+  ) {
+    return 'permissions: $granted granted / $denied denied / $revoked revoked';
+  }
+
+  @override
+  String packLibraryLastFailure(String message) {
+    return 'Last failure: $message';
+  }
+
+  @override
+  String get packLibraryStatusEnabled => 'enabled';
+
+  @override
+  String get packLibraryStatusDisabled => 'disabled';
+
+  @override
+  String packLibraryStatusUnknown(String status) {
+    return 'status: $status';
+  }
+
+  @override
+  String get packLibraryRuntimeIdle => 'runtime: idle';
+
+  @override
+  String get packLibraryRuntimeQueued => 'runtime: queued';
+
+  @override
+  String get packLibraryRuntimeRunning => 'runtime: running';
+
+  @override
+  String get packLibraryRuntimeSucceeded => 'runtime: succeeded';
+
+  @override
+  String get packLibraryRuntimeFailed => 'runtime: failed';
+
+  @override
+  String get packLibraryRuntimeDenied => 'runtime: denied';
+
+  @override
+  String get packLibraryRuntimeCanceled => 'runtime: canceled';
+
+  @override
+  String get packLibraryRuntimeBlocked => 'runtime: blocked';
+
+  @override
+  String packLibraryRuntimeUnknown(String status) {
+    return 'runtime: $status';
+  }
+
+  @override
+  String get packDefaultName => 'Default Capture Loop';
+
+  @override
+  String get packDefaultDescription =>
+      'Conservative built-in pack for capture cards, Memory candidates, and lightweight insight.';
+
+  @override
+  String get packTodoName => 'Todo Extraction Loop';
+
+  @override
+  String get packTodoDescription =>
+      'Built-in pack for source-linked todo suggestions.';
+
+  @override
   String get permissionGateTitle => 'Permission Gate';
 
   @override
@@ -1151,18 +1282,82 @@ class AppLocalizationsEn extends AppLocalizations {
   String get permissionGateActionDeferred => 'Deferred';
 
   @override
-  String get agentPlatformTitle => 'Agent Observability';
+  String get permissionGateImpactAvailable =>
+      'Grant or deny changes future local runs only.';
+
+  @override
+  String get permissionGateImpactGranted =>
+      'Future local runs may use this permission until you revoke it.';
+
+  @override
+  String get permissionGateImpactDenied =>
+      'Future local runs needing this permission are blocked; existing records and traces remain.';
+
+  @override
+  String get permissionGateImpactRevoked =>
+      'Revocation blocks future use; existing records, traces, and derived outputs remain for review.';
+
+  @override
+  String get permissionGateImpactDeferred =>
+      'This high-risk or external capability is disabled in the local L3 slice.';
+
+  @override
+  String get permissionGateRiskLow => 'low risk';
+
+  @override
+  String get permissionGateRiskMedium => 'medium risk';
+
+  @override
+  String get permissionGateRiskHigh => 'high risk';
+
+  @override
+  String get permissionGateCommunityPacks => 'community packs';
+
+  @override
+  String get permissionGateMediaPacks => 'media packs';
+
+  @override
+  String get permissionGateContextPacks => 'context packs';
+
+  @override
+  String get permissionGateDeferredSandbox =>
+      'Deferred until sandbox approval exists.';
+
+  @override
+  String get permissionGateDeferredExternalTools =>
+      'Deferred until external-tool permission design exists.';
+
+  @override
+  String get permissionGateDeferredPlatform =>
+      'Deferred until platform permission review exists.';
+
+  @override
+  String get permissionGateDeferredPrivacy =>
+      'Deferred until privacy decision coverage exists.';
+
+  @override
+  String get agentPlatformTitle => 'Agent Console';
 
   @override
   String get agentPlatformSubtitle =>
-      'Read-only local runtime evidence from real log events.';
+      'Local runtime control evidence from runs, tasks, approvals, and traces.';
 
   @override
-  String get traceConsoleTitle => 'Log Center';
+  String get agentConsoleTitle => 'Agent Console';
+
+  @override
+  String get agentConsoleSubtitle =>
+      'Local-first control for runs, tasks, approvals, packs, and redacted traces.';
+
+  @override
+  String get traceConsoleTitle => 'Agent Console';
 
   @override
   String get traceConsoleSubtitle =>
-      'Review local Agent Runtime logs, permissions, and generated outputs.';
+      'Review local Agent Runtime runs, permissions, and generated outputs.';
+
+  @override
+  String get agentConsoleSummaryTitle => 'Local control summary';
 
   @override
   String get traceConsoleSummaryTitle => 'Runtime summary';
@@ -1186,7 +1381,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get traceConsoleRefreshButton => 'Refresh';
 
   @override
-  String get traceConsoleOpenButton => 'Open log center';
+  String get traceConsoleOpenButton => 'Open Agent Console';
 
   @override
   String get traceConsoleEventsTitle => 'Events';
@@ -1217,6 +1412,216 @@ class AppLocalizationsEn extends AppLocalizations {
   String traceConsoleDuration(num duration) {
     return 'duration: $duration ms';
   }
+
+  @override
+  String agentConsoleTotalCount(int count) {
+    return 'Total: $count';
+  }
+
+  @override
+  String agentConsoleActiveCount(int count) {
+    return 'Active: $count';
+  }
+
+  @override
+  String agentConsoleFailedCount(int count) {
+    return 'Failed: $count';
+  }
+
+  @override
+  String agentConsoleDeniedCount(int count) {
+    return 'Denied: $count';
+  }
+
+  @override
+  String agentConsoleBlockedCount(int count) {
+    return 'Blocked: $count';
+  }
+
+  @override
+  String agentConsoleTaskCount(int count) {
+    return 'Tasks: $count';
+  }
+
+  @override
+  String agentConsolePendingApprovalCount(int count) {
+    return 'Approvals: $count';
+  }
+
+  @override
+  String get agentConsoleFilterTitle => 'Status filter';
+
+  @override
+  String get agentConsoleFilterAll => 'All';
+
+  @override
+  String get agentConsoleFilterActive => 'Active';
+
+  @override
+  String get agentConsoleFilterFailed => 'Failed';
+
+  @override
+  String get agentConsoleFilterDenied => 'Denied';
+
+  @override
+  String get agentConsoleFilterBlocked => 'Blocked';
+
+  @override
+  String get approvalQueueTitle => 'Approval Queue';
+
+  @override
+  String get approvalQueueEmpty => 'No pending local action approvals.';
+
+  @override
+  String get approvalQueueScaffoldBody =>
+      'Approval requests will stay paused here once a persisted approval store is available. This page does not approve or deny fake runtime work.';
+
+  @override
+  String get agentConsoleRunsTitle => 'Runs';
+
+  @override
+  String get agentConsoleRunsEmpty => 'No local runs match this filter.';
+
+  @override
+  String get agentConsoleTasksTitle => 'Tasks';
+
+  @override
+  String get agentConsoleTasksEmpty => 'No local tasks match this filter.';
+
+  @override
+  String agentConsoleStatus(String status) {
+    return 'status: $status';
+  }
+
+  @override
+  String agentConsoleSeverity(String severity) {
+    return 'severity: $severity';
+  }
+
+  @override
+  String agentConsoleTask(String taskId) {
+    return 'task: $taskId';
+  }
+
+  @override
+  String agentConsoleEvent(String eventId) {
+    return 'event: $eventId';
+  }
+
+  @override
+  String agentConsoleParentTrace(String traceId) {
+    return 'parent trace: $traceId';
+  }
+
+  @override
+  String agentConsoleAttempt(int attempt) {
+    return 'attempt: $attempt';
+  }
+
+  @override
+  String agentConsoleTaskAttempts(int attempts, int maxAttempts) {
+    return 'attempts: $attempts/$maxAttempts';
+  }
+
+  @override
+  String agentConsoleMissingDependencies(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count missing dependencies',
+      one: '1 missing dependency',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String agentConsoleOutputCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count outputs',
+      one: '1 output',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String agentConsoleStarted(String time) {
+    return 'started: $time';
+  }
+
+  @override
+  String agentConsoleCompleted(String time) {
+    return 'completed: $time';
+  }
+
+  @override
+  String agentConsoleCreated(String time) {
+    return 'created: $time';
+  }
+
+  @override
+  String get agentConsoleNotCompleted => 'not completed';
+
+  @override
+  String agentConsoleError(String message) {
+    return 'Error: $message';
+  }
+
+  @override
+  String get agentConsoleRetryAction => 'Retry';
+
+  @override
+  String get agentConsoleCancelAction => 'Cancel';
+
+  @override
+  String get agentConsoleControlsUnavailable =>
+      'Retry and cancel are disabled until the mobile app exposes a live RuntimeKernel control provider. No fake success is performed here.';
+
+  @override
+  String get agentConsoleRunTracesTitle => 'Trace list';
+
+  @override
+  String get agentConsoleRunNoTraces => 'No traces recorded for this run yet.';
+
+  @override
+  String get agentConsoleRunModeReadOnly => 'run mode: read-only';
+
+  @override
+  String get agentConsoleRunModeConfirm => 'run mode: confirm';
+
+  @override
+  String get agentConsoleRunModeAuto => 'run mode: auto';
+
+  @override
+  String get agentConsoleRunModeUnknown => 'run mode: unknown';
+
+  @override
+  String get traceConsoleOpenSourceButton => 'Open source';
+
+  @override
+  String get traceConsoleNoSource =>
+      'No source reference is available for this trace.';
+
+  @override
+  String get traceConsolePayloadTitle => 'Redacted payload';
+
+  @override
+  String get traceConsolePayloadEmpty => 'No payload recorded.';
+
+  @override
+  String traceConsolePayloadRedactedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sensitive fields redacted',
+      one: '1 sensitive field redacted',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get traceConsoleRedactedValue => '[redacted]';
 
   @override
   String get providerSettingsTitle => 'Model Providers';

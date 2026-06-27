@@ -237,6 +237,90 @@ void main() {
       expect(response.usage.inputTokens, 5);
       expect(response.metadata['finish_reason'], 'end_turn');
     });
+
+    test(
+      'accepts Anthropic-compatible base endpoints by appending messages path',
+      () async {
+        final http = FakeModelProviderHttpClient(
+          responses: <ModelProviderHttpResponse>[
+            ModelProviderHttpResponse(
+              statusCode: 200,
+              body: <String, Object?>{
+                'content': <Object?>[
+                  <String, Object?>{'type': 'text', 'text': 'DeepSeek OK'},
+                ],
+              },
+            ),
+            ModelProviderHttpResponse(
+              statusCode: 200,
+              body: <String, Object?>{
+                'content': <Object?>[
+                  <String, Object?>{'type': 'text', 'text': 'MIMO OK'},
+                ],
+              },
+            ),
+            ModelProviderHttpResponse(
+              statusCode: 200,
+              body: <String, Object?>{
+                'content': <Object?>[
+                  <String, Object?>{'type': 'text', 'text': 'V1 OK'},
+                ],
+              },
+            ),
+          ],
+        );
+        final deepSeekProvider = AnthropicCompatibleModelProvider(
+          config: _config(
+            ModelProviderKind.anthropicCompatible,
+            endpoint: Uri.parse('https://api.deepseek.com/anthropic'),
+            model: 'deepseek-v4-flash',
+          ),
+          httpClient: http,
+        );
+        final mimoProvider = AnthropicCompatibleModelProvider(
+          config: _config(
+            ModelProviderKind.mimo,
+            endpoint: Uri.parse(
+              'https://token-plan-sgp.xiaomimimo.com/anthropic/v1/messages',
+            ),
+          ),
+          httpClient: http,
+        );
+        final versionedProvider = AnthropicCompatibleModelProvider(
+          config: _config(
+            ModelProviderKind.anthropicCompatible,
+            endpoint: Uri.parse('https://example.invalid/anthropic/v1'),
+          ),
+          httpClient: http,
+        );
+
+        expect(
+          (await deepSeekProvider.complete(ModelRequest.text('hello'))).text,
+          'DeepSeek OK',
+        );
+        expect(
+          (await mimoProvider.complete(ModelRequest.text('hello'))).text,
+          'MIMO OK',
+        );
+        expect(
+          (await versionedProvider.complete(ModelRequest.text('hello'))).text,
+          'V1 OK',
+        );
+
+        expect(
+          http.requests[0].endpoint.toString(),
+          'https://api.deepseek.com/anthropic/v1/messages',
+        );
+        expect(
+          http.requests[1].endpoint.toString(),
+          'https://token-plan-sgp.xiaomimimo.com/anthropic/v1/messages',
+        );
+        expect(
+          http.requests[2].endpoint.toString(),
+          'https://example.invalid/anthropic/v1/messages',
+        );
+      },
+    );
   });
 
   group('modelProviderFromConfig', () {
@@ -260,14 +344,20 @@ void main() {
   });
 }
 
-ModelProviderConfig _config(ModelProviderKind kind) {
+ModelProviderConfig _config(
+  ModelProviderKind kind, {
+  Uri? endpoint,
+  String model = 'provider-chat',
+}) {
   return ModelProviderConfig.preset(
     id: kind == ModelProviderKind.mimo ? 'mimo' : 'openai-compatible',
     kind: kind,
-    endpoint: kind.usesAnthropicMessages
-        ? Uri.parse('https://example.invalid/v1/messages')
-        : Uri.parse('https://example.invalid/v1/chat/completions'),
-    model: 'provider-chat',
+    endpoint:
+        endpoint ??
+        (kind.usesAnthropicMessages
+            ? Uri.parse('https://example.invalid/v1/messages')
+            : Uri.parse('https://example.invalid/v1/chat/completions')),
+    model: model,
     apiKey: _runtimeCredential(),
   );
 }

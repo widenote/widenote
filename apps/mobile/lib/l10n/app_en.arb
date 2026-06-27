@@ -479,9 +479,9 @@
   "pluginsBackupTitle": "Backup",
   "pluginsBackupSubtitle": "Export or import the local WideNote backup.",
   "pluginsBackupStatus": "local-first",
-  "pluginsTraceConsoleTitle": "Log Center",
-  "pluginsTraceConsoleSubtitle": "Review pack run logs, permissions, and generated outputs.",
-  "pluginsTraceConsoleStatus": "log-ready",
+  "pluginsTraceConsoleTitle": "Agent Console",
+  "pluginsTraceConsoleSubtitle": "Inspect local runs, approvals, traces, and pack output.",
+  "pluginsTraceConsoleStatus": "local",
   "packLibraryTitle": "Pack Library",
   "packLibrarySubtitle": "Inspect built-in official Agent Packs before dynamic installs exist.",
   "packLibraryInstalledTitle": "Installed official packs",
@@ -509,6 +509,115 @@
       }
     }
   },
+  "packLibraryEnabledCount": "{count, plural, =1{1 enabled} other{{count} enabled}}",
+  "@packLibraryEnabledCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "packLibraryDisabledCount": "{count, plural, =1{1 disabled} other{{count} disabled}}",
+  "@packLibraryDisabledCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "packLibraryDisableImpact": "Disabling affects future local tasks only. It does not delete records, traces, or derived outputs already stored on this device.",
+  "packLibraryPublisher": "publisher: {publisher}",
+  "@packLibraryPublisher": {
+    "placeholders": {
+      "publisher": {
+        "type": "String"
+      }
+    }
+  },
+  "packLibraryEdition": "edition: {edition}",
+  "@packLibraryEdition": {
+    "placeholders": {
+      "edition": {
+        "type": "String"
+      }
+    }
+  },
+  "packLibraryEntrypoint": "runtime: {entrypoint}",
+  "@packLibraryEntrypoint": {
+    "placeholders": {
+      "entrypoint": {
+        "type": "String"
+      }
+    }
+  },
+  "packLibrarySubscriptionCount": "{count, plural, =1{1 subscription} other{{count} subscriptions}}",
+  "@packLibrarySubscriptionCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "packLibraryFailureCount": "{count, plural, =1{1 failure} other{{count} failures}}",
+  "@packLibraryFailureCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "packLibraryPermissionDecisionSummary": "permissions: {granted} granted / {denied} denied / {revoked} revoked",
+  "@packLibraryPermissionDecisionSummary": {
+    "placeholders": {
+      "granted": {
+        "type": "int"
+      },
+      "denied": {
+        "type": "int"
+      },
+      "revoked": {
+        "type": "int"
+      }
+    }
+  },
+  "packLibraryLastFailure": "Last failure: {message}",
+  "@packLibraryLastFailure": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "packLibraryStatusEnabled": "enabled",
+  "packLibraryStatusDisabled": "disabled",
+  "packLibraryStatusUnknown": "status: {status}",
+  "@packLibraryStatusUnknown": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "packLibraryRuntimeIdle": "runtime: idle",
+  "packLibraryRuntimeQueued": "runtime: queued",
+  "packLibraryRuntimeRunning": "runtime: running",
+  "packLibraryRuntimeSucceeded": "runtime: succeeded",
+  "packLibraryRuntimeFailed": "runtime: failed",
+  "packLibraryRuntimeDenied": "runtime: denied",
+  "packLibraryRuntimeCanceled": "runtime: canceled",
+  "packLibraryRuntimeBlocked": "runtime: blocked",
+  "packLibraryRuntimeUnknown": "runtime: {status}",
+  "@packLibraryRuntimeUnknown": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "packDefaultName": "Default Capture Loop",
+  "packDefaultDescription": "Conservative built-in pack for capture cards, Memory candidates, and lightweight insight.",
+  "packTodoName": "Todo Extraction Loop",
+  "packTodoDescription": "Built-in pack for source-linked todo suggestions.",
   "permissionGateTitle": "Permission Gate",
   "permissionGateSubtitle": "Review local pack permission state and deferred high-risk capabilities.",
   "permissionGateGrantedTitle": "Built-in and available permissions",
@@ -521,10 +630,28 @@
   "permissionGateActionDeny": "Deny",
   "permissionGateActionRevoke": "Revoke",
   "permissionGateActionDeferred": "Deferred",
-  "agentPlatformTitle": "Agent Observability",
-  "agentPlatformSubtitle": "Read-only local runtime evidence from real log events.",
-  "traceConsoleTitle": "Log Center",
-  "traceConsoleSubtitle": "Review local Agent Runtime logs, permissions, and generated outputs.",
+  "permissionGateImpactAvailable": "Grant or deny changes future local runs only.",
+  "permissionGateImpactGranted": "Future local runs may use this permission until you revoke it.",
+  "permissionGateImpactDenied": "Future local runs needing this permission are blocked; existing records and traces remain.",
+  "permissionGateImpactRevoked": "Revocation blocks future use; existing records, traces, and derived outputs remain for review.",
+  "permissionGateImpactDeferred": "This high-risk or external capability is disabled in the local L3 slice.",
+  "permissionGateRiskLow": "low risk",
+  "permissionGateRiskMedium": "medium risk",
+  "permissionGateRiskHigh": "high risk",
+  "permissionGateCommunityPacks": "community packs",
+  "permissionGateMediaPacks": "media packs",
+  "permissionGateContextPacks": "context packs",
+  "permissionGateDeferredSandbox": "Deferred until sandbox approval exists.",
+  "permissionGateDeferredExternalTools": "Deferred until external-tool permission design exists.",
+  "permissionGateDeferredPlatform": "Deferred until platform permission review exists.",
+  "permissionGateDeferredPrivacy": "Deferred until privacy decision coverage exists.",
+  "agentPlatformTitle": "Agent Console",
+  "agentPlatformSubtitle": "Local runtime control evidence from runs, tasks, approvals, and traces.",
+  "agentConsoleTitle": "Agent Console",
+  "agentConsoleSubtitle": "Local-first control for runs, tasks, approvals, packs, and redacted traces.",
+  "traceConsoleTitle": "Agent Console",
+  "traceConsoleSubtitle": "Review local Agent Runtime runs, permissions, and generated outputs.",
+  "agentConsoleSummaryTitle": "Local control summary",
   "traceConsoleSummaryTitle": "Runtime summary",
   "traceConsoleEventCount": "Log events: {count}",
   "@traceConsoleEventCount": {
@@ -551,7 +678,7 @@
     }
   },
   "traceConsoleRefreshButton": "Refresh",
-  "traceConsoleOpenButton": "Open log center",
+  "traceConsoleOpenButton": "Open Agent Console",
   "traceConsoleEventsTitle": "Events",
   "traceConsoleEmpty": "No runtime logs yet. Capture or pack runs will appear here.",
   "traceConsoleNoMessage": "No message recorded.",
@@ -587,6 +714,205 @@
       }
     }
   },
+  "agentConsoleTotalCount": "Total: {count}",
+  "@agentConsoleTotalCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentConsoleActiveCount": "Active: {count}",
+  "@agentConsoleActiveCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentConsoleFailedCount": "Failed: {count}",
+  "@agentConsoleFailedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentConsoleDeniedCount": "Denied: {count}",
+  "@agentConsoleDeniedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentConsoleBlockedCount": "Blocked: {count}",
+  "@agentConsoleBlockedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentConsoleTaskCount": "Tasks: {count}",
+  "@agentConsoleTaskCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentConsolePendingApprovalCount": "Approvals: {count}",
+  "@agentConsolePendingApprovalCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentConsoleFilterTitle": "Status filter",
+  "agentConsoleFilterAll": "All",
+  "agentConsoleFilterActive": "Active",
+  "agentConsoleFilterFailed": "Failed",
+  "agentConsoleFilterDenied": "Denied",
+  "agentConsoleFilterBlocked": "Blocked",
+  "approvalQueueTitle": "Approval Queue",
+  "approvalQueueEmpty": "No pending local action approvals.",
+  "approvalQueueScaffoldBody": "Approval requests will stay paused here once a persisted approval store is available. This page does not approve or deny fake runtime work.",
+  "agentConsoleRunsTitle": "Runs",
+  "agentConsoleRunsEmpty": "No local runs match this filter.",
+  "agentConsoleTasksTitle": "Tasks",
+  "agentConsoleTasksEmpty": "No local tasks match this filter.",
+  "agentConsoleStatus": "status: {status}",
+  "@agentConsoleStatus": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "agentConsoleSeverity": "severity: {severity}",
+  "@agentConsoleSeverity": {
+    "placeholders": {
+      "severity": {
+        "type": "String"
+      }
+    }
+  },
+  "agentConsoleTask": "task: {taskId}",
+  "@agentConsoleTask": {
+    "placeholders": {
+      "taskId": {
+        "type": "String"
+      }
+    }
+  },
+  "agentConsoleEvent": "event: {eventId}",
+  "@agentConsoleEvent": {
+    "placeholders": {
+      "eventId": {
+        "type": "String"
+      }
+    }
+  },
+  "agentConsoleParentTrace": "parent trace: {traceId}",
+  "@agentConsoleParentTrace": {
+    "placeholders": {
+      "traceId": {
+        "type": "String"
+      }
+    }
+  },
+  "agentConsoleAttempt": "attempt: {attempt}",
+  "@agentConsoleAttempt": {
+    "placeholders": {
+      "attempt": {
+        "type": "int"
+      }
+    }
+  },
+  "agentConsoleTaskAttempts": "attempts: {attempts}/{maxAttempts}",
+  "@agentConsoleTaskAttempts": {
+    "placeholders": {
+      "attempts": {
+        "type": "int"
+      },
+      "maxAttempts": {
+        "type": "int"
+      }
+    }
+  },
+  "agentConsoleMissingDependencies": "{count, plural, =1{1 missing dependency} other{{count} missing dependencies}}",
+  "@agentConsoleMissingDependencies": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentConsoleOutputCount": "{count, plural, =1{1 output} other{{count} outputs}}",
+  "@agentConsoleOutputCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentConsoleStarted": "started: {time}",
+  "@agentConsoleStarted": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "agentConsoleCompleted": "completed: {time}",
+  "@agentConsoleCompleted": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "agentConsoleCreated": "created: {time}",
+  "@agentConsoleCreated": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "agentConsoleNotCompleted": "not completed",
+  "agentConsoleError": "Error: {message}",
+  "@agentConsoleError": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "agentConsoleRetryAction": "Retry",
+  "agentConsoleCancelAction": "Cancel",
+  "agentConsoleControlsUnavailable": "Retry and cancel are disabled until the mobile app exposes a live RuntimeKernel control provider. No fake success is performed here.",
+  "agentConsoleRunTracesTitle": "Trace list",
+  "agentConsoleRunNoTraces": "No traces recorded for this run yet.",
+  "agentConsoleRunModeReadOnly": "run mode: read-only",
+  "agentConsoleRunModeConfirm": "run mode: confirm",
+  "agentConsoleRunModeAuto": "run mode: auto",
+  "agentConsoleRunModeUnknown": "run mode: unknown",
+  "traceConsoleOpenSourceButton": "Open source",
+  "traceConsoleNoSource": "No source reference is available for this trace.",
+  "traceConsolePayloadTitle": "Redacted payload",
+  "traceConsolePayloadEmpty": "No payload recorded.",
+  "traceConsolePayloadRedactedCount": "{count, plural, =1{1 sensitive field redacted} other{{count} sensitive fields redacted}}",
+  "@traceConsolePayloadRedactedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "traceConsoleRedactedValue": "[redacted]",
   "providerSettingsTitle": "Model Providers",
   "providerSettingsSubtitle": "Choose how WideNote agents reach models, what the default runtime model is, and which capabilities are safe to use.",
   "providerSettingsAdd": "Add provider",
