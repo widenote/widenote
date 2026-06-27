@@ -297,6 +297,33 @@ void main() {
     expect(database.modelProviderConfigs.readAll(status: 'active'), isEmpty);
   });
 
+  testWidgets('provider settings localizes delete confirmation in Chinese', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    await _pumpSettings(tester, database: database, locale: const Locale('zh'));
+
+    await _addProvider(
+      tester,
+      displayName: 'Kimi Main',
+      endpoint: 'https://example.invalid/v1/chat/completions',
+      model: 'kimi-chat',
+      kindLabel: 'Kimi',
+    );
+
+    await tester.ensureVisible(
+      find.byKey(const Key('provider-delete-kimi-main')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('provider-delete-kimi-main')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('删除提供商？'), findsOneWidget);
+    expect(find.text('从本地模型设置中移除“Kimi Main”。'), findsOneWidget);
+    expect(find.text('Delete provider?'), findsNothing);
+  });
+
   testWidgets('provider kind picker does not expose fake demo providers', (
     tester,
   ) async {
@@ -413,6 +440,7 @@ Future<void> _pumpSettings(
   WidgetTester tester, {
   required WideNoteLocalDatabase database,
   List<Override> overrides = const <Override>[],
+  Locale locale = const Locale('en'),
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -420,10 +448,11 @@ Future<void> _pumpSettings(
         localDatabaseProvider.overrideWithValue(database),
         ...overrides,
       ],
-      child: const MaterialApp(
+      child: MaterialApp(
+        locale: locale,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(body: ModelProviderSettingsPage()),
+        home: const Scaffold(body: ModelProviderSettingsPage()),
       ),
     ),
   );

@@ -82,7 +82,12 @@ class CaptureConsole extends StatelessWidget {
             ),
             if (inputState.errorMessage != null) ...[
               const SizedBox(height: 8),
-              _CaptureErrorLine(text: inputState.errorMessage!),
+              _CaptureErrorLine(
+                text: localizedCaptureError(
+                  context.l10n,
+                  inputState.errorMessage!,
+                ),
+              ),
             ],
             if (inputState.hasAttachments) ...[
               const SizedBox(height: 12),
@@ -390,7 +395,7 @@ String _attachmentStateLine(
       attachment.previewText,
     ),
     CaptureAttachmentState.blocked => l10n.captureAttachmentBlocked(
-      reason ?? 'asset safety',
+      localizedAttachmentReason(l10n, reason),
     ),
   };
 }

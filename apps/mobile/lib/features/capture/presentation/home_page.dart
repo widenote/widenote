@@ -97,6 +97,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final captureState = ref.watch(captureControllerProvider);
     final inputState = ref.watch(captureInputControllerProvider);
 
@@ -115,7 +116,9 @@ class _HomePageState extends ConsumerState<HomePage> {
           const SizedBox(height: 12),
         ],
         if (captureState.errorMessage != null) ...[
-          HomeErrorLine(text: captureState.errorMessage!),
+          HomeErrorLine(
+            text: localizedCaptureError(l10n, captureState.errorMessage!),
+          ),
           const SizedBox(height: 12),
         ],
         _HomeCaptureActions(
@@ -134,7 +137,9 @@ class _HomePageState extends ConsumerState<HomePage> {
         ],
         if (inputState.errorMessage != null && !_isCaptureSheetOpen) ...[
           const SizedBox(height: 12),
-          HomeErrorLine(text: inputState.errorMessage!),
+          HomeErrorLine(
+            text: localizedCaptureError(l10n, inputState.errorMessage!),
+          ),
         ],
         const SizedBox(height: 16),
         _HomeSummaryStrip(state: captureState),
@@ -713,7 +718,8 @@ class _MemorySection extends StatelessWidget {
                     key: Key('memory-row-${memory.id}'),
                     title: _localizedMemoryTitle(l10n, memory.title),
                     subtitle:
-                        '${memory.summary} · ${memory.sourceRecordId} · '
+                        '${memory.summary} · '
+                        '${localizedSourceLabel(l10n, memory.sourceRecordId)} · '
                         '${_localizedConfidenceLabel(l10n, memory.confidenceLabel)} · '
                         '${_localizedStatusLabel(l10n, memory.statusLabel)}',
                     icon: Icons.auto_awesome_outlined,

@@ -113,12 +113,27 @@ void main() {
     expect(find.byKey(const Key('memory-source-destination')), findsOneWidget);
     expect(find.text('capture-memory-page'), findsOneWidget);
   });
+
+  testWidgets('memory page localizes derived tags and source labels', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    _seedMemory(database);
+    await _pumpMemoryPage(tester, database, locale: const Locale('zh'));
+
+    expect(find.text('项目'), findsOneWidget);
+    expect(find.text('低敏感度'), findsOneWidget);
+    expect(find.text('记录：capture-memory-page'), findsOneWidget);
+    expect(find.text('capture: capture-memory-page'), findsNothing);
+  });
 }
 
 Future<void> _pumpMemoryPage(
   WidgetTester tester,
-  WideNoteLocalDatabase database,
-) async {
+  WideNoteLocalDatabase database, {
+  Locale locale = const Locale('en'),
+}) async {
   final router = GoRouter(
     initialLocation: '/',
     routes: [
@@ -140,7 +155,7 @@ Future<void> _pumpMemoryPage(
     ProviderScope(
       overrides: [localDatabaseProvider.overrideWithValue(database)],
       child: MaterialApp.router(
-        locale: Locale('en'),
+        locale: locale,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         routerConfig: router,

@@ -424,7 +424,7 @@ class _SourceTag extends StatelessWidget {
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 220),
               child: Text(
-                '${ref.title} · ${ref.sourceLabel}',
+                '${ref.title} · ${localizedSourceLabel(context.l10n, ref.sourceLabel)}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.labelSmall,
@@ -487,7 +487,11 @@ class _ErrorBanner extends StatelessWidget {
               color: Theme.of(context).colorScheme.error,
             ),
             const SizedBox(width: 8),
-            Expanded(child: Text('${l10n.chatSendFailed}: $message')),
+            Expanded(
+              child: Text(
+                '${l10n.chatSendFailed}: ${localizedChatError(l10n, message)}',
+              ),
+            ),
             Wrap(
               spacing: 4,
               runSpacing: 4,

@@ -22,7 +22,9 @@ void main() {
     expect(find.byKey(const Key('quick-capture-field')), findsNothing);
     await _openNewRecordSheet(tester);
 
-    await tester.tap(find.byKey(const Key('record-capture-button')));
+    final recordButton = find.byKey(const Key('record-capture-button'));
+    await _scrollHomeActionIntoView(tester, recordButton);
+    await tester.tap(recordButton);
     await tester.pumpAndSettle();
     expect(find.text('Add text or an attachment before saving.'), findsWidgets);
 
@@ -33,7 +35,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Add text or an attachment before saving.'), findsNothing);
 
-    await tester.tap(find.byKey(const Key('record-capture-button')));
+    await _scrollHomeActionIntoView(tester, recordButton);
+    await tester.tap(recordButton);
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('capture-sheet')), findsNothing);
     expect(
@@ -379,6 +382,31 @@ void main() {
 
     expect(find.text('保存记录'), findsOneWidget);
     expect(find.textContaining('原始输入留在本地'), findsOneWidget);
+  });
+
+  testWidgets('new record sheet localizes dynamic guard messages in Chinese', (
+    tester,
+  ) async {
+    await _pumpApp(
+      tester,
+      locale: const Locale('zh'),
+      voiceAdapter: const _ReviewVoiceAdapter(),
+    );
+
+    await tester.tap(
+      find.byKey(const Key('start-background-recording-button')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('background-voice-stop-button')));
+    await tester.pumpAndSettle();
+
+    final recordButton = find.byKey(const Key('record-capture-button'));
+    await _scrollHomeActionIntoView(tester, recordButton);
+    await tester.tap(recordButton);
+    await tester.pumpAndSettle();
+
+    expect(find.text('请先复核附件再保存。'), findsOneWidget);
+    expect(find.text('Review attachments before saving.'), findsNothing);
   });
 }
 

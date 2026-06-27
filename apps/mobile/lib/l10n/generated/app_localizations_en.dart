@@ -150,6 +150,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get recapInsightsTitle => 'Insights';
 
   @override
+  String get recapEntryRecordTitle => 'Record';
+
+  @override
+  String get recapEntryMemoryTitle => 'Memory';
+
+  @override
+  String get recapEntryOpenTodoTitle => 'Open todo';
+
+  @override
+  String get recapEntryCompletedTodoTitle => 'Completed todo';
+
+  @override
+  String get recapUntitledCapture => 'Untitled capture';
+
+  @override
+  String get recapUntitledTodo => 'Untitled todo';
+
+  @override
   String get recapSectionEmpty =>
       'No source-linked items in this section today.';
 
@@ -271,7 +289,151 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get captureAttachmentAssetSafetyReason => 'asset safety';
+
+  @override
+  String get captureAttachmentBlockedBySafety => 'blocked by asset safety';
+
+  @override
+  String captureAttachmentUnsupportedMimeType(String mimeType) {
+    return 'unsupported file type: $mimeType';
+  }
+
+  @override
+  String get captureAttachmentVoiceTranscriptNeedsReview =>
+      'voice transcript needs review';
+
+  @override
+  String get captureAttachmentAllowed => 'allowed';
+
+  @override
+  String get captureAttachmentKindPhoto => 'photo';
+
+  @override
+  String get captureAttachmentKindVoice => 'voice';
+
+  @override
+  String get captureAttachmentKindShare => 'shared item';
+
+  @override
+  String get captureAttachmentFallbackName => 'attachment';
+
+  @override
+  String captureAttachmentSummary(String kind, String name) {
+    return '$kind: $name';
+  }
+
+  @override
+  String captureBlockedAttachmentSummary(String name) {
+    return 'Blocked attachment: $name';
+  }
+
+  @override
   String get captureEmptyMessage => 'Add text or an attachment before saving.';
+
+  @override
+  String get captureReviewPendingAttachments =>
+      'Review or remove pending attachments before saving.';
+
+  @override
+  String get captureStopVoiceBeforeSaving =>
+      'Stop or cancel the voice recording before saving.';
+
+  @override
+  String get captureRemoveBlockedAttachments =>
+      'Remove blocked attachments before saving.';
+
+  @override
+  String get captureReviewAttachments => 'Review attachments before saving.';
+
+  @override
+  String captureVoiceFailed(String details) {
+    return 'Voice recording failed: $details';
+  }
+
+  @override
+  String get captureVoiceCancelled => 'Voice recording cancelled.';
+
+  @override
+  String captureVoiceCancelFailed(String details) {
+    return 'Voice recording cancel failed: $details';
+  }
+
+  @override
+  String captureAttachmentFailed(String details) {
+    return 'Attachment failed: $details';
+  }
+
+  @override
+  String get captureCameraCancelled => 'Camera capture cancelled.';
+
+  @override
+  String get captureGalleryCancelled => 'Gallery selection cancelled.';
+
+  @override
+  String get captureCameraPermissionDenied => 'Camera permission denied.';
+
+  @override
+  String get capturePhotoLibraryPermissionDenied =>
+      'Photo library permission denied.';
+
+  @override
+  String get captureMicrophonePermissionDenied =>
+      'Microphone permission denied.';
+
+  @override
+  String get captureCameraUnavailable =>
+      'Camera is unavailable on this device.';
+
+  @override
+  String get capturePhotoLibraryUnavailable =>
+      'Photo library is unavailable on this device.';
+
+  @override
+  String get captureMicrophoneUnavailable =>
+      'Microphone is unavailable on this device.';
+
+  @override
+  String get captureCameraFailed => 'Camera capture failed.';
+
+  @override
+  String get captureGalleryFailed => 'Gallery selection failed.';
+
+  @override
+  String get captureVoiceFailedSimple => 'Voice recording failed.';
+
+  @override
+  String get captureVoiceFailedToStart => 'Voice recording failed to start.';
+
+  @override
+  String get captureVoiceFailedToStop => 'Voice recording failed to stop.';
+
+  @override
+  String get captureVoiceCancelFailedSimple => 'Voice recording cancel failed.';
+
+  @override
+  String get captureVoiceFileNotCreated =>
+      'Voice recording file was not created.';
+
+  @override
+  String get captureVoiceEmptyFile => 'Voice recording produced an empty file.';
+
+  @override
+  String get captureVoiceFileNotReturned =>
+      'Voice recording file was not returned.';
+
+  @override
+  String get captureRecordSavedModelRequired =>
+      'Record saved locally. Configure a model provider or retry after agent recovery to generate Memory, cards, insights, and todos.';
+
+  @override
+  String get captureRecordSavedAgentFailed =>
+      'Record saved locally, but agent processing failed. Retry after model or permission recovery.';
+
+  @override
+  String captureMemoryReviewFailed(String details) {
+    return 'Memory review failed: $details';
+  }
 
   @override
   String get capturePhotoAttachedMessage =>
@@ -496,6 +658,66 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get memoryBodyCannotBeEmpty => 'Memory body cannot be empty.';
+
+  @override
+  String get memoryUpdateFailed => 'Memory update failed.';
+
+  @override
+  String get memoryTypePreference => 'preference';
+
+  @override
+  String get memoryTypeProject => 'project';
+
+  @override
+  String get memoryTypePerson => 'person';
+
+  @override
+  String get memoryTypeHealth => 'health';
+
+  @override
+  String get memoryTypeFinance => 'finance';
+
+  @override
+  String get memoryTypeLocation => 'location';
+
+  @override
+  String get memoryTypeCredential => 'credential';
+
+  @override
+  String get memoryTypeInsight => 'insight';
+
+  @override
+  String get memoryTypeTaskContext => 'task context';
+
+  @override
+  String get memorySensitivityLow => 'low sensitivity';
+
+  @override
+  String get memorySensitivityMedium => 'medium sensitivity';
+
+  @override
+  String get memorySensitivityHigh => 'high sensitivity';
+
+  @override
+  String get cardKindCapture => 'capture card';
+
+  @override
+  String get cardKindMemory => 'Memory card';
+
+  @override
+  String get insightKindSummary => 'summary insight';
+
+  @override
+  String get insightKindCount => 'count insight';
+
+  @override
+  String get insightKindTrend => 'trend insight';
+
+  @override
+  String get insightMetricSourceLinked => 'source-linked';
+
+  @override
   String get traceTitle => 'Trace';
 
   @override
@@ -555,8 +777,54 @@ class AppLocalizationsEn extends AppLocalizations {
   String get todoSeedConfirmBackup => 'Confirm backup permission boundary';
 
   @override
+  String get todoReviewCaptureTitle => 'Review capture';
+
+  @override
   String todoSourceLabel(String sourceId) {
     return 'source: $sourceId';
+  }
+
+  @override
+  String sourceLabel(String sourceId) {
+    return 'source: $sourceId';
+  }
+
+  @override
+  String sourceKindIdLabel(String kind, String sourceId) {
+    return '$kind: $sourceId';
+  }
+
+  @override
+  String sourceKindIdExtraLabel(String kind, String sourceId, int extraCount) {
+    return '$kind: $sourceId +$extraCount';
+  }
+
+  @override
+  String get sourceUnknownLabel => 'unknown source';
+
+  @override
+  String get sourceKindRawText => 'raw text';
+
+  @override
+  String get sourceKindAttachment => 'attachment';
+
+  @override
+  String get sourceKindFile => 'file';
+
+  @override
+  String sourceLinkCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count source links',
+      one: '1 source link',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String localTimeLabel(String time) {
+    return '$time local';
   }
 
   @override
@@ -564,6 +832,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get todoStatusSuggestedByAgent => 'suggested by agent';
+
+  @override
+  String get todoStatusNotSuggested => 'not suggested';
 
   @override
   String get todoStatusOpen => 'open';
@@ -576,6 +847,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get todoActionReopen => 'Reopen';
+
+  @override
+  String get todoUpdateFailed => 'Todo update failed.';
 
   @override
   String get chatTitle => 'Chat';
@@ -673,10 +947,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatContextTodoTitle => 'Todo';
 
   @override
+  String get chatContextCardTitle => 'Card';
+
+  @override
+  String get chatContextInsightTitle => 'Insight';
+
+  @override
+  String get chatContextRedactedTitle => 'Redacted source';
+
+  @override
   String get chatContextUntitledCapture => 'Untitled local capture';
 
   @override
   String get chatContextUntitledTodo => 'Untitled todo suggestion';
+
+  @override
+  String get chatErrorModelNotConfigured =>
+      'Model access is not configured. Add a provider in Settings, then retry.';
+
+  @override
+  String get chatErrorModelEmptyAnswer =>
+      'The model returned no answer. Retry or choose another provider.';
+
+  @override
+  String get chatErrorModelUnavailable =>
+      'The model is unavailable. Check provider settings or retry.';
 
   @override
   String get todosTitle => 'Todos';
@@ -718,6 +1013,12 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get timelineEmptyBody =>
       'Capture something locally to create source-linked cards.';
+
+  @override
+  String get timelineUntitledCapture => 'Untitled capture';
+
+  @override
+  String get timelineUntitledTodo => 'Untitled todo';
 
   @override
   String get timelineStartCaptureButton => 'Start capture';
@@ -1744,6 +2045,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get providerActionEdit => 'Edit provider';
 
   @override
+  String get providerActionDelete => 'Delete provider';
+
+  @override
+  String get providerDeleteTitle => 'Delete provider?';
+
+  @override
+  String providerDeleteBody(String provider) {
+    return 'Remove \"$provider\" from local model settings.';
+  }
+
+  @override
   String get providerDialogAddTitle => 'Add provider';
 
   @override
@@ -1775,6 +2087,54 @@ class AppLocalizationsEn extends AppLocalizations {
   String get providerSaveFailed => 'Provider could not be saved.';
 
   @override
+  String providerConfigInvalid(String details) {
+    return 'Provider config invalid: $details.';
+  }
+
+  @override
+  String get providerNotFound => 'Provider not found.';
+
+  @override
+  String get providerTestingConnectionMessage => 'Testing connection...';
+
+  @override
+  String get providerConnectionUnexpectedFailure =>
+      'Provider connection test failed unexpectedly.';
+
+  @override
+  String get providerSavedKeyClearedMessage =>
+      'Saved API key cleared. Add a key before testing.';
+
+  @override
+  String get providerConnectionNotRunMessage =>
+      'Connection test has not run for these saved settings.';
+
+  @override
+  String providerConnectionValidatedOffline(String provider) {
+    return '$provider validated offline. No live request sent.';
+  }
+
+  @override
+  String providerConnectionSucceeded(String provider) {
+    return '$provider connection test succeeded.';
+  }
+
+  @override
+  String providerConnectionIncomplete(String provider, String details) {
+    return '$provider configuration is incomplete: $details.';
+  }
+
+  @override
+  String providerConnectionUnsupportedProbe(String provider) {
+    return '$provider cannot run the chat connection probe with this capability set.';
+  }
+
+  @override
+  String providerConnectionProviderUnexpectedFailure(String provider) {
+    return '$provider connection test failed unexpectedly.';
+  }
+
+  @override
   String get backupTitle => 'Backup';
 
   @override
@@ -1798,6 +2158,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String backupFailedStatus(String details) {
     return 'Backup failed: $details';
   }
+
+  @override
+  String get backupInvalidFormat => 'Invalid backup format.';
+
+  @override
+  String get backupUnsupportedVersion => 'Unsupported backup version.';
+
+  @override
+  String get backupNoSavedFile => 'No saved backup file found.';
+
+  @override
+  String get backupLocalConflict => 'Backup conflicts with local data.';
+
+  @override
+  String get backupUnexpectedError => 'Unexpected backup error.';
 
   @override
   String get backupExportSectionTitle => 'Export and restore boundary';

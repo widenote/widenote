@@ -66,9 +66,9 @@ class _TimelineItemDetailContent extends StatelessWidget {
         children: [
           TimelineSurface(
             icon: timelineIcon(item.kind),
-            title: item.title,
+            title: localizedTimelineItemTitle(l10n, item.title),
             child: Text(
-              item.body,
+              localizedTimelineItemTitle(l10n, item.body),
               key: const Key('timeline-item-detail-body'),
               style: Theme.of(context).textTheme.bodyLarge,
             ),

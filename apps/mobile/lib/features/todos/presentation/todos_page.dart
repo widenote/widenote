@@ -20,7 +20,7 @@ class TodosPage extends ConsumerWidget {
         _PageHeader(title: l10n.todosTitle, subtitle: l10n.todosSubtitle),
         if (state.errorMessage != null) ...[
           const SizedBox(height: 12),
-          _ErrorLine(text: state.errorMessage!),
+          _ErrorLine(text: localizedTodoError(l10n, state.errorMessage!)),
         ],
         const SizedBox(height: 16),
         _Surface(
@@ -82,7 +82,7 @@ class _TodoRow extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _localizedTodoTitle(l10n, todo.title),
+                  localizedTodoTitle(l10n, todo.title),
                   style: Theme.of(
                     context,
                   ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
@@ -95,14 +95,14 @@ class _TodoRow extends ConsumerWidget {
                     _Tag(
                       key: Key('todo-source-${todo.id}'),
                       icon: Icons.link,
-                      label: _localizedTodoSourceLabel(l10n, todo.sourceLabel),
+                      label: localizedSourceLabel(l10n, todo.sourceLabel),
                       onTap: _sourceTarget(todo) == null
                           ? null
                           : () => context.go(_sourceTarget(todo)!),
                     ),
                     _Tag(
                       icon: Icons.info_outline,
-                      label: _localizedTodoStatusLabel(l10n, todo.statusLabel),
+                      label: localizedTodoStatusLabel(l10n, todo.statusLabel),
                     ),
                   ],
                 ),
@@ -145,35 +145,6 @@ String? _sourceTarget(TodoListItem todo) {
     return null;
   }
   return '/timeline/items/${Uri.encodeComponent(sourceCaptureId)}';
-}
-
-String _localizedTodoTitle(AppLocalizations l10n, String title) {
-  if (title.startsWith('Follow up: ')) {
-    return l10n.todoFollowUpTitle(title.substring('Follow up: '.length));
-  }
-  return switch (title) {
-    'Review generated Memory before export' => l10n.todoSeedReviewMemory,
-    'Confirm backup permission boundary' => l10n.todoSeedConfirmBackup,
-    _ => title,
-  };
-}
-
-String _localizedTodoSourceLabel(AppLocalizations l10n, String sourceLabel) {
-  if (sourceLabel.startsWith('source: ')) {
-    final sourceId = sourceLabel.substring('source: '.length);
-    return l10n.todoSourceLabel(sourceId);
-  }
-  return sourceLabel;
-}
-
-String _localizedTodoStatusLabel(AppLocalizations l10n, String statusLabel) {
-  return switch (statusLabel) {
-    'needs explicit permission' => l10n.todoStatusNeedsExplicitPermission,
-    'suggested by agent' => l10n.todoStatusSuggestedByAgent,
-    'open' => l10n.todoStatusOpen,
-    'completed' => l10n.todoStatusCompleted,
-    _ => statusLabel,
-  };
 }
 
 class _ErrorLine extends StatelessWidget {

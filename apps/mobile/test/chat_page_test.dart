@@ -36,7 +36,7 @@ void main() {
     expect(find.byKey(const Key('chat-page')), findsOneWidget);
     expect(find.text('历史会话'), findsOneWidget);
     expect(find.text('还没有本地会话。'), findsOneWidget);
-    expect(find.text('先问一个关于记录、Memory 或待办的问题。'), findsOneWidget);
+    expect(find.text('先问一个关于记录、记忆或待办的问题。'), findsOneWidget);
   });
 
   testWidgets('sending without a configured model shows retryable failure', (
@@ -70,6 +70,19 @@ void main() {
       scrollable: find.byType(Scrollable).last,
     );
     expect(find.text('Chat model request failed.'), findsOneWidget);
+  });
+
+  testWidgets('sending without a configured model localizes Chinese failure', (
+    tester,
+  ) async {
+    await _pumpApp(tester, locale: const Locale('zh'));
+    await _openTab(tester, const Key('tab-chat'));
+
+    await _sendChat(tester, '本地记录里有什么？');
+
+    expect(find.textContaining('尚未配置模型访问'), findsOneWidget);
+    expect(find.textContaining('Model access is not configured'), findsNothing);
+    expect(find.byKey(const Key('chat-retry-button')), findsOneWidget);
   });
 
   testWidgets('chat composer uses a regular multiline keyboard', (
