@@ -36,6 +36,7 @@ It should stay short. It points to the right local context instead of duplicatin
 - `docs/research/2026-06-27-cross-platform-core-smoke-results.md`
 - `docs/research/2026-06-27-live-llm-long-journey-qa.md`
 - `docs/research/2026-06-27-local-semantic-rule-audit.md`
+- `docs/research/2026-06-27-agent-orchestration-parity.md`
 - `docs/research/2026-06-26-product-technical-direction-summary.md`
 - `docs/research/2026-06-26-technical-plan-research-synthesis.md`
 - `docs/research/2026-06-26-storage-export-selection-options.md`

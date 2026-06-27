@@ -5,6 +5,8 @@ import 'package:integration_test/integration_test.dart';
 import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
 import 'package:widenote_local_db/widenote_local_db.dart';
 import 'package:widenote_mobile/app/local_database.dart';
+import 'package:widenote_mobile/app/model_client.dart';
+import 'package:widenote_mobile/features/capture/application/capture_agent_prompts.dart';
 import 'package:widenote_mobile/app/widenote_app.dart';
 
 void main() {
@@ -246,15 +248,51 @@ Future<void> _pumpApp(
 ) async {
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [localDatabaseProvider.overrideWithValue(database)],
+      overrides: [
+        localDatabaseProvider.overrideWithValue(database),
+        modelClientProvider.overrideWithValue(const _IntegrationModel()),
+        chatModelClientProvider.overrideWithValue(const _IntegrationModel()),
+      ],
       child: const WideNoteApp(locale: Locale('en')),
     ),
   );
   await tester.pumpAndSettle();
 }
 
+final class _IntegrationModel implements runtime.ModelClient {
+  const _IntegrationModel();
+
+  @override
+  Future<runtime.ModelResponse> complete(runtime.ModelRequest request) async {
+    return runtime.ModelResponse(
+      text: _captureText(request.prompt) ?? request.prompt.trim(),
+      raw: const <String, Object?>{
+        'memory_type': 'task_context',
+        'confidence': 'high',
+        'sensitivity': 'low',
+      },
+    );
+  }
+}
+
+String? _captureText(String prompt) {
+  final markerIndex = prompt.indexOf(captureMemoryPromptCaptureTextMarker);
+  if (markerIndex == -1) {
+    return null;
+  }
+  return prompt
+      .substring(markerIndex + captureMemoryPromptCaptureTextMarker.length)
+      .trim();
+}
+
 Future<void> _submitCapture(WidgetTester tester, String text) async {
   final field = find.byKey(const Key('quick-capture-field'));
+  if (field.evaluate().isEmpty) {
+    final openButton = find.byKey(const Key('open-new-record-button'));
+    await tester.ensureVisible(openButton);
+    await tester.tap(openButton);
+    await tester.pumpAndSettle();
+  }
   await tester.tap(field);
   await tester.pumpAndSettle();
   await tester.enterText(field, text);

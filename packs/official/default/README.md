@@ -27,10 +27,14 @@ The manifest declares:
 - Permission requests: `model.complete`, `card.write`, `memory.propose`, `insight.write`
 - Subscription: `wn.capture.created`
 - Native agent: `agent.capture_loop`
+- Prompt reference: `capture.memory_summary.v1`
 - Retry policy: `max_attempts = 2`
 - Output events: `wn.card.created`, `wn.memory.proposed`, `wn.insight.created`
 
-Future public surfaces include prompt definitions, richer permission requests, and UI/output declarations.
+The current native prompt contract is implemented by
+`apps/mobile/lib/features/capture/application/capture_agent_prompts.dart`.
+
+Future public surfaces include richer permission requests and UI/output declarations.
 
 ## Dependencies
 

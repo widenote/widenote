@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
+import 'package:widenote_mobile/features/capture/application/capture_agent_prompts.dart';
 import 'package:widenote_local_db/widenote_local_db.dart';
 import 'package:widenote_mobile/app/local_database.dart';
 import 'package:widenote_mobile/app/model_client.dart';
@@ -448,9 +449,7 @@ final class _CaptureTestModel implements runtime.ModelClient {
   @override
   Future<runtime.ModelResponse> complete(runtime.ModelRequest request) async {
     return runtime.ModelResponse(
-      text: request.prompt
-          .replaceFirst('Summarize capture for Memory: ', '')
-          .trim(),
+      text: _captureText(request.prompt),
       raw: const <String, Object?>{
         'memory_type': 'task_context',
         'confidence': 'high',
@@ -458,6 +457,16 @@ final class _CaptureTestModel implements runtime.ModelClient {
       },
     );
   }
+}
+
+String _captureText(String prompt) {
+  final markerIndex = prompt.indexOf(captureMemoryPromptCaptureTextMarker);
+  if (markerIndex == -1) {
+    return prompt.replaceFirst('Summarize capture for Memory: ', '').trim();
+  }
+  return prompt
+      .substring(markerIndex + captureMemoryPromptCaptureTextMarker.length)
+      .trim();
 }
 
 final class _ReviewVoiceAdapter implements VoiceCaptureAdapter {
