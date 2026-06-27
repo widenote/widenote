@@ -28,6 +28,6 @@ void main() {
 
     expect(databaseFile.existsSync(), isTrue);
     expect(bootstrap.database.schemaVersion, LocalDbSchema.currentVersion);
-    expect(bootstrap.providerOverrides, hasLength(1));
+    expect(bootstrap.providerOverrides, hasLength(2));
   });
 }

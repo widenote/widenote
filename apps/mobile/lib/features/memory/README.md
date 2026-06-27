@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Owns the mobile Memory management page: searchable local Memory list, edit,
+Owns the mobile Memory management page: local Memory browsing, edit,
 tombstone delete, restore visibility, and source metadata.
 
 ## Ownership Boundary
@@ -13,6 +13,10 @@ policy, extraction prompts, sync semantics, or Agent Pack behavior.
 
 Memory delete is reversible in this slice: rows are tombstoned and their
 revision is incremented instead of being physically removed.
+
+The page does not use local substring matching for Memory text search. Text
+queries show a retriever-required state until an embedding/model-backed recall
+boundary exists.
 
 ## Dependencies
 

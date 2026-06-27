@@ -35,6 +35,12 @@ Required fields:
 - `policy_reasons[]`
 - `conflicting_memory_ids[]`
 
+`memory_type`, `confidence`, `sensitivity`, and `durability` are proposal
+metadata supplied by an LLM-backed agent, explicit user action, or a permissioned
+plugin/Agent Pack. WideNote core must not derive them from local keyword,
+regular-expression, substring, or stop-word rules over user natural-language
+content.
+
 ### Memory Item
 
 The accepted durable record.
@@ -56,6 +62,9 @@ Required fields:
 
 ## Memory Types
 
+Types below describe accepted proposal metadata and review policy. They are not
+instructions for core to classify user text locally.
+
 | Type | Examples | Default Handling |
 | --- | --- | --- |
 | `preference` | Preferred tools, communication style | Auto-accept when evidenced and low sensitivity |
@@ -69,6 +78,9 @@ Required fields:
 | `insight` | Inferred pattern or reflection | Review unless strongly evidenced |
 
 ## Sensitivity
+
+Sensitivity below describes accepted proposal metadata and review policy. It is
+not a core keyword scanner or masking rule.
 
 | Level | Meaning | Auto-Accept |
 | --- | --- | --- |

@@ -2,8 +2,9 @@
 
 ## Purpose
 
-Owns the Flutter application root, Material theme, top-level tab routing, and
-production local database bootstrap providers.
+Owns the Flutter application root, Material theme, top-level tab routing,
+production local database bootstrap providers, and the app support-directory
+provider used by app-local UI state.
 
 ## Ownership Boundary
 
@@ -27,6 +28,7 @@ orchestration behavior.
 - `appRouter`
 - `WideNoteShell`
 - `WideNoteMobileBootstrap`
+- `appSupportDirectoryProvider`
 - `localDatabaseProvider`
 - `localEventStoreProvider`
 - `localTraceSinkProvider`

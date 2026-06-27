@@ -128,8 +128,8 @@ void main() {
       expect(provider.hasApiKey, isTrue);
       expect(provider.apiKey, isEmpty);
       expect(provider.payload['secret_storage'], 'local_db_backup');
+      expect(provider.payload['payload_omitted'], isTrue);
       expect(provider.payload.toString(), isNot(contains(_backupCredential())));
-      expect(provider.payload.toString(), contains('[redacted_secret]'));
 
       final pack = target.packInstallations.readById('pack.default')!;
       expect(pack.status, 'enabled');
@@ -192,20 +192,23 @@ void main() {
         expect(safe.modelProviderConfigs.single.apiKey, isEmpty);
         expect(
           safe.modelProviderConfigs.single.payload.toString(),
-          contains('[redacted_secret]'),
+          isNot(contains(_backupCredential())),
         );
         expect(
           safe.modelProviderConfigs.single.payload['secret_storage'],
           'local_db_backup',
         );
         expect(
-          ((safe.modelProviderConfigs.single.payload['nested']!
-              as Map)['label']),
-          'safe metadata',
+          safe.modelProviderConfigs.single.payload['payload_omitted'],
+          isTrue,
         );
         expect(
-          safe.modelProviderConfigs.single.payload['serialized_config'],
-          contains('[redacted_secret]'),
+          safe.modelProviderConfigs.single.payload,
+          isNot(contains('nested')),
+        );
+        expect(
+          safe.modelProviderConfigs.single.payload,
+          isNot(contains('serialized_config')),
         );
         expect(safeJson, isNot(contains(_backupCredential())));
         expect(

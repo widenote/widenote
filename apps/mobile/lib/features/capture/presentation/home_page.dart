@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../l10n/l10n.dart';
 import '../application/capture_controller.dart';
+import '../application/capture_draft_repository.dart';
 import '../application/capture_input_controller.dart';
 import '../domain/capture_models.dart';
 import '../media/capture_media.dart';
@@ -25,18 +26,47 @@ class _HomePageState extends ConsumerState<HomePage> {
   String? _feedbackMessage;
   String? _feedbackActionLabel;
   VoidCallback? _feedbackAction;
+  Timer? _draftSaveTimer;
+  late final CaptureDraftRepository _draftRepository;
+  bool _suppressDraftSaves = false;
 
   @override
   void initState() {
     super.initState();
-    _captureTextController.addListener(_clearFeedbackAfterNewInput);
+    _draftRepository = ref.read(captureDraftRepositoryProvider);
+    _captureTextController.addListener(_handleCaptureTextChanged);
+    unawaited(_restoreDraft());
   }
 
   @override
   void dispose() {
-    _captureTextController.removeListener(_clearFeedbackAfterNewInput);
+    _captureTextController.removeListener(_handleCaptureTextChanged);
+    _draftSaveTimer?.cancel();
+    if (!_suppressDraftSaves) {
+      unawaited(_draftRepository.saveTextDraft(_captureTextController.text));
+    }
     _captureTextController.dispose();
     super.dispose();
+  }
+
+  Future<void> _restoreDraft() async {
+    final draft = await _draftRepository.loadActiveDraft();
+    if (!mounted ||
+        draft == null ||
+        _captureTextController.text.trim().isNotEmpty) {
+      return;
+    }
+    _suppressDraftSaves = true;
+    _captureTextController.text = draft.text;
+    _suppressDraftSaves = false;
+  }
+
+  void _handleCaptureTextChanged() {
+    _clearFeedbackAfterNewInput();
+    if (_suppressDraftSaves) {
+      return;
+    }
+    _scheduleDraftSave();
   }
 
   void _clearFeedbackAfterNewInput() {
@@ -48,6 +78,16 @@ class _HomePageState extends ConsumerState<HomePage> {
       _feedbackMessage = null;
       _feedbackActionLabel = null;
       _feedbackAction = null;
+    });
+  }
+
+  void _scheduleDraftSave() {
+    _draftSaveTimer?.cancel();
+    _draftSaveTimer = Timer(const Duration(milliseconds: 300), () {
+      if (!mounted) {
+        return;
+      }
+      unawaited(_draftRepository.saveTextDraft(_captureTextController.text));
     });
   }
 
@@ -131,7 +171,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         .read(captureControllerProvider.notifier)
         .submitCapture(_captureTextController.text, attachments: attachments);
     if (hasText || attachments.isNotEmpty) {
-      _captureTextController.clear();
+      _clearSubmittedDraft();
       ref.read(captureInputControllerProvider.notifier).clear();
     }
     unawaited(future);
@@ -141,6 +181,14 @@ class _HomePageState extends ConsumerState<HomePage> {
       onAction: () => context.go('/timeline'),
     );
     FocusScope.of(context).unfocus();
+  }
+
+  void _clearSubmittedDraft() {
+    _draftSaveTimer?.cancel();
+    _suppressDraftSaves = true;
+    _captureTextController.clear();
+    _suppressDraftSaves = false;
+    unawaited(_draftRepository.clearActiveDraft());
   }
 
   void _addCamera() {

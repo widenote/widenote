@@ -30,7 +30,11 @@ final class MemoryFirstBrowseIndex {
   List<MemoryFirstTimelineItem> search([
     MemoryFirstTimelineFilter filter = const MemoryFirstTimelineFilter(),
   ]) {
-    return items.where((item) => _matchesFilter(item, filter)).toList();
+    return items
+        .where(
+          (item) => filter.kinds.isEmpty || filter.kinds.contains(item.kind),
+        )
+        .toList();
   }
 
   List<MemoryFirstTimelineDay> timeline([
@@ -113,39 +117,6 @@ List<SourceLink> dedupeSourceLinks(List<SourceLink> links) {
 
 String sourceLinkKey(SourceLink link) => '${link.kind}:${link.id}';
 
-bool _matchesFilter(
-  MemoryFirstTimelineItem item,
-  MemoryFirstTimelineFilter filter,
-) {
-  if (filter.kinds.isNotEmpty && !filter.kinds.contains(item.kind)) {
-    return false;
-  }
-
-  final tokens = _tokens(filter.query);
-  if (tokens.isEmpty) {
-    return true;
-  }
-
-  final haystack = _normalize(
-    <String>[
-      item.id,
-      item.kind.name,
-      item.title,
-      item.body,
-      item.status,
-      for (final link in item.sourceLinks) ...[
-        link.kind,
-        link.id,
-        if (link.label != null) link.label!,
-        if (link.excerpt != null) link.excerpt!,
-      ],
-      for (final value in item.metadata.values)
-        if (value != null) '$value',
-    ].join(' '),
-  );
-  return tokens.every(haystack.contains);
-}
-
 bool _isRelated(
   MemoryFirstTimelineItem card,
   MemoryFirstTimelineItem candidate,
@@ -170,15 +141,6 @@ String _sourceKind(MemoryFirstTimelineItemKind kind) {
     MemoryFirstTimelineItemKind.todo => 'todo',
   };
 }
-
-List<String> _tokens(String value) {
-  return _normalize(value)
-      .split(RegExp(r'\s+'))
-      .where((token) => token.isNotEmpty)
-      .toList(growable: false);
-}
-
-String _normalize(String value) => value.trim().toLowerCase();
 
 DateTime _day(DateTime value) {
   final local = value.toLocal();

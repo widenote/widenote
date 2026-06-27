@@ -8,7 +8,6 @@ import 'package:widenote_local_db/widenote_local_db.dart';
 import 'package:widenote_model_providers/model_providers.dart';
 
 import 'local_database.dart';
-import '../shared/text_preview.dart';
 
 final modelClientProvider = Provider<runtime.ModelClient>((ref) {
   final qaClient = qaMimoModelClientFromEnvironment();
@@ -21,7 +20,17 @@ final modelClientProvider = Provider<runtime.ModelClient>((ref) {
   if (providerClient != null) {
     return providerClient;
   }
-  return const LocalSummaryModelClient();
+  return const ModelUnavailableModelClient();
+});
+
+final chatModelClientProvider = Provider<runtime.ModelClient?>((ref) {
+  final qaClient = qaMimoModelClientFromEnvironment();
+  if (qaClient is XiaomiMimoModelClient) {
+    ref.onDispose(qaClient.close);
+    return qaClient;
+  }
+
+  return _defaultProviderClient(ref);
 });
 
 runtime.ModelClient? qaMimoModelClientFromEnvironment() {
@@ -37,17 +46,24 @@ runtime.ModelClient? qaMimoModelClientFromKey(String apiKey) {
   return XiaomiMimoModelClient(apiKey: trimmed);
 }
 
-final class LocalSummaryModelClient implements runtime.ModelClient {
-  const LocalSummaryModelClient();
+final class ModelUnavailableModelClient implements runtime.ModelClient {
+  const ModelUnavailableModelClient();
 
   @override
   Future<runtime.ModelResponse> complete(runtime.ModelRequest request) async {
-    final text = request.prompt.replaceFirst(
-      'Summarize capture for Memory: ',
-      '',
+    throw const ModelUnavailableException(
+      'Configure a model provider before running model-backed work.',
     );
-    return runtime.ModelResponse(text: previewText(text));
   }
+}
+
+final class ModelUnavailableException implements Exception {
+  const ModelUnavailableException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
 }
 
 runtime.ModelClient? _defaultProviderClient(Ref ref) {
@@ -72,11 +88,11 @@ runtime.ModelClient? _defaultProviderClient(Ref ref) {
     config: config,
     httpClient: httpClient,
   );
-  return _FallbackModelClient(
-    primary: RuntimeModelClientAdapter(provider: provider, model: config.model),
-    fallback: const LocalSummaryModelClient(),
-    providerId: config.id,
+  final primary = RuntimeModelClientAdapter(
+    provider: provider,
+    model: config.model,
   );
+  return primary;
 }
 
 ModelProviderConfig? _modelProviderConfigFromRecord(
@@ -135,36 +151,6 @@ Set<ModelCapability> _modelCapabilitiesFromNames(List<Object?> names) {
     };
   }
   return capabilities;
-}
-
-final class _FallbackModelClient implements runtime.ModelClient {
-  const _FallbackModelClient({
-    required this.primary,
-    required this.fallback,
-    required this.providerId,
-  });
-
-  final runtime.ModelClient primary;
-  final runtime.ModelClient fallback;
-  final String providerId;
-
-  @override
-  Future<runtime.ModelResponse> complete(runtime.ModelRequest request) async {
-    try {
-      return await primary.complete(request);
-    } catch (error) {
-      final response = await fallback.complete(request);
-      return runtime.ModelResponse(
-        text: response.text,
-        raw: <String, Object?>{
-          ...response.raw,
-          'model_fallback': true,
-          'model_fallback_provider_id': providerId,
-          'model_fallback_error_type': error.runtimeType.toString(),
-        },
-      );
-    }
-  }
 }
 
 final class _DartIoModelProviderHttpClient implements ModelProviderHttpClient {
@@ -254,9 +240,10 @@ final class XiaomiMimoModelClient implements runtime.ModelClient {
 
     final body = jsonEncode(<String, Object?>{
       'model': model,
-      'max_tokens': 128,
+      'max_tokens': _maxTokens(request),
+      'thinking': const <String, Object?>{'type': 'disabled'},
       'messages': <Map<String, Object?>>[
-        <String, Object?>{'role': 'user', 'content': _qaPrompt(request.prompt)},
+        <String, Object?>{'role': 'user', 'content': _qaPrompt(request)},
       ],
     });
     httpRequest.add(utf8.encode(body));
@@ -287,7 +274,14 @@ final class XiaomiMimoModelClient implements runtime.ModelClient {
         'MIMO response did not contain text.',
       );
     }
-    return runtime.ModelResponse(text: previewText(text));
+    return runtime.ModelResponse(
+      text: text,
+      raw: <String, Object?>{
+        'provider_id': 'xiaomi_mimo',
+        'model': model,
+        'usage': _mimoUsage(decoded),
+      },
+    );
   }
 }
 
@@ -307,13 +301,29 @@ bool _shouldRetry(XiaomiMimoModelException error) {
       (statusCode != null && statusCode >= 500);
 }
 
-String _qaPrompt(String prompt) {
+int _maxTokens(runtime.ModelRequest request) {
+  if (request.context['chat_mode'] == 'source_cited_local_context') {
+    return 512;
+  }
+  return 128;
+}
+
+String _qaPrompt(runtime.ModelRequest request) {
+  if (request.context['chat_mode'] == 'source_cited_local_context') {
+    return '''
+You are the WideNote QA chat model adapter.
+Follow the user task exactly. Use only the local sources included in the prompt.
+Cite source kind/id when answering. If the sources are insufficient, say what is unknown.
+
+${request.prompt}
+''';
+  }
   return '''
-You are the WideNote Android QA model adapter.
+You are the WideNote QA capture model adapter.
 Return one concise, safe Memory sentence in the same language as the input.
 Do not include JSON, markdown, bullet points, secrets, or commentary.
 
-$prompt
+${request.prompt}
 ''';
 }
 
@@ -332,6 +342,44 @@ String _extractText(Map<String, Object?> response) {
     }
   }
   return parts.join('\n');
+}
+
+Map<String, Object?> _mimoUsage(Map<String, Object?> response) {
+  final usage = response['usage'];
+  if (usage is! Map) {
+    return const <String, Object?>{};
+  }
+  final inputTokens = _intValue(usage['input_tokens']);
+  final outputTokens = _intValue(usage['output_tokens']);
+  final totalTokens =
+      _intValue(usage['total_tokens']) ??
+      (inputTokens == null || outputTokens == null
+          ? null
+          : inputTokens + outputTokens);
+  final result = <String, Object?>{};
+  if (inputTokens != null) {
+    result['input_tokens'] = inputTokens;
+  }
+  if (outputTokens != null) {
+    result['output_tokens'] = outputTokens;
+  }
+  if (totalTokens != null) {
+    result['total_tokens'] = totalTokens;
+  }
+  return result;
+}
+
+int? _intValue(Object? value) {
+  if (value is int) {
+    return value;
+  }
+  if (value is num) {
+    return value.toInt();
+  }
+  if (value is String) {
+    return int.tryParse(value);
+  }
+  return null;
 }
 
 Map<String, String> _responseHeaders(HttpClientResponse response) {

@@ -12,7 +12,9 @@ original capture or Memory records.
 ## Ownership Boundary
 
 Owns small card/insight domain models, source-link validation, and deterministic
-derivation rules.
+derivation rules. Timeline browse filtering is limited to typed object filters;
+text retrieval belongs to an embedding/model-backed retriever, not local
+substring matching.
 
 It must not own Flutter UI, local database migrations, backup/export formats,
 model-provider calls, prompts, PKM/PARA structures, or generated public schemas.
@@ -26,6 +28,7 @@ model-provider calls, prompts, PKM/PARA structures, or generated public schemas.
 - `MemoryFirstCardBundle`
 - `MemoryFirstCardInput`
 - `MemoryFirstCardService`
+- `MemoryFirstBrowseIndex`
 - `SourceLink`
 
 ## Dependencies
@@ -47,4 +50,5 @@ dart test
 ```
 
 Current tests cover empty input, capture and Memory card generation, insight
-generation, and required source links.
+generation, required source links, source-ref detail grouping, and browse
+filtering without local text matching.

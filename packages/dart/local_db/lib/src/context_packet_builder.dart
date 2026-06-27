@@ -411,15 +411,13 @@ final class ContextPacketBuilder {
         request.subjectRef.isEmpty) {
       return null;
     }
-    final content = _redactSecrets(
-      <String>[
-        if (normalizedIntent != null) 'intent: $normalizedIntent',
-        if (request.requestRef.isNotEmpty)
-          'request: ${_objectRefLabel(request.requestRef)}',
-        if (request.subjectRef.isNotEmpty)
-          'subject: ${_objectRefLabel(request.subjectRef)}',
-      ].join('\n'),
-    );
+    final content = <String>[
+      if (normalizedIntent != null) 'intent: $normalizedIntent',
+      if (request.requestRef.isNotEmpty)
+        'request: ${_objectRefLabel(request.requestRef)}',
+      if (request.subjectRef.isNotEmpty)
+        'subject: ${_objectRefLabel(request.subjectRef)}',
+    ].join('\n');
     final manualId = 'visible_${_stableHash(content)}';
     final sourceRef = _sourceRef(
       'manual',
@@ -478,7 +476,7 @@ final class ContextPacketBuilder {
         extraSourceRefs: linkedRefs,
       );
     }
-    final body = _truncate(_redactSecrets(memory.body), _memoryExcerptLimit);
+    final body = _truncate(memory.body, _memoryExcerptLimit);
     if (body.trim().isEmpty) {
       return null;
     }
@@ -513,7 +511,7 @@ final class ContextPacketBuilder {
     ContextPacketBuildRequest request,
   ) {
     final body = _truncate(
-      _redactSecrets(_lines(<String>[card.title, card.body])),
+      _lines(<String>[card.title, card.body]),
       _derivedExcerptLimit,
     );
     if (body.trim().isEmpty) {
@@ -555,7 +553,7 @@ final class ContextPacketBuilder {
         ? null
         : 'Metric: ${insight.metricValue ?? ''} ${insight.metricLabel}';
     final body = _truncate(
-      _redactSecrets(_lines(<String>[insight.title, insight.summary, ?metric])),
+      _lines(<String>[insight.title, insight.summary, ?metric]),
       _derivedExcerptLimit,
     );
     if (body.trim().isEmpty) {
@@ -596,13 +594,7 @@ final class ContextPacketBuilder {
     final title = _firstText(todo.payload, const <String>['title', 'text']);
     final body = _firstText(todo.payload, const <String>['body', 'summary']);
     final content = _truncate(
-      _redactSecrets(
-        _lines(<String>[
-          'Todo (${todo.status})',
-          title,
-          if (body != title) body,
-        ]),
-      ),
+      _lines(<String>['Todo (${todo.status})', title, if (body != title) body]),
       _derivedExcerptLimit,
     );
     if (content.trim().isEmpty || content == 'Todo (${todo.status})') {
@@ -649,7 +641,7 @@ final class ContextPacketBuilder {
       'preview_text',
       'excerpt',
     ]);
-    final text = _truncate(_redactSecrets(rawText), _captureExcerptLimit);
+    final text = _truncate(rawText, _captureExcerptLimit);
     if (text.trim().isEmpty) {
       return null;
     }
@@ -1441,8 +1433,8 @@ String? _safeFileName(String? value) {
   }
   final pieces = trimmed.split(RegExp(r'[/\\]+'));
   final basename = pieces.isEmpty ? trimmed : pieces.last;
-  final redacted = _redactSecrets(basename.trim());
-  return redacted.isEmpty ? null : redacted;
+  final fileName = basename.trim();
+  return fileName.isEmpty ? null : fileName;
 }
 
 String _lines(List<String?> lines) {
@@ -1460,25 +1452,6 @@ String? _normalizedIntent(String? intent) {
   }
   return trimmed;
 }
-
-String _redactSecrets(String value) {
-  var result = value;
-  result = result.replaceAll(
-    RegExp(r'\bsk-[A-Za-z0-9_\-]{8,}\b'),
-    '[redacted_secret]',
-  );
-  result = result.replaceAllMapped(_secretAssignmentPattern, (match) {
-    final label = match.group(1) ?? 'secret';
-    return '$label: [redacted_secret]';
-  });
-  return result;
-}
-
-final _secretAssignmentPattern = RegExp(
-  '\\b(api[_ -]?key|token|secret|password)\\s*[:=]\\s*["\\\']?'
-  '[^\\s,"\\\']{6,}',
-  caseSensitive: false,
-);
 
 String _truncate(String value, int maxCharacters) {
   if (value.length <= maxCharacters) {

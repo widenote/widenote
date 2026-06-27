@@ -9,6 +9,9 @@ Date: 2026-06-24
 The phase-one target is no longer a narrow architecture MVP. It is a usable local-first product baseline that covers the core WideNote loop and the highest-priority MemeX-parity gaps through WideNote-owned designs.
 
 The product remains Memory-first. WideNote should not copy MemeX's P.A.R.A model as the core organizing principle. Cards, insights, chat, backup, and agents should all preserve source links back to raw captures and accepted Memory.
+All LLM-derived product artifacts, including cards, Memory, insights, todos,
+and chat answers, must remain traceable to source refs, fact/evidence ids, or
+reviewed user actions.
 
 ## In Scope
 
@@ -64,6 +67,9 @@ capture created
 - Provider config must be stored without leaking secrets into logs, generated
   docs, automated review prompts, or test output. Safe backup is the current
   implemented default and does not include provider API key values.
+- Runtime traces should expose provider/model ids, token usage, retry/failure
+  state, and provider-exposed cost metadata for BYOK visibility without storing
+  API keys or raw private prompts.
 - Package-level provider contracts should support fake, OpenAI-compatible, Anthropic-compatible, MIMO-compatible, and Kimi-compatible routing shapes.
 - UI must support adding/editing/testing a provider and selecting a default provider.
 - Unit tests use fake HTTP/model clients by default.
@@ -93,7 +99,7 @@ capture created
 - Chat must support persistent local sessions and messages.
 - The assistant must answer from local context first and show which records/Memory/todos informed the answer.
 - Empty context, failed model, and retry states must be visible and tested.
-- Provider-backed chat may use the provider abstraction, but a deterministic local assistant path is required for tests and offline use.
+- Chat answer generation requires a configured model-backed path. Tests may inject fake model clients, but production offline behavior must be a visible model-required/model-unavailable state with retry, not a deterministic local template answer.
 
 ## Subagent Coordination
 

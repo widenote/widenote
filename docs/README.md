@@ -18,6 +18,10 @@ For current decisions, start with [decisions/index.md](./decisions/index.md).
 
 - [W7 Current Integration State](./research/2026-06-26-w7-current-integration-state.md)
 - [W7 Integration QA](./research/2026-06-26-w7-integration-qa.md)
+- [Cross-Platform Long Conversation Test Plan](./research/2026-06-27-cross-platform-long-conversation-test-plan.md)
+- [Cross-Platform Core Smoke Results](./research/2026-06-27-cross-platform-core-smoke-results.md)
+- [Live LLM Long Journey QA](./research/2026-06-27-live-llm-long-journey-qa.md)
+- [Local Semantic Rule Audit](./research/2026-06-27-local-semantic-rule-audit.md)
 - [Phase One Technical Plan](./architecture/phase-one-technical-plan.md) is a planning baseline; use W7 current state and the umbrella RFC for current implementation status.
 - [Phase One Module Plan](./architecture/phase-one-module-plan.md) is a planning baseline; update module READMEs and project map as modules land.
 - [Engineering Rules](./architecture/engineering-rules.md) for complexity budgets, test gates, subagent collaboration, external review boundaries, and emulator validation

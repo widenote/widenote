@@ -5,20 +5,28 @@
 Owns the first local conversation surface for WideNote.
 
 The feature lets users create local chat sessions, append messages, ask a
-deterministic offline assistant, and inspect source-linked citations produced
-from local Context Packets.
+model-backed assistant, and inspect source-linked citations produced from local
+Context Packets.
 
 ## Ownership Boundary
 
 This feature owns mobile chat domain models, controller state, presentation,
-context selection, deterministic local assistant behavior, and the mobile
-adapters that map chat sessions/messages and packet-derived source refs onto
-`widenote_local_db` DAOs.
+hard-boundary context packet adaptation, model-required assistant behavior, and
+the mobile adapters that map chat sessions/messages and packet-derived source
+refs onto `widenote_local_db` DAOs.
 
 It does not own model-provider settings, companion/persona behavior, public
 conversation schemas, or backup/export contracts. The current
 `chat_sessions` and `chat_messages` tables are package-owned by
 `packages/dart/local_db` and included in the local backup format.
+
+Local code must not rank Chat sources or generate Chat answers with
+hand-written keyword rules or local template fallback. Source selection
+preserves Context Packet order and prompt-budget limits until a model-backed
+retriever exists. Without a configured model provider, Chat should show a
+retryable model-required state. The composer disables autocorrect,
+suggestions, smart dashes, and smart quotes so literal questions, commands, and
+source identifiers are not rewritten before persistence or model calls.
 
 ## Dependencies
 

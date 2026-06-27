@@ -1482,86 +1482,22 @@ JsonMap _providerPayloadForBackup(JsonMap payload, LocalBackupMode mode) {
   if (mode == LocalBackupMode.encryptedFull) {
     return payload;
   }
-  return _redactSecretPayloadMap(payload);
-}
-
-JsonMap _redactSecretPayloadMap(Map<String, Object?> payload) {
-  return payload.map((key, value) {
-    if (_isSecretPayloadKey(key)) {
-      return MapEntry(key, _redactedSecret);
+  final safe = <String, Object?>{};
+  for (final key in const <String>[
+    'secret_storage',
+    'has_api_key',
+    'api_key_present',
+  ]) {
+    final value = payload[key];
+    if (value is String || value is bool || value is num) {
+      safe[key] = value;
     }
-    return MapEntry(key, _redactSecretPayloadValue(value));
-  });
+  }
+  if (payload.isNotEmpty && safe.length != payload.length) {
+    safe['payload_omitted'] = true;
+  }
+  return safe;
 }
-
-Object? _redactSecretPayloadValue(Object? value) {
-  if (value is Map<String, Object?>) {
-    return _redactSecretPayloadMap(value);
-  }
-  if (value is Map) {
-    return _redactSecretPayloadMap(
-      value.map((key, nestedValue) {
-        return MapEntry(key.toString(), nestedValue);
-      }),
-    );
-  }
-  if (value is List) {
-    return value.map(_redactSecretPayloadValue).toList(growable: false);
-  }
-  if (value is String) {
-    return _redactSecretPayloadString(value);
-  }
-  return value;
-}
-
-bool _isSecretPayloadKey(String key) {
-  final normalized = key
-      .trim()
-      .toLowerCase()
-      .replaceAll(RegExp('[^a-z0-9]+'), '_')
-      .replaceAll(RegExp('^_+|_+\$'), '');
-  if (normalized == 'secret_storage' ||
-      normalized == 'has_api_key' ||
-      normalized == 'api_key_present') {
-    return false;
-  }
-  return normalized == 'api_key' ||
-      normalized == 'apikey' ||
-      normalized.contains('api_key') ||
-      normalized.contains('apikey') ||
-      normalized.endsWith('_api_key') ||
-      normalized == 'token' ||
-      normalized.endsWith('_token') ||
-      normalized == 'secret' ||
-      normalized.endsWith('_secret') ||
-      normalized == 'password' ||
-      normalized.endsWith('_password') ||
-      normalized == 'authorization' ||
-      normalized == 'private_key' ||
-      normalized.endsWith('_private_key') ||
-      normalized == 'credential' ||
-      normalized.endsWith('_credential');
-}
-
-String _redactSecretPayloadString(String value) {
-  return value.replaceAllMapped(_secretAssignmentPattern, (match) {
-    final openingKeyQuote = match.group(1) ?? '';
-    final label = match.group(2) ?? 'secret';
-    final closingKeyQuote = match.group(3) ?? '';
-    final separator = match.group(4) ?? ':';
-    final openingValueQuote = match.group(5) ?? '';
-    final closingValueQuote = match.group(7) ?? openingValueQuote;
-    return '$openingKeyQuote$label$closingKeyQuote$separator'
-        '$openingValueQuote$_redactedSecret$closingValueQuote';
-  });
-}
-
-final _secretAssignmentPattern = RegExp(
-  r'''(["']?)(api[_ -]?key|apikey|token|access[_ -]?token|refresh[_ -]?token|id[_ -]?token|client[_ -]?secret|secret|password|authorization|private[_ -]?key|credential)(["']?)(\s*[:=]\s*)(["']?)([^"',}\s]+)(["']?)''',
-  caseSensitive: false,
-);
-
-const _redactedSecret = '[redacted_secret]';
 
 List<JsonMap> _requiredRecordList(JsonMap json, String key) {
   return _recordList(json, key, requiredSection: true);

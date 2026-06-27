@@ -89,9 +89,9 @@ void main() {
       addTearDown(database.close);
       await _pumpSettings(tester, database: database);
 
-      expect(find.text('Offline fallback active'), findsOneWidget);
+      expect(find.text('Model not configured'), findsOneWidget);
       expect(find.text('Model roles'), findsOneWidget);
-      expect(find.text('Local deterministic fallback'), findsWidgets);
+      expect(find.text('Requires configured model'), findsWidgets);
 
       await _addProvider(
         tester,

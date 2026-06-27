@@ -30,18 +30,11 @@ final chatContextSelectorProvider = Provider<ChatContextSelector>((ref) {
 });
 
 final chatAssistantProvider = Provider<ChatAssistant>((ref) {
-  final fallback = DeterministicLocalChatAssistant(
-    copy: ref.watch(chatAssistantCopyProvider),
-  );
-  final model = ref.watch(modelClientProvider);
-  if (model is LocalSummaryModelClient) {
-    return fallback;
+  final model = ref.watch(chatModelClientProvider);
+  if (model == null) {
+    return const ChatModelRequiredAssistant();
   }
-  return ModelBackedChatAssistant(model: model, fallback: fallback);
-});
-
-final chatAssistantCopyProvider = Provider<ChatAssistantCopy>((ref) {
-  return const ChatAssistantCopy.english();
+  return ModelBackedChatAssistant(model: model);
 });
 
 final chatClockProvider = Provider<DateTime Function()>((ref) {

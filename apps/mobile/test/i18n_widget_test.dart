@@ -60,7 +60,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('模型提供商'), findsWidgets);
     expect(find.text('添加提供商'), findsOneWidget);
-    expect(find.text('离线兜底已启用'), findsOneWidget);
+    expect(find.text('尚未配置模型'), findsOneWidget);
 
     await _openTab(tester, const Key('tab-plugins'));
     await tester.tap(find.byKey(const Key('backup-entry')));

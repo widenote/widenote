@@ -25,7 +25,7 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final state = ref.watch(memoryControllerProvider);
-    final query = _searchController.text;
+    final textSearchRequested = _searchController.text.trim().isNotEmpty;
     return ListView(
       key: const Key('memory-page'),
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -48,11 +48,17 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
           ),
           onChanged: (_) => setState(() {}),
         ),
+        if (textSearchRequested) ...[
+          const SizedBox(height: 8),
+          _InfoLine(text: l10n.memoryTextSearchRequiresRetriever),
+        ],
         const SizedBox(height: 16),
         _MemorySection(
           title: l10n.memoryActiveSectionTitle,
-          emptyText: l10n.memoryActiveEmpty,
-          items: _filter(state.activeItems, query),
+          emptyText: textSearchRequested
+              ? l10n.memoryTextSearchClearHint
+              : l10n.memoryActiveEmpty,
+          items: textSearchRequested ? const [] : state.activeItems,
           showRestore: false,
           onEdit: _editMemory,
           onDelete: _deleteMemory,
@@ -61,8 +67,10 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
         const SizedBox(height: 16),
         _MemorySection(
           title: l10n.memoryDeletedSectionTitle,
-          emptyText: l10n.memoryDeletedEmpty,
-          items: _filter(state.deletedItems, query),
+          emptyText: textSearchRequested
+              ? l10n.memoryTextSearchClearHint
+              : l10n.memoryDeletedEmpty,
+          items: textSearchRequested ? const [] : state.deletedItems,
           showRestore: true,
           onEdit: _editMemory,
           onDelete: _deleteMemory,
@@ -70,32 +78,6 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
         ),
       ],
     );
-  }
-
-  List<MemoryListItem> _filter(List<MemoryListItem> items, String query) {
-    final tokens = query
-        .trim()
-        .toLowerCase()
-        .split(RegExp(r'\s+'))
-        .where((token) => token.isNotEmpty)
-        .toList(growable: false);
-    if (tokens.isEmpty) {
-      return items;
-    }
-    return items
-        .where((item) {
-          final haystack = [
-            item.key,
-            item.body,
-            item.status,
-            item.sourceLabel,
-            item.memoryType,
-            item.confidence,
-            item.sensitivity,
-          ].join(' ').toLowerCase();
-          return tokens.every(haystack.contains);
-        })
-        .toList(growable: false);
   }
 
   Future<void> _editMemory(MemoryListItem item) async {
@@ -319,6 +301,23 @@ class _ErrorLine extends StatelessWidget {
       key: const Key('memory-error-line'),
       style: Theme.of(context).textTheme.bodySmall?.copyWith(
         color: Theme.of(context).colorScheme.error,
+      ),
+    );
+  }
+}
+
+class _InfoLine extends StatelessWidget {
+  const _InfoLine({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      key: const Key('memory-search-requires-retriever'),
+      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
       ),
     );
   }

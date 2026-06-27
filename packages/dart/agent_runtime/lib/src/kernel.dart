@@ -916,18 +916,9 @@ final class RuntimeKernel {
   }
 
   Object? _safeTraceValue(MapEntry<String, Object?> entry) {
-    final key = entry.key.toLowerCase();
     final value = entry.value;
-    if (_isSensitiveTraceKey(key)) {
-      return '<redacted>';
-    }
-    if (key.contains('raw_db') ||
-        key.contains('context_packet') ||
-        key.contains('full_context')) {
-      return '<omitted>';
-    }
     if (value is String) {
-      return _safeTraceString(value);
+      return _limitedTraceString(value);
     }
     if (value is Map) {
       return <String, Object?>{
@@ -945,7 +936,7 @@ final class RuntimeKernel {
       return value
           .map((item) {
             if (item is String) {
-              return _safeTraceString(item);
+              return _limitedTraceString(item);
             }
             if (item is Map) {
               return _safeTraceValue(MapEntry<String, Object?>('item', item));
@@ -957,27 +948,11 @@ final class RuntimeKernel {
     return value;
   }
 
-  bool _isSensitiveTraceKey(String key) {
-    return key.contains('secret') ||
-        key.contains('token') ||
-        key.contains('password') ||
-        key.contains('credential') ||
-        key == 'api_key' ||
-        key.endsWith('_key');
-  }
-
-  String _safeTraceString(String value) {
-    var safe = value.replaceAllMapped(
-      RegExp(
-        r'\b(api[_-]?key|secret|token|password|credential)\s*[:=]\s*[^,\s]+',
-        caseSensitive: false,
-      ),
-      (match) => '${match.group(1)}=<redacted>',
-    );
-    if (safe.length > 240) {
-      safe = '${safe.substring(0, 240)}...';
+  String _limitedTraceString(String value) {
+    if (value.length > 240) {
+      return '${value.substring(0, 240)}...';
     }
-    return safe;
+    return value;
   }
 
   Future<void> _traceMissingHandler(
@@ -1344,6 +1319,8 @@ final class _PermissionCheckedModelClient implements ModelClient {
 
   @override
   Future<ModelResponse> complete(ModelRequest request) async {
+    final stopwatch = Stopwatch()..start();
+    final contextKeys = request.context.keys.toList(growable: false)..sort();
     await trace(
       name: 'runtime.model.requested',
       message: 'Model completion requested.',
@@ -1353,8 +1330,9 @@ final class _PermissionCheckedModelClient implements ModelClient {
       agentId: agentId,
       details: <String, Object?>{
         'trace_type': 'model',
+        'call_state': 'requested',
         'prompt_length': request.prompt.length,
-        'context_keys': request.context.keys.toList(growable: false),
+        'context_keys': contextKeys,
       },
     );
     final granted = await permissionBroker.isGranted(
@@ -1380,21 +1358,138 @@ final class _PermissionCheckedModelClient implements ModelClient {
         permissions: const <String>[ModelPermissions.complete],
       );
     }
-    final response = await delegate.complete(request);
-    await trace(
-      name: 'runtime.model.completed',
-      message: 'Model completion returned.',
-      taskId: taskId,
-      runId: runId,
-      packId: packId,
-      agentId: agentId,
-      details: <String, Object?>{
-        'trace_type': 'model',
-        'response_length': response.text.length,
-      },
-    );
-    return response;
+    try {
+      final response = await delegate.complete(request);
+      stopwatch.stop();
+      await trace(
+        name: 'runtime.model.completed',
+        message: 'Model completion returned.',
+        taskId: taskId,
+        runId: runId,
+        packId: packId,
+        agentId: agentId,
+        details: <String, Object?>{
+          'trace_type': 'model',
+          'call_state': 'completed',
+          'prompt_length': request.prompt.length,
+          'response_length': response.text.length,
+          'duration_ms': stopwatch.elapsedMilliseconds,
+          ..._modelUsageTraceDetails(response.raw),
+        },
+      );
+      return response;
+    } catch (error) {
+      stopwatch.stop();
+      await trace(
+        name: 'runtime.model.failed',
+        message: 'Model completion failed.',
+        level: TraceLevel.error,
+        taskId: taskId,
+        runId: runId,
+        packId: packId,
+        agentId: agentId,
+        details: <String, Object?>{
+          'trace_type': 'model',
+          'call_state': 'failed',
+          'prompt_length': request.prompt.length,
+          'duration_ms': stopwatch.elapsedMilliseconds,
+          'error_type': error.runtimeType.toString(),
+        },
+      );
+      rethrow;
+    }
   }
+}
+
+JsonMap _modelUsageTraceDetails(JsonMap raw) {
+  final details = <String, Object?>{};
+  final providerId = _traceString(raw['provider_id']);
+  final model = _traceString(raw['model']);
+  if (providerId != null) {
+    details['provider_id'] = providerId;
+  }
+  if (model != null) {
+    details['model'] = model;
+  }
+
+  final usage = _traceMap(raw['usage']);
+  final inputTokens =
+      _traceInt(usage?['input_tokens']) ?? _traceInt(usage?['prompt_tokens']);
+  final outputTokens =
+      _traceInt(usage?['output_tokens']) ??
+      _traceInt(usage?['completion_tokens']);
+  final totalTokens = _traceInt(usage?['total_tokens']);
+  if (inputTokens != null) {
+    details['input_tokens'] = inputTokens;
+  }
+  if (outputTokens != null) {
+    details['output_tokens'] = outputTokens;
+  }
+  if (totalTokens != null) {
+    details['total_tokens'] = totalTokens;
+  }
+
+  final cachedTokens = _traceInt(usage?['cached_tokens']);
+  final thoughtTokens = _traceInt(usage?['thought_tokens']);
+  if (cachedTokens != null) {
+    details['cached_tokens'] = cachedTokens;
+  }
+  if (thoughtTokens != null) {
+    details['thought_tokens'] = thoughtTokens;
+  }
+
+  final estimatedCostUsd =
+      _traceNum(raw['estimated_cost_usd']) ??
+      _traceNum(raw['cost_usd']) ??
+      _traceNum(usage?['estimated_cost_usd']) ??
+      _traceNum(usage?['cost_usd']);
+  if (estimatedCostUsd != null) {
+    details['estimated_cost_usd'] = estimatedCostUsd;
+  }
+  if (usage != null) {
+    details['usage_present'] = true;
+  }
+  return details;
+}
+
+JsonMap? _traceMap(Object? value) {
+  if (value is! Map) {
+    return null;
+  }
+  return <String, Object?>{
+    for (final entry in value.entries)
+      if (entry.key is String) entry.key as String: entry.value as Object?,
+  };
+}
+
+String? _traceString(Object? value) {
+  if (value is String && value.trim().isNotEmpty) {
+    return value.trim();
+  }
+  return null;
+}
+
+int? _traceInt(Object? value) {
+  if (value is int) {
+    return value;
+  }
+  if (value is num) {
+    return value.toInt();
+  }
+  if (value is String) {
+    return int.tryParse(value);
+  }
+  return null;
+}
+
+num? _traceNum(Object? value) {
+  if (value is num) {
+    return value;
+  }
+  if (value is String) {
+    return num.tryParse(value);
+  }
+  return null;
 }
 
 final class _RuntimeToolInvoker implements ToolInvoker {

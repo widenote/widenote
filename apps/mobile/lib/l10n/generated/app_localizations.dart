@@ -713,8 +713,20 @@ abstract class AppLocalizations {
   /// No description provided for @memorySearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search Memory body, type, status, or source...'**
+  /// **'Text search needs a retriever...'**
   String get memorySearchHint;
+
+  /// No description provided for @memoryTextSearchRequiresRetriever.
+  ///
+  /// In en, this message translates to:
+  /// **'Text search needs a model-backed retriever. Clear the field to browse Memory locally.'**
+  String get memoryTextSearchRequiresRetriever;
+
+  /// No description provided for @memoryTextSearchClearHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear the text field to browse Memory locally.'**
+  String get memoryTextSearchClearHint;
 
   /// No description provided for @memoryActiveSectionTitle.
   ///
@@ -1069,42 +1081,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Generating'**
   String get chatGeneratingButton;
-
-  /// No description provided for @chatAssistantEmptyReply.
-  ///
-  /// In en, this message translates to:
-  /// **'I don\'t have local records to cite yet. Add captures first, then I can answer from Memory, records, and todos.'**
-  String get chatAssistantEmptyReply;
-
-  /// No description provided for @chatAssistantContextReply.
-  ///
-  /// In en, this message translates to:
-  /// **'I found {count} local context item(s). {lead}\n\n{sources}'**
-  String chatAssistantContextReply(int count, String lead, String sources);
-
-  /// No description provided for @chatAssistantLeadTodo.
-  ///
-  /// In en, this message translates to:
-  /// **'The closest match is a todo: {excerpt}'**
-  String chatAssistantLeadTodo(String excerpt);
-
-  /// No description provided for @chatAssistantLeadMemory.
-  ///
-  /// In en, this message translates to:
-  /// **'The closest match is a Memory item: {excerpt}'**
-  String chatAssistantLeadMemory(String excerpt);
-
-  /// No description provided for @chatAssistantLeadCapture.
-  ///
-  /// In en, this message translates to:
-  /// **'The closest match is a raw record: {excerpt}'**
-  String chatAssistantLeadCapture(String excerpt);
-
-  /// No description provided for @chatAssistantLeadGeneric.
-  ///
-  /// In en, this message translates to:
-  /// **'The closest match is: {excerpt}'**
-  String chatAssistantLeadGeneric(String excerpt);
 
   /// No description provided for @chatContextMemoryTitle.
   ///
@@ -1724,19 +1700,19 @@ abstract class AppLocalizations {
   /// No description provided for @providerSettingsStatusNotConfigured.
   ///
   /// In en, this message translates to:
-  /// **'Offline fallback active'**
+  /// **'Model not configured'**
   String get providerSettingsStatusNotConfigured;
 
   /// No description provided for @providerSettingsStatusDescriptionConfigured.
   ///
   /// In en, this message translates to:
-  /// **'Capture, chat, and Agent Packs use this default unless a later role override says otherwise.'**
+  /// **'Chat and model-backed Agent Pack work use this default unless a later role override says otherwise. Capture still saves raw records locally.'**
   String get providerSettingsStatusDescriptionConfigured;
 
   /// No description provided for @providerSettingsStatusDescriptionOffline.
   ///
   /// In en, this message translates to:
-  /// **'Core capture still works locally with deterministic summaries. Add a BYOK provider when you want live model calls.'**
+  /// **'Core capture still saves raw records locally. Chat answers and semantic model work require a configured BYOK provider.'**
   String get providerSettingsStatusDescriptionOffline;
 
   /// No description provided for @providerSettingsProviderCount.
@@ -1766,7 +1742,7 @@ abstract class AppLocalizations {
   /// No description provided for @providerSettingsTextRoleDescription.
   ///
   /// In en, this message translates to:
-  /// **'Used by capture summaries, chat answers, Memory extraction, and built-in Agent Packs in this slice.'**
+  /// **'Used by chat answers and model-backed Agent Pack work in this slice.'**
   String get providerSettingsTextRoleDescription;
 
   /// No description provided for @providerSettingsAgentRoleTitle.
@@ -1784,7 +1760,7 @@ abstract class AppLocalizations {
   /// No description provided for @providerSettingsRoleFallback.
   ///
   /// In en, this message translates to:
-  /// **'Local deterministic fallback'**
+  /// **'Requires configured model'**
   String get providerSettingsRoleFallback;
 
   /// No description provided for @providerSettingsCapabilitiesTitle.
@@ -1814,7 +1790,7 @@ abstract class AppLocalizations {
   /// No description provided for @providerSettingsCapabilityOfflineFallback.
   ///
   /// In en, this message translates to:
-  /// **'Offline fallback'**
+  /// **'Local raw capture'**
   String get providerSettingsCapabilityOfflineFallback;
 
   /// No description provided for @providerSettingsCapabilityByok.

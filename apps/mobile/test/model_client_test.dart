@@ -16,16 +16,17 @@ import 'package:widenote_mobile/features/chat/domain/chat_models.dart';
 import 'package:widenote_mobile/features/model_providers/application/model_provider_settings_controller.dart';
 
 void main() {
-  test('LocalSummaryModelClient returns deterministic local summary', () async {
-    const client = LocalSummaryModelClient();
+  test('ModelUnavailableModelClient requires configuration', () async {
+    const client = ModelUnavailableModelClient();
 
-    final response = await client.complete(
-      const runtime.ModelRequest(
-        prompt: 'Summarize capture for Memory: Keep WideNote local-first.',
+    await expectLater(
+      client.complete(
+        const runtime.ModelRequest(
+          prompt: 'Summarize capture for Memory: Keep WideNote local-first.',
+        ),
       ),
+      throwsA(isA<ModelUnavailableException>()),
     );
-
-    expect(response.text, 'Keep WideNote local-first.');
   });
 
   test('XiaomiMimoModelException does not expose request secrets', () {
@@ -37,11 +38,15 @@ void main() {
     );
   });
 
-  test('modelClientProvider defaults to local offline model', () {
+  test('modelClientProvider defaults to model-required state', () {
     final container = ProviderContainer();
     addTearDown(container.dispose);
 
-    expect(container.read(modelClientProvider), isA<LocalSummaryModelClient>());
+    expect(
+      container.read(modelClientProvider),
+      isA<ModelUnavailableModelClient>(),
+    );
+    expect(container.read(chatModelClientProvider), isNull);
   });
 
   test('modelClientProvider routes through saved default provider', () async {
@@ -187,7 +192,10 @@ void main() {
     );
     addTearDown(container.dispose);
 
-    expect(container.read(modelClientProvider), isA<LocalSummaryModelClient>());
+    expect(
+      container.read(modelClientProvider),
+      isA<ModelUnavailableModelClient>(),
+    );
 
     final saved = await container
         .read(modelProviderSettingsControllerProvider.notifier)
@@ -220,13 +228,15 @@ void main() {
     expect(database.modelProviderConfigs.readDefault(), isNull);
     expect(database.modelProviderConfigs.readAll(status: 'active'), isEmpty);
     final refreshed = container.read(modelClientProvider);
-    expect(refreshed, isA<LocalSummaryModelClient>());
-    final localResponse = await refreshed.complete(
-      const runtime.ModelRequest(
-        prompt: 'Summarize capture for Memory: provider deleted',
+    expect(refreshed, isA<ModelUnavailableModelClient>());
+    await expectLater(
+      refreshed.complete(
+        const runtime.ModelRequest(
+          prompt: 'Summarize capture for Memory: provider deleted',
+        ),
       ),
+      throwsA(isA<ModelUnavailableException>()),
     );
-    expect(localResponse.text, 'provider deleted');
   });
 
   test(
@@ -334,18 +344,20 @@ void main() {
       expect(imported.hasApiKey, isTrue);
       expect(imported.apiKey, isEmpty);
       final refreshed = container.read(modelClientProvider);
-      expect(refreshed, isA<LocalSummaryModelClient>());
-      final localResponse = await refreshed.complete(
-        const runtime.ModelRequest(
-          prompt: 'Summarize capture for Memory: imported key omitted',
+      expect(refreshed, isA<ModelUnavailableModelClient>());
+      await expectLater(
+        refreshed.complete(
+          const runtime.ModelRequest(
+            prompt: 'Summarize capture for Memory: imported key omitted',
+          ),
         ),
+        throwsA(isA<ModelUnavailableException>()),
       );
-      expect(localResponse.text, 'imported key omitted');
     },
   );
 
   test(
-    'modelClientProvider falls back locally when default provider fails',
+    'modelClientProvider surfaces provider failure without local fallback',
     () async {
       final endpoint = await _serve((request) async {
         await utf8.decodeStream(request);
@@ -362,18 +374,48 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final response = await container
-          .read(modelClientProvider)
-          .complete(
-            const runtime.ModelRequest(
-              prompt: 'Summarize capture for Memory: Provider fallback note.',
+      await expectLater(
+        container
+            .read(modelClientProvider)
+            .complete(
+              const runtime.ModelRequest(
+                prompt: 'Summarize capture for Memory: Provider fallback note.',
+              ),
             ),
-          );
+        throwsA(isA<RuntimeModelProviderException>()),
+      );
+    },
+  );
 
-      expect(response.text, 'Provider fallback note.');
-      expect(response.raw['model_fallback'], isTrue);
-      expect(response.raw['model_fallback_provider_id'], 'provider-default');
-      expect(response.raw.toString(), isNot(contains('provider-secret')));
+  test(
+    'chatModelClientProvider does not fall back locally when default provider fails',
+    () async {
+      final endpoint = await _serve((request) async {
+        await utf8.decodeStream(request);
+        request.response
+          ..statusCode = HttpStatus.internalServerError
+          ..write('server failed');
+        await request.response.close();
+      });
+      final database = WideNoteLocalDatabase.inMemory();
+      addTearDown(database.close);
+      _insertProvider(database, endpoint: endpoint);
+      final container = ProviderContainer(
+        overrides: [localDatabaseProvider.overrideWithValue(database)],
+      );
+      addTearDown(container.dispose);
+
+      final client = container.read(chatModelClientProvider);
+      expect(client, isNotNull);
+
+      await expectLater(
+        client!.complete(
+          const runtime.ModelRequest(
+            prompt: 'Chat should not use local summary fallback.',
+          ),
+        ),
+        throwsA(isA<RuntimeModelProviderException>()),
+      );
     },
   );
 
@@ -438,19 +480,84 @@ void main() {
       expect(contentType?.mimeType, ContentType.json.mimeType);
       expect(requestBody['model'], 'mimo-v2.5-pro');
       expect(requestBody['max_tokens'], 128);
+      expect(requestBody['thinking'], <String, Object?>{'type': 'disabled'});
       final messages = requestBody['messages']! as List<Object?>;
       final message = messages.single! as Map<String, Object?>;
       expect(message['role'], 'user');
       expect(
         message['content'],
         allOf(
-          contains('WideNote Android QA model adapter'),
+          contains('WideNote QA capture model adapter'),
           contains(
             'Summarize capture for Memory: Save raw notes locally. 广记保留原文。',
           ),
         ),
       );
       expect(response.text, 'First memory.\nSecond memory.');
+    },
+  );
+
+  test(
+    'XiaomiMimoModelClient preserves chat prompts without capture instructions',
+    () async {
+      late Map<String, Object?> requestBody;
+      final endpoint = await _serve((request) async {
+        requestBody =
+            jsonDecode(await utf8.decodeStream(request))
+                as Map<String, Object?>;
+        request.response
+          ..statusCode = HttpStatus.ok
+          ..headers.contentType = ContentType.json
+          ..write(
+            jsonEncode(<String, Object?>{
+              'content': <Map<String, Object?>>[
+                <String, Object?>{
+                  'type': 'text',
+                  'text': 'The local source says WideNote keeps raw captures.',
+                },
+              ],
+            }),
+          );
+        await request.response.close();
+      });
+      final client = XiaomiMimoModelClient(
+        apiKey: 'secret-token',
+        endpoint: endpoint,
+      );
+      addTearDown(() => client.close(force: true));
+
+      final response = await client.complete(
+        const runtime.ModelRequest(
+          prompt: '''
+Answer the user's WideNote question using only the local sources below.
+
+Question:
+What did I capture?
+
+Local sources:
+- memory/memory-1: WideNote keeps raw captures.
+''',
+          context: <String, Object?>{'chat_mode': 'source_cited_local_context'},
+        ),
+      );
+
+      expect(requestBody['max_tokens'], 512);
+      expect(requestBody['thinking'], <String, Object?>{'type': 'disabled'});
+      final messages = requestBody['messages']! as List<Object?>;
+      final message = messages.single! as Map<String, Object?>;
+      expect(message['role'], 'user');
+      expect(
+        message['content'],
+        allOf(
+          contains('WideNote QA chat model adapter'),
+          contains('memory/memory-1'),
+          isNot(contains('Return one concise, safe Memory sentence')),
+        ),
+      );
+      expect(
+        response.text,
+        'The local source says WideNote keeps raw captures.',
+      );
     },
   );
 

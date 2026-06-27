@@ -405,8 +405,15 @@ class AppLocalizationsEn extends AppLocalizations {
       'Edit, tombstone, restore, and inspect local Memory with source links.';
 
   @override
-  String get memorySearchHint =>
-      'Search Memory body, type, status, or source...';
+  String get memorySearchHint => 'Text search needs a retriever...';
+
+  @override
+  String get memoryTextSearchRequiresRetriever =>
+      'Text search needs a model-backed retriever. Clear the field to browse Memory locally.';
+
+  @override
+  String get memoryTextSearchClearHint =>
+      'Clear the text field to browse Memory locally.';
 
   @override
   String get memoryActiveSectionTitle => 'Active Memory';
@@ -601,35 +608,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatGeneratingButton => 'Generating';
-
-  @override
-  String get chatAssistantEmptyReply =>
-      'I don\'t have local records to cite yet. Add captures first, then I can answer from Memory, records, and todos.';
-
-  @override
-  String chatAssistantContextReply(int count, String lead, String sources) {
-    return 'I found $count local context item(s). $lead\n\n$sources';
-  }
-
-  @override
-  String chatAssistantLeadTodo(String excerpt) {
-    return 'The closest match is a todo: $excerpt';
-  }
-
-  @override
-  String chatAssistantLeadMemory(String excerpt) {
-    return 'The closest match is a Memory item: $excerpt';
-  }
-
-  @override
-  String chatAssistantLeadCapture(String excerpt) {
-    return 'The closest match is a raw record: $excerpt';
-  }
-
-  @override
-  String chatAssistantLeadGeneric(String excerpt) {
-    return 'The closest match is: $excerpt';
-  }
 
   @override
   String get chatContextMemoryTitle => 'Memory';
@@ -1008,15 +986,15 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get providerSettingsStatusNotConfigured => 'Offline fallback active';
+  String get providerSettingsStatusNotConfigured => 'Model not configured';
 
   @override
   String get providerSettingsStatusDescriptionConfigured =>
-      'Capture, chat, and Agent Packs use this default unless a later role override says otherwise.';
+      'Chat and model-backed Agent Pack work use this default unless a later role override says otherwise. Capture still saves raw records locally.';
 
   @override
   String get providerSettingsStatusDescriptionOffline =>
-      'Core capture still works locally with deterministic summaries. Add a BYOK provider when you want live model calls.';
+      'Core capture still saves raw records locally. Chat answers and semantic model work require a configured BYOK provider.';
 
   @override
   String providerSettingsProviderCount(int count) {
@@ -1041,7 +1019,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get providerSettingsTextRoleDescription =>
-      'Used by capture summaries, chat answers, Memory extraction, and built-in Agent Packs in this slice.';
+      'Used by chat answers and model-backed Agent Pack work in this slice.';
 
   @override
   String get providerSettingsAgentRoleTitle => 'Per-Agent overrides';
@@ -1051,7 +1029,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Not enabled yet. For now, all built-in agents inherit the default model.';
 
   @override
-  String get providerSettingsRoleFallback => 'Local deterministic fallback';
+  String get providerSettingsRoleFallback => 'Requires configured model';
 
   @override
   String get providerSettingsCapabilitiesTitle => 'Capabilities and privacy';
@@ -1067,7 +1045,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get providerSettingsCapabilityCompletion => 'Completion';
 
   @override
-  String get providerSettingsCapabilityOfflineFallback => 'Offline fallback';
+  String get providerSettingsCapabilityOfflineFallback => 'Local raw capture';
 
   @override
   String get providerSettingsCapabilityByok => 'BYOK local storage';

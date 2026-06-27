@@ -29,6 +29,10 @@ It should stay short. It points to the right local context instead of duplicatin
 
 - `docs/research/2026-06-26-w7-current-integration-state.md`
 - `docs/research/2026-06-26-w7-integration-qa.md`
+- `docs/research/2026-06-27-cross-platform-long-conversation-test-plan.md`
+- `docs/research/2026-06-27-cross-platform-core-smoke-results.md`
+- `docs/research/2026-06-27-live-llm-long-journey-qa.md`
+- `docs/research/2026-06-27-local-semantic-rule-audit.md`
 - `docs/research/2026-06-26-product-technical-direction-summary.md`
 - `docs/research/2026-06-26-technical-plan-research-synthesis.md`
 - `docs/research/2026-06-26-storage-export-selection-options.md`
@@ -100,7 +104,9 @@ It should stay short. It points to the right local context instead of duplicatin
 | --- | --- | --- |
 | Mobile app | `apps/mobile/README.md` | Flutter client and local runtime host |
 | Mobile backup | `apps/mobile/lib/features/backup/README.md` | Local JSON backup export/import UI |
+| Mobile capture | `apps/mobile/lib/features/capture/README.md` | Home capture console, persistent text draft, read-model feedback, and Memory review |
 | Mobile capture media | `apps/mobile/lib/features/capture/media/README.md` | Camera, gallery, voice, share, fake adapters, and attachment safety boundary |
+| Mobile chat | `apps/mobile/lib/features/chat/README.md` | Model-required local chat sessions with source-linked Context Packet citations |
 | Mobile timeline | `apps/mobile/lib/features/timeline/README.md` | Local timeline browse, search, details, and source-ref inspection |
 | Mobile recap | `apps/mobile/lib/features/recap/README.md` | Daily Recap page built from local object truth |
 | Mobile settings | `apps/mobile/lib/features/settings/README.md` | Settings and Privacy hub for controls, permissions, providers, backup, traces, and display status |

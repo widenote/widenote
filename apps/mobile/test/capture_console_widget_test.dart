@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
 import 'package:widenote_local_db/widenote_local_db.dart';
 import 'package:widenote_mobile/app/local_database.dart';
+import 'package:widenote_mobile/app/model_client.dart';
 import 'package:widenote_mobile/app/widenote_app.dart';
 import 'package:widenote_mobile/features/capture/application/capture_controller.dart';
+import 'package:widenote_mobile/features/capture/application/capture_draft_repository.dart';
 import 'package:widenote_mobile/features/capture/application/capture_input_controller.dart';
 import 'package:widenote_mobile/features/capture/domain/capture_models.dart';
 import 'package:widenote_mobile/features/capture/media/capture_media.dart';
@@ -33,6 +36,21 @@ void main() {
       find.text('Record saved. Local agents are organizing it now.'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('quick capture preserves literal input without smart rewriting', (
+    tester,
+  ) async {
+    await _pumpApp(tester);
+
+    final field = tester.widget<TextField>(
+      find.byKey(const Key('quick-capture-field')),
+    );
+
+    expect(field.autocorrect, isFalse);
+    expect(field.enableSuggestions, isFalse);
+    expect(field.smartDashesType, SmartDashesType.disabled);
+    expect(field.smartQuotesType, SmartQuotesType.disabled);
   });
 
   testWidgets('camera attachment can be previewed and removed', (tester) async {
@@ -316,6 +334,44 @@ void main() {
     expect(state.records.single.status, 'Processed locally');
   });
 
+  testWidgets('text draft restores across rebuild and clears after submit', (
+    tester,
+  ) async {
+    final draftRepository = InMemoryCaptureDraftRepository(
+      clock: () => DateTime.utc(2026, 6, 27, 8),
+    );
+    await _pumpApp(tester, draftRepository: draftRepository);
+
+    await tester.enterText(
+      find.byKey(const Key('quick-capture-field')),
+      'Draft survives a rebuild.',
+    );
+    await tester.pump(const Duration(milliseconds: 350));
+    expect(
+      (await draftRepository.loadActiveDraft())?.text,
+      'Draft survives a rebuild.',
+    );
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+    await _pumpApp(tester, draftRepository: draftRepository);
+
+    expect(_captureFieldText(tester), 'Draft survives a rebuild.');
+
+    final recordButton = find.byKey(const Key('record-capture-button'));
+    await _scrollHomeActionIntoView(tester, recordButton);
+    await tester.tap(recordButton);
+    await tester.pumpAndSettle();
+
+    expect(await draftRepository.loadActiveDraft(), isNull);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+    await _pumpApp(tester, draftRepository: draftRepository);
+
+    expect(_captureFieldText(tester), isEmpty);
+  });
+
   testWidgets('capture console renders localized Chinese mode labels', (
     tester,
   ) async {
@@ -339,6 +395,8 @@ Future<void> _pumpApp(
   WideNoteLocalDatabase? database,
   PhotoCaptureAdapter photoAdapter = const FakePhotoCaptureAdapter(),
   VoiceCaptureAdapter voiceAdapter = const FakeVoiceCaptureAdapter(),
+  CaptureDraftRepository? draftRepository,
+  runtime.ModelClient? modelClient = const _CaptureTestModel(),
 }) async {
   final localDatabase = database ?? WideNoteLocalDatabase.inMemory();
   addTearDown(localDatabase.close);
@@ -348,6 +406,10 @@ Future<void> _pumpApp(
         localDatabaseProvider.overrideWithValue(localDatabase),
         photoCaptureAdapterProvider.overrideWithValue(photoAdapter),
         voiceCaptureAdapterProvider.overrideWithValue(voiceAdapter),
+        if (modelClient != null)
+          modelClientProvider.overrideWithValue(modelClient),
+        if (draftRepository != null)
+          captureDraftRepositoryProvider.overrideWithValue(draftRepository),
       ],
       child: WideNoteApp(locale: locale),
     ),
@@ -373,6 +435,31 @@ CaptureInputState _readCaptureInputState(WidgetTester tester) {
   return ProviderScope.containerOf(
     tester.element(find.byType(WideNoteApp)),
   ).read(captureInputControllerProvider);
+}
+
+String _captureFieldText(WidgetTester tester) {
+  return tester
+      .widget<TextField>(find.byKey(const Key('quick-capture-field')))
+      .controller!
+      .text;
+}
+
+final class _CaptureTestModel implements runtime.ModelClient {
+  const _CaptureTestModel();
+
+  @override
+  Future<runtime.ModelResponse> complete(runtime.ModelRequest request) async {
+    return runtime.ModelResponse(
+      text: request.prompt
+          .replaceFirst('Summarize capture for Memory: ', '')
+          .trim(),
+      raw: const <String, Object?>{
+        'memory_type': 'task_context',
+        'confidence': 'high',
+        'sensitivity': 'low',
+      },
+    );
+  }
 }
 
 final class _ReviewVoiceAdapter implements VoiceCaptureAdapter {
