@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
@@ -447,6 +448,34 @@ void main() {
     },
   );
 
+  testWidgets('plugin control entries expose tappable semantics', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    try {
+      await _pumpApp(tester);
+      await _openPluginsTab(tester);
+
+      _expectButtonSemantics(
+        tester,
+        const Key('pack-library-entry'),
+        'Pack Library',
+      );
+      _expectButtonSemantics(
+        tester,
+        const Key('model-provider-entry'),
+        'Model Provider',
+      );
+      _expectButtonSemantics(
+        tester,
+        const Key('trace-console-entry'),
+        'Log Center',
+      );
+    } finally {
+      semantics.dispose();
+    }
+  });
+
   testWidgets('system back on plugins root is delegated to the platform', (
     tester,
   ) async {
@@ -516,6 +545,29 @@ String _officialManifestPath(String packId) {
     'pack.todo' => '../../packs/official/todo/manifest.json',
     _ => throw ArgumentError.value(packId, 'packId', 'Unknown official pack'),
   };
+}
+
+void _expectButtonSemantics(
+  WidgetTester tester,
+  Key key,
+  String labelFragment,
+) {
+  final data = tester.getSemantics(_semanticsForKey(key)).getSemanticsData();
+  expect(data.flagsCollection.isButton, isTrue);
+  expect(data.hasAction(SemanticsAction.tap), isTrue);
+  expect(data.label, contains(labelFragment));
+}
+
+Finder _semanticsForKey(Key key) {
+  final keyed = find.byKey(key);
+  final descendant = find.descendant(
+    of: keyed,
+    matching: find.byType(Semantics),
+  );
+  if (descendant.evaluate().isNotEmpty) {
+    return descendant.first;
+  }
+  return find.ancestor(of: keyed, matching: find.byType(Semantics)).first;
 }
 
 void _expectManifestSnapshot(

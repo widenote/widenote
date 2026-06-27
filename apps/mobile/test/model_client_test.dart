@@ -419,21 +419,6 @@ void main() {
     },
   );
 
-  test('qaMimoModelClientFromKey ignores blank keys and trims valid keys', () {
-    expect(qaMimoModelClientFromKey(''), isNull);
-    expect(qaMimoModelClientFromKey('   '), isNull);
-
-    final client = qaMimoModelClientFromKey(' secret-token ');
-    addTearDown(() {
-      if (client is XiaomiMimoModelClient) {
-        client.close(force: true);
-      }
-    });
-
-    expect(client, isA<XiaomiMimoModelClient>());
-    expect((client! as XiaomiMimoModelClient).apiKey, 'secret-token');
-  });
-
   test(
     'XiaomiMimoModelClient sends expected Anthropic-compatible request',
     () async {

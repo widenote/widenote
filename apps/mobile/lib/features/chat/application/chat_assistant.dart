@@ -12,7 +12,7 @@ final class ChatModelRequiredAssistant implements ChatAssistant {
   @override
   Future<ChatAssistantReply> answer(ChatAssistantPrompt prompt) async {
     throw const ChatAssistantException(
-      'Chat needs a configured model provider before it can generate an answer.',
+      'Model access is not configured. Add a provider in Settings, then retry.',
     );
   }
 }
@@ -38,7 +38,7 @@ final class ModelBackedChatAssistant implements ChatAssistant {
       final body = response.text.trim();
       if (body.isEmpty) {
         throw const ChatAssistantException(
-          'The model returned an empty answer. Retry or choose another provider.',
+          'The model returned no answer. Retry or choose another provider.',
         );
       }
       return ChatAssistantReply(body: body);
@@ -46,8 +46,9 @@ final class ModelBackedChatAssistant implements ChatAssistant {
       rethrow;
     } catch (error) {
       throw ChatAssistantException(
-        'Chat model request failed. Check provider settings and retry. '
-        'Cause: ${error.runtimeType}',
+        'The model is unavailable. Check provider settings or retry.',
+        diagnosticType: error.runtimeType.toString(),
+        diagnosticMessage: error.toString(),
       );
     }
   }
@@ -75,9 +76,15 @@ $localSources
 }
 
 final class ChatAssistantException implements Exception {
-  const ChatAssistantException(this.message);
+  const ChatAssistantException(
+    this.message, {
+    this.diagnosticType,
+    this.diagnosticMessage,
+  });
 
   final String message;
+  final String? diagnosticType;
+  final String? diagnosticMessage;
 
   @override
   String toString() => message;

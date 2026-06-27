@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:widenote_local_db/widenote_local_db.dart';
 import 'package:widenote_mobile/app/local_database.dart';
+import 'package:widenote_mobile/app/model_client.dart';
 import 'package:widenote_mobile/app/widenote_app.dart';
 
 void main() {
@@ -17,8 +18,10 @@ void main() {
     skip: !hasApiKey,
     (tester) async {
       final database = WideNoteLocalDatabase.inMemory();
+      final modelClient = XiaomiMimoModelClient(apiKey: apiKey.trim());
+      addTearDown(modelClient.close);
       addTearDown(database.close);
-      await _pumpApp(tester, database);
+      await _pumpApp(tester, database, modelClient);
 
       await _openHome(tester);
       expect(find.byKey(const Key('home-page')), findsOneWidget);
@@ -174,10 +177,15 @@ const _chatTurns = <String>[
 Future<void> _pumpApp(
   WidgetTester tester,
   WideNoteLocalDatabase database,
+  XiaomiMimoModelClient modelClient,
 ) async {
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [localDatabaseProvider.overrideWithValue(database)],
+      overrides: [
+        localDatabaseProvider.overrideWithValue(database),
+        modelClientProvider.overrideWithValue(modelClient),
+        chatModelClientProvider.overrideWithValue(modelClient),
+      ],
       child: const WideNoteApp(locale: Locale('en')),
     ),
   );

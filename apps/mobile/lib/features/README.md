@@ -26,13 +26,13 @@ Features may own presentation and temporary app-local controllers. Durable runti
   source-linked context, model-required failure states, and retry UI.
 - `todos`: source-linked todo list.
 - `settings`: Settings / Privacy hub for permissions, model providers,
-  backup/restore, trace console, and display status.
+  backup/restore, log center, and display status.
 - `backup`: safe local JSON backup export/import and human-readable Markdown
   export surface backed by local DB.
-- `plugins`: pack, permission, model, backup, and trace control entries.
+- `plugins`: pack, permission, model, backup, and log control entries.
 - `model_providers`: provider setup, fake connection tests, and default-provider
   local state.
-- `traces`: read-only local Agent Runtime trace console.
+- `traces`: read-only local Agent Runtime log center.
 
 ## Generated Artifacts
 

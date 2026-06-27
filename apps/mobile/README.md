@@ -129,13 +129,13 @@ Flutter plugin dependencies used by the app bootstrap:
 
 Model access:
 
-- The default mobile bootstrap uses a deterministic local summary model so core
-  capture works offline and tests do not require network access.
+- The default mobile bootstrap uses saved provider settings when configured and
+  otherwise surfaces model-required/model-unavailable states. It must not create
+  local template summaries or answers when a model is missing.
 - Provider settings use `packages/dart/model_providers` for config models,
   compatible adapter boundaries, and fake connection tests.
-- Android QA builds may opt into Xiaomi MIMO through
-  `--dart-define=WIDENOTE_QA_MIMO_API_KEY=...`. The key must never be committed,
-  logged, or written into test fixtures.
+- Tests may override model providers with fake clients or opt-in live clients.
+  Product app bootstrap must not read QA-only dart-defines as provider state.
 - Opt-in live model QA can be run with
   `flutter test test/model_client_live_test.dart --dart-define=WIDENOTE_QA_MIMO_API_KEY=<key>`.
   The live test is skipped when the key is absent or when the remote endpoint

@@ -667,6 +667,10 @@ String _schemaSeverity(runtime.TraceLevel level) {
 }
 
 String _schemaTraceType(String runtimeName) {
+  if (runtimeName.startsWith('runtime.model.') ||
+      runtimeName == 'chat.model.failed') {
+    return 'model';
+  }
   return switch (runtimeName) {
     'runtime.run.started' => 'run_started',
     'runtime.run.completed' => 'run_completed',

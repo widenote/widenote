@@ -488,11 +488,24 @@ class _ErrorBanner extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Expanded(child: Text('${l10n.chatSendFailed}: $message')),
-            TextButton.icon(
-              key: const Key('chat-retry-button'),
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
-              label: Text(l10n.retryButton),
+            Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              alignment: WrapAlignment.end,
+              children: [
+                TextButton.icon(
+                  key: const Key('chat-open-log-center-button'),
+                  onPressed: () => context.go('/settings/traces'),
+                  icon: const Icon(Icons.receipt_long_outlined),
+                  label: Text(l10n.traceConsoleOpenButton),
+                ),
+                TextButton.icon(
+                  key: const Key('chat-retry-button'),
+                  onPressed: onRetry,
+                  icon: const Icon(Icons.refresh),
+                  label: Text(l10n.retryButton),
+                ),
+              ],
             ),
           ],
         ),

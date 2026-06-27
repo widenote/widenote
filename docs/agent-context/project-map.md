@@ -111,10 +111,10 @@ It should stay short. It points to the right local context instead of duplicatin
 | Mobile chat | `apps/mobile/lib/features/chat/README.md` | Model-required local chat sessions with source-linked Context Packet citations |
 | Mobile timeline | `apps/mobile/lib/features/timeline/README.md` | Local timeline browse, search, details, and source-ref inspection |
 | Mobile recap | `apps/mobile/lib/features/recap/README.md` | Daily Recap page built from local object truth |
-| Mobile settings | `apps/mobile/lib/features/settings/README.md` | Settings and Privacy hub for controls, permissions, providers, backup, traces, and display status |
+| Mobile settings | `apps/mobile/lib/features/settings/README.md` | Settings and Privacy hub for controls, permissions, providers, backup, logs, and display status |
 | Mobile Memory | `apps/mobile/lib/features/memory/README.md` | Accepted Memory list, edit, tombstone delete, and restore UI |
 | Mobile model providers | `apps/mobile/lib/features/model_providers/README.md` | Provider settings UI and local state |
-| Mobile traces | `apps/mobile/lib/features/traces/README.md` | Read-only local Agent Runtime trace console |
+| Mobile traces | `apps/mobile/lib/features/traces/README.md` | Read-only local Agent Runtime log center |
 | API service | `apps/api/README.md` | Optional backend API |
 | TypeScript runner | `apps/runner-ts/README.md` | Self-hosted or cloud runner |
 | Schemas | `packages/schemas/README.md` | Shared runtime contracts and generated types |

@@ -96,8 +96,9 @@ or answer, it should not exist in core.
 
 - Chat source selection no longer uses local query-term scoring, stop words,
   kind boosts, or intent boosts.
-- Chat requires a configured model provider or QA model client to generate an
-  answer.
+- Product chat requires a configured model provider to generate an answer.
+  Tests may inject fake or live model clients, but app bootstrap must not treat
+  QA-only dart-defines as product provider state.
 - Empty model responses and model request failures become retryable error
   states instead of local assistant answers.
 - Capture no longer sets Memory metadata or pipeline branches from keyword

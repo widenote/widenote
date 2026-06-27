@@ -52,7 +52,7 @@ void main() {
 
     expect(find.byKey(const Key('trace-console-page')), findsOneWidget);
     expect(find.byKey(const Key('trace-console-empty')), findsOneWidget);
-    expect(find.text('Trace events: 0'), findsOneWidget);
+    expect(find.text('Log events: 0'), findsOneWidget);
   });
 
   testWidgets('trace console renders traces and refreshes read model', (

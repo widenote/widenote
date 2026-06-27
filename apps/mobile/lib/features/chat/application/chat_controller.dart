@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
 
 import '../../../app/local_database.dart';
 import '../../../app/model_client.dart';
@@ -219,6 +220,7 @@ final class ChatController extends AsyncNotifier<ChatState> {
   Future<void> _markFailed(ChatMessage userMessage, Object error) async {
     final failed = userMessage.copyWith(status: ChatMessageStatus.failed);
     await ref.read(chatRepositoryProvider).saveMessage(failed);
+    await _recordFailureTrace(failed, error);
     final current = await _currentState();
     state = AsyncData(
       current.copyWith(
@@ -228,6 +230,45 @@ final class ChatController extends AsyncNotifier<ChatState> {
         failedMessageId: failed.id,
       ),
     );
+  }
+
+  Future<void> _recordFailureTrace(
+    ChatMessage userMessage,
+    Object error,
+  ) async {
+    final diagnosticType = error is ChatAssistantException
+        ? error.diagnosticType
+        : null;
+    final diagnosticMessage = error is ChatAssistantException
+        ? error.diagnosticMessage
+        : null;
+    final details = <String, Object?>{
+      'trace_type': 'model',
+      'surface': 'chat',
+      'call_state': 'failed',
+      'error_type': diagnosticType ?? error.runtimeType.toString(),
+    };
+    if (diagnosticMessage != null) {
+      details['error_message'] = diagnosticMessage;
+    }
+    try {
+      await ref
+          .read(localTraceSinkProvider)
+          .record(
+            runtime.RuntimeTrace(
+              id: ref.read(chatIdGeneratorProvider).nextId('chat-trace'),
+              name: 'chat.model.failed',
+              message: 'Chat model request failed.',
+              level: runtime.TraceLevel.error,
+              createdAt: ref.read(chatClockProvider)(),
+              packId: 'chat',
+              agentId: 'chat.local',
+              details: details,
+            ),
+          );
+    } catch (_) {
+      // Logging must not mask the original chat failure state.
+    }
   }
 
   ChatSession _newSession(String firstMessage) {

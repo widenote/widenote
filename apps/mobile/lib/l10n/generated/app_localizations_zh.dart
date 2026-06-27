@@ -649,10 +649,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsBackupStatusNeedsReview => '需检查';
 
   @override
-  String get settingsTraceConsoleTitle => '追踪控制台';
+  String get settingsTraceConsoleTitle => '日志中心';
 
   @override
-  String get settingsTraceConsoleSubtitle => '检查本地 Agent Runtime 运行、权限检查和生成输出。';
+  String get settingsTraceConsoleSubtitle => '查看本地 Agent Runtime 日志、权限检查和生成输出。';
 
   @override
   String get settingsTraceConsoleStatus => '只读';
@@ -713,13 +713,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pluginsBackupStatus => '本地优先';
 
   @override
-  String get pluginsTraceConsoleTitle => '追踪控制台';
+  String get pluginsTraceConsoleTitle => '日志中心';
 
   @override
-  String get pluginsTraceConsoleSubtitle => '检查插件运行、权限和生成结果。';
+  String get pluginsTraceConsoleSubtitle => '查看插件运行日志、权限和生成结果。';
 
   @override
-  String get pluginsTraceConsoleStatus => '追踪就绪';
+  String get pluginsTraceConsoleStatus => '日志就绪';
 
   @override
   String get packLibraryTitle => '插件库';
@@ -785,20 +785,20 @@ class AppLocalizationsZh extends AppLocalizations {
   String get agentPlatformTitle => '智能体观测';
 
   @override
-  String get agentPlatformSubtitle => '基于真实本地追踪事件的只读运行证据。';
+  String get agentPlatformSubtitle => '基于真实本地日志事件的只读运行证据。';
 
   @override
-  String get traceConsoleTitle => '追踪控制台';
+  String get traceConsoleTitle => '日志中心';
 
   @override
-  String get traceConsoleSubtitle => '检查本地 Agent Runtime 运行、权限和生成输出。';
+  String get traceConsoleSubtitle => '查看本地 Agent Runtime 日志、权限和生成输出。';
 
   @override
   String get traceConsoleSummaryTitle => '运行摘要';
 
   @override
   String traceConsoleEventCount(int count) {
-    return '追踪事件：$count';
+    return '日志事件：$count';
   }
 
   @override
@@ -815,13 +815,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get traceConsoleRefreshButton => '刷新';
 
   @override
-  String get traceConsoleOpenButton => '打开追踪控制台';
+  String get traceConsoleOpenButton => '打开日志中心';
 
   @override
   String get traceConsoleEventsTitle => '事件';
 
   @override
-  String get traceConsoleEmpty => '还没有运行追踪。记录或插件运行后会显示在这里。';
+  String get traceConsoleEmpty => '还没有运行日志。记录或插件运行后会显示在这里。';
 
   @override
   String get traceConsoleNoMessage => '没有记录消息。';

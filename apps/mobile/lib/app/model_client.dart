@@ -10,12 +10,6 @@ import 'package:widenote_model_providers/model_providers.dart';
 import 'local_database.dart';
 
 final modelClientProvider = Provider<runtime.ModelClient>((ref) {
-  final qaClient = qaMimoModelClientFromEnvironment();
-  if (qaClient is XiaomiMimoModelClient) {
-    ref.onDispose(qaClient.close);
-    return qaClient;
-  }
-
   final providerClient = _defaultProviderClient(ref);
   if (providerClient != null) {
     return providerClient;
@@ -24,27 +18,8 @@ final modelClientProvider = Provider<runtime.ModelClient>((ref) {
 });
 
 final chatModelClientProvider = Provider<runtime.ModelClient?>((ref) {
-  final qaClient = qaMimoModelClientFromEnvironment();
-  if (qaClient is XiaomiMimoModelClient) {
-    ref.onDispose(qaClient.close);
-    return qaClient;
-  }
-
   return _defaultProviderClient(ref);
 });
-
-runtime.ModelClient? qaMimoModelClientFromEnvironment() {
-  const apiKey = String.fromEnvironment('WIDENOTE_QA_MIMO_API_KEY');
-  return qaMimoModelClientFromKey(apiKey);
-}
-
-runtime.ModelClient? qaMimoModelClientFromKey(String apiKey) {
-  final trimmed = apiKey.trim();
-  if (trimmed.isEmpty) {
-    return null;
-  }
-  return XiaomiMimoModelClient(apiKey: trimmed);
-}
 
 final class ModelUnavailableModelClient implements runtime.ModelClient {
   const ModelUnavailableModelClient();

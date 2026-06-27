@@ -175,13 +175,20 @@ class TimelineItemRow extends StatelessWidget {
       ],
     );
 
-    return InkWell(
-      key: Key('timeline-item-${item.id}'),
-      borderRadius: BorderRadius.circular(8),
+    return Semantics(
+      button: true,
+      enabled: true,
+      excludeSemantics: true,
+      label: '${kindLabel(item)}. ${item.title}. ${item.status}',
       onTap: () => onOpenItem(item),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: row,
+      child: InkWell(
+        key: Key('timeline-item-${item.id}'),
+        borderRadius: BorderRadius.circular(8),
+        onTap: () => onOpenItem(item),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: row,
+        ),
       ),
     );
   }

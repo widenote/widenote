@@ -3,7 +3,8 @@
 Status: passed on Android and iOS with live MIMO model
 Date: 2026-06-27
 Scope: Android emulator and iOS simulator on current W7 mobile checkout, dev
-flavor, transient QA MIMO model key passed by build-time dart define
+flavor, transient QA MIMO model key passed to the opt-in integration-test
+harness by dart define
 
 ## Summary
 
@@ -28,11 +29,15 @@ Related sources:
 - `docs/rfcs/model-provider-settings.md`
 - `docs/rfcs/memory-model.md`
 
-The required live QA mode used:
+The required live QA mode used a test-process provider override:
 
 ```sh
 --dart-define=WIDENOTE_QA_MIMO_API_KEY=<redacted>
 ```
+
+This define is not product runtime configuration. App bootstrap and Settings
+must read saved provider settings only; the live QA script injects
+`XiaomiMimoModelClient` through Riverpod overrides.
 
 ## Latest Successful Live Rerun
 
@@ -270,17 +275,17 @@ header choice or default model id. The later successful rerun confirmed the
 adapter works with authenticated credentials after the MIMO thinking directive
 fix.
 
-## Product Decision Items
+## Product Decision Updates
 
-The following were not changed in this PR because they are interaction/product
-choices rather than narrow correctness fixes:
+The following follow-ups were decided after the QA report and are now reflected
+in code/tests/docs:
 
-| ID | Area | Finding | Decision needed |
+| ID | Area | Finding | Decision / implementation |
 | --- | --- | --- | --- |
-| UX-1 | Chat errors | Repeated provider failures produce dense retryable failure UI and can expose provider-specific exception naming. | Decide how much provider diagnostic detail should be user-visible versus tucked into traces. |
-| UX-2 | QA provider status | Settings says model access is not configured even when a transient QA dart-define key is active. | Decide whether QA/dev builds should surface compile-time provider status in Settings. |
-| UX-3 | Accessibility/actionability | Settings, Packs, and Timeline rows were visually actionable but not consistently exposed as tappable accessibility targets in simulator snapshots. | Decide whether to prioritize accessibility semantics before the next broad QA pass. |
-| UX-4 | Media mode after gallery cancel | Counts stayed correct after gallery cancel, but iOS automation no longer saw all media controls in the snapshot. | Decide whether this needs a UX polish pass or a targeted simulator repro first. |
+| UX-1 | Chat errors and diagnostics | Repeated provider failures produced dense retryable failure UI and could expose provider-specific exception naming. | User-visible errors stay concise by default. Provider detail is recorded as local log-center trace metadata for troubleshooting. |
+| UX-2 | QA provider status | Settings said model access was not configured even when a transient QA dart-define key was active. | Correct behavior: QA dart-defines are test-only injection inputs, not product provider state. Settings displays saved provider configuration only. |
+| UX-3 | Accessibility/actionability | Settings, Packs, and Timeline rows were visually actionable but not consistently exposed as tappable accessibility targets in simulator snapshots. | Implement tappable button semantics for these rows and cover them with widget tests. |
+| UX-4 | Media mode after gallery cancel | Counts stayed correct after gallery cancel, but iOS automation no longer saw all media controls in the snapshot. | Keep the user in Media mode after cancel and cover visible Camera/Gallery controls with a widget test. |
 
 ## Expected Limitations Confirmed
 
@@ -293,8 +298,11 @@ choices rather than narrow correctness fixes:
 
 ## Follow-Up Regression Gate
 
-The live journey is accepted for this PR. Keep the scripted long-session test as
-an opt-in regression gate when a working transient credential is available:
+The live journey is accepted for this PR. Routine UI/product PRs do not require
+real-LLM reruns every time. Keep the scripted long-session test as an opt-in
+regression gate for Agent/runtime/model-provider changes or when a change could
+alter model-derived objects, retrieval context, traces, or source provenance.
+When a working transient credential is available, the gate should cover:
 
 - 8-12 captures on Android and iOS.
 - 10+ grounded chat turns with source citations on Android and iOS.

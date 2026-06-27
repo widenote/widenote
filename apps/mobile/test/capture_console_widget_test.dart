@@ -221,9 +221,21 @@ void main() {
       ),
     );
 
-    await tester.tap(find.byKey(const Key('add-gallery-attachment-button')));
+    await tester.tap(find.text('Media').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('capture-media-gallery-button')));
     await tester.pumpAndSettle();
 
+    expect(_readCaptureInputState(tester).mode, CaptureMode.media);
+    expect(find.byKey(const Key('capture-mode-media-panel')), findsOneWidget);
+    expect(
+      find.byKey(const Key('capture-media-camera-button')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('capture-media-gallery-button')),
+      findsOneWidget,
+    );
     expect(find.text('Gallery selection cancelled.'), findsOneWidget);
     expect(_readCaptureInputState(tester).attachments, isEmpty);
     expect(_readCaptureState(tester).records, isEmpty);
