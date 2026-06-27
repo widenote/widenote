@@ -160,6 +160,7 @@ void main() {
       expect(authorizationHeader, isNull);
       expect(versionHeader, '2023-06-01');
       expect(requestBody['model'], 'deepseek-v4-flash');
+      expect(requestBody['thinking'], <String, Object?>{'type': 'disabled'});
       expect(response.text, 'DeepSeek-backed memory.');
       expect(response.raw['provider_id'], 'deepseek-default');
       expect(response.raw['model'], 'deepseek-v4-flash');

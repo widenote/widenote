@@ -226,6 +226,7 @@ void main() {
       expect(request.headers['anthropic-version'], '2023-06-01');
       expect(request.headers['x-api-key'], isNotEmpty);
       expect(request.redactedHeaders['x-api-key'], '<redacted>');
+      expect(request.body['thinking'], <String, Object?>{'type': 'disabled'});
       expect(request.body['system'], 'Be useful.');
       expect(request.body['messages'], <Map<String, Object?>>[
         <String, Object?>{'role': 'user', 'content': 'Draft note.'},
@@ -319,6 +320,13 @@ void main() {
           http.requests[2].endpoint.toString(),
           'https://example.invalid/anthropic/v1/messages',
         );
+        expect(http.requests[0].body['thinking'], <String, Object?>{
+          'type': 'disabled',
+        });
+        expect(http.requests[1].body['thinking'], <String, Object?>{
+          'type': 'disabled',
+        });
+        expect(http.requests[2].body.containsKey('thinking'), isFalse);
       },
     );
   });
