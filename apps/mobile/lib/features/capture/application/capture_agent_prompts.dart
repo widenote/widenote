@@ -1,4 +1,4 @@
-const captureMemoryPromptRef = 'capture.memory_summary.v1';
+const captureMemoryPromptRef = 'capture.memory_candidate.v2';
 
 const captureMemoryPromptCaptureTextMarker = 'Capture text:';
 
@@ -18,10 +18,17 @@ String buildCaptureMemoryPrompt({
     '- Keep the output useful as a derived Memory item that can later point back to the source event.',
     '',
     'Output:',
-    '- Return only the Memory candidate text.',
-    '- Use the capture language when it is clear.',
-    '- Keep it to one sentence and under 180 characters when possible.',
-    '- Do not output JSON, bullets, citations, headings, or commentary.',
+    '- Return exactly one JSON object and nothing else.',
+    '- Do not wrap the JSON in Markdown, code fences, bullets, headings, or commentary.',
+    '- Shape: {"text":"...","memory_type":"task_context","confidence":"high","sensitivity":"low","durability":"durable"}',
+    '- The JSON object must be complete and closed. Prefer a shorter text value over risking truncated JSON.',
+    '- text: use the capture language when it is clear; keep it to one sentence and under 120 characters when possible.',
+    '- memory_type must be one of: preference, project, task_context, person, health, finance, location, credential, insight.',
+    '- confidence must be one of: high, medium, low.',
+    '- sensitivity must be one of: low, medium, high.',
+    '- durability must be one of: durable, transient.',
+    '- For ordinary explicit work, project, preference, or task context, use low sensitivity and high or medium confidence.',
+    '- For health, finance, location, credential-like, sensitive, ambiguous, or weakly evidenced content, choose the matching type, sensitivity, and confidence so WideNote can route it to review.',
     '',
     'Source event id: $sourceEventId',
     captureMemoryPromptCaptureTextMarker,

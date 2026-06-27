@@ -63,7 +63,7 @@ final class ModelProviderConfig {
     required this.endpoint,
     required this.model,
     this.apiKey = '',
-    this.maxOutputTokens = 512,
+    this.maxOutputTokens = 1024,
     this.capabilities = const <ModelCapability>{
       ModelCapability.chat,
       ModelCapability.completion,
@@ -77,7 +77,7 @@ final class ModelProviderConfig {
     Uri? endpoint,
     String? model,
     String apiKey = '',
-    int maxOutputTokens = 512,
+    int maxOutputTokens = 1024,
   }) {
     return ModelProviderConfig(
       id: id,

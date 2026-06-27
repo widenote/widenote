@@ -135,6 +135,104 @@ final class AttachmentRecord {
   }
 }
 
+final class DerivedArtifactRecord {
+  const DerivedArtifactRecord({
+    required this.id,
+    required this.sourceCaptureId,
+    required this.artifactKind,
+    required this.title,
+    required this.body,
+    required this.sourceRefs,
+    required this.generatorId,
+    required this.generatorVersion,
+    required this.createdAt,
+    required this.updatedAt,
+    this.schemaVersion = 1,
+    this.sourceAttachmentId,
+    this.sourceEventId,
+    this.status = 'active',
+    this.mimeType,
+    this.storagePath,
+    this.contentHash,
+    this.sensitivity = 'low',
+    this.confidence = 'medium',
+    this.payload = const <String, Object?>{},
+    this.invalidatedAt,
+  });
+
+  final String id;
+  final int schemaVersion;
+  final String sourceCaptureId;
+  final String? sourceAttachmentId;
+  final String? sourceEventId;
+  final String artifactKind;
+  final String status;
+  final String title;
+  final String body;
+  final String? mimeType;
+  final String? storagePath;
+  final String? contentHash;
+  final JsonList sourceRefs;
+  final String sensitivity;
+  final String confidence;
+  final String generatorId;
+  final String generatorVersion;
+  final JsonMap payload;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? invalidatedAt;
+
+  DerivedArtifactRecord copyWith({
+    int? schemaVersion,
+    String? sourceCaptureId,
+    String? sourceAttachmentId,
+    String? sourceEventId,
+    String? artifactKind,
+    String? status,
+    String? title,
+    String? body,
+    String? mimeType,
+    String? storagePath,
+    String? contentHash,
+    JsonList? sourceRefs,
+    String? sensitivity,
+    String? confidence,
+    String? generatorId,
+    String? generatorVersion,
+    JsonMap? payload,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    DateTime? invalidatedAt,
+    bool clearInvalidatedAt = false,
+  }) {
+    return DerivedArtifactRecord(
+      id: id,
+      schemaVersion: schemaVersion ?? this.schemaVersion,
+      sourceCaptureId: sourceCaptureId ?? this.sourceCaptureId,
+      sourceAttachmentId: sourceAttachmentId ?? this.sourceAttachmentId,
+      sourceEventId: sourceEventId ?? this.sourceEventId,
+      artifactKind: artifactKind ?? this.artifactKind,
+      status: status ?? this.status,
+      title: title ?? this.title,
+      body: body ?? this.body,
+      mimeType: mimeType ?? this.mimeType,
+      storagePath: storagePath ?? this.storagePath,
+      contentHash: contentHash ?? this.contentHash,
+      sourceRefs: sourceRefs ?? this.sourceRefs,
+      sensitivity: sensitivity ?? this.sensitivity,
+      confidence: confidence ?? this.confidence,
+      generatorId: generatorId ?? this.generatorId,
+      generatorVersion: generatorVersion ?? this.generatorVersion,
+      payload: payload ?? this.payload,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      invalidatedAt: clearInvalidatedAt
+          ? null
+          : invalidatedAt ?? this.invalidatedAt,
+    );
+  }
+}
+
 final class MemoryItemRecord {
   const MemoryItemRecord({
     required this.id,

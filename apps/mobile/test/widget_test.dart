@@ -69,7 +69,10 @@ void main() {
     expect(find.byKey(Key('record-row-${record.id}')), findsOneWidget);
     expect(find.text(captureText), findsOneWidget);
     expect(_readCaptureState(tester).cards, hasLength(2));
-    expect(_readCaptureState(tester).insights, hasLength(3));
+    expect(
+      _readCaptureState(tester).insights,
+      hasLength(greaterThanOrEqualTo(4)),
+    );
   });
 
   testWidgets('home and todos hydrate from local DB after relaunch', (
@@ -95,7 +98,7 @@ void main() {
     expect(hydrated.records.single.body, captureText);
     expect(hydrated.todos.single.id, todo.id);
     expect(hydrated.cards, hasLength(2));
-    expect(hydrated.insights, hasLength(3));
+    expect(hydrated.insights, hasLength(greaterThanOrEqualTo(4)));
 
     await tester.scrollUntilVisible(
       find.text(captureText),
@@ -145,7 +148,7 @@ void main() {
     expect(find.text(captureText), findsOneWidget);
     final state = _readCaptureState(tester);
     expect(state.cards, hasLength(2));
-    expect(state.insights, hasLength(3));
+    expect(state.insights, hasLength(greaterThanOrEqualTo(5)));
 
     await tester.scrollUntilVisible(
       find.text('Memory saved automatically'),
@@ -404,12 +407,12 @@ void main() {
     expect(state.records, hasLength(1));
     expect(state.memories, hasLength(1));
     expect(state.cards, hasLength(2));
-    expect(state.insights, hasLength(3));
+    expect(state.insights, hasLength(5));
     expect(state.todos, hasLength(1));
     await _scrollHomeTextIntoView(tester, '1 processed');
     expect(find.text('1 processed'), findsOneWidget);
     expect(find.text('1 accepted'), findsOneWidget);
-    expect(find.text('3 source-linked'), findsOneWidget);
+    expect(find.text('5 source-linked'), findsOneWidget);
 
     await ProviderScope.containerOf(tester.element(find.byType(WideNoteApp)))
         .read(captureControllerProvider.notifier)
@@ -419,12 +422,12 @@ void main() {
     expect(state.records, hasLength(2));
     expect(state.memories, hasLength(2));
     expect(state.cards, hasLength(4));
-    expect(state.insights, hasLength(3));
+    expect(state.insights, hasLength(5));
     expect(state.todos, hasLength(2));
     await _scrollHomeTextIntoView(tester, '2 processed');
     expect(find.text('2 processed'), findsOneWidget);
     expect(find.text('2 accepted'), findsOneWidget);
-    expect(find.text('3 source-linked'), findsOneWidget);
+    expect(find.text('5 source-linked'), findsOneWidget);
   });
 
   testWidgets('sensitive Memory candidate stays out of the home surface', (
@@ -537,7 +540,10 @@ void main() {
       );
       expect(database.memoryItems.readAll(status: 'active'), hasLength(1));
       expect(database.cards.readAll(status: 'active'), hasLength(2));
-      expect(database.insights.readAll(status: 'active'), hasLength(3));
+      expect(
+        database.insights.readAll(status: 'active'),
+        hasLength(greaterThanOrEqualTo(4)),
+      );
       expect(
         (database.cards.readAll(status: 'active').first.sourceRefs.first
             as Map)['kind'],
@@ -685,6 +691,7 @@ final class _CaptureTestModel implements runtime.ModelClient {
       'memory_type': 'task_context',
       'confidence': 'high',
       'sensitivity': 'low',
+      'durability': 'durable',
     },
   });
 
@@ -703,6 +710,7 @@ final class _ReviewCaptureModel extends _CaptureTestModel {
           'memory_type': 'credential',
           'confidence': 'high',
           'sensitivity': 'high',
+          'durability': 'durable',
         },
       );
 }

@@ -9,6 +9,7 @@ import 'models.dart';
 const _eventLogSection = 'event_log';
 const _capturesSection = 'captures';
 const _attachmentsSection = 'attachments';
+const _derivedArtifactsSection = 'derived_artifacts';
 const _memoryItemsSection = 'memory_items';
 const _memoryCandidatesSection = 'memory_candidates';
 const _cardsSection = 'cards';
@@ -28,6 +29,7 @@ const _backupSections = <String>[
   _eventLogSection,
   _capturesSection,
   _attachmentsSection,
+  _derivedArtifactsSection,
   _memoryItemsSection,
   _memoryCandidatesSection,
   _cardsSection,
@@ -64,7 +66,7 @@ enum LocalBackupMode {
 
 abstract final class LocalBackupCodec {
   static const formatId = 'widenote.local_data_backup';
-  static const currentFormatVersion = 3;
+  static const currentFormatVersion = 4;
   static const oldestSupportedFormatVersion = 1;
 
   static String encode(LocalDataBackup backup) {
@@ -192,6 +194,7 @@ final class LocalDataBackup {
     required this.eventLog,
     required this.captures,
     required this.attachments,
+    required this.derivedArtifacts,
     required this.memoryItems,
     required this.memoryCandidates,
     required this.cards,
@@ -229,6 +232,11 @@ final class LocalDataBackup {
         _attachmentsSection,
         requiredSection: manifest.formatVersion >= 2,
       ).map(_attachmentFromJson).toList(growable: false),
+      derivedArtifacts: _recordList(
+        json,
+        _derivedArtifactsSection,
+        requiredSection: manifest.formatVersion >= 4,
+      ).map(_derivedArtifactFromJson).toList(growable: false),
       memoryItems: _requiredRecordList(
         json,
         _memoryItemsSection,
@@ -297,6 +305,7 @@ final class LocalDataBackup {
   final List<EventLogEntry> eventLog;
   final List<CaptureRecord> captures;
   final List<AttachmentRecord> attachments;
+  final List<DerivedArtifactRecord> derivedArtifacts;
   final List<MemoryItemRecord> memoryItems;
   final List<MemoryCandidateRecord> memoryCandidates;
   final List<CardRecord> cards;
@@ -325,6 +334,9 @@ final class LocalDataBackup {
       _capturesSection: captures.map(_captureToJson).toList(growable: false),
       _attachmentsSection: attachments
           .map(_attachmentToJson)
+          .toList(growable: false),
+      _derivedArtifactsSection: derivedArtifacts
+          .map(_derivedArtifactToJson)
           .toList(growable: false),
       _memoryItemsSection: memoryItems
           .map(_memoryItemToJson)
@@ -370,6 +382,7 @@ final class LocalDataBackup {
       _eventLogSection: eventLog.length,
       _capturesSection: captures.length,
       _attachmentsSection: attachments.length,
+      _derivedArtifactsSection: derivedArtifacts.length,
       _memoryItemsSection: memoryItems.length,
       _memoryCandidatesSection: memoryCandidates.length,
       _cardsSection: cards.length,
@@ -460,6 +473,7 @@ final class LocalBackupService {
     final eventLog = database.eventLog.readAll();
     final captures = database.captures.readAll();
     final attachments = database.attachments.readAll();
+    final derivedArtifacts = database.derivedArtifacts.readAll();
     final memoryItems = database.memoryItems.readAll();
     final memoryCandidates = database.memoryCandidates.readAll();
     final cards = database.cards.readAll();
@@ -487,6 +501,7 @@ final class LocalBackupService {
           _eventLogSection: eventLog.length,
           _capturesSection: captures.length,
           _attachmentsSection: attachments.length,
+          _derivedArtifactsSection: derivedArtifacts.length,
           _memoryItemsSection: memoryItems.length,
           _memoryCandidatesSection: memoryCandidates.length,
           _cardsSection: cards.length,
@@ -506,6 +521,7 @@ final class LocalBackupService {
       eventLog: eventLog,
       captures: captures,
       attachments: attachments,
+      derivedArtifacts: derivedArtifacts,
       memoryItems: memoryItems,
       memoryCandidates: memoryCandidates,
       cards: cards,
@@ -555,6 +571,9 @@ final class LocalBackupService {
       }
       for (final attachment in backup.attachments) {
         database.attachments.insert(attachment);
+      }
+      for (final artifact in backup.derivedArtifacts) {
+        database.derivedArtifacts.insert(artifact);
       }
       for (final event in backup.eventLog) {
         database.eventLog.append(event);
@@ -626,6 +645,11 @@ final class LocalBackupService {
       _attachmentsSection,
       backup.attachments.map((record) => record.id),
       (id) => database.attachments.readById(id) != null,
+    );
+    _rejectExistingOrDuplicateIds(
+      _derivedArtifactsSection,
+      backup.derivedArtifacts.map((record) => record.id),
+      (id) => database.derivedArtifacts.readById(id) != null,
     );
     _rejectExistingOrDuplicateIds(
       _eventLogSection,
@@ -832,6 +856,58 @@ AttachmentRecord _attachmentFromJson(JsonMap json) {
     payload: _requiredMap(json, 'payload'),
     createdAt: _requiredDateTime(json, 'created_at'),
     updatedAt: _requiredDateTime(json, 'updated_at'),
+  );
+}
+
+JsonMap _derivedArtifactToJson(DerivedArtifactRecord artifact) {
+  return <String, Object?>{
+    'id': artifact.id,
+    'schema_version': artifact.schemaVersion,
+    'source_capture_id': artifact.sourceCaptureId,
+    'source_attachment_id': artifact.sourceAttachmentId,
+    'source_event_id': artifact.sourceEventId,
+    'artifact_kind': artifact.artifactKind,
+    'status': artifact.status,
+    'title': artifact.title,
+    'body': artifact.body,
+    'mime_type': artifact.mimeType,
+    'storage_path': artifact.storagePath,
+    'content_hash': artifact.contentHash,
+    'source_refs': artifact.sourceRefs,
+    'sensitivity': artifact.sensitivity,
+    'confidence': artifact.confidence,
+    'generator_id': artifact.generatorId,
+    'generator_version': artifact.generatorVersion,
+    'payload': artifact.payload,
+    'created_at': _dateTimeToJson(artifact.createdAt),
+    'updated_at': _dateTimeToJson(artifact.updatedAt),
+    'invalidated_at': _optionalDateTimeToJson(artifact.invalidatedAt),
+  };
+}
+
+DerivedArtifactRecord _derivedArtifactFromJson(JsonMap json) {
+  return DerivedArtifactRecord(
+    id: _requiredString(json, 'id'),
+    schemaVersion: _requiredInt(json, 'schema_version'),
+    sourceCaptureId: _requiredString(json, 'source_capture_id'),
+    sourceAttachmentId: _optionalString(json, 'source_attachment_id'),
+    sourceEventId: _optionalString(json, 'source_event_id'),
+    artifactKind: _requiredString(json, 'artifact_kind'),
+    status: _requiredString(json, 'status'),
+    title: _requiredString(json, 'title'),
+    body: _requiredString(json, 'body'),
+    mimeType: _optionalString(json, 'mime_type'),
+    storagePath: _optionalString(json, 'storage_path'),
+    contentHash: _optionalString(json, 'content_hash'),
+    sourceRefs: _requiredList(json, 'source_refs'),
+    sensitivity: _requiredString(json, 'sensitivity'),
+    confidence: _requiredString(json, 'confidence'),
+    generatorId: _requiredString(json, 'generator_id'),
+    generatorVersion: _requiredString(json, 'generator_version'),
+    payload: _requiredMap(json, 'payload'),
+    createdAt: _requiredDateTime(json, 'created_at'),
+    updatedAt: _requiredDateTime(json, 'updated_at'),
+    invalidatedAt: _optionalDateTime(json, 'invalidated_at'),
   );
 }
 
@@ -1387,6 +1463,9 @@ bool _missingSectionAllowed(String section, int sourceFormatVersion) {
     return true;
   }
   if (section == _attachmentsSection && sourceFormatVersion < 2) {
+    return true;
+  }
+  if (section == _derivedArtifactsSection && sourceFormatVersion < 4) {
     return true;
   }
   if (_v3BackupSections.contains(section) && sourceFormatVersion < 3) {

@@ -71,7 +71,7 @@ void main() {
   );
 
   test('quick capture runs runtime and silently auto-accepts Memory', () async {
-    final model = runtime.FakeModel(
+    final model = _SequenceMetadataModel(
       responses: <String>['Lin prefers source-linked WideNote todos.'],
     );
     final orchestrator = CaptureOrchestrator.local(
@@ -105,6 +105,8 @@ void main() {
       'summary insight',
       'count insight',
       'trend insight',
+      'source mix insight',
+      'action pattern insight',
     ]);
     expect(
       result.insights.map((insight) => insight.sourceLabel),
@@ -115,7 +117,7 @@ void main() {
       model.requests.single.prompt,
       contains(captureMemoryPromptCaptureTextMarker),
     );
-    expect(model.requests.single.prompt, contains('Return only the Memory'));
+    expect(model.requests.single.prompt, contains('Return exactly one JSON'));
     expect(model.requests.single.context['prompt_ref'], captureMemoryPromptRef);
     expect(
       result.eventTypes,
@@ -215,43 +217,50 @@ void main() {
     );
   });
 
-  test(
-    'capture content keywords do not drive Memory metadata or Todo branching',
-    () async {
-      final orchestrator = CaptureOrchestrator.local(
-        clock: TickingWnClock(DateTime.utc(2026, 6, 23, 2)),
-        idGenerator: SequenceWnIdGenerator(seed: 'secret'),
-        model: _SequenceMetadataModel(
-          responses: <String>['The user pasted an API token.'],
-        ),
-      );
+  test('provider metadata routes credential-like capture to review', () async {
+    final orchestrator = CaptureOrchestrator.local(
+      clock: TickingWnClock(DateTime.utc(2026, 6, 23, 2)),
+      idGenerator: SequenceWnIdGenerator(seed: 'secret'),
+      model: runtime.FakeModel(
+        responses: const <String>[
+          '{"text":"The user pasted credential-like material that needs review.","memory_type":"credential","confidence":"high","sensitivity":"high","durability":"durable"}',
+        ],
+      ),
+    );
 
-      final result = await orchestrator.processCapture(
-        'My API token is sk-demo-secret and should not be auto stored.',
-      );
+    final result = await orchestrator.processCapture(
+      'My API token is sk-demo-secret and should not be auto stored.',
+    );
 
-      expect(result.acceptedMemoryCount, 1);
-      expect(result.reviewMemoryCount, 0);
-      expect(result.memoryItem.title, 'memory.auto_saved');
-      expect(result.memoryItem.statusLabel, 'auto-accepted');
-      expect(result.memoryItem.confidenceLabel, 'high confidence');
-      final memoryEvent = result.events.singleWhere(
-        (event) => event.type == runtime.WnEventTypes.memoryProposed,
-      );
-      expect(memoryEvent.payload['memory_type'], 'task_context');
-      expect(memoryEvent.payload['confidence'], 'high');
-      expect(memoryEvent.payload['sensitivity'], 'low');
-      expect(result.cards.map((card) => card.kindLabel), [
-        'capture card',
-        'Memory card',
-      ]);
-      expect(result.insights, hasLength(3));
-      expect(result.todo.isSuggested, isTrue);
-      expect(result.todo.statusLabel, 'suggested by agent');
-      expect(result.eventTypes, contains(runtime.WnEventTypes.todoSuggested));
-      expect(result.reviewCandidate, isNull);
-    },
-  );
+    expect(result.acceptedMemoryCount, 0);
+    expect(result.reviewMemoryCount, 1);
+    expect(result.memoryItem.title, 'memory.needs_review');
+    expect(result.memoryItem.statusLabel, 'needs review');
+    expect(result.memoryItem.confidenceLabel, contains('sensitive'));
+    expect(result.reviewCandidate, isNotNull);
+    expect(result.reviewCandidate!.typeLabel, contains('credential'));
+    expect(result.reviewCandidate!.reasonLabel, contains('sensitive'));
+    final memoryEvent = result.events.singleWhere(
+      (event) => event.type == runtime.WnEventTypes.memoryProposed,
+    );
+    expect(memoryEvent.payload['memory_type'], 'credential');
+    expect(memoryEvent.payload['confidence'], 'high');
+    expect(memoryEvent.payload['sensitivity'], 'high');
+    expect(memoryEvent.payload['durability'], 'durable');
+    expect(result.cards.map((card) => card.kindLabel), ['capture card']);
+    expect(
+      result.insights.map((insight) => insight.kindLabel),
+      containsAll(<String>[
+        'summary insight',
+        'count insight',
+        'trend insight',
+        'source mix insight',
+      ]),
+    );
+    expect(result.todo.isSuggested, isTrue);
+    expect(result.todo.statusLabel, 'suggested by agent');
+    expect(result.eventTypes, contains(runtime.WnEventTypes.todoSuggested));
+  });
 
   test('multiple captures do not duplicate registered pack runs', () async {
     final orchestrator = CaptureOrchestrator.local(
@@ -425,6 +434,103 @@ void main() {
       events.map((event) => event.type),
       isNot(contains(runtime.WnEventTypes.memoryProposed)),
     );
+  });
+
+  test(
+    'provider JSON Memory candidate auto-accepts without raw metadata',
+    () async {
+      final orchestrator = CaptureOrchestrator.local(
+        clock: TickingWnClock(DateTime.utc(2026, 6, 23, 5)),
+        idGenerator: SequenceWnIdGenerator(seed: 'json'),
+        model: runtime.FakeModel(
+          responses: const <String>[
+            '{"text":"Lin prefers source-linked WideNote todos.","memory_type":"preference","confidence":"high","sensitivity":"low","durability":"durable"}',
+          ],
+        ),
+      );
+
+      final result = await orchestrator.processCapture(
+        'Lin prefers source-linked WideNote todos.',
+      );
+
+      expect(result.memoryItem.statusLabel, 'auto-accepted');
+      expect(result.reviewCandidate, isNull);
+      expect(result.acceptedMemoryCount, 1);
+      expect(result.reviewMemoryCount, 0);
+      expect(
+        result.memoryItem.summary,
+        'Lin prefers source-linked WideNote todos.',
+      );
+      final memoryEvent = result.events.singleWhere(
+        (event) => event.type == runtime.WnEventTypes.memoryProposed,
+      );
+      expect(memoryEvent.payload['memory_type'], 'preference');
+      expect(memoryEvent.payload['confidence'], 'high');
+      expect(memoryEvent.payload['sensitivity'], 'low');
+      expect(memoryEvent.payload['durability'], 'durable');
+    },
+  );
+
+  test('unstructured provider output routes to exception review', () async {
+    final orchestrator = CaptureOrchestrator.local(
+      clock: TickingWnClock(DateTime.utc(2026, 6, 23, 5, 30)),
+      idGenerator: SequenceWnIdGenerator(seed: 'plain'),
+      model: runtime.FakeModel(
+        responses: const <String>['Lin prefers source-linked WideNote todos.'],
+      ),
+    );
+
+    final result = await orchestrator.processCapture(
+      'Synthetic credential-shaped capture sk-demo-secret should not be '
+      'classified locally when provider metadata is missing.',
+    );
+
+    expect(result.memoryItem.statusLabel, 'needs review');
+    expect(result.reviewCandidate, isNotNull);
+    expect(result.acceptedMemoryCount, 0);
+    expect(result.reviewMemoryCount, 1);
+    expect(result.reviewCandidate!.reasonLabel, contains('policy_unclear'));
+    final memoryEvent = result.events.singleWhere(
+      (event) => event.type == runtime.WnEventTypes.memoryProposed,
+    );
+    expect(
+      memoryEvent.payload['policy_reasons'],
+      containsAll(<String>[
+        'model_output_unstructured',
+        'model_metadata_missing',
+      ]),
+    );
+    expect(memoryEvent.payload['memory_type'], isNull);
+    expect(memoryEvent.payload['sensitivity'], isNull);
+  });
+
+  test('provider metadata routes health capture to review', () async {
+    final orchestrator = CaptureOrchestrator.local(
+      clock: TickingWnClock(DateTime.utc(2026, 6, 23, 5, 45)),
+      idGenerator: SequenceWnIdGenerator(seed: 'health-risk'),
+      model: runtime.FakeModel(
+        responses: const <String>[
+          '{"text":"The user wants to remember a sleep and anxiety pattern.","memory_type":"health","confidence":"high","sensitivity":"medium","durability":"durable"}',
+        ],
+      ),
+    );
+
+    final result = await orchestrator.processCapture(
+      '昨晚 23:40 才睡，今天咖啡喝了两杯，下午焦虑感 6/10，'
+      '跑步 20 分钟后缓解。以后晚上 10 点半提醒自己停工。',
+    );
+
+    expect(result.memoryItem.statusLabel, 'needs review');
+    expect(result.reviewCandidate, isNotNull);
+    expect(result.acceptedMemoryCount, 0);
+    expect(result.reviewMemoryCount, 1);
+    expect(result.reviewCandidate!.typeLabel, contains('health'));
+    expect(result.reviewCandidate!.reasonLabel, contains('sensitive'));
+    final memoryEvent = result.events.singleWhere(
+      (event) => event.type == runtime.WnEventTypes.memoryProposed,
+    );
+    expect(memoryEvent.payload['memory_type'], 'health');
+    expect(memoryEvent.payload['sensitivity'], 'medium');
   });
 
   test(
@@ -622,6 +728,7 @@ final class _SequenceMetadataModel implements runtime.ModelClient {
               'memory_type': 'task_context',
               'confidence': 'high',
               'sensitivity': 'low',
+              'durability': 'durable',
             },
     );
   }

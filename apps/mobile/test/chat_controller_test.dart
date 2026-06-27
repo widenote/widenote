@@ -140,11 +140,15 @@ void main() {
         'card',
         'insight',
         'todo',
+        'artifact',
         'capture',
       ]);
       expect(sources.first.title, 'Memory');
       expect(sources.first.sourceLabel, 'event: event-memory-1');
       expect(sources[3].sourceLabel, 'event: event-todo-1');
+      expect(sources[4].kind, 'artifact');
+      expect(sources[4].id, 'artifact-1');
+      expect(sources[4].sourceLabel, 'event: event-capture-1');
       expect(sources.last.sourceLabel, 'capture: capture-1');
       expect(
         sources.map((source) => source.excerpt.length),
@@ -160,11 +164,21 @@ void main() {
       expect((cache.packet['metadata']! as Map)['max_items'], 8);
       final scope = cache.packet['permission_scope']! as Map;
       expect(scope['mode'], 'local_only');
-      expect(scope['permissions'], <Object?>[
-        'memory.read',
-        'record.read',
-        'todo.read',
-      ]);
+      expect(
+        scope['permissions'],
+        containsAll(<Object?>[
+          'semantic_search.query',
+          'timeline.read',
+          'knowledge.read',
+          'memory.read',
+          'record.read',
+          'card.read',
+          'insight.read',
+          'todo.read',
+          'artifact.read',
+          'attachment.read',
+        ]),
+      );
 
       final localized = await LocalChatContextSource(
         database,
@@ -449,7 +463,7 @@ void main() {
       );
       expect(
         assistant.sourceRefs.map((ref) => ref.kind),
-        containsAll(<String>['memory', 'capture', 'todo']),
+        containsAll(<String>['memory', 'artifact', 'capture', 'todo']),
       );
       expect(
         assistant.sourceRefs.map((ref) => ref.excerpt.length),
@@ -558,6 +572,7 @@ const _zhChatContextLabels = ChatContextLabels(
   cardSourceLabel: '卡片',
   insightSourceLabel: '洞察',
   todoSourceLabel: '待办',
+  artifactSourceLabel: '产物',
   fileSourceLabel: '文件',
   genericSourceLabel: '来源',
 );
@@ -628,6 +643,43 @@ void _seedChatPacketContext(WideNoteLocalDatabase database, DateTime now) {
       },
       createdAt: now,
       updatedAt: now.add(const Duration(seconds: 2)),
+    ),
+  );
+  database.attachments.insert(
+    AttachmentRecord(
+      id: 'attachment-1',
+      captureId: 'capture-1',
+      sourceEventId: 'event-capture-1',
+      assetKind: 'photo',
+      mimeType: 'image/jpeg',
+      storagePath: 'fs://Facts/assets/launch-whiteboard.jpg',
+      originalFileName: 'launch-whiteboard.jpg',
+      sha256: 'launch-whiteboard-sha256',
+      payload: const <String, Object?>{
+        'preview_text': 'Launch whiteboard image saved locally.',
+      },
+      createdAt: now,
+      updatedAt: now.add(const Duration(milliseconds: 1500)),
+    ),
+  );
+  database.derivedArtifacts.insert(
+    DerivedArtifactRecord(
+      id: 'artifact-1',
+      sourceCaptureId: 'capture-1',
+      sourceAttachmentId: 'attachment-1',
+      sourceEventId: 'event-capture-1',
+      artifactKind: 'vision_summary',
+      title: 'Launch whiteboard summary',
+      body: 'Whiteboard notes mention launch packet citations.',
+      sourceRefs: const <Object?>[
+        <String, Object?>{'kind': 'capture', 'id': 'capture-1'},
+        <String, Object?>{'kind': 'file', 'id': 'attachment-1'},
+      ],
+      confidence: 'medium',
+      generatorId: 'capture.media.vision_summary',
+      generatorVersion: '1.0.0',
+      createdAt: now,
+      updatedAt: now.add(const Duration(milliseconds: 1500)),
     ),
   );
 }
@@ -762,6 +814,22 @@ String _canonicalTruthSnapshot(WideNoteLocalDatabase database) {
         'id': todo.id,
         'status': todo.status,
         'payload': todo.payload,
+      };
+    }).toList(),
+    'attachments': database.attachments.readAll().map((attachment) {
+      return <String, Object?>{
+        'id': attachment.id,
+        'capture_id': attachment.captureId,
+        'status': attachment.status,
+        'payload': attachment.payload,
+      };
+    }).toList(),
+    'artifacts': database.derivedArtifacts.readAll().map((artifact) {
+      return <String, Object?>{
+        'id': artifact.id,
+        'artifact_kind': artifact.artifactKind,
+        'status': artifact.status,
+        'body': artifact.body,
       };
     }).toList(),
   });

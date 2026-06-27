@@ -77,5 +77,8 @@ String _insightKindName(cards.MemoryFirstInsightKind kind) {
     cards.MemoryFirstInsightKind.summary => 'summary',
     cards.MemoryFirstInsightKind.count => 'count',
     cards.MemoryFirstInsightKind.trend => 'trend',
+    cards.MemoryFirstInsightKind.sourceMix => 'source_mix',
+    cards.MemoryFirstInsightKind.actionPattern => 'action_pattern',
+    cards.MemoryFirstInsightKind.attachmentEvidence => 'attachment_evidence',
   };
 }

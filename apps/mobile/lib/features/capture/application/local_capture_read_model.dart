@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
 import 'package:widenote_local_db/widenote_local_db.dart' as localdb;
 
 import '../domain/capture_models.dart';
@@ -47,6 +50,9 @@ final class LocalCaptureReadModelStore {
     _database.captures.save(_captureRecord(record, attachments));
     for (final attachment in attachments) {
       _database.attachments.save(_attachmentRecord(record, attachment));
+      for (final artifact in _attachmentArtifacts(record, attachment)) {
+        _database.derivedArtifacts.save(artifact);
+      }
     }
   }
 
@@ -128,6 +134,233 @@ localdb.AttachmentRecord _attachmentRecord(
   );
 }
 
+List<localdb.DerivedArtifactRecord> _attachmentArtifacts(
+  CaptureRecord record,
+  CaptureAttachment attachment,
+) {
+  if (!attachment.canRenderPreview) {
+    return const <localdb.DerivedArtifactRecord>[];
+  }
+  return switch (attachment.kind) {
+    CaptureAssetKind.voice => <localdb.DerivedArtifactRecord>[
+      _transcriptArtifact(record, attachment),
+    ],
+    CaptureAssetKind.photo => <localdb.DerivedArtifactRecord>[
+      _visionSummaryArtifact(record, attachment),
+      _ocrArtifact(record, attachment),
+    ],
+    CaptureAssetKind.share => <localdb.DerivedArtifactRecord>[
+      _sharedTextArtifact(record, attachment),
+    ],
+  };
+}
+
+localdb.DerivedArtifactRecord _transcriptArtifact(
+  CaptureRecord record,
+  CaptureAttachment attachment,
+) {
+  final transcript = _metadataText(attachment.rawMetadata, const <String>[
+    'transcript',
+    'transcript_text',
+    'recognized_text',
+    'speech_text',
+  ]);
+  final status = _transcriptStatus(transcript);
+  final body =
+      transcript ??
+      _nonEmpty(attachment.previewText) ??
+      'Transcript pending for ${attachment.displayName}.';
+  return _artifactRecord(
+    record: record,
+    attachment: attachment,
+    artifactKind: 'audio_transcript',
+    status: status,
+    title: status == 'active' ? 'Audio transcript' : 'Audio transcript pending',
+    body: body,
+    confidence: transcript == null ? 'low' : 'medium',
+    generatorId: 'capture.media.transcript',
+    generatorVersion: '1.0.0',
+    payload: <String, Object?>{
+      'transcript_status': status,
+      if (transcript == null) 'pending_reason': 'no_transcript_text',
+      'metadata_status':
+          _metadataString(attachment.rawMetadata, 'transcript_status') ??
+          'unknown',
+    },
+  );
+}
+
+localdb.DerivedArtifactRecord _visionSummaryArtifact(
+  CaptureRecord record,
+  CaptureAttachment attachment,
+) {
+  final preview =
+      _nonEmpty(attachment.previewText) ??
+      'Image attachment saved locally as ${attachment.displayName}.';
+  final adapterMetadata = _nestedMetadata(attachment.rawMetadata);
+  return _artifactRecord(
+    record: record,
+    attachment: attachment,
+    artifactKind: 'vision_summary',
+    status: 'active',
+    title: 'Image attachment summary',
+    body: preview,
+    confidence:
+        _metadataText(attachment.rawMetadata, const <String>[
+              'vision_summary',
+              'caption',
+              'image_caption',
+            ]) ==
+            null
+        ? 'low'
+        : 'medium',
+    generatorId: 'capture.media.vision_summary',
+    generatorVersion: '1.0.0',
+    payload: <String, Object?>{
+      'source': _metadataString(attachment.rawMetadata, 'source'),
+      if (adapterMetadata['width'] != null) 'width': adapterMetadata['width'],
+      if (adapterMetadata['height'] != null)
+        'height': adapterMetadata['height'],
+      'ocr_status': _ocrStatus(attachment.rawMetadata),
+    },
+  );
+}
+
+localdb.DerivedArtifactRecord _ocrArtifact(
+  CaptureRecord record,
+  CaptureAttachment attachment,
+) {
+  final text = _metadataText(attachment.rawMetadata, const <String>[
+    'ocr_text',
+    'recognized_text',
+    'image_text',
+  ]);
+  final status = text == null ? 'pending' : 'active';
+  final body = text ?? 'OCR pending for ${attachment.displayName}.';
+  return _artifactRecord(
+    record: record,
+    attachment: attachment,
+    artifactKind: 'ocr_text',
+    status: status,
+    title: status == 'active' ? 'Image OCR text' : 'Image OCR pending',
+    body: body,
+    confidence: text == null ? 'low' : 'medium',
+    generatorId: 'capture.media.ocr',
+    generatorVersion: '1.0.0',
+    payload: <String, Object?>{
+      'ocr_status': status,
+      if (text == null) 'pending_reason': 'no_ocr_text',
+    },
+  );
+}
+
+localdb.DerivedArtifactRecord _sharedTextArtifact(
+  CaptureRecord record,
+  CaptureAttachment attachment,
+) {
+  final text =
+      _metadataText(attachment.rawMetadata, const <String>[
+        'shared_text',
+        'text',
+        'body',
+      ]) ??
+      _nonEmpty(attachment.previewText) ??
+      'Shared attachment saved locally as ${attachment.displayName}.';
+  return _artifactRecord(
+    record: record,
+    attachment: attachment,
+    artifactKind: 'shared_text',
+    status: 'active',
+    title: 'Shared attachment text',
+    body: text,
+    confidence: 'medium',
+    generatorId: 'capture.media.share',
+    generatorVersion: '1.0.0',
+    payload: const <String, Object?>{'source': 'share'},
+  );
+}
+
+localdb.DerivedArtifactRecord _artifactRecord({
+  required CaptureRecord record,
+  required CaptureAttachment attachment,
+  required String artifactKind,
+  required String status,
+  required String title,
+  required String body,
+  required String confidence,
+  required String generatorId,
+  required String generatorVersion,
+  required Map<String, Object?> payload,
+}) {
+  final now = DateTime.now().toUtc();
+  final contentHash = _stableContentHash(<String, Object?>{
+    'capture_id': record.id,
+    'attachment_id': attachment.id,
+    'artifact_kind': artifactKind,
+    'status': status,
+    'body': body,
+  });
+  final sourceRefs = <Object?>[
+    <String, Object?>{
+      'kind': 'capture',
+      'id': record.id,
+      if (record.sourceEventId != null) 'event_id': record.sourceEventId,
+      'excerpt': _excerpt(record.body),
+    },
+    <String, Object?>{
+      'kind': 'file',
+      'id': attachment.id,
+      if (record.sourceEventId != null) 'event_id': record.sourceEventId,
+      'excerpt': _excerpt(attachment.previewText),
+    },
+  ];
+  return localdb.DerivedArtifactRecord(
+    id: _artifactId(record.id, attachment.id, artifactKind),
+    sourceCaptureId: record.id,
+    sourceAttachmentId: attachment.id,
+    sourceEventId: record.sourceEventId,
+    artifactKind: artifactKind,
+    status: status,
+    title: title,
+    body: body,
+    mimeType: attachment.mimeType,
+    storagePath: attachment.sourceUri,
+    contentHash: contentHash,
+    sourceRefs: sourceRefs,
+    sensitivity: attachment.kind == CaptureAssetKind.voice ? 'medium' : 'low',
+    confidence: confidence,
+    generatorId: generatorId,
+    generatorVersion: generatorVersion,
+    payload: <String, Object?>{
+      ...payload,
+      'attachment_kind': attachment.kind.wireName,
+      'attachment_state': attachment.state.wireName,
+      'display_name': attachment.displayName,
+    },
+    createdAt: attachment.createdAt.toUtc(),
+    updatedAt: now,
+  );
+}
+
+String _transcriptStatus(String? transcript) {
+  if (transcript != null) {
+    return 'active';
+  }
+  return 'pending';
+}
+
+String _ocrStatus(Map<String, Object?> metadata) {
+  if (_metadataText(metadata, const <String>[
+        'ocr_text',
+        'recognized_text',
+        'image_text',
+      ]) !=
+      null) {
+    return 'active';
+  }
+  return _metadataString(metadata, 'ocr_status') ?? 'pending';
+}
+
 String? _attachmentSha256(Map<String, Object?> metadata) {
   final topLevel = _string(metadata['sha256']);
   if (topLevel != null) {
@@ -138,6 +371,55 @@ String? _attachmentSha256(Map<String, Object?> metadata) {
     return _string(adapterMetadata['sha256']);
   }
   return null;
+}
+
+String? _metadataText(Map<String, Object?> metadata, List<String> keys) {
+  for (final key in keys) {
+    final text = _metadataString(metadata, key);
+    if (text != null) {
+      return text;
+    }
+  }
+  final adapterMetadata = _nestedMetadata(metadata);
+  for (final key in keys) {
+    final text = _string(adapterMetadata[key]);
+    if (text != null) {
+      return text;
+    }
+  }
+  return null;
+}
+
+String? _metadataString(Map<String, Object?> metadata, String key) {
+  return _string(metadata[key]) ?? _string(_nestedMetadata(metadata)[key]);
+}
+
+Map<String, Object?> _nestedMetadata(Map<String, Object?> metadata) {
+  final nested = metadata['adapter_metadata'];
+  if (nested is Map) {
+    return nested.cast<String, Object?>();
+  }
+  return const <String, Object?>{};
+}
+
+String _artifactId(String captureId, String attachmentId, String artifactKind) {
+  return 'artifact.${_safeId(captureId)}.${_safeId(attachmentId)}.$artifactKind';
+}
+
+String _stableContentHash(Map<String, Object?> value) {
+  return sha256.convert(utf8.encode(jsonEncode(value))).toString();
+}
+
+String _safeId(String value) {
+  return value.replaceAll(RegExp(r'[^a-zA-Z0-9._-]+'), '_');
+}
+
+String _excerpt(String value) {
+  final text = value.trim().replaceAll(RegExp(r'\s+'), ' ');
+  if (text.length <= 120) {
+    return text;
+  }
+  return '${text.substring(0, 117)}...';
 }
 
 CaptureRecord _captureView(localdb.CaptureRecord record) {
@@ -306,6 +588,9 @@ String _insightKindLabel(String kind) {
     'summary' => 'summary insight',
     'count' => 'count insight',
     'trend' => 'trend insight',
+    'source_mix' => 'source mix insight',
+    'action_pattern' => 'action pattern insight',
+    'attachment_evidence' => 'attachment evidence insight',
     _ => kind,
   };
 }
@@ -328,6 +613,11 @@ String? _string(Object? value) {
     return value;
   }
   return null;
+}
+
+String? _nonEmpty(String value) {
+  final text = value.trim();
+  return text.isEmpty ? null : text;
 }
 
 List<String> _stringList(Object? value) {

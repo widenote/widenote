@@ -145,6 +145,100 @@ void main() {
       );
     });
 
+    test('stores derived artifacts linked to captures and attachments', () {
+      final createdAt = DateTime.utc(2026, 6, 24, 8, 15);
+      database.captures.insert(
+        CaptureRecord(
+          id: 'capture-artifact-1',
+          sourceType: 'manual_with_attachments',
+          payload: const <String, Object?>{'text': 'Photo note'},
+          createdAt: createdAt,
+          updatedAt: createdAt,
+        ),
+      );
+      database.attachments.insert(
+        AttachmentRecord(
+          id: 'attachment-artifact-1',
+          captureId: 'capture-artifact-1',
+          assetKind: 'photo',
+          mimeType: 'image/jpeg',
+          storagePath: 'media/originals/attachment-artifact-1.jpg',
+          sha256: 'hash-artifact-attachment-1',
+          createdAt: createdAt,
+          updatedAt: createdAt,
+        ),
+      );
+      database.derivedArtifacts.insert(
+        DerivedArtifactRecord(
+          id: 'artifact-ocr-1',
+          sourceCaptureId: 'capture-artifact-1',
+          sourceAttachmentId: 'attachment-artifact-1',
+          sourceEventId: 'event-artifact-1',
+          artifactKind: 'ocr_text',
+          title: 'OCR text',
+          body: 'Whiteboard says: ship source-linked media cards.',
+          contentHash: 'hash-artifact-ocr-1',
+          sourceRefs: const <Object?>[
+            <String, Object?>{'kind': 'capture', 'id': 'capture-artifact-1'},
+            <String, Object?>{'kind': 'file', 'id': 'attachment-artifact-1'},
+          ],
+          sensitivity: 'low',
+          confidence: 'high',
+          generatorId: 'ocr.fake',
+          generatorVersion: '1',
+          payload: const <String, Object?>{
+            'language': 'en',
+            'blocks': <Object?>[
+              <String, Object?>{'text': 'ship source-linked media cards'},
+            ],
+          },
+          createdAt: createdAt,
+          updatedAt: createdAt,
+        ),
+      );
+
+      final artifact = database.derivedArtifacts.readById('artifact-ocr-1')!;
+
+      expect(artifact.artifactKind, 'ocr_text');
+      expect(artifact.sourceCaptureId, 'capture-artifact-1');
+      expect(artifact.sourceAttachmentId, 'attachment-artifact-1');
+      expect(artifact.body, contains('source-linked media cards'));
+      expect(artifact.sourceRefs, hasLength(2));
+      expect(
+        database.derivedArtifacts
+            .readByCapture('capture-artifact-1')
+            .map((record) => record.id),
+        ['artifact-ocr-1'],
+      );
+      expect(
+        database.derivedArtifacts
+            .readByAttachment('attachment-artifact-1')
+            .map((record) => record.id),
+        ['artifact-ocr-1'],
+      );
+      expect(
+        database.derivedArtifacts.readAll(artifactKind: 'ocr_text'),
+        hasLength(1),
+      );
+      expect(
+        () => database.derivedArtifacts.insert(
+          DerivedArtifactRecord(
+            id: 'artifact-missing-refs',
+            sourceCaptureId: 'capture-artifact-1',
+            artifactKind: 'ocr_text',
+            title: 'Missing refs',
+            body: 'This should fail.',
+            sourceRefs: const <Object?>[],
+            generatorId: 'ocr.fake',
+            generatorVersion: '1',
+            createdAt: createdAt,
+            updatedAt: createdAt,
+          ),
+        ),
+        throwsArgumentError,
+      );
+    });
+
     test('appends and reads event log entries', () {
       final firstCreatedAt = DateTime.utc(2026, 6, 23, 9);
       final secondCreatedAt = DateTime.utc(2026, 6, 23, 9, 1);

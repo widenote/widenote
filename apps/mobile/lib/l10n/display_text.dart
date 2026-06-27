@@ -85,6 +85,11 @@ String localizedInsightKindLabel(AppLocalizations l10n, String value) {
     'summary insight' || 'summary' => l10n.insightKindSummary,
     'count insight' || 'count' => l10n.insightKindCount,
     'trend insight' || 'trend' => l10n.insightKindTrend,
+    'source mix insight' || 'source_mix' => l10n.insightKindSourceMix,
+    'action pattern insight' ||
+    'action_pattern' => l10n.insightKindActionPattern,
+    'attachment evidence insight' ||
+    'attachment_evidence' => l10n.insightKindAttachmentEvidence,
     _ => value,
   };
 }

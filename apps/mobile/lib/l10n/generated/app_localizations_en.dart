@@ -715,6 +715,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get insightKindTrend => 'trend insight';
 
   @override
+  String get insightKindSourceMix => 'source mix insight';
+
+  @override
+  String get insightKindActionPattern => 'action pattern insight';
+
+  @override
+  String get insightKindAttachmentEvidence => 'attachment evidence insight';
+
+  @override
   String get insightMetricSourceLinked => 'source-linked';
 
   @override

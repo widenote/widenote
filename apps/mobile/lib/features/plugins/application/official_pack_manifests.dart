@@ -42,7 +42,7 @@ const officialPackManifestMaps = <String, Map<String, Object?>>{
         'id': 'agent.capture_loop',
         'runtime': 'native',
         'name': 'Capture Loop Agent',
-        'prompt_ref': 'capture.memory_summary.v1',
+        'prompt_ref': 'capture.memory_candidate.v2',
         'model_profile_ref': 'local_or_user_selected_model',
         'permissions': <String>[
           'model.complete',

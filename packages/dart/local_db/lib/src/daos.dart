@@ -7,6 +7,7 @@ import 'models.dart';
 part 'daos_event_log.dart';
 part 'daos_captures.dart';
 part 'daos_attachments.dart';
+part 'daos_derived_artifacts.dart';
 part 'daos_memory_items.dart';
 part 'daos_memory_candidates.dart';
 part 'daos_cards.dart';

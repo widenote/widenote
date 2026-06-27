@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
 import 'package:widenote_cards/widenote_cards.dart' as cards;
 import 'package:widenote_core/widenote_core.dart';
@@ -343,6 +345,8 @@ final class CaptureOrchestrator {
       memoryType: _memoryType(payload['memory_type']),
       confidence: _confidence(payload['confidence']),
       sensitivity: _sensitivity(payload['sensitivity']),
+      durability: _durability(payload['durability']),
+      policyReasons: _stringList(payload['policy_reasons']),
     );
   }
 
@@ -671,6 +675,10 @@ String _insightKindLabel(cards.MemoryFirstInsightKind kind) {
     cards.MemoryFirstInsightKind.summary => 'summary insight',
     cards.MemoryFirstInsightKind.count => 'count insight',
     cards.MemoryFirstInsightKind.trend => 'trend insight',
+    cards.MemoryFirstInsightKind.sourceMix => 'source mix insight',
+    cards.MemoryFirstInsightKind.actionPattern => 'action pattern insight',
+    cards.MemoryFirstInsightKind.attachmentEvidence =>
+      'attachment evidence insight',
   };
 }
 
@@ -697,6 +705,7 @@ final class _CaptureAgent implements runtime.AgentHandler {
       text: text,
       sourceEventId: event.id,
     );
+    final candidate = _memoryCandidate(summary);
 
     return runtime.AgentHandlerResult(
       events: <runtime.WnEventDraft>[
@@ -705,7 +714,7 @@ final class _CaptureAgent implements runtime.AgentHandler {
           subjectRef: subject,
           payload: <String, Object?>{
             'key': 'capture.${subject.id}.summary',
-            'text': summary.text,
+            'text': candidate.text,
             'source_event_id': event.id,
             'source_excerpt': previewText(text),
             'source_refs': <Object?>[
@@ -720,12 +729,16 @@ final class _CaptureAgent implements runtime.AgentHandler {
                 'excerpt': previewText(text),
               },
             ],
-            if (_modelMetadataString(summary, 'memory_type') != null)
-              'memory_type': _modelMetadataString(summary, 'memory_type'),
-            if (_modelMetadataValue(summary, 'confidence') != null)
-              'confidence': _modelMetadataValue(summary, 'confidence'),
-            if (_modelMetadataString(summary, 'sensitivity') != null)
-              'sensitivity': _modelMetadataString(summary, 'sensitivity'),
+            if (candidate.memoryType != null)
+              'memory_type': candidate.memoryType,
+            if (candidate.confidence != null)
+              'confidence': candidate.confidence,
+            if (candidate.sensitivity != null)
+              'sensitivity': candidate.sensitivity,
+            if (candidate.durability != null)
+              'durability': candidate.durability,
+            if (candidate.policyReasons.isNotEmpty)
+              'policy_reasons': candidate.policyReasons,
           },
         ),
         context.emit(
@@ -733,7 +746,7 @@ final class _CaptureAgent implements runtime.AgentHandler {
           subjectRef: subject,
           payload: <String, Object?>{
             'title': 'Capture summary',
-            'body': summary.text,
+            'body': candidate.text,
             'source_capture_id': subject.id,
             'source_event_id': event.id,
             'source_refs': <Object?>[
@@ -796,16 +809,116 @@ Future<runtime.ModelResponse> _summarizeCapture(
   );
 }
 
-String? _modelMetadataString(runtime.ModelResponse response, String key) {
-  final value = response.raw[key];
+final class _MemoryCandidateEnvelope {
+  const _MemoryCandidateEnvelope({
+    required this.text,
+    this.memoryType,
+    this.confidence,
+    this.sensitivity,
+    this.durability,
+    this.policyReasons = const <String>[],
+  });
+
+  final String text;
+  final String? memoryType;
+  final Object? confidence;
+  final String? sensitivity;
+  final String? durability;
+  final List<String> policyReasons;
+}
+
+_MemoryCandidateEnvelope _memoryCandidate(runtime.ModelResponse response) {
+  final parsed = _jsonObject(response.text);
+  final raw = response.raw;
+  final text =
+      _metadataString(parsed, 'text') ??
+      _metadataString(raw, 'text') ??
+      _legacyCandidateText(response.text);
+  final memoryType =
+      _metadataString(parsed, 'memory_type') ??
+      _metadataString(raw, 'memory_type');
+  final confidence =
+      _metadataValue(parsed, 'confidence') ?? _metadataValue(raw, 'confidence');
+  final sensitivity =
+      _metadataString(parsed, 'sensitivity') ??
+      _metadataString(raw, 'sensitivity');
+  final durability =
+      _metadataString(parsed, 'durability') ??
+      _metadataString(raw, 'durability');
+  final reasons = <String>[
+    if (parsed == null && !_hasMemoryMetadata(raw)) 'model_output_unstructured',
+    if (memoryType == null ||
+        confidence == null ||
+        sensitivity == null ||
+        durability == null)
+      'model_metadata_missing',
+  ];
+
+  return _MemoryCandidateEnvelope(
+    text: text,
+    memoryType: memoryType,
+    confidence: confidence,
+    sensitivity: sensitivity,
+    durability: durability,
+    policyReasons: reasons,
+  );
+}
+
+Map<String, Object?>? _jsonObject(String value) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) {
+    return null;
+  }
+  for (final candidate in <String?>[
+    trimmed,
+    _betweenJsonBraces(trimmed),
+  ].whereType<String>()) {
+    try {
+      final decoded = jsonDecode(candidate);
+      if (decoded is Map) {
+        return decoded.cast<String, Object?>();
+      }
+    } on FormatException {
+      continue;
+    }
+  }
+  return null;
+}
+
+String? _betweenJsonBraces(String value) {
+  final start = value.indexOf('{');
+  final end = value.lastIndexOf('}');
+  if (start == -1 || end <= start) {
+    return null;
+  }
+  return value.substring(start, end + 1);
+}
+
+String _legacyCandidateText(String value) {
+  final text = value.trim();
+  if (text.isEmpty) {
+    return 'Memory candidate unavailable.';
+  }
+  return text;
+}
+
+bool _hasMemoryMetadata(Map<String, Object?> raw) {
+  return raw.containsKey('memory_type') ||
+      raw.containsKey('confidence') ||
+      raw.containsKey('sensitivity') ||
+      raw.containsKey('durability');
+}
+
+String? _metadataString(Map<String, Object?>? metadata, String key) {
+  final value = metadata?[key];
   if (value is String && value.trim().isNotEmpty) {
     return value.trim();
   }
   return null;
 }
 
-Object? _modelMetadataValue(runtime.ModelResponse response, String key) {
-  final value = response.raw[key];
+Object? _metadataValue(Map<String, Object?>? metadata, String key) {
+  final value = metadata?[key];
   if (value is num) {
     return value;
   }
@@ -860,6 +973,17 @@ String _string(Object? value, {required String fallback}) {
   return fallback;
 }
 
+List<String> _stringList(Object? value) {
+  if (value is! List) {
+    return const <String>[];
+  }
+  return value
+      .whereType<String>()
+      .map((item) => item.trim())
+      .where((item) => item.isNotEmpty)
+      .toList(growable: false);
+}
+
 memory.MemoryConfidence _confidence(Object? value) {
   if (value is num) {
     if (value >= 0.8) {
@@ -870,54 +994,73 @@ memory.MemoryConfidence _confidence(Object? value) {
     }
     return memory.MemoryConfidence.low;
   }
-  if (value == 'low') {
+  final normalized = value is String ? value.trim().toLowerCase() : null;
+  if (normalized == 'low') {
     return memory.MemoryConfidence.low;
   }
-  if (value == 'medium') {
+  if (normalized == 'medium') {
     return memory.MemoryConfidence.medium;
   }
-  if (value == 'high') {
+  if (normalized == 'high') {
     return memory.MemoryConfidence.high;
   }
   return memory.MemoryConfidence.medium;
 }
 
 memory.MemorySensitivity _sensitivity(Object? value) {
-  if (value == 'medium') {
+  final normalized = value is String ? value.trim().toLowerCase() : null;
+  if (normalized == 'medium') {
     return memory.MemorySensitivity.medium;
   }
-  if (value == 'high') {
+  if (normalized == 'high') {
     return memory.MemorySensitivity.high;
   }
-  if (value == 'low') {
+  if (normalized == 'low') {
     return memory.MemorySensitivity.low;
   }
   return memory.MemorySensitivity.low;
 }
 
+memory.MemoryDurability _durability(Object? value) {
+  final normalized = value is String ? value.trim().toLowerCase() : null;
+  if (normalized == 'durable') {
+    return memory.MemoryDurability.durable;
+  }
+  if (normalized == 'transient') {
+    return memory.MemoryDurability.transient;
+  }
+  return memory.MemoryDurability.transient;
+}
+
 memory.MemoryType _memoryType(Object? value) {
-  if (value == 'preference') {
+  final normalized = value is String
+      ? value.trim().replaceAll('-', '_').toLowerCase()
+      : null;
+  if (normalized == 'preference') {
     return memory.MemoryType.preference;
   }
-  if (value == 'project') {
+  if (normalized == 'project') {
     return memory.MemoryType.project;
   }
-  if (value == 'person') {
+  if (normalized == 'task_context' || normalized == 'taskcontext') {
+    return memory.MemoryType.taskContext;
+  }
+  if (normalized == 'person') {
     return memory.MemoryType.person;
   }
-  if (value == 'health') {
+  if (normalized == 'health') {
     return memory.MemoryType.health;
   }
-  if (value == 'finance') {
+  if (normalized == 'finance') {
     return memory.MemoryType.finance;
   }
-  if (value == 'location') {
+  if (normalized == 'location') {
     return memory.MemoryType.location;
   }
-  if (value == 'credential') {
+  if (normalized == 'credential') {
     return memory.MemoryType.credential;
   }
-  if (value == 'insight') {
+  if (normalized == 'insight') {
     return memory.MemoryType.insight;
   }
   return memory.MemoryType.taskContext;

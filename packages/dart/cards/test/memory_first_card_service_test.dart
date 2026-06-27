@@ -94,6 +94,7 @@ void main() {
         MemoryFirstInsightKind.summary,
         MemoryFirstInsightKind.count,
         MemoryFirstInsightKind.trend,
+        MemoryFirstInsightKind.sourceMix,
       ]);
       expect(
         bundle.insights.every((insight) => insight.isSourceLinked),
@@ -107,6 +108,52 @@ void main() {
       expect(bundle.insights[1].summary, contains('2 captures and 1 Memory'));
       expect(bundle.insights[2].metadata['day'], '2026-06-24');
       expect(bundle.insights[2].metricValue, 2);
+      expect(bundle.insights[3].summary, contains('3 card(s)'));
+      expect(bundle.insights[3].metadata['source_kinds'], isA<Map>());
+    });
+
+    test('derives action and attachment evidence insights', () {
+      final bundle = service.generate(
+        MemoryFirstCardInput(
+          now: DateTime.utc(2026, 6, 24, 12),
+          captures: <CaptureCardSource>[
+            CaptureCardSource(
+              id: 'capture-media',
+              text:
+                  'Review the launch whiteboard photo. OCR says prepare next step.',
+              createdAt: DateTime.utc(2026, 6, 24, 8),
+            ),
+            CaptureCardSource(
+              id: 'capture-voice',
+              text:
+                  'Voice transcript captured: follow up with source-linked cards.',
+              createdAt: DateTime.utc(2026, 6, 24, 9),
+            ),
+          ],
+        ),
+      );
+
+      expect(
+        bundle.insights.map((insight) => insight.kind),
+        containsAll(<MemoryFirstInsightKind>[
+          MemoryFirstInsightKind.actionPattern,
+          MemoryFirstInsightKind.attachmentEvidence,
+        ]),
+      );
+      final action = bundle.insights.singleWhere(
+        (insight) => insight.kind == MemoryFirstInsightKind.actionPattern,
+      );
+      expect(action.summary, contains('follow-up'));
+      expect(action.metadata['terms'], containsAll(<String>['follow up']));
+
+      final media = bundle.insights.singleWhere(
+        (insight) => insight.kind == MemoryFirstInsightKind.attachmentEvidence,
+      );
+      expect(media.metricValue, 2);
+      expect(
+        media.metadata['modalities'],
+        containsAll(<String>['image', 'ocr', 'transcript', 'audio']),
+      );
     });
 
     test('card and insight models reject missing source links', () {

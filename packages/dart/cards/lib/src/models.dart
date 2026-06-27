@@ -2,7 +2,14 @@ typedef CardJsonMap = Map<String, Object?>;
 
 enum MemoryFirstCardKind { captureSummary, memorySummary }
 
-enum MemoryFirstInsightKind { summary, count, trend }
+enum MemoryFirstInsightKind {
+  summary,
+  count,
+  trend,
+  sourceMix,
+  actionPattern,
+  attachmentEvidence,
+}
 
 final class SourceLink {
   const SourceLink({

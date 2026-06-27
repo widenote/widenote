@@ -278,6 +278,32 @@ void main() {
     expect(attachment.storagePath, 'fake://camera/photo-sample.jpg');
     expect(adapterMetadata['source'], 'camera');
     expect(adapterMetadata['sha256'], 'fake-camera-photo-sha256');
+
+    final artifacts = database.derivedArtifacts.readByCapture(
+      attachment.captureId,
+    );
+    expect(
+      artifacts.map((artifact) => artifact.artifactKind),
+      containsAll(<String>['vision_summary', 'ocr_text']),
+    );
+
+    final vision = artifacts.singleWhere(
+      (artifact) => artifact.artifactKind == 'vision_summary',
+    );
+    expect(vision.status, 'active');
+    expect(vision.body, contains('whiteboard snapshot'));
+    expect(
+      vision.sourceRefs.whereType<Map>().any(
+        (ref) => ref['kind'] == 'file' && ref['id'] == attachment.id,
+      ),
+      isTrue,
+    );
+
+    final ocr = artifacts.singleWhere(
+      (artifact) => artifact.artifactKind == 'ocr_text',
+    );
+    expect(ocr.status, 'pending');
+    expect(ocr.body, contains('OCR pending'));
   });
 
   testWidgets('voice cancel discards recording without a fake record', (
@@ -482,6 +508,7 @@ final class _CaptureTestModel implements runtime.ModelClient {
         'memory_type': 'task_context',
         'confidence': 'high',
         'sensitivity': 'low',
+        'durability': 'durable',
       },
     );
   }
