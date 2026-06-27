@@ -20,7 +20,7 @@ void main() {
     );
 
     expect(find.text('Agent Observability'), findsOneWidget);
-    expect(find.text('Trace events: 2'), findsWidgets);
+    expect(find.text('Log events: 2'), findsWidgets);
     expect(find.text('Runs: 1'), findsWidgets);
     expect(find.text('Warnings: 1'), findsWidgets);
     expect(

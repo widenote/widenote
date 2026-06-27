@@ -683,7 +683,7 @@ void main() {
     expect(find.text('Permission Gate'), findsOneWidget);
     expect(find.text('Model Provider'), findsOneWidget);
     expect(find.text('Backup'), findsOneWidget);
-    expect(find.text('Trace Console'), findsOneWidget);
+    expect(find.text('Log Center'), findsOneWidget);
   });
 
   testWidgets('Chat page shows local conversation shell and composer', (

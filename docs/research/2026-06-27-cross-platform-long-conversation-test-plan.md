@@ -56,6 +56,9 @@ Automated implementation:
   core live model-backed journey as an opt-in integration test.
 - The script is skipped unless
   `--dart-define=WIDENOTE_QA_MIMO_API_KEY=<redacted>` is provided.
+- The dart-define is read only by the integration-test harness, which injects
+  the live MIMO client with Riverpod provider overrides. App bootstrap and
+  Settings must not treat the QA define as runtime provider configuration.
 - On 2026-06-27 it passed on both the iPhone 17 iOS simulator and
   `Medium_Phone_API_35` Android emulator with real MIMO responses.
 
@@ -93,8 +96,9 @@ transient runtime value.
 
 Rules:
 
-- Prefer environment variables or `--dart-define` values injected directly at
-  build/run time.
+- Prefer environment variables or `--dart-define` values injected directly into
+  opt-in tests. Product app runtime should use saved provider settings, not a
+  QA-only define.
 - Do not create a key file unless absolutely necessary; if one is used, place it
   under `/tmp`, delete it immediately after use, and do not mention its content.
 - Do not paste the key into docs, test fixtures, shell transcripts, issue text,
@@ -223,8 +227,9 @@ Track:
 ### Round 4: Provider and Backup
 
 1. Open Model Providers.
-2. If using transient QA model define, record that runtime model access is
-   active through the QA path; do not enter the key in UI unless needed.
+2. If using the transient QA model define, record that only the scripted live
+   integration test has model access through test overrides. Settings should
+   still reflect saved provider configuration only.
 3. If UI provider setup is tested, add a Xiaomi MIMO or Anthropic-compatible
    provider with the supplied endpoint/key, set it as default, and run the
    connection test only in live-provider mode.
@@ -265,13 +270,25 @@ cd apps/mobile
 env -u ws_proxy -u wss_proxy \
   NO_PROXY=localhost,127.0.0.1,::1 \
   no_proxy=localhost,127.0.0.1,::1 \
-  flutter build apk --debug --flavor dev \
-  --dart-define=WIDENOTE_QA_MIMO_API_KEY="$WIDENOTE_QA_MIMO_API_KEY"
+  flutter build apk --debug --flavor dev
 
 adb -s <serial> install -r build/app/outputs/flutter-apk/app-dev-debug.apk
 adb -s <serial> shell pm clear app.widenote.dev
 adb -s <serial> shell logcat -c
 adb -s <serial> shell am start -n app.widenote.dev/<resolved-activity>
+```
+
+For the real-LLM scripted journey on Android, run the integration test instead
+of relying on the installed APK to read a QA define:
+
+```sh
+cd apps/mobile
+env -u ws_proxy -u wss_proxy \
+  NO_PROXY=localhost,127.0.0.1,::1 \
+  no_proxy=localhost,127.0.0.1,::1 \
+  flutter test integration_test/live_llm_long_journey_test.dart \
+  -d <serial> --flavor dev \
+  --dart-define=WIDENOTE_QA_MIMO_API_KEY="$WIDENOTE_QA_MIMO_API_KEY"
 ```
 
 Interaction rules:
@@ -312,9 +329,12 @@ Required first steps:
 
 Live model note:
 
-- If XcodeBuildMCP cannot inject Flutter `--dart-define` cleanly, configure the
-  provider through the mobile UI or record the Chat portion as
-  model-required/model-unavailable. Do not substitute a local template answer.
+- For the real-LLM scripted journey on iOS, prefer running
+  `flutter test integration_test/live_llm_long_journey_test.dart -d <simulator>`
+  with the QA dart-define so the test harness can inject the live client.
+- For manual app QA, configure the provider through the mobile UI or record the
+  Chat portion as model-required/model-unavailable. Do not substitute a local
+  template answer.
 - If using UI provider setup instead, clear app data after the pass so the key
   does not remain in simulator storage.
 

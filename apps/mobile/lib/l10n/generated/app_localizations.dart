@@ -1145,7 +1145,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Privacy, permissions, models, backup, and traces.'**
+  /// **'Privacy, permissions, models, backup, and logs.'**
   String get settingsSubtitle;
 
   /// No description provided for @settingsBackTooltip.
@@ -1169,7 +1169,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsPrivacyLocalFirstBody.
   ///
   /// In en, this message translates to:
-  /// **'Records, Memory, todos, cards, chat, and traces stay on this device unless you choose backup, sync, or a provider.'**
+  /// **'Records, Memory, todos, cards, chat, and logs stay on this device unless you choose backup, sync, or a provider.'**
   String get settingsPrivacyLocalFirstBody;
 
   /// No description provided for @settingsPrivacyLocalFirstStatus.
@@ -1268,7 +1268,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsBackupSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Export or import local records, Memory, cards, providers, todos, and traces.'**
+  /// **'Export or import local records, Memory, cards, providers, todos, and logs.'**
   String get settingsBackupSubtitle;
 
   /// No description provided for @settingsBackupStatus.
@@ -1304,13 +1304,13 @@ abstract class AppLocalizations {
   /// No description provided for @settingsTraceConsoleTitle.
   ///
   /// In en, this message translates to:
-  /// **'Trace Console'**
+  /// **'Log Center'**
   String get settingsTraceConsoleTitle;
 
   /// No description provided for @settingsTraceConsoleSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Inspect local Agent Runtime runs, permission checks, and generated outputs.'**
+  /// **'Review local Agent Runtime logs, permission checks, and generated outputs.'**
   String get settingsTraceConsoleSubtitle;
 
   /// No description provided for @settingsTraceConsoleStatus.
@@ -1334,7 +1334,7 @@ abstract class AppLocalizations {
   /// No description provided for @pluginsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Pack controls for permissions, models, backup, and traces.'**
+  /// **'Pack controls for permissions, models, backup, and logs.'**
   String get pluginsSubtitle;
 
   /// No description provided for @pluginsControlEntriesTitle.
@@ -1424,19 +1424,19 @@ abstract class AppLocalizations {
   /// No description provided for @pluginsTraceConsoleTitle.
   ///
   /// In en, this message translates to:
-  /// **'Trace Console'**
+  /// **'Log Center'**
   String get pluginsTraceConsoleTitle;
 
   /// No description provided for @pluginsTraceConsoleSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Inspect pack runs, permissions, and generated outputs.'**
+  /// **'Review pack run logs, permissions, and generated outputs.'**
   String get pluginsTraceConsoleSubtitle;
 
   /// No description provided for @pluginsTraceConsoleStatus.
   ///
   /// In en, this message translates to:
-  /// **'trace-ready'**
+  /// **'log-ready'**
   String get pluginsTraceConsoleStatus;
 
   /// No description provided for @packLibraryTitle.
@@ -1556,19 +1556,19 @@ abstract class AppLocalizations {
   /// No description provided for @agentPlatformSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Read-only local runtime evidence from real trace events.'**
+  /// **'Read-only local runtime evidence from real log events.'**
   String get agentPlatformSubtitle;
 
   /// No description provided for @traceConsoleTitle.
   ///
   /// In en, this message translates to:
-  /// **'Trace Console'**
+  /// **'Log Center'**
   String get traceConsoleTitle;
 
   /// No description provided for @traceConsoleSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Inspect local Agent Runtime runs, permissions, and generated outputs.'**
+  /// **'Review local Agent Runtime logs, permissions, and generated outputs.'**
   String get traceConsoleSubtitle;
 
   /// No description provided for @traceConsoleSummaryTitle.
@@ -1580,7 +1580,7 @@ abstract class AppLocalizations {
   /// No description provided for @traceConsoleEventCount.
   ///
   /// In en, this message translates to:
-  /// **'Trace events: {count}'**
+  /// **'Log events: {count}'**
   String traceConsoleEventCount(int count);
 
   /// No description provided for @traceConsoleRunCount.
@@ -1604,7 +1604,7 @@ abstract class AppLocalizations {
   /// No description provided for @traceConsoleOpenButton.
   ///
   /// In en, this message translates to:
-  /// **'Open trace console'**
+  /// **'Open log center'**
   String get traceConsoleOpenButton;
 
   /// No description provided for @traceConsoleEventsTitle.
@@ -1616,7 +1616,7 @@ abstract class AppLocalizations {
   /// No description provided for @traceConsoleEmpty.
   ///
   /// In en, this message translates to:
-  /// **'No runtime traces yet. Capture or pack runs will appear here.'**
+  /// **'No runtime logs yet. Capture or pack runs will appear here.'**
   String get traceConsoleEmpty;
 
   /// No description provided for @traceConsoleNoMessage.

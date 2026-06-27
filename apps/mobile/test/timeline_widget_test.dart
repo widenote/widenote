@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
@@ -67,6 +68,13 @@ void main() {
     expect(find.byKey(const Key('timeline-item-memory-1')), findsOneWidget);
     expect(find.byKey(const Key('timeline-item-todo-1')), findsOneWidget);
     expect(find.byKey(const Key('timeline-item-evt-todo-1')), findsNothing);
+
+    final semantics = tester.ensureSemantics();
+    try {
+      _expectButtonSemantics(tester, const Key('timeline-item-card-1'), 'Card');
+    } finally {
+      semantics.dispose();
+    }
 
     await tester.tap(find.byKey(const Key('timeline-item-card-1')));
     await tester.pumpAndSettle();
@@ -209,6 +217,29 @@ Future<void> _pumpApp(
     ),
   );
   await tester.pumpAndSettle();
+}
+
+void _expectButtonSemantics(
+  WidgetTester tester,
+  Key key,
+  String labelFragment,
+) {
+  final data = tester.getSemantics(_semanticsForKey(key)).getSemanticsData();
+  expect(data.flagsCollection.isButton, isTrue);
+  expect(data.hasAction(SemanticsAction.tap), isTrue);
+  expect(data.label, contains(labelFragment));
+}
+
+Finder _semanticsForKey(Key key) {
+  final keyed = find.byKey(key);
+  final descendant = find.descendant(
+    of: keyed,
+    matching: find.byType(Semantics),
+  );
+  if (descendant.evaluate().isNotEmpty) {
+    return descendant.first;
+  }
+  return find.ancestor(of: keyed, matching: find.byType(Semantics)).first;
 }
 
 void _seedTimeline(WideNoteLocalDatabase database) {

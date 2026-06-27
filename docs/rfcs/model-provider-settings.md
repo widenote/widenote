@@ -1,6 +1,6 @@
 # RFC: Model Provider Settings
 
-Status: Accepted phase-one slice; amended by W7 safe-backup boundary
+Status: Accepted phase-one slice; amended by W7 safe-backup and QA-injection boundaries
 
 ## Summary
 
@@ -40,7 +40,9 @@ requirement.
 - Per-agent model role routing.
 - A full billing ledger or provider-pricing engine. Runtime trace metadata may
   store provider-exposed token/cost fields when available.
-- Migration away from the current QA-only MIMO bootstrap path.
+- Runtime model bootstrap from QA-only dart-define values. Live QA may inject a
+  model client through test overrides, but product runtime reads saved provider
+  settings only.
 
 ## Proposed Design
 
@@ -118,6 +120,12 @@ of a local template answer. Core capture still preserves raw records locally.
 Runtime traces should make model calls inspectable for BYOK users without
 recording prompt text or credential values.
 
+Transient live-model QA is a test harness concern. A dart-define such as
+`WIDENOTE_QA_MIMO_API_KEY` may be read by opt-in tests and used to override the
+Riverpod model providers in that test process. Settings and app bootstrap must
+not interpret that define as a configured user provider, display it as provider
+state, or route product model calls through it.
+
 ## Alternatives
 
 - Keep only the QA MIMO path. This blocks BYOK product use and hides provider
@@ -130,11 +138,11 @@ recording prompt text or credential values.
 
 ## Migration / Compatibility
 
-The existing QA-only model client remains available for Android QA builds. The
-new provider package adapters do not change runtime model semantics yet.
-`packages/dart/local_db` stores provider metadata, API keys, and
-default-provider state locally. Safe backup omits API key values and reports
-that keys need re-entry after restore.
+The existing MIMO test client remains available for opt-in live tests through
+test-time provider overrides. Dev and production app bootstrap do not read
+QA-only model dart-defines. `packages/dart/local_db` stores provider metadata,
+API keys, and default-provider state locally. Safe backup omits API key values
+and reports that keys need re-entry after restore.
 
 ## Open Questions
 

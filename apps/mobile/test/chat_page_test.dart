@@ -48,11 +48,23 @@ void main() {
 
     expect(find.text('What records do you have?'), findsWidgets);
     expect(
-      find.textContaining('Chat needs a configured model provider'),
+      find.textContaining('Model access is not configured'),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('chat-open-log-center-button')),
       findsOneWidget,
     );
     expect(find.byKey(const Key('chat-retry-button')), findsOneWidget);
     expect(find.byKey(const Key('chat-empty-sessions')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('chat-open-log-center-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('trace-console-page')), findsOneWidget);
+    expect(find.text('Log Center'), findsOneWidget);
+    expect(find.text('model'), findsOneWidget);
+    expect(find.text('Chat model request failed.'), findsOneWidget);
   });
 
   testWidgets('chat composer preserves literal input without smart rewriting', (

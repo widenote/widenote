@@ -29,9 +29,11 @@ left blank, and the edit dialog can explicitly clear the saved key.
 
 The settings page is intentionally layered as runtime status, model roles,
 capabilities/privacy, then provider management. Per-Agent role overrides remain
-deferred. Chat and model-backed runtime work require a configured provider or a
-QA model client; local code should surface model-required/error states rather
-than template-answer fallback.
+deferred. Chat and model-backed runtime work require a configured provider;
+local code should surface model-required/error states rather than
+template-answer fallback. Opt-in live QA may override model providers with fake
+or live test clients, but app bootstrap and Settings must not read QA-only
+dart-defines as product provider state.
 
 ## Dependencies
 

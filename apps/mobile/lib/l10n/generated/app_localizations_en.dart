@@ -642,7 +642,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsSubtitle =>
-      'Privacy, permissions, models, backup, and traces.';
+      'Privacy, permissions, models, backup, and logs.';
 
   @override
   String get settingsBackTooltip => 'Close Settings';
@@ -655,7 +655,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsPrivacyLocalFirstBody =>
-      'Records, Memory, todos, cards, chat, and traces stay on this device unless you choose backup, sync, or a provider.';
+      'Records, Memory, todos, cards, chat, and logs stay on this device unless you choose backup, sync, or a provider.';
 
   @override
   String get settingsPrivacyLocalFirstStatus => 'no account';
@@ -713,7 +713,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsBackupSubtitle =>
-      'Export or import local records, Memory, cards, providers, todos, and traces.';
+      'Export or import local records, Memory, cards, providers, todos, and logs.';
 
   @override
   String get settingsBackupStatus => 'local';
@@ -731,11 +731,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsBackupStatusNeedsReview => 'review needed';
 
   @override
-  String get settingsTraceConsoleTitle => 'Trace Console';
+  String get settingsTraceConsoleTitle => 'Log Center';
 
   @override
   String get settingsTraceConsoleSubtitle =>
-      'Inspect local Agent Runtime runs, permission checks, and generated outputs.';
+      'Review local Agent Runtime logs, permission checks, and generated outputs.';
 
   @override
   String get settingsTraceConsoleStatus => 'read-only';
@@ -750,7 +750,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pluginsSubtitle =>
-      'Pack controls for permissions, models, backup, and traces.';
+      'Pack controls for permissions, models, backup, and logs.';
 
   @override
   String get pluginsControlEntriesTitle => 'Control entries';
@@ -807,14 +807,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pluginsBackupStatus => 'local-first';
 
   @override
-  String get pluginsTraceConsoleTitle => 'Trace Console';
+  String get pluginsTraceConsoleTitle => 'Log Center';
 
   @override
   String get pluginsTraceConsoleSubtitle =>
-      'Inspect pack runs, permissions, and generated outputs.';
+      'Review pack run logs, permissions, and generated outputs.';
 
   @override
-  String get pluginsTraceConsoleStatus => 'trace-ready';
+  String get pluginsTraceConsoleStatus => 'log-ready';
 
   @override
   String get packLibraryTitle => 'Pack Library';
@@ -895,21 +895,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentPlatformSubtitle =>
-      'Read-only local runtime evidence from real trace events.';
+      'Read-only local runtime evidence from real log events.';
 
   @override
-  String get traceConsoleTitle => 'Trace Console';
+  String get traceConsoleTitle => 'Log Center';
 
   @override
   String get traceConsoleSubtitle =>
-      'Inspect local Agent Runtime runs, permissions, and generated outputs.';
+      'Review local Agent Runtime logs, permissions, and generated outputs.';
 
   @override
   String get traceConsoleSummaryTitle => 'Runtime summary';
 
   @override
   String traceConsoleEventCount(int count) {
-    return 'Trace events: $count';
+    return 'Log events: $count';
   }
 
   @override
@@ -926,14 +926,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get traceConsoleRefreshButton => 'Refresh';
 
   @override
-  String get traceConsoleOpenButton => 'Open trace console';
+  String get traceConsoleOpenButton => 'Open log center';
 
   @override
   String get traceConsoleEventsTitle => 'Events';
 
   @override
   String get traceConsoleEmpty =>
-      'No runtime traces yet. Capture or pack runs will appear here.';
+      'No runtime logs yet. Capture or pack runs will appear here.';
 
   @override
   String get traceConsoleNoMessage => 'No message recorded.';

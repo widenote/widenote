@@ -161,10 +161,17 @@ class _ControlRow extends StatelessWidget {
       return row;
     }
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(8),
+    return Semantics(
+      button: true,
+      enabled: true,
+      excludeSemantics: true,
+      label: '$title. $subtitle. $status',
       onTap: onTap,
-      child: row,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: onTap,
+        child: row,
+      ),
     );
   }
 }

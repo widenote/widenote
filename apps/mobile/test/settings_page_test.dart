@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:widenote_local_db/widenote_local_db.dart';
@@ -23,7 +24,7 @@ void main() {
     expect(find.text('Privacy & Permissions'), findsOneWidget);
     expect(find.text('Model Providers'), findsOneWidget);
     expect(find.text('Backup & Restore'), findsOneWidget);
-    expect(find.text('Trace Console'), findsOneWidget);
+    expect(find.text('Log Center'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('settings-close-button')));
     await tester.pumpAndSettle();
@@ -93,6 +94,38 @@ void main() {
       find.textContaining('future secret-bearing restore path'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('settings control entries expose tappable semantics', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    final semantics = tester.ensureSemantics();
+    try {
+      await _pumpSettingsPage(
+        tester,
+        database: database,
+        locale: const Locale('en'),
+      );
+
+      _expectButtonSemantics(
+        tester,
+        const Key('settings-model-providers-entry'),
+        'Model Providers',
+      );
+      _expectButtonSemantics(
+        tester,
+        const Key('settings-backup-entry'),
+        'Backup & Restore',
+      );
+      _expectButtonSemantics(
+        tester,
+        const Key('settings-trace-console-entry'),
+        'Log Center',
+      );
+    } finally {
+      semantics.dispose();
+    }
   });
 
   testWidgets('settings privacy copy is localized in English', (tester) async {
@@ -220,4 +253,27 @@ Future<void> _openChildAndReturn(
   await tester.pumpAndSettle();
   expect(find.byKey(const Key('settings-page')), findsOneWidget);
   expect(find.byKey(pageKey), findsNothing);
+}
+
+void _expectButtonSemantics(
+  WidgetTester tester,
+  Key key,
+  String labelFragment,
+) {
+  final data = tester.getSemantics(_semanticsForKey(key)).getSemanticsData();
+  expect(data.flagsCollection.isButton, isTrue);
+  expect(data.hasAction(SemanticsAction.tap), isTrue);
+  expect(data.label, contains(labelFragment));
+}
+
+Finder _semanticsForKey(Key key) {
+  final keyed = find.byKey(key);
+  final descendant = find.descendant(
+    of: keyed,
+    matching: find.byType(Semantics),
+  );
+  if (descendant.evaluate().isNotEmpty) {
+    return descendant.first;
+  }
+  return find.ancestor(of: keyed, matching: find.byType(Semantics)).first;
 }

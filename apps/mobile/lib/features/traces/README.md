@@ -1,12 +1,12 @@
-# Trace Console Feature
+# Log Center Feature
 
 ## Purpose
 
-Shows local Agent Runtime trace events as a read-only audit surface.
+Shows local Agent Runtime log/trace events as a read-only audit surface.
 
 ## Boundary
 
-Owns the mobile trace-console read model and presentation. It must not own
+Owns the mobile log-center read model and presentation. It must not own
 runtime execution, task retry, cancellation, or trace persistence.
 
 ## Dependencies
