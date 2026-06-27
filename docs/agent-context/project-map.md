@@ -29,6 +29,7 @@ It should stay short. It points to the right local context instead of duplicatin
 ## Research
 
 - `docs/research/2026-06-27-agent-runtime-roadmap-research.md`
+- `docs/research/2026-06-27-deepseek-long-simulator-qa.md`
 - `docs/research/2026-06-27-ai-native-project-structure-patterns.md`
 - `docs/research/2026-06-27-agent-instruction-patterns.md`
 - `docs/research/2026-06-26-w7-current-integration-state.md`

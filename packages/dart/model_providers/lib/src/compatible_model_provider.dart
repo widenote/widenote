@@ -236,6 +236,8 @@ final class AnthropicCompatibleModelProvider implements ModelProvider {
     return <String, Object?>{
       'model': request.model ?? config.model,
       'max_tokens': config.maxOutputTokens,
+      if (_shouldDisableAnthropicThinking(config))
+        'thinking': const <String, Object?>{'type': 'disabled'},
       if (systemMessages.isNotEmpty) 'system': systemMessages.join('\n'),
       'messages': conversationMessages,
     };
@@ -309,6 +311,18 @@ Uri _anthropicMessagesEndpoint(Uri endpoint) {
 
 bool _endsWithMessagesPath(List<String> segments) {
   return segments.isNotEmpty && segments.last == 'messages';
+}
+
+bool _shouldDisableAnthropicThinking(ModelProviderConfig config) {
+  if (config.kind == ModelProviderKind.mimo) {
+    return true;
+  }
+  final model = config.model.toLowerCase();
+  final host = config.endpoint.host.toLowerCase();
+  final path = config.endpoint.path.toLowerCase();
+  return model.contains('deepseek') ||
+      host.contains('deepseek') ||
+      path.contains('deepseek');
 }
 
 String _openAiRole(ModelMessageRole role) {

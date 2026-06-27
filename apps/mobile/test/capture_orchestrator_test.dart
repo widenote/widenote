@@ -71,7 +71,7 @@ void main() {
   );
 
   test('quick capture runs runtime and silently auto-accepts Memory', () async {
-    final model = _SequenceMetadataModel(
+    final model = runtime.FakeModel(
       responses: <String>['Lin prefers source-linked WideNote todos.'],
     );
     final orchestrator = CaptureOrchestrator.local(
@@ -554,10 +554,22 @@ void main() {
     final orchestrator = CaptureOrchestrator.local(
       clock: TickingWnClock(DateTime.utc(2026, 6, 23, 3)),
       idGenerator: SequenceWnIdGenerator(seed: 'review'),
-      model: runtime.FakeModel(
+      model: _SequenceMetadataModel(
         responses: <String>[
           'The user pasted an API token.',
           'The user discussed medication timing.',
+        ],
+        metadata: const <Map<String, Object?>>[
+          <String, Object?>{
+            'memory_type': 'credential',
+            'confidence': 'high',
+            'sensitivity': 'high',
+          },
+          <String, Object?>{
+            'memory_type': 'health',
+            'confidence': 'medium',
+            'sensitivity': 'high',
+          },
         ],
       ),
     );
@@ -584,10 +596,14 @@ void main() {
 }
 
 final class _SequenceMetadataModel implements runtime.ModelClient {
-  _SequenceMetadataModel({required List<String> responses})
-    : _responses = responses;
+  _SequenceMetadataModel({
+    required List<String> responses,
+    List<Map<String, Object?>>? metadata,
+  }) : _responses = responses,
+       _metadata = metadata ?? const <Map<String, Object?>>[];
 
   final List<String> _responses;
+  final List<Map<String, Object?>> _metadata;
   final requests = <runtime.ModelRequest>[];
   var _index = 0;
 
@@ -597,13 +613,16 @@ final class _SequenceMetadataModel implements runtime.ModelClient {
     if (_index >= _responses.length) {
       throw StateError('No fake model response configured.');
     }
+    final index = _index++;
     return runtime.ModelResponse(
-      text: _responses[_index++],
-      raw: const <String, Object?>{
-        'memory_type': 'task_context',
-        'confidence': 'high',
-        'sensitivity': 'low',
-      },
+      text: _responses[index],
+      raw: index < _metadata.length
+          ? _metadata[index]
+          : const <String, Object?>{
+              'memory_type': 'task_context',
+              'confidence': 'high',
+              'sensitivity': 'low',
+            },
     );
   }
 }
