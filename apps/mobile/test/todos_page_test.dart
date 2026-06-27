@@ -36,12 +36,26 @@ void main() {
     expect(find.byKey(const Key('todo-source-destination')), findsOneWidget);
     expect(find.text('capture-todo-page'), findsOneWidget);
   });
+
+  testWidgets('todos page localizes derived status and source labels', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    _seedTodo(database);
+    await _pumpTodosPage(tester, database, locale: const Locale('zh'));
+
+    expect(find.text('智能体建议'), findsOneWidget);
+    expect(find.text('来源：capture-todo-page'), findsOneWidget);
+    expect(find.text('suggested by agent'), findsNothing);
+  });
 }
 
 Future<void> _pumpTodosPage(
   WidgetTester tester,
-  WideNoteLocalDatabase database,
-) async {
+  WideNoteLocalDatabase database, {
+  Locale locale = const Locale('en'),
+}) async {
   final router = GoRouter(
     initialLocation: '/',
     routes: [
@@ -63,7 +77,7 @@ Future<void> _pumpTodosPage(
     ProviderScope(
       overrides: [localDatabaseProvider.overrideWithValue(database)],
       child: MaterialApp.router(
-        locale: Locale('en'),
+        locale: locale,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         routerConfig: router,

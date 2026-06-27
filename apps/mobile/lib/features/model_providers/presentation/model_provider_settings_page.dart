@@ -29,7 +29,9 @@ class ModelProviderSettingsPage extends ConsumerWidget {
         children: [
           const _PageHeader(),
           const SizedBox(height: 16),
-          _ErrorLine(text: '$error'),
+          _ErrorLine(
+            text: localizedProviderSettingsError(context.l10n, '$error'),
+          ),
         ],
       ),
       data: (state) => ListView(
@@ -39,7 +41,12 @@ class ModelProviderSettingsPage extends ConsumerWidget {
           const _PageHeader(),
           const SizedBox(height: 16),
           if (state.errorMessage != null) ...[
-            _ErrorLine(text: state.errorMessage!),
+            _ErrorLine(
+              text: localizedProviderSettingsError(
+                context.l10n,
+                state.errorMessage!,
+              ),
+            ),
             const SizedBox(height: 12),
           ],
           Align(
@@ -329,7 +336,7 @@ class _ProviderRow extends ConsumerWidget {
               if (connection.message.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 Text(
-                  connection.message,
+                  localizedProviderConnectionMessage(l10n, connection.message),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
@@ -395,7 +402,7 @@ class _ProviderActions extends ConsumerWidget {
         ),
         IconButton(
           key: Key('provider-delete-${provider.id}'),
-          tooltip: 'Delete provider',
+          tooltip: l10n.providerActionDelete,
           onPressed: () => unawaited(_confirmDeleteProvider(context, ref)),
           icon: const Icon(Icons.delete_outline),
         ),
@@ -411,10 +418,8 @@ class _ProviderActions extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete provider?'),
-        content: Text(
-          'Remove "${provider.displayName}" from local model settings.',
-        ),
+        title: Text(l10n.providerDeleteTitle),
+        content: Text(l10n.providerDeleteBody(provider.displayName)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -582,7 +587,9 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
               ],
               if (_localError != null) ...[
                 const SizedBox(height: 12),
-                _ErrorLine(text: _localError!),
+                _ErrorLine(
+                  text: localizedProviderSettingsError(l10n, _localError!),
+                ),
               ],
             ],
           ),

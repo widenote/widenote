@@ -36,7 +36,7 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
         ),
         if (state.errorMessage != null) ...[
           const SizedBox(height: 12),
-          _ErrorLine(text: state.errorMessage!),
+          _ErrorLine(text: localizedMemoryError(l10n, state.errorMessage!)),
         ],
         const SizedBox(height: 16),
         TextField(
@@ -191,12 +191,14 @@ class _MemoryRow extends StatelessWidget {
                 spacing: 8,
                 runSpacing: 4,
                 children: [
-                  _Tag(label: item.memoryType),
-                  _Tag(label: item.confidence),
-                  _Tag(label: item.sensitivity),
+                  _Tag(label: localizedMemoryType(l10n, item.memoryType)),
+                  _Tag(label: localizedConfidenceValue(l10n, item.confidence)),
+                  _Tag(
+                    label: localizedSensitivityValue(l10n, item.sensitivity),
+                  ),
                   _Tag(
                     key: Key('memory-source-${item.id}'),
-                    label: item.sourceLabel,
+                    label: localizedSourceLabel(l10n, item.sourceLabel),
                     onTap: item.sourceCaptureId == null
                         ? null
                         : () => context.go(

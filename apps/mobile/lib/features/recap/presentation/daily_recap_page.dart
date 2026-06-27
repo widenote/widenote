@@ -264,6 +264,7 @@ class _EntryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -280,7 +281,7 @@ class _EntryRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                entry.title,
+                localizedRecapEntryTitle(l10n, entry.title),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(
@@ -288,9 +289,13 @@ class _EntryRow extends StatelessWidget {
                 ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 4),
-              Text(entry.body, maxLines: 3, overflow: TextOverflow.ellipsis),
+              Text(
+                localizedRecapEntryTitle(l10n, entry.body),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
               const SizedBox(height: 6),
-              _SourceTag(label: entry.sourceLabel),
+              _SourceTag(label: localizedSourceLabel(l10n, entry.sourceLabel)),
             ],
           ),
         ),

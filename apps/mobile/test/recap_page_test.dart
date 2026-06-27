@@ -56,7 +56,7 @@ void main() {
 
     await _scrollUntilText(tester, 'Insight says recap kept sources');
     expect(find.text('Insight says recap kept sources'), findsOneWidget);
-    expect(find.text('source: capture:capture-today'), findsWidgets);
+    expect(find.text('Capture: capture-today'), findsWidgets);
 
     await _scrollUntilText(tester, '2 events · 1 trace');
     expect(find.text('2 events · 1 trace'), findsOneWidget);
@@ -96,6 +96,22 @@ void main() {
     expect(find.text('今天还没有记录。'), findsOneWidget);
     expect(find.text('记录'), findsOneWidget);
     expect(find.text('未完成待办'), findsOneWidget);
+  });
+
+  testWidgets('daily recap localizes derived entry and source labels', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    _seedRecapData(database);
+
+    await _pumpRecapPage(tester, database, locale: const Locale('zh'));
+
+    expect(find.text('记录'), findsWidgets);
+    expect(find.text('记忆'), findsWidgets);
+    await _scrollUntilText(tester, '记录：capture-today');
+    expect(find.text('记录：capture-today'), findsWidgets);
+    expect(find.text('source: capture:capture-today'), findsNothing);
   });
 }
 

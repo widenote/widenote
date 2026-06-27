@@ -54,7 +54,9 @@ class _StatusLine extends StatelessWidget {
         Theme.of(context).colorScheme.primary,
       ),
       BackupOutcome.failed => (
-        l10n.backupFailedStatus(state.errorDetails ?? ''),
+        l10n.backupFailedStatus(
+          localizedBackupErrorDetails(l10n, state.errorDetails ?? ''),
+        ),
         Theme.of(context).colorScheme.error,
       ),
     };
@@ -281,7 +283,9 @@ class _InlineOutcome extends StatelessWidget {
       children: [
         Text(
           isFailure
-              ? l10n.backupFailedStatus(state.errorDetails ?? '')
+              ? l10n.backupFailedStatus(
+                  localizedBackupErrorDetails(l10n, state.errorDetails ?? ''),
+                )
               : l10n.backupImportDoneStatus,
           key: const Key('backup-inline-outcome'),
           style: Theme.of(context).textTheme.bodySmall?.copyWith(

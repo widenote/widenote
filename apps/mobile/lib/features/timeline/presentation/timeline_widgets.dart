@@ -162,6 +162,7 @@ class TimelineItemRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final title = localizedTimelineItemTitle(context.l10n, item.title);
     final row = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -181,7 +182,7 @@ class TimelineItemRow extends StatelessWidget {
       button: true,
       enabled: true,
       excludeSemantics: true,
-      label: '${kindLabel(context, item)}. ${item.title}',
+      label: '${kindLabel(context, item)}. $title',
       onTap: () => onOpenItem(item),
       child: InkWell(
         key: Key('timeline-item-${item.id}'),
@@ -270,11 +271,13 @@ class _TimelineItemText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final title = localizedTimelineItemTitle(l10n, item.title);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          item.title,
+          title,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: Theme.of(
@@ -283,7 +286,7 @@ class _TimelineItemText extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          item.body,
+          localizedTimelineItemTitle(l10n, item.body),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.bodyMedium,
@@ -380,6 +383,9 @@ String timelineKindSingularLabel(
 String timelineStatusLabel(AppLocalizations l10n, String status) {
   return switch (status) {
     'active' => l10n.timelineStatusActive,
+    'Saved locally, processing' => l10n.recordStatusSavedProcessing,
+    'Processed locally' || 'processed' => l10n.recordStatusProcessed,
+    'Saved locally, agent failed' => l10n.recordStatusAgentFailed,
     'open' => l10n.todoStatusOpen,
     'completed' => l10n.todoStatusCompleted,
     'suggested' => l10n.todoStatusSuggestedByAgent,

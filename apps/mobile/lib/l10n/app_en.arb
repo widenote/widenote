@@ -51,6 +51,12 @@
   "recapTodosTitle": "Todo activity",
   "recapCardsTitle": "Cards",
   "recapInsightsTitle": "Insights",
+  "recapEntryRecordTitle": "Record",
+  "recapEntryMemoryTitle": "Memory",
+  "recapEntryOpenTodoTitle": "Open todo",
+  "recapEntryCompletedTodoTitle": "Completed todo",
+  "recapUntitledCapture": "Untitled capture",
+  "recapUntitledTodo": "Untitled todo",
   "recapSectionEmpty": "No source-linked items in this section today.",
   "recapEvidenceTitle": "Local evidence",
   "recapEvidenceBody": "{eventCount, plural, =1{1 event} other{{eventCount} events}} · {traceCount, plural, =1{1 trace} other{{traceCount} traces}}",
@@ -113,7 +119,98 @@
       }
     }
   },
+  "captureAttachmentAssetSafetyReason": "asset safety",
+  "captureAttachmentBlockedBySafety": "blocked by asset safety",
+  "captureAttachmentUnsupportedMimeType": "unsupported file type: {mimeType}",
+  "@captureAttachmentUnsupportedMimeType": {
+    "placeholders": {
+      "mimeType": {
+        "type": "String"
+      }
+    }
+  },
+  "captureAttachmentVoiceTranscriptNeedsReview": "voice transcript needs review",
+  "captureAttachmentAllowed": "allowed",
+  "captureAttachmentKindPhoto": "photo",
+  "captureAttachmentKindVoice": "voice",
+  "captureAttachmentKindShare": "shared item",
+  "captureAttachmentFallbackName": "attachment",
+  "captureAttachmentSummary": "{kind}: {name}",
+  "@captureAttachmentSummary": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "captureBlockedAttachmentSummary": "Blocked attachment: {name}",
+  "@captureBlockedAttachmentSummary": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "captureEmptyMessage": "Add text or an attachment before saving.",
+  "captureReviewPendingAttachments": "Review or remove pending attachments before saving.",
+  "captureStopVoiceBeforeSaving": "Stop or cancel the voice recording before saving.",
+  "captureRemoveBlockedAttachments": "Remove blocked attachments before saving.",
+  "captureReviewAttachments": "Review attachments before saving.",
+  "captureVoiceFailed": "Voice recording failed: {details}",
+  "@captureVoiceFailed": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "captureVoiceCancelled": "Voice recording cancelled.",
+  "captureVoiceCancelFailed": "Voice recording cancel failed: {details}",
+  "@captureVoiceCancelFailed": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "captureAttachmentFailed": "Attachment failed: {details}",
+  "@captureAttachmentFailed": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "captureCameraCancelled": "Camera capture cancelled.",
+  "captureGalleryCancelled": "Gallery selection cancelled.",
+  "captureCameraPermissionDenied": "Camera permission denied.",
+  "capturePhotoLibraryPermissionDenied": "Photo library permission denied.",
+  "captureMicrophonePermissionDenied": "Microphone permission denied.",
+  "captureCameraUnavailable": "Camera is unavailable on this device.",
+  "capturePhotoLibraryUnavailable": "Photo library is unavailable on this device.",
+  "captureMicrophoneUnavailable": "Microphone is unavailable on this device.",
+  "captureCameraFailed": "Camera capture failed.",
+  "captureGalleryFailed": "Gallery selection failed.",
+  "captureVoiceFailedSimple": "Voice recording failed.",
+  "captureVoiceFailedToStart": "Voice recording failed to start.",
+  "captureVoiceFailedToStop": "Voice recording failed to stop.",
+  "captureVoiceCancelFailedSimple": "Voice recording cancel failed.",
+  "captureVoiceFileNotCreated": "Voice recording file was not created.",
+  "captureVoiceEmptyFile": "Voice recording produced an empty file.",
+  "captureVoiceFileNotReturned": "Voice recording file was not returned.",
+  "captureRecordSavedModelRequired": "Record saved locally. Configure a model provider or retry after agent recovery to generate Memory, cards, insights, and todos.",
+  "captureRecordSavedAgentFailed": "Record saved locally, but agent processing failed. Retry after model or permission recovery.",
+  "captureMemoryReviewFailed": "Memory review failed: {details}",
+  "@captureMemoryReviewFailed": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
   "capturePhotoAttachedMessage": "Photo attached. Review it, then save the record.",
   "captureVoiceAttachedMessage": "Voice draft attached. Review the transcript before saving.",
   "captureShareAttachedMessage": "Imported item attached. Review it, then save the record.",
@@ -219,6 +316,26 @@
       }
     }
   },
+  "memoryBodyCannotBeEmpty": "Memory body cannot be empty.",
+  "memoryUpdateFailed": "Memory update failed.",
+  "memoryTypePreference": "preference",
+  "memoryTypeProject": "project",
+  "memoryTypePerson": "person",
+  "memoryTypeHealth": "health",
+  "memoryTypeFinance": "finance",
+  "memoryTypeLocation": "location",
+  "memoryTypeCredential": "credential",
+  "memoryTypeInsight": "insight",
+  "memoryTypeTaskContext": "task context",
+  "memorySensitivityLow": "low sensitivity",
+  "memorySensitivityMedium": "medium sensitivity",
+  "memorySensitivityHigh": "high sensitivity",
+  "cardKindCapture": "capture card",
+  "cardKindMemory": "Memory card",
+  "insightKindSummary": "summary insight",
+  "insightKindCount": "count insight",
+  "insightKindTrend": "trend insight",
+  "insightMetricSourceLinked": "source-linked",
   "traceTitle": "Trace",
   "traceEmpty": "Local runtime events appear here after captures or pack runs.",
   "recordStatusSavedProcessing": "Saved locally, processing",
@@ -251,6 +368,7 @@
   },
   "todoSeedReviewMemory": "Review generated Memory before export",
   "todoSeedConfirmBackup": "Confirm backup permission boundary",
+  "todoReviewCaptureTitle": "Review capture",
   "todoSourceLabel": "source: {sourceId}",
   "@todoSourceLabel": {
     "placeholders": {
@@ -259,12 +377,67 @@
       }
     }
   },
+  "sourceLabel": "source: {sourceId}",
+  "@sourceLabel": {
+    "placeholders": {
+      "sourceId": {
+        "type": "String"
+      }
+    }
+  },
+  "sourceKindIdLabel": "{kind}: {sourceId}",
+  "@sourceKindIdLabel": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      },
+      "sourceId": {
+        "type": "String"
+      }
+    }
+  },
+  "sourceKindIdExtraLabel": "{kind}: {sourceId} +{extraCount}",
+  "@sourceKindIdExtraLabel": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      },
+      "sourceId": {
+        "type": "String"
+      },
+      "extraCount": {
+        "type": "int"
+      }
+    }
+  },
+  "sourceUnknownLabel": "unknown source",
+  "sourceKindRawText": "raw text",
+  "sourceKindAttachment": "attachment",
+  "sourceKindFile": "file",
+  "sourceLinkCount": "{count, plural, =1{1 source link} other{{count} source links}}",
+  "@sourceLinkCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "localTimeLabel": "{time} local",
+  "@localTimeLabel": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "todoStatusNeedsExplicitPermission": "needs explicit permission",
   "todoStatusSuggestedByAgent": "suggested by agent",
+  "todoStatusNotSuggested": "not suggested",
   "todoStatusOpen": "open",
   "todoStatusCompleted": "completed",
   "todoActionComplete": "Complete",
   "todoActionReopen": "Reopen",
+  "todoUpdateFailed": "Todo update failed.",
   "chatTitle": "Chat",
   "chatSubtitle": "Ask WideNote with local Memory, records, and todos as context.",
   "chatSessionsTitle": "Sessions",
@@ -294,8 +467,14 @@
   "chatContextMemoryTitle": "Memory",
   "chatContextRecordTitle": "Record",
   "chatContextTodoTitle": "Todo",
+  "chatContextCardTitle": "Card",
+  "chatContextInsightTitle": "Insight",
+  "chatContextRedactedTitle": "Redacted source",
   "chatContextUntitledCapture": "Untitled local capture",
   "chatContextUntitledTodo": "Untitled todo suggestion",
+  "chatErrorModelNotConfigured": "Model access is not configured. Add a provider in Settings, then retry.",
+  "chatErrorModelEmptyAnswer": "The model returned no answer. Retry or choose another provider.",
+  "chatErrorModelUnavailable": "The model is unavailable. Check provider settings or retry.",
   "todosTitle": "Todos",
   "todosSubtitle": "Source-linked actions with visible record provenance.",
   "todosSurfaceTitle": "Source-linked todos",
@@ -315,6 +494,8 @@
   "timelineUnavailableTitle": "Timeline unavailable",
   "timelineEmptyTitle": "No timeline items yet",
   "timelineEmptyBody": "Capture something locally to create source-linked cards.",
+  "timelineUntitledCapture": "Untitled capture",
+  "timelineUntitledTodo": "Untitled todo",
   "timelineStartCaptureButton": "Start capture",
   "timelineSearchTitle": "Search",
   "timelineSearchSubtitle": "Filter the local timeline without leaving the device.",
@@ -961,6 +1142,16 @@
   "providerActionSetDefault": "Set default",
   "providerActionTestConnection": "Test connection",
   "providerActionEdit": "Edit provider",
+  "providerActionDelete": "Delete provider",
+  "providerDeleteTitle": "Delete provider?",
+  "providerDeleteBody": "Remove \"{provider}\" from local model settings.",
+  "@providerDeleteBody": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
   "providerDialogAddTitle": "Add provider",
   "providerDialogEditTitle": "Edit provider",
   "providerFieldProviderType": "Provider type",
@@ -971,6 +1162,62 @@
   "providerApiKeyKeepSessionHelper": "Leave blank to keep the session credential.",
   "providerInvalidEndpoint": "Endpoint is not a valid URI.",
   "providerSaveFailed": "Provider could not be saved.",
+  "providerConfigInvalid": "Provider config invalid: {details}.",
+  "@providerConfigInvalid": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "providerNotFound": "Provider not found.",
+  "providerTestingConnectionMessage": "Testing connection...",
+  "providerConnectionUnexpectedFailure": "Provider connection test failed unexpectedly.",
+  "providerSavedKeyClearedMessage": "Saved API key cleared. Add a key before testing.",
+  "providerConnectionNotRunMessage": "Connection test has not run for these saved settings.",
+  "providerConnectionValidatedOffline": "{provider} validated offline. No live request sent.",
+  "@providerConnectionValidatedOffline": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "providerConnectionSucceeded": "{provider} connection test succeeded.",
+  "@providerConnectionSucceeded": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "providerConnectionIncomplete": "{provider} configuration is incomplete: {details}.",
+  "@providerConnectionIncomplete": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "providerConnectionUnsupportedProbe": "{provider} cannot run the chat connection probe with this capability set.",
+  "@providerConnectionUnsupportedProbe": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "providerConnectionProviderUnexpectedFailure": "{provider} connection test failed unexpectedly.",
+  "@providerConnectionProviderUnexpectedFailure": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
   "backupTitle": "Backup",
   "backupSubtitle": "Export and import local records, Memory, cards, chat, providers, todos, and trace data.",
   "backupIdleStatus": "Local data stays on this device until you export or paste a backup.",
@@ -985,6 +1232,11 @@
       }
     }
   },
+  "backupInvalidFormat": "Invalid backup format.",
+  "backupUnsupportedVersion": "Unsupported backup version.",
+  "backupNoSavedFile": "No saved backup file found.",
+  "backupLocalConflict": "Backup conflicts with local data.",
+  "backupUnexpectedError": "Unexpected backup error.",
   "backupExportSectionTitle": "Export and restore boundary",
   "backupExportButton": "Export safe restore JSON",
   "backupExportEmpty": "Export creates a safe, versioned restore JSON and a readable Owner Export Markdown projection.",

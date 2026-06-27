@@ -143,6 +143,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String get recapInsightsTitle => '洞察';
 
   @override
+  String get recapEntryRecordTitle => '记录';
+
+  @override
+  String get recapEntryMemoryTitle => '记忆';
+
+  @override
+  String get recapEntryOpenTodoTitle => '未完成待办';
+
+  @override
+  String get recapEntryCompletedTodoTitle => '已完成待办';
+
+  @override
+  String get recapUntitledCapture => '未命名记录';
+
+  @override
+  String get recapUntitledTodo => '未命名待办';
+
+  @override
   String get recapSectionEmpty => '今天这个分区还没有可溯源内容。';
 
   @override
@@ -244,7 +262,139 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get captureAttachmentAssetSafetyReason => '素材安全';
+
+  @override
+  String get captureAttachmentBlockedBySafety => '被素材安全策略阻止';
+
+  @override
+  String captureAttachmentUnsupportedMimeType(String mimeType) {
+    return '不支持的文件类型：$mimeType';
+  }
+
+  @override
+  String get captureAttachmentVoiceTranscriptNeedsReview => '语音转写需要复核';
+
+  @override
+  String get captureAttachmentAllowed => '已允许';
+
+  @override
+  String get captureAttachmentKindPhoto => '照片';
+
+  @override
+  String get captureAttachmentKindVoice => '语音';
+
+  @override
+  String get captureAttachmentKindShare => '分享内容';
+
+  @override
+  String get captureAttachmentFallbackName => '附件';
+
+  @override
+  String captureAttachmentSummary(String kind, String name) {
+    return '$kind：$name';
+  }
+
+  @override
+  String captureBlockedAttachmentSummary(String name) {
+    return '已阻止附件：$name';
+  }
+
+  @override
   String get captureEmptyMessage => '先输入文字或添加一个附件，再保存记录。';
+
+  @override
+  String get captureReviewPendingAttachments => '请先复核或移除待处理附件，再保存记录。';
+
+  @override
+  String get captureStopVoiceBeforeSaving => '请先停止或取消录音，再保存。';
+
+  @override
+  String get captureRemoveBlockedAttachments => '请先移除已阻止的附件再保存。';
+
+  @override
+  String get captureReviewAttachments => '请先复核附件再保存。';
+
+  @override
+  String captureVoiceFailed(String details) {
+    return '录音失败：$details';
+  }
+
+  @override
+  String get captureVoiceCancelled => '录音已取消。';
+
+  @override
+  String captureVoiceCancelFailed(String details) {
+    return '取消录音失败：$details';
+  }
+
+  @override
+  String captureAttachmentFailed(String details) {
+    return '附件添加失败：$details';
+  }
+
+  @override
+  String get captureCameraCancelled => '相机拍摄已取消。';
+
+  @override
+  String get captureGalleryCancelled => '相册选择已取消。';
+
+  @override
+  String get captureCameraPermissionDenied => '相机权限被拒绝。';
+
+  @override
+  String get capturePhotoLibraryPermissionDenied => '照片库权限被拒绝。';
+
+  @override
+  String get captureMicrophonePermissionDenied => '麦克风权限被拒绝。';
+
+  @override
+  String get captureCameraUnavailable => '这台设备上的相机不可用。';
+
+  @override
+  String get capturePhotoLibraryUnavailable => '这台设备上的照片库不可用。';
+
+  @override
+  String get captureMicrophoneUnavailable => '这台设备上的麦克风不可用。';
+
+  @override
+  String get captureCameraFailed => '相机拍摄失败。';
+
+  @override
+  String get captureGalleryFailed => '相册选择失败。';
+
+  @override
+  String get captureVoiceFailedSimple => '录音失败。';
+
+  @override
+  String get captureVoiceFailedToStart => '录音启动失败。';
+
+  @override
+  String get captureVoiceFailedToStop => '录音停止失败。';
+
+  @override
+  String get captureVoiceCancelFailedSimple => '取消录音失败。';
+
+  @override
+  String get captureVoiceFileNotCreated => '未创建录音文件。';
+
+  @override
+  String get captureVoiceEmptyFile => '录音生成了空文件。';
+
+  @override
+  String get captureVoiceFileNotReturned => '未返回录音文件。';
+
+  @override
+  String get captureRecordSavedModelRequired =>
+      '记录已本地保存。配置模型提供商或等智能体恢复后重试，即可生成记忆、卡片、洞察和待办。';
+
+  @override
+  String get captureRecordSavedAgentFailed => '记录已本地保存，但智能体处理失败。请在模型或权限恢复后重试。';
+
+  @override
+  String captureMemoryReviewFailed(String details) {
+    return '记忆复核失败：$details';
+  }
 
   @override
   String get capturePhotoAttachedMessage => '照片已添加，复核后可以保存记录。';
@@ -421,6 +571,66 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get memoryBodyCannotBeEmpty => '记忆正文不能为空。';
+
+  @override
+  String get memoryUpdateFailed => '记忆更新失败。';
+
+  @override
+  String get memoryTypePreference => '偏好';
+
+  @override
+  String get memoryTypeProject => '项目';
+
+  @override
+  String get memoryTypePerson => '人物';
+
+  @override
+  String get memoryTypeHealth => '健康';
+
+  @override
+  String get memoryTypeFinance => '财务';
+
+  @override
+  String get memoryTypeLocation => '地点';
+
+  @override
+  String get memoryTypeCredential => '凭据';
+
+  @override
+  String get memoryTypeInsight => '洞察';
+
+  @override
+  String get memoryTypeTaskContext => '任务上下文';
+
+  @override
+  String get memorySensitivityLow => '低敏感度';
+
+  @override
+  String get memorySensitivityMedium => '中敏感度';
+
+  @override
+  String get memorySensitivityHigh => '高敏感度';
+
+  @override
+  String get cardKindCapture => '记录卡片';
+
+  @override
+  String get cardKindMemory => '记忆卡片';
+
+  @override
+  String get insightKindSummary => '摘要洞察';
+
+  @override
+  String get insightKindCount => '计数洞察';
+
+  @override
+  String get insightKindTrend => '趋势洞察';
+
+  @override
+  String get insightMetricSourceLinked => '可溯源';
+
+  @override
   String get traceTitle => '追踪';
 
   @override
@@ -436,13 +646,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get recordStatusAgentFailed => '已本地保存，智能体处理失败';
 
   @override
-  String get memoryAutoSavedTitle => 'Memory 自动入库';
+  String get memoryAutoSavedTitle => '记忆自动入库';
 
   @override
-  String get memoryNeedsReviewTitle => 'Memory 待复核';
+  String get memoryNeedsReviewTitle => '记忆待复核';
 
   @override
-  String get memorySavedTitle => 'Memory 已入库';
+  String get memorySavedTitle => '记忆已入库';
 
   @override
   String get statusAutoAccepted => '自动接受';
@@ -479,8 +689,48 @@ class AppLocalizationsZh extends AppLocalizations {
   String get todoSeedConfirmBackup => '确认备份权限边界';
 
   @override
+  String get todoReviewCaptureTitle => '复核记录';
+
+  @override
   String todoSourceLabel(String sourceId) {
     return '来源：$sourceId';
+  }
+
+  @override
+  String sourceLabel(String sourceId) {
+    return '来源：$sourceId';
+  }
+
+  @override
+  String sourceKindIdLabel(String kind, String sourceId) {
+    return '$kind：$sourceId';
+  }
+
+  @override
+  String sourceKindIdExtraLabel(String kind, String sourceId, int extraCount) {
+    return '$kind：$sourceId +$extraCount';
+  }
+
+  @override
+  String get sourceUnknownLabel => '未知来源';
+
+  @override
+  String get sourceKindRawText => '原始文本';
+
+  @override
+  String get sourceKindAttachment => '附件';
+
+  @override
+  String get sourceKindFile => '文件';
+
+  @override
+  String sourceLinkCount(int count) {
+    return '$count 个来源链接';
+  }
+
+  @override
+  String localTimeLabel(String time) {
+    return '$time 本地';
   }
 
   @override
@@ -488,6 +738,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get todoStatusSuggestedByAgent => '智能体建议';
+
+  @override
+  String get todoStatusNotSuggested => '未建议';
 
   @override
   String get todoStatusOpen => '未完成';
@@ -500,6 +753,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get todoActionReopen => '重新打开';
+
+  @override
+  String get todoUpdateFailed => '待办更新失败。';
 
   @override
   String get chatTitle => '对话';
@@ -553,7 +809,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatLocalConversationTitle => '本地对话';
 
   @override
-  String get chatEmptyConversation => '先问一个关于记录、Memory 或待办的问题。';
+  String get chatEmptyConversation => '先问一个关于记录、记忆或待办的问题。';
 
   @override
   String get chatSendFailed => '发送失败';
@@ -571,7 +827,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatComposerTitle => '提问';
 
   @override
-  String get chatComposerHint => '问问本地记录、Memory 或待办...';
+  String get chatComposerHint => '问问本地记录、记忆或待办...';
 
   @override
   String get chatSendButton => '发送';
@@ -580,7 +836,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatGeneratingButton => '生成中';
 
   @override
-  String get chatContextMemoryTitle => 'Memory';
+  String get chatContextMemoryTitle => '记忆';
 
   @override
   String get chatContextRecordTitle => '记录';
@@ -589,10 +845,28 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatContextTodoTitle => '待办';
 
   @override
+  String get chatContextCardTitle => '卡片';
+
+  @override
+  String get chatContextInsightTitle => '洞察';
+
+  @override
+  String get chatContextRedactedTitle => '已脱敏来源';
+
+  @override
   String get chatContextUntitledCapture => '未命名本地记录';
 
   @override
   String get chatContextUntitledTodo => '未命名待办建议';
+
+  @override
+  String get chatErrorModelNotConfigured => '尚未配置模型访问。请先在设置里添加提供商，然后重试。';
+
+  @override
+  String get chatErrorModelEmptyAnswer => '模型没有返回回答。请重试或切换提供商。';
+
+  @override
+  String get chatErrorModelUnavailable => '模型暂不可用。请检查提供商设置或稍后重试。';
 
   @override
   String get todosTitle => '待办';
@@ -631,6 +905,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get timelineEmptyBody => '先本地记录一条内容，就能生成带来源的卡片。';
+
+  @override
+  String get timelineUntitledCapture => '未命名记录';
+
+  @override
+  String get timelineUntitledTodo => '未命名待办';
 
   @override
   String get timelineStartCaptureButton => '开始记录';
@@ -805,7 +1085,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsPrivacyLocalFirstBody =>
-      '记录、Memory、待办、卡片、对话和追踪会留在这台设备上，除非你主动选择备份、同步或模型提供商。';
+      '记录、记忆、待办、卡片、对话和追踪会留在这台设备上，除非你主动选择备份、同步或模型提供商。';
 
   @override
   String get settingsPrivacyLocalFirstStatus => '无需账号';
@@ -861,7 +1141,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsBackupTitle => '备份与恢复';
 
   @override
-  String get settingsBackupSubtitle => '导出或导入本地记录、Memory、卡片、模型提供商、待办和追踪。';
+  String get settingsBackupSubtitle => '导出或导入本地记录、记忆、卡片、模型提供商、待办和追踪。';
 
   @override
   String get settingsBackupStatus => '本地';
@@ -1072,7 +1352,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get packDefaultName => '默认记录循环';
 
   @override
-  String get packDefaultDescription => '保守的内置插件，用于记录卡片、Memory 候选和轻量洞察。';
+  String get packDefaultDescription => '保守的内置插件，用于记录卡片、记忆候选和轻量洞察。';
 
   @override
   String get packTodoName => '待办提取循环';
@@ -1539,6 +1819,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get providerActionEdit => '编辑提供商';
 
   @override
+  String get providerActionDelete => '删除提供商';
+
+  @override
+  String get providerDeleteTitle => '删除提供商？';
+
+  @override
+  String providerDeleteBody(String provider) {
+    return '从本地模型设置中移除“$provider”。';
+  }
+
+  @override
   String get providerDialogAddTitle => '添加提供商';
 
   @override
@@ -1569,10 +1860,55 @@ class AppLocalizationsZh extends AppLocalizations {
   String get providerSaveFailed => '提供商无法保存。';
 
   @override
+  String providerConfigInvalid(String details) {
+    return '提供商配置无效：$details。';
+  }
+
+  @override
+  String get providerNotFound => '未找到提供商。';
+
+  @override
+  String get providerTestingConnectionMessage => '正在测试连接...';
+
+  @override
+  String get providerConnectionUnexpectedFailure => '提供商连接测试意外失败。';
+
+  @override
+  String get providerSavedKeyClearedMessage => '已清除保存的 API Key。测试前请先添加新密钥。';
+
+  @override
+  String get providerConnectionNotRunMessage => '这些已保存设置还没有运行连接测试。';
+
+  @override
+  String providerConnectionValidatedOffline(String provider) {
+    return '$provider 已完成离线验证，没有发送真实请求。';
+  }
+
+  @override
+  String providerConnectionSucceeded(String provider) {
+    return '$provider 连接测试已成功。';
+  }
+
+  @override
+  String providerConnectionIncomplete(String provider, String details) {
+    return '$provider 配置不完整：$details。';
+  }
+
+  @override
+  String providerConnectionUnsupportedProbe(String provider) {
+    return '$provider 无法用当前能力集合运行对话连接探测。';
+  }
+
+  @override
+  String providerConnectionProviderUnexpectedFailure(String provider) {
+    return '$provider 连接测试意外失败。';
+  }
+
+  @override
   String get backupTitle => '备份';
 
   @override
-  String get backupSubtitle => '导出和导入本地记录、Memory、卡片、对话、模型提供商、待办和追踪数据。';
+  String get backupSubtitle => '导出和导入本地记录、记忆、卡片、对话、模型提供商、待办和追踪数据。';
 
   @override
   String get backupIdleStatus => '本地数据会留在这台设备上，直到你导出或粘贴备份。';
@@ -1592,6 +1928,21 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get backupInvalidFormat => '备份格式无效。';
+
+  @override
+  String get backupUnsupportedVersion => '不支持的备份版本。';
+
+  @override
+  String get backupNoSavedFile => '没有找到已保存的备份文件。';
+
+  @override
+  String get backupLocalConflict => '备份内容与本地数据冲突。';
+
+  @override
+  String get backupUnexpectedError => '发生了意外的备份错误。';
+
+  @override
   String get backupExportSectionTitle => '导出与恢复边界';
 
   @override
@@ -1606,7 +1957,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get backupSafeRestoreBoundary =>
-      '安全恢复 JSON 会恢复记录、Memory、待办、模型提供商元数据、Pack 安装、权限、运行时状态和追踪，但不包含 Provider Key。';
+      '安全恢复 JSON 会恢复记录、记忆、待办、模型提供商元数据、Pack 安装、权限、运行时状态和追踪，但不包含 Provider Key。';
 
   @override
   String get backupOwnerExportBoundary =>

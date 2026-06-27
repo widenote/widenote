@@ -362,6 +362,42 @@ abstract class AppLocalizations {
   /// **'Insights'**
   String get recapInsightsTitle;
 
+  /// No description provided for @recapEntryRecordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Record'**
+  String get recapEntryRecordTitle;
+
+  /// No description provided for @recapEntryMemoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory'**
+  String get recapEntryMemoryTitle;
+
+  /// No description provided for @recapEntryOpenTodoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open todo'**
+  String get recapEntryOpenTodoTitle;
+
+  /// No description provided for @recapEntryCompletedTodoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed todo'**
+  String get recapEntryCompletedTodoTitle;
+
+  /// No description provided for @recapUntitledCapture.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled capture'**
+  String get recapUntitledCapture;
+
+  /// No description provided for @recapUntitledTodo.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled todo'**
+  String get recapUntitledTodo;
+
   /// No description provided for @recapSectionEmpty.
   ///
   /// In en, this message translates to:
@@ -548,11 +584,245 @@ abstract class AppLocalizations {
   /// **'Blocked attachment · {reason} · Preview hidden until review.'**
   String captureAttachmentBlocked(String reason);
 
+  /// No description provided for @captureAttachmentAssetSafetyReason.
+  ///
+  /// In en, this message translates to:
+  /// **'asset safety'**
+  String get captureAttachmentAssetSafetyReason;
+
+  /// No description provided for @captureAttachmentBlockedBySafety.
+  ///
+  /// In en, this message translates to:
+  /// **'blocked by asset safety'**
+  String get captureAttachmentBlockedBySafety;
+
+  /// No description provided for @captureAttachmentUnsupportedMimeType.
+  ///
+  /// In en, this message translates to:
+  /// **'unsupported file type: {mimeType}'**
+  String captureAttachmentUnsupportedMimeType(String mimeType);
+
+  /// No description provided for @captureAttachmentVoiceTranscriptNeedsReview.
+  ///
+  /// In en, this message translates to:
+  /// **'voice transcript needs review'**
+  String get captureAttachmentVoiceTranscriptNeedsReview;
+
+  /// No description provided for @captureAttachmentAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'allowed'**
+  String get captureAttachmentAllowed;
+
+  /// No description provided for @captureAttachmentKindPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'photo'**
+  String get captureAttachmentKindPhoto;
+
+  /// No description provided for @captureAttachmentKindVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'voice'**
+  String get captureAttachmentKindVoice;
+
+  /// No description provided for @captureAttachmentKindShare.
+  ///
+  /// In en, this message translates to:
+  /// **'shared item'**
+  String get captureAttachmentKindShare;
+
+  /// No description provided for @captureAttachmentFallbackName.
+  ///
+  /// In en, this message translates to:
+  /// **'attachment'**
+  String get captureAttachmentFallbackName;
+
+  /// No description provided for @captureAttachmentSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{kind}: {name}'**
+  String captureAttachmentSummary(String kind, String name);
+
+  /// No description provided for @captureBlockedAttachmentSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked attachment: {name}'**
+  String captureBlockedAttachmentSummary(String name);
+
   /// No description provided for @captureEmptyMessage.
   ///
   /// In en, this message translates to:
   /// **'Add text or an attachment before saving.'**
   String get captureEmptyMessage;
+
+  /// No description provided for @captureReviewPendingAttachments.
+  ///
+  /// In en, this message translates to:
+  /// **'Review or remove pending attachments before saving.'**
+  String get captureReviewPendingAttachments;
+
+  /// No description provided for @captureStopVoiceBeforeSaving.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop or cancel the voice recording before saving.'**
+  String get captureStopVoiceBeforeSaving;
+
+  /// No description provided for @captureRemoveBlockedAttachments.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove blocked attachments before saving.'**
+  String get captureRemoveBlockedAttachments;
+
+  /// No description provided for @captureReviewAttachments.
+  ///
+  /// In en, this message translates to:
+  /// **'Review attachments before saving.'**
+  String get captureReviewAttachments;
+
+  /// No description provided for @captureVoiceFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice recording failed: {details}'**
+  String captureVoiceFailed(String details);
+
+  /// No description provided for @captureVoiceCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice recording cancelled.'**
+  String get captureVoiceCancelled;
+
+  /// No description provided for @captureVoiceCancelFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice recording cancel failed: {details}'**
+  String captureVoiceCancelFailed(String details);
+
+  /// No description provided for @captureAttachmentFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachment failed: {details}'**
+  String captureAttachmentFailed(String details);
+
+  /// No description provided for @captureCameraCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera capture cancelled.'**
+  String get captureCameraCancelled;
+
+  /// No description provided for @captureGalleryCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery selection cancelled.'**
+  String get captureGalleryCancelled;
+
+  /// No description provided for @captureCameraPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera permission denied.'**
+  String get captureCameraPermissionDenied;
+
+  /// No description provided for @capturePhotoLibraryPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo library permission denied.'**
+  String get capturePhotoLibraryPermissionDenied;
+
+  /// No description provided for @captureMicrophonePermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone permission denied.'**
+  String get captureMicrophonePermissionDenied;
+
+  /// No description provided for @captureCameraUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera is unavailable on this device.'**
+  String get captureCameraUnavailable;
+
+  /// No description provided for @capturePhotoLibraryUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo library is unavailable on this device.'**
+  String get capturePhotoLibraryUnavailable;
+
+  /// No description provided for @captureMicrophoneUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone is unavailable on this device.'**
+  String get captureMicrophoneUnavailable;
+
+  /// No description provided for @captureCameraFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera capture failed.'**
+  String get captureCameraFailed;
+
+  /// No description provided for @captureGalleryFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery selection failed.'**
+  String get captureGalleryFailed;
+
+  /// No description provided for @captureVoiceFailedSimple.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice recording failed.'**
+  String get captureVoiceFailedSimple;
+
+  /// No description provided for @captureVoiceFailedToStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice recording failed to start.'**
+  String get captureVoiceFailedToStart;
+
+  /// No description provided for @captureVoiceFailedToStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice recording failed to stop.'**
+  String get captureVoiceFailedToStop;
+
+  /// No description provided for @captureVoiceCancelFailedSimple.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice recording cancel failed.'**
+  String get captureVoiceCancelFailedSimple;
+
+  /// No description provided for @captureVoiceFileNotCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice recording file was not created.'**
+  String get captureVoiceFileNotCreated;
+
+  /// No description provided for @captureVoiceEmptyFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice recording produced an empty file.'**
+  String get captureVoiceEmptyFile;
+
+  /// No description provided for @captureVoiceFileNotReturned.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice recording file was not returned.'**
+  String get captureVoiceFileNotReturned;
+
+  /// No description provided for @captureRecordSavedModelRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Record saved locally. Configure a model provider or retry after agent recovery to generate Memory, cards, insights, and todos.'**
+  String get captureRecordSavedModelRequired;
+
+  /// No description provided for @captureRecordSavedAgentFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Record saved locally, but agent processing failed. Retry after model or permission recovery.'**
+  String get captureRecordSavedAgentFailed;
+
+  /// No description provided for @captureMemoryReviewFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory review failed: {details}'**
+  String captureMemoryReviewFailed(String details);
 
   /// No description provided for @capturePhotoAttachedMessage.
   ///
@@ -872,6 +1142,126 @@ abstract class AppLocalizations {
   /// **'rev {revision}'**
   String memoryRevisionLabel(int revision);
 
+  /// No description provided for @memoryBodyCannotBeEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory body cannot be empty.'**
+  String get memoryBodyCannotBeEmpty;
+
+  /// No description provided for @memoryUpdateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory update failed.'**
+  String get memoryUpdateFailed;
+
+  /// No description provided for @memoryTypePreference.
+  ///
+  /// In en, this message translates to:
+  /// **'preference'**
+  String get memoryTypePreference;
+
+  /// No description provided for @memoryTypeProject.
+  ///
+  /// In en, this message translates to:
+  /// **'project'**
+  String get memoryTypeProject;
+
+  /// No description provided for @memoryTypePerson.
+  ///
+  /// In en, this message translates to:
+  /// **'person'**
+  String get memoryTypePerson;
+
+  /// No description provided for @memoryTypeHealth.
+  ///
+  /// In en, this message translates to:
+  /// **'health'**
+  String get memoryTypeHealth;
+
+  /// No description provided for @memoryTypeFinance.
+  ///
+  /// In en, this message translates to:
+  /// **'finance'**
+  String get memoryTypeFinance;
+
+  /// No description provided for @memoryTypeLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'location'**
+  String get memoryTypeLocation;
+
+  /// No description provided for @memoryTypeCredential.
+  ///
+  /// In en, this message translates to:
+  /// **'credential'**
+  String get memoryTypeCredential;
+
+  /// No description provided for @memoryTypeInsight.
+  ///
+  /// In en, this message translates to:
+  /// **'insight'**
+  String get memoryTypeInsight;
+
+  /// No description provided for @memoryTypeTaskContext.
+  ///
+  /// In en, this message translates to:
+  /// **'task context'**
+  String get memoryTypeTaskContext;
+
+  /// No description provided for @memorySensitivityLow.
+  ///
+  /// In en, this message translates to:
+  /// **'low sensitivity'**
+  String get memorySensitivityLow;
+
+  /// No description provided for @memorySensitivityMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'medium sensitivity'**
+  String get memorySensitivityMedium;
+
+  /// No description provided for @memorySensitivityHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'high sensitivity'**
+  String get memorySensitivityHigh;
+
+  /// No description provided for @cardKindCapture.
+  ///
+  /// In en, this message translates to:
+  /// **'capture card'**
+  String get cardKindCapture;
+
+  /// No description provided for @cardKindMemory.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory card'**
+  String get cardKindMemory;
+
+  /// No description provided for @insightKindSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'summary insight'**
+  String get insightKindSummary;
+
+  /// No description provided for @insightKindCount.
+  ///
+  /// In en, this message translates to:
+  /// **'count insight'**
+  String get insightKindCount;
+
+  /// No description provided for @insightKindTrend.
+  ///
+  /// In en, this message translates to:
+  /// **'trend insight'**
+  String get insightKindTrend;
+
+  /// No description provided for @insightMetricSourceLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'source-linked'**
+  String get insightMetricSourceLinked;
+
   /// No description provided for @traceTitle.
   ///
   /// In en, this message translates to:
@@ -980,11 +1370,71 @@ abstract class AppLocalizations {
   /// **'Confirm backup permission boundary'**
   String get todoSeedConfirmBackup;
 
+  /// No description provided for @todoReviewCaptureTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review capture'**
+  String get todoReviewCaptureTitle;
+
   /// No description provided for @todoSourceLabel.
   ///
   /// In en, this message translates to:
   /// **'source: {sourceId}'**
   String todoSourceLabel(String sourceId);
+
+  /// No description provided for @sourceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'source: {sourceId}'**
+  String sourceLabel(String sourceId);
+
+  /// No description provided for @sourceKindIdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{kind}: {sourceId}'**
+  String sourceKindIdLabel(String kind, String sourceId);
+
+  /// No description provided for @sourceKindIdExtraLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{kind}: {sourceId} +{extraCount}'**
+  String sourceKindIdExtraLabel(String kind, String sourceId, int extraCount);
+
+  /// No description provided for @sourceUnknownLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'unknown source'**
+  String get sourceUnknownLabel;
+
+  /// No description provided for @sourceKindRawText.
+  ///
+  /// In en, this message translates to:
+  /// **'raw text'**
+  String get sourceKindRawText;
+
+  /// No description provided for @sourceKindAttachment.
+  ///
+  /// In en, this message translates to:
+  /// **'attachment'**
+  String get sourceKindAttachment;
+
+  /// No description provided for @sourceKindFile.
+  ///
+  /// In en, this message translates to:
+  /// **'file'**
+  String get sourceKindFile;
+
+  /// No description provided for @sourceLinkCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 source link} other{{count} source links}}'**
+  String sourceLinkCount(int count);
+
+  /// No description provided for @localTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{time} local'**
+  String localTimeLabel(String time);
 
   /// No description provided for @todoStatusNeedsExplicitPermission.
   ///
@@ -997,6 +1447,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'suggested by agent'**
   String get todoStatusSuggestedByAgent;
+
+  /// No description provided for @todoStatusNotSuggested.
+  ///
+  /// In en, this message translates to:
+  /// **'not suggested'**
+  String get todoStatusNotSuggested;
 
   /// No description provided for @todoStatusOpen.
   ///
@@ -1021,6 +1477,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reopen'**
   String get todoActionReopen;
+
+  /// No description provided for @todoUpdateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Todo update failed.'**
+  String get todoUpdateFailed;
 
   /// No description provided for @chatTitle.
   ///
@@ -1196,6 +1658,24 @@ abstract class AppLocalizations {
   /// **'Todo'**
   String get chatContextTodoTitle;
 
+  /// No description provided for @chatContextCardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Card'**
+  String get chatContextCardTitle;
+
+  /// No description provided for @chatContextInsightTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Insight'**
+  String get chatContextInsightTitle;
+
+  /// No description provided for @chatContextRedactedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Redacted source'**
+  String get chatContextRedactedTitle;
+
   /// No description provided for @chatContextUntitledCapture.
   ///
   /// In en, this message translates to:
@@ -1207,6 +1687,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Untitled todo suggestion'**
   String get chatContextUntitledTodo;
+
+  /// No description provided for @chatErrorModelNotConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'Model access is not configured. Add a provider in Settings, then retry.'**
+  String get chatErrorModelNotConfigured;
+
+  /// No description provided for @chatErrorModelEmptyAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'The model returned no answer. Retry or choose another provider.'**
+  String get chatErrorModelEmptyAnswer;
+
+  /// No description provided for @chatErrorModelUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'The model is unavailable. Check provider settings or retry.'**
+  String get chatErrorModelUnavailable;
 
   /// No description provided for @todosTitle.
   ///
@@ -1279,6 +1777,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Capture something locally to create source-linked cards.'**
   String get timelineEmptyBody;
+
+  /// No description provided for @timelineUntitledCapture.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled capture'**
+  String get timelineUntitledCapture;
+
+  /// No description provided for @timelineUntitledTodo.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled todo'**
+  String get timelineUntitledTodo;
 
   /// No description provided for @timelineStartCaptureButton.
   ///
@@ -2847,6 +3357,24 @@ abstract class AppLocalizations {
   /// **'Edit provider'**
   String get providerActionEdit;
 
+  /// No description provided for @providerActionDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete provider'**
+  String get providerActionDelete;
+
+  /// No description provided for @providerDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete provider?'**
+  String get providerDeleteTitle;
+
+  /// No description provided for @providerDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove \"{provider}\" from local model settings.'**
+  String providerDeleteBody(String provider);
+
   /// No description provided for @providerDialogAddTitle.
   ///
   /// In en, this message translates to:
@@ -2907,6 +3435,72 @@ abstract class AppLocalizations {
   /// **'Provider could not be saved.'**
   String get providerSaveFailed;
 
+  /// No description provided for @providerConfigInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider config invalid: {details}.'**
+  String providerConfigInvalid(String details);
+
+  /// No description provided for @providerNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider not found.'**
+  String get providerNotFound;
+
+  /// No description provided for @providerTestingConnectionMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Testing connection...'**
+  String get providerTestingConnectionMessage;
+
+  /// No description provided for @providerConnectionUnexpectedFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider connection test failed unexpectedly.'**
+  String get providerConnectionUnexpectedFailure;
+
+  /// No description provided for @providerSavedKeyClearedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved API key cleared. Add a key before testing.'**
+  String get providerSavedKeyClearedMessage;
+
+  /// No description provided for @providerConnectionNotRunMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection test has not run for these saved settings.'**
+  String get providerConnectionNotRunMessage;
+
+  /// No description provided for @providerConnectionValidatedOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} validated offline. No live request sent.'**
+  String providerConnectionValidatedOffline(String provider);
+
+  /// No description provided for @providerConnectionSucceeded.
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} connection test succeeded.'**
+  String providerConnectionSucceeded(String provider);
+
+  /// No description provided for @providerConnectionIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} configuration is incomplete: {details}.'**
+  String providerConnectionIncomplete(String provider, String details);
+
+  /// No description provided for @providerConnectionUnsupportedProbe.
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} cannot run the chat connection probe with this capability set.'**
+  String providerConnectionUnsupportedProbe(String provider);
+
+  /// No description provided for @providerConnectionProviderUnexpectedFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} connection test failed unexpectedly.'**
+  String providerConnectionProviderUnexpectedFailure(String provider);
+
   /// No description provided for @backupTitle.
   ///
   /// In en, this message translates to:
@@ -2948,6 +3542,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Backup failed: {details}'**
   String backupFailedStatus(String details);
+
+  /// No description provided for @backupInvalidFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid backup format.'**
+  String get backupInvalidFormat;
+
+  /// No description provided for @backupUnsupportedVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsupported backup version.'**
+  String get backupUnsupportedVersion;
+
+  /// No description provided for @backupNoSavedFile.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved backup file found.'**
+  String get backupNoSavedFile;
+
+  /// No description provided for @backupLocalConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup conflicts with local data.'**
+  String get backupLocalConflict;
+
+  /// No description provided for @backupUnexpectedError.
+  ///
+  /// In en, this message translates to:
+  /// **'Unexpected backup error.'**
+  String get backupUnexpectedError;
 
   /// No description provided for @backupExportSectionTitle.
   ///

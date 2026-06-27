@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 
 import 'generated/app_localizations.dart';
 
+export 'display_text.dart';
 export 'generated/app_localizations.dart';
 
 extension AppLocalizationsX on BuildContext {
