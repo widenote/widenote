@@ -23,6 +23,7 @@ For current decisions, start with [decisions/index.md](./decisions/index.md).
 - [Live LLM Long Journey QA](./research/2026-06-27-live-llm-long-journey-qa.md)
 - [Local Semantic Rule Audit](./research/2026-06-27-local-semantic-rule-audit.md)
 - [Agent Runtime Roadmap Research](./research/2026-06-27-agent-runtime-roadmap-research.md)
+- [Agent Orchestration Parity](./research/2026-06-27-agent-orchestration-parity.md)
 - [Phase One Technical Plan](./architecture/phase-one-technical-plan.md) is a planning baseline; use W7 current state and the umbrella RFC for current implementation status.
 - [Phase One Module Plan](./architecture/phase-one-module-plan.md) is a planning baseline; update module READMEs and project map as modules land.
 - [Engineering Rules](./architecture/engineering-rules.md) for complexity budgets, test gates, subagent collaboration, external review boundaries, and emulator validation

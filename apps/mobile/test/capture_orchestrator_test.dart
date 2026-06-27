@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
 import 'package:widenote_core/widenote_core.dart';
 import 'package:widenote_memory/memory.dart' as memory;
+import 'package:widenote_mobile/features/capture/application/capture_agent_prompts.dart';
 import 'package:widenote_mobile/features/capture/application/capture_orchestrator.dart';
 import 'package:widenote_mobile/features/capture/media/capture_media.dart';
 import 'package:widenote_mobile/features/plugins/application/official_pack_manifests.dart';
@@ -110,6 +111,12 @@ void main() {
       everyElement(startsWith('source:')),
     );
     expect(model.requests.single.prompt, contains('Met Lin'));
+    expect(
+      model.requests.single.prompt,
+      contains(captureMemoryPromptCaptureTextMarker),
+    );
+    expect(model.requests.single.prompt, contains('Return only the Memory'));
+    expect(model.requests.single.context['prompt_ref'], captureMemoryPromptRef);
     expect(
       result.eventTypes,
       containsAllInOrder(<String>[

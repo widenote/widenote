@@ -196,11 +196,9 @@ Future<void> _submitCapture(WidgetTester tester, String text) async {
   await _openHome(tester);
   final field = find.byKey(const Key('quick-capture-field'));
   if (field.evaluate().isEmpty) {
-    await tester.scrollUntilVisible(
-      field,
-      -120,
-      scrollable: find.byType(Scrollable).first,
-    );
+    final openButton = find.byKey(const Key('open-new-record-button'));
+    await tester.ensureVisible(openButton);
+    await tester.tap(openButton);
     await tester.pumpAndSettle();
   }
   await tester.ensureVisible(field);

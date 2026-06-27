@@ -5,6 +5,7 @@ import 'package:widenote_memory/memory.dart' as memory;
 
 import '../../../shared/text_preview.dart';
 import '../../plugins/application/official_pack_manifests.dart';
+import 'capture_agent_prompts.dart';
 import '../domain/capture_models.dart';
 import '../media/capture_media.dart';
 
@@ -783,8 +784,14 @@ Future<runtime.ModelResponse> _summarizeCapture(
 }) async {
   return model.complete(
     runtime.ModelRequest(
-      prompt: 'Summarize capture for Memory: $text',
-      context: <String, Object?>{'source_event_id': sourceEventId},
+      prompt: buildCaptureMemoryPrompt(
+        text: text,
+        sourceEventId: sourceEventId,
+      ),
+      context: <String, Object?>{
+        'prompt_ref': captureMemoryPromptRef,
+        'source_event_id': sourceEventId,
+      },
     ),
   );
 }
