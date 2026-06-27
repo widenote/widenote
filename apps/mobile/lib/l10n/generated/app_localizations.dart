@@ -1136,6 +1136,342 @@ abstract class AppLocalizations {
   /// **'No source-linked todos yet.'**
   String get todosEmpty;
 
+  /// No description provided for @timelineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline'**
+  String get timelineTitle;
+
+  /// No description provided for @timelineSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse captures, cards, Memory, insights, and todos.'**
+  String get timelineSubtitle;
+
+  /// No description provided for @timelineSearchTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Search timeline'**
+  String get timelineSearchTooltip;
+
+  /// No description provided for @timelineBackTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to timeline'**
+  String get timelineBackTooltip;
+
+  /// No description provided for @timelineLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline failed to load: {error}'**
+  String timelineLoadFailed(String error);
+
+  /// No description provided for @timelineUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline unavailable'**
+  String get timelineUnavailableTitle;
+
+  /// No description provided for @timelineEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No timeline items yet'**
+  String get timelineEmptyTitle;
+
+  /// No description provided for @timelineEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture something locally to create source-linked cards.'**
+  String get timelineEmptyBody;
+
+  /// No description provided for @timelineStartCaptureButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Start capture'**
+  String get timelineStartCaptureButton;
+
+  /// No description provided for @timelineSearchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get timelineSearchTitle;
+
+  /// No description provided for @timelineSearchSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter the local timeline without leaving the device.'**
+  String get timelineSearchSubtitle;
+
+  /// No description provided for @timelineSearchUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Search unavailable'**
+  String get timelineSearchUnavailableTitle;
+
+  /// No description provided for @timelineSearchFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline search failed: {error}'**
+  String timelineSearchFailed(String error);
+
+  /// No description provided for @timelineSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by type, or use text after retriever setup'**
+  String get timelineSearchHint;
+
+  /// No description provided for @timelineFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get timelineFilterAll;
+
+  /// No description provided for @timelineSearchEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to search yet'**
+  String get timelineSearchEmptyTitle;
+
+  /// No description provided for @timelineSearchEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a capture first, then browse cards, Memory, and todos.'**
+  String get timelineSearchEmptyBody;
+
+  /// No description provided for @timelineSearchNeedsRetrieverTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Text search needs a retriever'**
+  String get timelineSearchNeedsRetrieverTitle;
+
+  /// No description provided for @timelineSearchNeedsRetrieverBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear the text field to browse locally by type. Semantic search will use a model-backed retriever.'**
+  String get timelineSearchNeedsRetrieverBody;
+
+  /// No description provided for @timelineSearchNoResultsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching timeline items'**
+  String get timelineSearchNoResultsTitle;
+
+  /// No description provided for @timelineSearchNoResultsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove the type filter to show more local items.'**
+  String get timelineSearchNoResultsBody;
+
+  /// No description provided for @timelineSearchResultCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 result} other{{count} results}}'**
+  String timelineSearchResultCount(int count);
+
+  /// No description provided for @timelineKindCapture.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture'**
+  String get timelineKindCapture;
+
+  /// No description provided for @timelineKindCaptures.
+  ///
+  /// In en, this message translates to:
+  /// **'Captures'**
+  String get timelineKindCaptures;
+
+  /// No description provided for @timelineKindCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Card'**
+  String get timelineKindCard;
+
+  /// No description provided for @timelineKindCards.
+  ///
+  /// In en, this message translates to:
+  /// **'Cards'**
+  String get timelineKindCards;
+
+  /// No description provided for @timelineKindInsight.
+  ///
+  /// In en, this message translates to:
+  /// **'Insight'**
+  String get timelineKindInsight;
+
+  /// No description provided for @timelineKindInsights.
+  ///
+  /// In en, this message translates to:
+  /// **'Insights'**
+  String get timelineKindInsights;
+
+  /// No description provided for @timelineKindMemory.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory'**
+  String get timelineKindMemory;
+
+  /// No description provided for @timelineKindTodo.
+  ///
+  /// In en, this message translates to:
+  /// **'Todo'**
+  String get timelineKindTodo;
+
+  /// No description provided for @timelineKindTodos.
+  ///
+  /// In en, this message translates to:
+  /// **'Todos'**
+  String get timelineKindTodos;
+
+  /// No description provided for @timelineKindEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Event'**
+  String get timelineKindEvent;
+
+  /// No description provided for @timelineKindDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{kind} Detail'**
+  String timelineKindDetailTitle(String kind);
+
+  /// No description provided for @timelineCardDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Card Detail'**
+  String get timelineCardDetailTitle;
+
+  /// No description provided for @timelineCardDetailSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspect the card body, provenance, and related items.'**
+  String get timelineCardDetailSubtitle;
+
+  /// No description provided for @timelineCardUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Card unavailable'**
+  String get timelineCardUnavailableTitle;
+
+  /// No description provided for @timelineCardFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Card detail failed: {error}'**
+  String timelineCardFailed(String error);
+
+  /// No description provided for @timelineCardNotFoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Card not found'**
+  String get timelineCardNotFoundTitle;
+
+  /// No description provided for @timelineCardNotFoundBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The selected card is not in the current local timeline.'**
+  String get timelineCardNotFoundBody;
+
+  /// No description provided for @timelineSourceRefsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Source refs'**
+  String get timelineSourceRefsTitle;
+
+  /// No description provided for @timelineRelatedRecordsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Related records'**
+  String get timelineRelatedRecordsTitle;
+
+  /// No description provided for @timelineRelatedMemoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Related Memory'**
+  String get timelineRelatedMemoryTitle;
+
+  /// No description provided for @timelineRelatedTodosTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Related todos'**
+  String get timelineRelatedTodosTitle;
+
+  /// No description provided for @timelineNoLinkedItems.
+  ///
+  /// In en, this message translates to:
+  /// **'No linked items.'**
+  String get timelineNoLinkedItems;
+
+  /// No description provided for @timelineItemDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline Detail'**
+  String get timelineItemDetailTitle;
+
+  /// No description provided for @timelineItemDetailSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspect the local item, status, metadata, and sources.'**
+  String get timelineItemDetailSubtitle;
+
+  /// No description provided for @timelineItemUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline item unavailable'**
+  String get timelineItemUnavailableTitle;
+
+  /// No description provided for @timelineItemFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline item failed: {error}'**
+  String timelineItemFailed(String error);
+
+  /// No description provided for @timelineSourceNotFoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Source not found'**
+  String get timelineSourceNotFoundTitle;
+
+  /// No description provided for @timelineSourceNotFoundBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This source reference is not available in the current local index yet.'**
+  String get timelineSourceNotFoundBody;
+
+  /// No description provided for @timelineStatusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get timelineStatusTitle;
+
+  /// No description provided for @timelineMetadataTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Metadata'**
+  String get timelineMetadataTitle;
+
+  /// No description provided for @timelineOpenSourceTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Open source'**
+  String get timelineOpenSourceTooltip;
+
+  /// No description provided for @timelineSourceRefCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 source ref} other{{count} source refs}}'**
+  String timelineSourceRefCount(int count);
+
+  /// No description provided for @timelineStatusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'active'**
+  String get timelineStatusActive;
+
+  /// No description provided for @timelineStatusDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'deleted'**
+  String get timelineStatusDeleted;
+
   /// No description provided for @settingsTitle.
   ///
   /// In en, this message translates to:

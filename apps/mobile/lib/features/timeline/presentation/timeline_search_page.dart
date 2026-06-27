@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:widenote_cards/widenote_cards.dart';
 
+import '../../../l10n/l10n.dart';
 import '../application/timeline_repository.dart';
 import 'timeline_widgets.dart';
 
@@ -26,6 +27,7 @@ class _TimelineSearchPageState extends ConsumerState<TimelineSearchPage> {
   @override
   Widget build(BuildContext context) {
     final snapshot = ref.watch(timelineSnapshotProvider);
+    final l10n = context.l10n;
     return snapshot.when(
       loading: () => const Center(
         key: Key('timeline-search-loading'),
@@ -34,9 +36,9 @@ class _TimelineSearchPageState extends ConsumerState<TimelineSearchPage> {
       error: (error, _) => _SearchShell(
         child: TimelineSurface(
           icon: Icons.error_outline,
-          title: 'Search unavailable',
+          title: l10n.timelineSearchUnavailableTitle,
           child: Text(
-            'Timeline search failed: $error',
+            l10n.timelineSearchFailed('$error'),
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Theme.of(context).colorScheme.error,
             ),
@@ -50,10 +52,12 @@ class _TimelineSearchPageState extends ConsumerState<TimelineSearchPage> {
             TextField(
               key: const Key('timeline-search-field'),
               controller: _controller,
+              keyboardType: TextInputType.text,
               textInputAction: TextInputAction.search,
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.search),
-                hintText: 'Filter by type, or use text after retriever setup',
+              textCapitalization: TextCapitalization.sentences,
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.search),
+                hintText: l10n.timelineSearchHint,
               ),
               onChanged: (_) => setState(() {}),
             ),
@@ -82,16 +86,17 @@ class _SearchShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return ListView(
       key: const Key('timeline-search-page'),
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       children: [
         TimelinePageHeader(
-          title: 'Search',
-          subtitle: 'Filter the local timeline without leaving the device.',
+          title: l10n.timelineSearchTitle,
+          subtitle: l10n.timelineSearchSubtitle,
           trailing: IconButton(
             key: const Key('timeline-search-back'),
-            tooltip: 'Back to timeline',
+            tooltip: l10n.timelineBackTooltip,
             onPressed: () => context.go('/timeline'),
             icon: const Icon(Icons.arrow_back),
           ),
@@ -111,20 +116,21 @@ class _KindFilter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Wrap(
       spacing: 8,
       runSpacing: 4,
       children: [
         ChoiceChip(
           key: const Key('timeline-filter-all'),
-          label: const Text('All'),
+          label: Text(l10n.timelineFilterAll),
           selected: selectedKind == null,
           onSelected: (_) => onChanged(null),
         ),
         for (final kind in _filterKinds)
           ChoiceChip(
             key: Key('timeline-filter-${kind.name}'),
-            label: Text(_filterLabel(kind)),
+            label: Text(_filterLabel(l10n, kind)),
             selected: selectedKind == kind,
             onSelected: (_) => onChanged(kind),
           ),
@@ -146,6 +152,7 @@ class _SearchResults extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final kinds = selectedKind == null
         ? const <MemoryFirstTimelineItemKind>{}
         : <MemoryFirstTimelineItemKind>{selectedKind!};
@@ -154,31 +161,30 @@ class _SearchResults extends StatelessWidget {
     );
 
     if (snapshot.isEmpty) {
-      return const TimelineEmptyState(
-        key: Key('timeline-search-empty'),
-        title: 'Nothing to search yet',
-        body: 'Create a capture first, then browse cards, Memory, and todos.',
+      return TimelineEmptyState(
+        key: const Key('timeline-search-empty'),
+        title: l10n.timelineSearchEmptyTitle,
+        body: l10n.timelineSearchEmptyBody,
       );
     }
     if (query.trim().isNotEmpty) {
-      return const TimelineEmptyState(
-        key: Key('timeline-search-requires-retriever'),
-        title: 'Text search needs a retriever',
-        body:
-            'Clear the text field to browse locally by type. Semantic search will use a model-backed retriever.',
+      return TimelineEmptyState(
+        key: const Key('timeline-search-requires-retriever'),
+        title: l10n.timelineSearchNeedsRetrieverTitle,
+        body: l10n.timelineSearchNeedsRetrieverBody,
       );
     }
     if (results.isEmpty) {
-      return const TimelineEmptyState(
-        key: Key('timeline-search-empty-results'),
-        title: 'No matching timeline items',
-        body: 'Remove the type filter to show more local items.',
+      return TimelineEmptyState(
+        key: const Key('timeline-search-empty-results'),
+        title: l10n.timelineSearchNoResultsTitle,
+        body: l10n.timelineSearchNoResultsBody,
       );
     }
 
     return TimelineSurface(
       icon: Icons.manage_search_outlined,
-      title: '${results.length} result(s)',
+      title: l10n.timelineSearchResultCount(results.length),
       child: TimelineItemRows(
         items: results,
         onOpenItem: (item) => _openTimelineItem(context, item),
@@ -195,13 +201,13 @@ const _filterKinds = <MemoryFirstTimelineItemKind>[
   MemoryFirstTimelineItemKind.todo,
 ];
 
-String _filterLabel(MemoryFirstTimelineItemKind kind) {
+String _filterLabel(AppLocalizations l10n, MemoryFirstTimelineItemKind kind) {
   return switch (kind) {
-    MemoryFirstTimelineItemKind.card => 'Cards',
-    MemoryFirstTimelineItemKind.memory => 'Memory',
-    MemoryFirstTimelineItemKind.capture => 'Captures',
-    MemoryFirstTimelineItemKind.todo => 'Todos',
-    MemoryFirstTimelineItemKind.insight => 'Insights',
+    MemoryFirstTimelineItemKind.card => l10n.timelineKindCards,
+    MemoryFirstTimelineItemKind.memory => l10n.timelineKindMemory,
+    MemoryFirstTimelineItemKind.capture => l10n.timelineKindCaptures,
+    MemoryFirstTimelineItemKind.todo => l10n.timelineKindTodos,
+    MemoryFirstTimelineItemKind.insight => l10n.timelineKindInsights,
   };
 }
 

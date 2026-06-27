@@ -638,6 +638,212 @@ class AppLocalizationsEn extends AppLocalizations {
   String get todosEmpty => 'No source-linked todos yet.';
 
   @override
+  String get timelineTitle => 'Timeline';
+
+  @override
+  String get timelineSubtitle =>
+      'Browse captures, cards, Memory, insights, and todos.';
+
+  @override
+  String get timelineSearchTooltip => 'Search timeline';
+
+  @override
+  String get timelineBackTooltip => 'Back to timeline';
+
+  @override
+  String timelineLoadFailed(String error) {
+    return 'Timeline failed to load: $error';
+  }
+
+  @override
+  String get timelineUnavailableTitle => 'Timeline unavailable';
+
+  @override
+  String get timelineEmptyTitle => 'No timeline items yet';
+
+  @override
+  String get timelineEmptyBody =>
+      'Capture something locally to create source-linked cards.';
+
+  @override
+  String get timelineStartCaptureButton => 'Start capture';
+
+  @override
+  String get timelineSearchTitle => 'Search';
+
+  @override
+  String get timelineSearchSubtitle =>
+      'Filter the local timeline without leaving the device.';
+
+  @override
+  String get timelineSearchUnavailableTitle => 'Search unavailable';
+
+  @override
+  String timelineSearchFailed(String error) {
+    return 'Timeline search failed: $error';
+  }
+
+  @override
+  String get timelineSearchHint =>
+      'Filter by type, or use text after retriever setup';
+
+  @override
+  String get timelineFilterAll => 'All';
+
+  @override
+  String get timelineSearchEmptyTitle => 'Nothing to search yet';
+
+  @override
+  String get timelineSearchEmptyBody =>
+      'Create a capture first, then browse cards, Memory, and todos.';
+
+  @override
+  String get timelineSearchNeedsRetrieverTitle =>
+      'Text search needs a retriever';
+
+  @override
+  String get timelineSearchNeedsRetrieverBody =>
+      'Clear the text field to browse locally by type. Semantic search will use a model-backed retriever.';
+
+  @override
+  String get timelineSearchNoResultsTitle => 'No matching timeline items';
+
+  @override
+  String get timelineSearchNoResultsBody =>
+      'Remove the type filter to show more local items.';
+
+  @override
+  String timelineSearchResultCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count results',
+      one: '1 result',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get timelineKindCapture => 'Capture';
+
+  @override
+  String get timelineKindCaptures => 'Captures';
+
+  @override
+  String get timelineKindCard => 'Card';
+
+  @override
+  String get timelineKindCards => 'Cards';
+
+  @override
+  String get timelineKindInsight => 'Insight';
+
+  @override
+  String get timelineKindInsights => 'Insights';
+
+  @override
+  String get timelineKindMemory => 'Memory';
+
+  @override
+  String get timelineKindTodo => 'Todo';
+
+  @override
+  String get timelineKindTodos => 'Todos';
+
+  @override
+  String get timelineKindEvent => 'Event';
+
+  @override
+  String timelineKindDetailTitle(String kind) {
+    return '$kind Detail';
+  }
+
+  @override
+  String get timelineCardDetailTitle => 'Card Detail';
+
+  @override
+  String get timelineCardDetailSubtitle =>
+      'Inspect the card body, provenance, and related items.';
+
+  @override
+  String get timelineCardUnavailableTitle => 'Card unavailable';
+
+  @override
+  String timelineCardFailed(String error) {
+    return 'Card detail failed: $error';
+  }
+
+  @override
+  String get timelineCardNotFoundTitle => 'Card not found';
+
+  @override
+  String get timelineCardNotFoundBody =>
+      'The selected card is not in the current local timeline.';
+
+  @override
+  String get timelineSourceRefsTitle => 'Source refs';
+
+  @override
+  String get timelineRelatedRecordsTitle => 'Related records';
+
+  @override
+  String get timelineRelatedMemoryTitle => 'Related Memory';
+
+  @override
+  String get timelineRelatedTodosTitle => 'Related todos';
+
+  @override
+  String get timelineNoLinkedItems => 'No linked items.';
+
+  @override
+  String get timelineItemDetailTitle => 'Timeline Detail';
+
+  @override
+  String get timelineItemDetailSubtitle =>
+      'Inspect the local item, status, metadata, and sources.';
+
+  @override
+  String get timelineItemUnavailableTitle => 'Timeline item unavailable';
+
+  @override
+  String timelineItemFailed(String error) {
+    return 'Timeline item failed: $error';
+  }
+
+  @override
+  String get timelineSourceNotFoundTitle => 'Source not found';
+
+  @override
+  String get timelineSourceNotFoundBody =>
+      'This source reference is not available in the current local index yet.';
+
+  @override
+  String get timelineStatusTitle => 'Status';
+
+  @override
+  String get timelineMetadataTitle => 'Metadata';
+
+  @override
+  String get timelineOpenSourceTooltip => 'Open source';
+
+  @override
+  String timelineSourceRefCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count source refs',
+      one: '1 source ref',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get timelineStatusActive => 'active';
+
+  @override
+  String get timelineStatusDeleted => 'deleted';
+
+  @override
   String get settingsTitle => 'Settings';
 
   @override

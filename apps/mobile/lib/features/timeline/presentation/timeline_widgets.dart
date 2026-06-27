@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:widenote_cards/widenote_cards.dart';
 
+import '../../../l10n/l10n.dart';
+
 class TimelinePageHeader extends StatelessWidget {
   const TimelinePageHeader({
     required this.title,
@@ -179,7 +181,7 @@ class TimelineItemRow extends StatelessWidget {
       button: true,
       enabled: true,
       excludeSemantics: true,
-      label: '${kindLabel(item)}. ${item.title}. ${item.status}',
+      label: '${kindLabel(context, item)}. ${item.title}',
       onTap: () => onOpenItem(item),
       child: InkWell(
         key: Key('timeline-item-${item.id}'),
@@ -206,6 +208,7 @@ class TimelineSourceRefList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Column(
       children: [
         for (var index = 0; index < links.length; index++) ...[
@@ -221,7 +224,8 @@ class TimelineSourceRefList extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${links[index].kind}: ${links[index].id}',
+                      '${sourceKindLabel(l10n, links[index].kind)}: '
+                      '${links[index].id}',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -246,7 +250,7 @@ class TimelineSourceRefList extends StatelessWidget {
                   key: Key(
                     'open-source-ref-${links[index].kind}-${links[index].id}',
                   ),
-                  tooltip: 'Open source',
+                  tooltip: l10n.timelineOpenSourceTooltip,
                   onPressed: () => onOpenLink!(links[index]),
                   icon: const Icon(Icons.open_in_new),
                 ),
@@ -289,10 +293,15 @@ class _TimelineItemText extends StatelessWidget {
           spacing: 8,
           runSpacing: 4,
           children: [
-            TimelineTag(icon: Icons.category_outlined, label: kindLabel(item)),
+            TimelineTag(
+              icon: Icons.category_outlined,
+              label: kindLabel(context, item),
+            ),
             TimelineTag(
               icon: Icons.link,
-              label: '${item.sourceLinks.length} source ref(s)',
+              label: context.l10n.timelineSourceRefCount(
+                item.sourceLinks.length,
+              ),
             ),
             TimelineTag(icon: Icons.schedule, label: timeLabel(item.createdAt)),
           ],
@@ -348,15 +357,51 @@ IconData timelineIcon(MemoryFirstTimelineItemKind kind) {
   };
 }
 
-String kindLabel(MemoryFirstTimelineItem item) {
-  final label = switch (item.kind) {
-    MemoryFirstTimelineItemKind.capture => 'Capture',
-    MemoryFirstTimelineItemKind.card => 'Card',
-    MemoryFirstTimelineItemKind.insight => 'Insight',
-    MemoryFirstTimelineItemKind.memory => 'Memory',
-    MemoryFirstTimelineItemKind.todo => 'Todo',
+String kindLabel(BuildContext context, MemoryFirstTimelineItem item) {
+  final l10n = context.l10n;
+  final label = timelineKindSingularLabel(l10n, item.kind);
+  final status = timelineStatusLabel(l10n, item.status);
+  return '$label · $status';
+}
+
+String timelineKindSingularLabel(
+  AppLocalizations l10n,
+  MemoryFirstTimelineItemKind kind,
+) {
+  return switch (kind) {
+    MemoryFirstTimelineItemKind.capture => l10n.timelineKindCapture,
+    MemoryFirstTimelineItemKind.card => l10n.timelineKindCard,
+    MemoryFirstTimelineItemKind.insight => l10n.timelineKindInsight,
+    MemoryFirstTimelineItemKind.memory => l10n.timelineKindMemory,
+    MemoryFirstTimelineItemKind.todo => l10n.timelineKindTodo,
   };
-  return '$label · ${item.status}';
+}
+
+String timelineStatusLabel(AppLocalizations l10n, String status) {
+  return switch (status) {
+    'active' => l10n.timelineStatusActive,
+    'open' => l10n.todoStatusOpen,
+    'completed' => l10n.todoStatusCompleted,
+    'suggested' => l10n.todoStatusSuggestedByAgent,
+    'suggested_by_agent' => l10n.todoStatusSuggestedByAgent,
+    'needs_explicit_permission' => l10n.todoStatusNeedsExplicitPermission,
+    'deleted' => l10n.timelineStatusDeleted,
+    'review' => l10n.statusNeedsReview,
+    'accepted' => l10n.statusAccepted,
+    _ => status,
+  };
+}
+
+String sourceKindLabel(AppLocalizations l10n, String kind) {
+  return switch (kind) {
+    'capture' => l10n.timelineKindCapture,
+    'card' => l10n.timelineKindCard,
+    'insight' => l10n.timelineKindInsight,
+    'memory' => l10n.timelineKindMemory,
+    'todo' => l10n.timelineKindTodo,
+    'event' => l10n.timelineKindEvent,
+    _ => kind,
+  };
 }
 
 String timeLabel(DateTime value) {

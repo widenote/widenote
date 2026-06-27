@@ -10,6 +10,7 @@ import 'package:widenote_mobile/app/local_database.dart';
 import 'package:widenote_mobile/app/widenote_app.dart';
 import 'package:widenote_mobile/features/timeline/application/timeline_repository.dart';
 import 'package:widenote_mobile/features/timeline/presentation/timeline_page.dart';
+import 'package:widenote_mobile/l10n/l10n.dart';
 
 void main() {
   testWidgets('timeline renders loading and empty states', (tester) async {
@@ -185,6 +186,44 @@ void main() {
       expect(find.byKey(const Key('timeline-item-memory-1')), findsOneWidget);
     },
   );
+
+  testWidgets('timeline chrome and search filters render in Chinese', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    _seedTimeline(database);
+
+    await _pumpApp(tester, database: database, locale: const Locale('zh'));
+
+    await tester.tap(find.byKey(const Key('open-timeline-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('时间线'), findsOneWidget);
+    expect(find.text('浏览记录、卡片、记忆、洞察和待办。'), findsOneWidget);
+    expect(find.text('1 个来源引用'), findsWidgets);
+
+    await tester.tap(find.byKey(const Key('timeline-search-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('timeline-search-page')), findsOneWidget);
+    expect(find.text('搜索'), findsOneWidget);
+    expect(find.text('全部'), findsOneWidget);
+    expect(find.text('卡片'), findsOneWidget);
+    expect(find.text('洞察'), findsOneWidget);
+
+    final field = tester.widget<TextField>(
+      find.byKey(const Key('timeline-search-field')),
+    );
+    expect(field.keyboardType, TextInputType.text);
+    expect(field.textInputAction, TextInputAction.search);
+
+    await tester.tap(find.byKey(const Key('timeline-filter-todo')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('timeline-item-todo-1')), findsOneWidget);
+    expect(find.textContaining('待办 · 智能体建议'), findsOneWidget);
+    expect(find.byKey(const Key('timeline-item-card-1')), findsNothing);
+  });
 }
 
 Future<void> _pumpTimelinePage(
@@ -194,7 +233,11 @@ Future<void> _pumpTimelinePage(
   await tester.pumpWidget(
     ProviderScope(
       overrides: overrides,
-      child: const MaterialApp(home: TimelinePage()),
+      child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: TimelinePage(),
+      ),
     ),
   );
   await tester.pump();
@@ -203,6 +246,7 @@ Future<void> _pumpTimelinePage(
 Future<void> _pumpApp(
   WidgetTester tester, {
   WideNoteLocalDatabase? database,
+  Locale locale = const Locale('en'),
   List<Override> overrides = const [],
 }) async {
   final localDatabase = database ?? WideNoteLocalDatabase.inMemory();
@@ -213,7 +257,7 @@ Future<void> _pumpApp(
         localDatabaseProvider.overrideWithValue(localDatabase),
         ...overrides,
       ],
-      child: const WideNoteApp(locale: Locale('en')),
+      child: WideNoteApp(locale: locale),
     ),
   );
   await tester.pumpAndSettle();

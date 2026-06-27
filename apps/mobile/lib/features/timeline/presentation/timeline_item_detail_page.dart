@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:widenote_cards/widenote_cards.dart';
 
+import '../../../l10n/l10n.dart';
 import '../application/timeline_repository.dart';
 import 'timeline_widgets.dart';
 
@@ -14,18 +15,19 @@ class TimelineItemDetailPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final detail = ref.watch(timelineItemDetailProvider(itemId));
+    final l10n = context.l10n;
     return detail.when(
       loading: () => const Center(
         key: Key('timeline-item-detail-loading'),
         child: CircularProgressIndicator(),
       ),
       error: (error, _) => _DetailShell(
-        title: 'Timeline Detail',
+        title: l10n.timelineItemDetailTitle,
         child: TimelineSurface(
           icon: Icons.error_outline,
-          title: 'Timeline item unavailable',
+          title: l10n.timelineItemUnavailableTitle,
           child: Text(
-            'Timeline item failed: $error',
+            l10n.timelineItemFailed('$error'),
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Theme.of(context).colorScheme.error,
             ),
@@ -34,13 +36,12 @@ class TimelineItemDetailPage extends ConsumerWidget {
       ),
       data: (item) {
         if (item == null) {
-          return const _DetailShell(
-            title: 'Timeline Detail',
+          return _DetailShell(
+            title: l10n.timelineItemDetailTitle,
             child: TimelineEmptyState(
-              key: Key('timeline-item-detail-not-found'),
-              title: 'Source not found',
-              body:
-                  'This source reference is not available in the current local index yet.',
+              key: const Key('timeline-item-detail-not-found'),
+              title: l10n.timelineSourceNotFoundTitle,
+              body: l10n.timelineSourceNotFoundBody,
             ),
           );
         }
@@ -57,8 +58,9 @@ class _TimelineItemDetailContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return _DetailShell(
-      title: '${_kindTitle(item.kind)} Detail',
+      title: l10n.timelineKindDetailTitle(_kindTitle(l10n, item.kind)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -74,16 +76,19 @@ class _TimelineItemDetailContent extends StatelessWidget {
           const SizedBox(height: 12),
           TimelineSurface(
             icon: Icons.info_outline,
-            title: 'Status',
+            title: l10n.timelineStatusTitle,
             child: Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
                 TimelineTag(
                   icon: Icons.category_outlined,
-                  label: item.kind.name,
+                  label: timelineKindSingularLabel(l10n, item.kind),
                 ),
-                TimelineTag(icon: Icons.flag_outlined, label: item.status),
+                TimelineTag(
+                  icon: Icons.flag_outlined,
+                  label: timelineStatusLabel(l10n, item.status),
+                ),
                 TimelineTag(
                   icon: Icons.schedule,
                   label: timeLabel(item.createdAt),
@@ -94,7 +99,7 @@ class _TimelineItemDetailContent extends StatelessWidget {
           const SizedBox(height: 12),
           TimelineSurface(
             icon: Icons.link,
-            title: 'Source refs',
+            title: l10n.timelineSourceRefsTitle,
             child: TimelineSourceRefList(
               links: item.sourceLinks,
               onOpenLink: (link) => _openSourceLink(context, link),
@@ -104,7 +109,7 @@ class _TimelineItemDetailContent extends StatelessWidget {
             const SizedBox(height: 12),
             TimelineSurface(
               icon: Icons.data_object_outlined,
-              title: 'Metadata',
+              title: l10n.timelineMetadataTitle,
               child: _MetadataRows(metadata: item.metadata),
             ),
           ],
@@ -164,16 +169,17 @@ class _DetailShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return ListView(
       key: const Key('timeline-item-detail-page'),
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       children: [
         TimelinePageHeader(
           title: title,
-          subtitle: 'Inspect the local item, status, metadata, and sources.',
+          subtitle: l10n.timelineItemDetailSubtitle,
           trailing: IconButton(
             key: const Key('timeline-item-detail-back'),
-            tooltip: 'Back to timeline',
+            tooltip: l10n.timelineBackTooltip,
             onPressed: () => _goBack(context),
             icon: const Icon(Icons.arrow_back),
           ),
@@ -185,13 +191,13 @@ class _DetailShell extends StatelessWidget {
   }
 }
 
-String _kindTitle(MemoryFirstTimelineItemKind kind) {
+String _kindTitle(AppLocalizations l10n, MemoryFirstTimelineItemKind kind) {
   return switch (kind) {
-    MemoryFirstTimelineItemKind.capture => 'Capture',
-    MemoryFirstTimelineItemKind.card => 'Card',
-    MemoryFirstTimelineItemKind.insight => 'Insight',
-    MemoryFirstTimelineItemKind.memory => 'Memory',
-    MemoryFirstTimelineItemKind.todo => 'Todo',
+    MemoryFirstTimelineItemKind.capture => l10n.timelineKindCapture,
+    MemoryFirstTimelineItemKind.card => l10n.timelineKindCard,
+    MemoryFirstTimelineItemKind.insight => l10n.timelineKindInsight,
+    MemoryFirstTimelineItemKind.memory => l10n.timelineKindMemory,
+    MemoryFirstTimelineItemKind.todo => l10n.timelineKindTodo,
   };
 }
 

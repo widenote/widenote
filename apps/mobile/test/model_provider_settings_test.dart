@@ -317,6 +317,43 @@ void main() {
     expect(find.text('fake-model'), findsNothing);
   });
 
+  testWidgets('provider dialog fields use regular non-password keyboards', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    await _pumpSettings(tester, database: database);
+
+    await tester.tap(find.byKey(const Key('provider-add-button')));
+    await tester.pumpAndSettle();
+
+    final nameField = tester.widget<TextField>(
+      find.byKey(const Key('provider-name-field')),
+    );
+    final endpointField = tester.widget<TextField>(
+      find.byKey(const Key('provider-endpoint-field')),
+    );
+    final modelField = tester.widget<TextField>(
+      find.byKey(const Key('provider-model-field')),
+    );
+    final apiKeyField = tester.widget<TextField>(
+      find.byKey(const Key('provider-api-key-field')),
+    );
+
+    expect(nameField.keyboardType, TextInputType.text);
+    expect(nameField.textCapitalization, TextCapitalization.words);
+    expect(endpointField.keyboardType, TextInputType.url);
+    expect(endpointField.autocorrect, isFalse);
+    expect(endpointField.enableSuggestions, isTrue);
+    expect(endpointField.enableIMEPersonalizedLearning, isFalse);
+    expect(modelField.keyboardType, TextInputType.text);
+    expect(apiKeyField.keyboardType, TextInputType.text);
+    expect(apiKeyField.obscureText, isFalse);
+    expect(apiKeyField.autocorrect, isFalse);
+    expect(apiKeyField.enableSuggestions, isTrue);
+    expect(apiKeyField.enableIMEPersonalizedLearning, isFalse);
+  });
+
   testWidgets('provider settings displays injected failure classification', (
     tester,
   ) async {

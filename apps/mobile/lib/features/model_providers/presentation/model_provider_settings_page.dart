@@ -520,6 +520,8 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
               TextField(
                 key: const Key('provider-name-field'),
                 controller: _nameController,
+                keyboardType: TextInputType.text,
+                textCapitalization: TextCapitalization.words,
                 decoration: InputDecoration(
                   labelText: l10n.providerFieldDisplayName,
                 ),
@@ -528,6 +530,10 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
               TextField(
                 key: const Key('provider-endpoint-field'),
                 controller: _endpointController,
+                keyboardType: TextInputType.url,
+                autocorrect: false,
+                enableSuggestions: true,
+                enableIMEPersonalizedLearning: false,
                 decoration: InputDecoration(
                   labelText: l10n.providerFieldEndpoint,
                 ),
@@ -536,6 +542,7 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
               TextField(
                 key: const Key('provider-model-field'),
                 controller: _modelController,
+                keyboardType: TextInputType.text,
                 decoration: InputDecoration(labelText: l10n.providerFieldModel),
               ),
               const SizedBox(height: 12),
@@ -543,7 +550,10 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
                 key: const Key('provider-api-key-field'),
                 controller: _apiKeyController,
                 enabled: !_clearSavedKey,
-                obscureText: true,
+                keyboardType: TextInputType.text,
+                autocorrect: false,
+                enableSuggestions: true,
+                enableIMEPersonalizedLearning: false,
                 decoration: InputDecoration(
                   labelText: l10n.providerFieldApiKey,
                   helperText: widget.existing == null

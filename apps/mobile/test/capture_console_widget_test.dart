@@ -38,7 +38,7 @@ void main() {
     );
   });
 
-  testWidgets('quick capture preserves literal input without smart rewriting', (
+  testWidgets('quick capture uses a regular multiline keyboard', (
     tester,
   ) async {
     await _pumpApp(tester);
@@ -47,8 +47,10 @@ void main() {
       find.byKey(const Key('quick-capture-field')),
     );
 
-    expect(field.autocorrect, isFalse);
-    expect(field.enableSuggestions, isFalse);
+    expect(field.keyboardType, TextInputType.multiline);
+    expect(field.textCapitalization, TextCapitalization.sentences);
+    expect(field.autocorrect, isTrue);
+    expect(field.enableSuggestions, isTrue);
     expect(field.smartDashesType, SmartDashesType.disabled);
     expect(field.smartQuotesType, SmartQuotesType.disabled);
   });
