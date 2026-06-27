@@ -15,27 +15,30 @@ import 'package:widenote_mobile/features/capture/domain/capture_models.dart';
 import 'package:widenote_mobile/features/capture/media/capture_media.dart';
 
 void main() {
-  testWidgets('switches between the four WideNote tabs', (tester) async {
-    await _pumpApp(tester);
+  testWidgets(
+    'switches between the four WideNote tabs without page transition',
+    (tester) async {
+      await _pumpApp(tester);
 
-    expect(find.byKey(const Key('home-page')), findsOneWidget);
+      expect(find.byKey(const Key('home-page')), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('tab-chat')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('chat-page')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('tab-chat')));
+      await _pumpRouteChange(tester);
+      expect(find.byKey(const Key('chat-page')), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('tab-todos')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('todos-page')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('tab-todos')));
+      await _pumpRouteChange(tester);
+      expect(find.byKey(const Key('todos-page')), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('tab-plugins')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('plugins-page')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('tab-plugins')));
+      await _pumpRouteChange(tester);
+      expect(find.byKey(const Key('plugins-page')), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('tab-home')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('home-page')), findsOneWidget);
-  });
+      await tester.tap(find.byKey(const Key('tab-home')));
+      await _pumpRouteChange(tester);
+      expect(find.byKey(const Key('home-page')), findsOneWidget);
+    },
+  );
 
   testWidgets('captured state remains visible after visiting all four tabs', (
     tester,
@@ -767,6 +770,11 @@ Future<void> _submitQuickCapture(WidgetTester tester, String text) async {
 Future<void> _openTab(WidgetTester tester, Key tabKey) async {
   await tester.tap(find.byKey(tabKey));
   await tester.pumpAndSettle();
+}
+
+Future<void> _pumpRouteChange(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump();
 }
 
 Future<void> _scrollHomeActionIntoView(

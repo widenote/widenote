@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:widenote_cards/widenote_cards.dart';
 
+import '../../../l10n/l10n.dart';
 import '../application/timeline_repository.dart';
 import 'timeline_widgets.dart';
 
@@ -12,10 +13,11 @@ class TimelinePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final snapshot = ref.watch(timelineSnapshotProvider);
+    final l10n = context.l10n;
     return snapshot.when(
       loading: () => const _TimelineLoading(),
       error: (error, _) => _TimelineError(
-        message: 'Timeline failed to load: $error',
+        message: l10n.timelineLoadFailed('$error'),
         onRetry: () => ref.invalidate(timelineSnapshotProvider),
       ),
       data: (snapshot) => _TimelineContent(snapshot: snapshot),
@@ -30,16 +32,17 @@ class _TimelineContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return ListView(
       key: const Key('timeline-page'),
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       children: [
         TimelinePageHeader(
-          title: 'Timeline',
-          subtitle: 'Browse captures, cards, Memory, insights, and todos.',
+          title: l10n.timelineTitle,
+          subtitle: l10n.timelineSubtitle,
           trailing: IconButton.filledTonal(
             key: const Key('timeline-search-button'),
-            tooltip: 'Search timeline',
+            tooltip: l10n.timelineSearchTooltip,
             onPressed: () => context.go('/timeline/search'),
             icon: const Icon(Icons.search),
           ),
@@ -48,13 +51,13 @@ class _TimelineContent extends StatelessWidget {
         if (snapshot.isEmpty)
           TimelineEmptyState(
             key: const Key('timeline-empty'),
-            title: 'No timeline items yet',
-            body: 'Capture something locally to create source-linked cards.',
+            title: l10n.timelineEmptyTitle,
+            body: l10n.timelineEmptyBody,
             action: FilledButton.icon(
               key: const Key('timeline-empty-capture-button'),
               onPressed: () => context.go('/'),
               icon: const Icon(Icons.flash_on_outlined),
-              label: const Text('Start capture'),
+              label: Text(l10n.timelineStartCaptureButton),
             ),
           )
         else
@@ -114,18 +117,19 @@ class _TimelineError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return ListView(
       key: const Key('timeline-error'),
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       children: [
         TimelinePageHeader(
-          title: 'Timeline',
-          subtitle: 'Browse captures, cards, Memory, insights, and todos.',
+          title: l10n.timelineTitle,
+          subtitle: l10n.timelineSubtitle,
         ),
         const SizedBox(height: 16),
         TimelineSurface(
           icon: Icons.error_outline,
-          title: 'Timeline unavailable',
+          title: l10n.timelineUnavailableTitle,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -140,7 +144,7 @@ class _TimelineError extends StatelessWidget {
                 key: const Key('timeline-retry-button'),
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
+                label: Text(l10n.retryButton),
               ),
             ],
           ),

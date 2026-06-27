@@ -42,6 +42,9 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
         TextField(
           key: const Key('memory-search-field'),
           controller: _searchController,
+          keyboardType: TextInputType.text,
+          textInputAction: TextInputAction.search,
+          textCapitalization: TextCapitalization.sentences,
           decoration: InputDecoration(
             prefixIcon: const Icon(Icons.search),
             hintText: l10n.memorySearchHint,
@@ -270,6 +273,8 @@ class _MemoryEditDialogState extends State<_MemoryEditDialog> {
       content: TextField(
         key: const Key('memory-edit-field'),
         controller: _controller,
+        keyboardType: TextInputType.multiline,
+        textCapitalization: TextCapitalization.sentences,
         minLines: 3,
         maxLines: 6,
         autofocus: true,

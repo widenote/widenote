@@ -153,6 +153,15 @@ void main() {
 
     expect(find.byKey(const Key('backup-import-field')), findsOneWidget);
     expect(find.byKey(const Key('backup-import-button')), findsOneWidget);
+    final importField = tester.widget<TextField>(
+      find.byKey(const Key('backup-import-field')),
+    );
+    expect(importField.keyboardType, TextInputType.multiline);
+    expect(importField.autocorrect, isFalse);
+    expect(importField.enableSuggestions, isTrue);
+    expect(importField.enableIMEPersonalizedLearning, isFalse);
+    expect(importField.smartDashesType, SmartDashesType.disabled);
+    expect(importField.smartQuotesType, SmartQuotesType.disabled);
     expect(
       tester.getTopLeft(find.byKey(const Key('backup-import-button'))).dy,
       greaterThan(

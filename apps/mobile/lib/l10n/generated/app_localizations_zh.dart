@@ -559,6 +559,188 @@ class AppLocalizationsZh extends AppLocalizations {
   String get todosEmpty => '还没有来源关联待办。';
 
   @override
+  String get timelineTitle => '时间线';
+
+  @override
+  String get timelineSubtitle => '浏览记录、卡片、记忆、洞察和待办。';
+
+  @override
+  String get timelineSearchTooltip => '搜索时间线';
+
+  @override
+  String get timelineBackTooltip => '返回时间线';
+
+  @override
+  String timelineLoadFailed(String error) {
+    return '时间线加载失败：$error';
+  }
+
+  @override
+  String get timelineUnavailableTitle => '时间线暂不可用';
+
+  @override
+  String get timelineEmptyTitle => '还没有时间线项目';
+
+  @override
+  String get timelineEmptyBody => '先本地记录一条内容，就能生成带来源的卡片。';
+
+  @override
+  String get timelineStartCaptureButton => '开始记录';
+
+  @override
+  String get timelineSearchTitle => '搜索';
+
+  @override
+  String get timelineSearchSubtitle => '不离开设备，在本地时间线中筛选。';
+
+  @override
+  String get timelineSearchUnavailableTitle => '搜索暂不可用';
+
+  @override
+  String timelineSearchFailed(String error) {
+    return '时间线搜索失败：$error';
+  }
+
+  @override
+  String get timelineSearchHint => '按类型筛选；文本搜索会在召回器就绪后启用';
+
+  @override
+  String get timelineFilterAll => '全部';
+
+  @override
+  String get timelineSearchEmptyTitle => '还没有可搜索内容';
+
+  @override
+  String get timelineSearchEmptyBody => '先创建一条记录，再浏览卡片、记忆和待办。';
+
+  @override
+  String get timelineSearchNeedsRetrieverTitle => '文本搜索需要召回器';
+
+  @override
+  String get timelineSearchNeedsRetrieverBody => '清空输入框后可按类型本地浏览。语义搜索会使用模型召回器。';
+
+  @override
+  String get timelineSearchNoResultsTitle => '没有匹配的时间线项目';
+
+  @override
+  String get timelineSearchNoResultsBody => '移除类型筛选可以显示更多本地项目。';
+
+  @override
+  String timelineSearchResultCount(int count) {
+    return '$count 个结果';
+  }
+
+  @override
+  String get timelineKindCapture => '记录';
+
+  @override
+  String get timelineKindCaptures => '记录';
+
+  @override
+  String get timelineKindCard => '卡片';
+
+  @override
+  String get timelineKindCards => '卡片';
+
+  @override
+  String get timelineKindInsight => '洞察';
+
+  @override
+  String get timelineKindInsights => '洞察';
+
+  @override
+  String get timelineKindMemory => '记忆';
+
+  @override
+  String get timelineKindTodo => '待办';
+
+  @override
+  String get timelineKindTodos => '待办';
+
+  @override
+  String get timelineKindEvent => '事件';
+
+  @override
+  String timelineKindDetailTitle(String kind) {
+    return '$kind详情';
+  }
+
+  @override
+  String get timelineCardDetailTitle => '卡片详情';
+
+  @override
+  String get timelineCardDetailSubtitle => '检查卡片正文、来源和关联项目。';
+
+  @override
+  String get timelineCardUnavailableTitle => '卡片暂不可用';
+
+  @override
+  String timelineCardFailed(String error) {
+    return '卡片详情加载失败：$error';
+  }
+
+  @override
+  String get timelineCardNotFoundTitle => '未找到卡片';
+
+  @override
+  String get timelineCardNotFoundBody => '当前本地时间线里没有选中的卡片。';
+
+  @override
+  String get timelineSourceRefsTitle => '来源引用';
+
+  @override
+  String get timelineRelatedRecordsTitle => '关联记录';
+
+  @override
+  String get timelineRelatedMemoryTitle => '关联记忆';
+
+  @override
+  String get timelineRelatedTodosTitle => '关联待办';
+
+  @override
+  String get timelineNoLinkedItems => '没有关联项目。';
+
+  @override
+  String get timelineItemDetailTitle => '时间线详情';
+
+  @override
+  String get timelineItemDetailSubtitle => '检查本地项目、状态、元数据和来源。';
+
+  @override
+  String get timelineItemUnavailableTitle => '时间线项目暂不可用';
+
+  @override
+  String timelineItemFailed(String error) {
+    return '时间线项目加载失败：$error';
+  }
+
+  @override
+  String get timelineSourceNotFoundTitle => '未找到来源';
+
+  @override
+  String get timelineSourceNotFoundBody => '当前本地索引里还没有这个来源引用。';
+
+  @override
+  String get timelineStatusTitle => '状态';
+
+  @override
+  String get timelineMetadataTitle => '元数据';
+
+  @override
+  String get timelineOpenSourceTooltip => '打开来源';
+
+  @override
+  String timelineSourceRefCount(int count) {
+    return '$count 个来源引用';
+  }
+
+  @override
+  String get timelineStatusActive => '活跃';
+
+  @override
+  String get timelineStatusDeleted => '已删除';
+
+  @override
   String get settingsTitle => '设置';
 
   @override

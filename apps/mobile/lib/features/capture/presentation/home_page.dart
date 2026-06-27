@@ -341,6 +341,8 @@ class _MemoryEditDialogState extends State<_MemoryEditDialog> {
       content: TextField(
         key: const Key('memory-review-edit-field'),
         controller: _controller,
+        keyboardType: TextInputType.multiline,
+        textCapitalization: TextCapitalization.sentences,
         minLines: 3,
         maxLines: 5,
         autofocus: true,

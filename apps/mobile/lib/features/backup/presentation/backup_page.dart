@@ -224,6 +224,11 @@ class _ImportSurface extends ConsumerWidget {
             minLines: 4,
             maxLines: 4,
             keyboardType: TextInputType.multiline,
+            autocorrect: false,
+            enableSuggestions: true,
+            enableIMEPersonalizedLearning: false,
+            smartDashesType: SmartDashesType.disabled,
+            smartQuotesType: SmartQuotesType.disabled,
             onChanged: ref
                 .read(backupControllerProvider.notifier)
                 .updateImportDraft,

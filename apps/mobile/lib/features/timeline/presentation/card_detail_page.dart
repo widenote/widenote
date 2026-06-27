@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:widenote_cards/widenote_cards.dart';
 
+import '../../../l10n/l10n.dart';
 import '../application/timeline_repository.dart';
 import 'timeline_widgets.dart';
 
@@ -14,18 +15,19 @@ class CardDetailPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final detail = ref.watch(timelineCardDetailProvider(cardId));
+    final l10n = context.l10n;
     return detail.when(
       loading: () => const Center(
         key: Key('card-detail-loading'),
         child: CircularProgressIndicator(),
       ),
       error: (error, _) => _DetailShell(
-        title: 'Card Detail',
+        title: l10n.timelineCardDetailTitle,
         child: TimelineSurface(
           icon: Icons.error_outline,
-          title: 'Card unavailable',
+          title: l10n.timelineCardUnavailableTitle,
           child: Text(
-            'Card detail failed: $error',
+            l10n.timelineCardFailed('$error'),
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Theme.of(context).colorScheme.error,
             ),
@@ -34,12 +36,12 @@ class CardDetailPage extends ConsumerWidget {
       ),
       data: (detail) {
         if (detail == null) {
-          return const _DetailShell(
-            title: 'Card Detail',
+          return _DetailShell(
+            title: l10n.timelineCardDetailTitle,
             child: TimelineEmptyState(
-              key: Key('card-detail-not-found'),
-              title: 'Card not found',
-              body: 'The selected card is not in the current local timeline.',
+              key: const Key('card-detail-not-found'),
+              title: l10n.timelineCardNotFoundTitle,
+              body: l10n.timelineCardNotFoundBody,
             ),
           );
         }
@@ -57,8 +59,9 @@ class _CardDetailContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final card = detail.card;
+    final l10n = context.l10n;
     return _DetailShell(
-      title: 'Card Detail',
+      title: l10n.timelineCardDetailTitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -74,7 +77,7 @@ class _CardDetailContent extends StatelessWidget {
           const SizedBox(height: 12),
           TimelineSurface(
             icon: Icons.link,
-            title: 'Source refs',
+            title: l10n.timelineSourceRefsTitle,
             child: TimelineSourceRefList(
               links: card.sourceLinks,
               onOpenLink: (link) => _openSourceLink(context, link),
@@ -82,19 +85,19 @@ class _CardDetailContent extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           _RelatedSection(
-            title: 'Related records',
+            title: l10n.timelineRelatedRecordsTitle,
             icon: Icons.notes_outlined,
             items: detail.relatedRecords.toList(growable: false),
           ),
           const SizedBox(height: 12),
           _RelatedSection(
-            title: 'Related Memory',
+            title: l10n.timelineRelatedMemoryTitle,
             icon: Icons.psychology_alt_outlined,
             items: detail.relatedMemories.toList(growable: false),
           ),
           const SizedBox(height: 12),
           _RelatedSection(
-            title: 'Related todos',
+            title: l10n.timelineRelatedTodosTitle,
             icon: Icons.task_alt_outlined,
             items: detail.relatedTodos.toList(growable: false),
           ),
@@ -112,16 +115,17 @@ class _DetailShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return ListView(
       key: const Key('card-detail-page'),
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       children: [
         TimelinePageHeader(
           title: title,
-          subtitle: 'Inspect the card body, provenance, and related items.',
+          subtitle: l10n.timelineCardDetailSubtitle,
           trailing: IconButton(
             key: const Key('card-detail-back'),
-            tooltip: 'Back to timeline',
+            tooltip: l10n.timelineBackTooltip,
             onPressed: () => _goBack(context),
             icon: const Icon(Icons.arrow_back),
           ),
@@ -146,12 +150,13 @@ class _RelatedSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return TimelineSurface(
       icon: icon,
       title: title,
       child: items.isEmpty
           ? Text(
-              'No linked items.',
+              l10n.timelineNoLinkedItems,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),

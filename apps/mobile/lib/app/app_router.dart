@@ -31,110 +31,137 @@ GoRouter createAppRouter() {
           GoRoute(
             path: '/',
             name: 'home',
-            builder: (context, state) => const HomePage(),
+            pageBuilder: (context, state) =>
+                _noTransitionPage(state, const HomePage()),
           ),
           GoRoute(
             path: '/timeline',
             name: 'timeline',
-            builder: (context, state) => const TimelinePage(),
+            pageBuilder: (context, state) =>
+                _noTransitionPage(state, const TimelinePage()),
           ),
           GoRoute(
             path: '/timeline/search',
             name: 'timeline-search',
-            builder: (context, state) => const TimelineSearchPage(),
+            pageBuilder: (context, state) =>
+                _noTransitionPage(state, const TimelineSearchPage()),
           ),
           GoRoute(
             path: '/timeline/cards/:cardId',
             name: 'card-detail',
-            builder: (context, state) =>
-                CardDetailPage(cardId: state.pathParameters['cardId'] ?? ''),
+            pageBuilder: (context, state) => _noTransitionPage(
+              state,
+              CardDetailPage(cardId: state.pathParameters['cardId'] ?? ''),
+            ),
           ),
           GoRoute(
             path: '/timeline/items/:itemId',
             name: 'timeline-item-detail',
-            builder: (context, state) => TimelineItemDetailPage(
-              itemId: state.pathParameters['itemId'] ?? '',
+            pageBuilder: (context, state) => _noTransitionPage(
+              state,
+              TimelineItemDetailPage(
+                itemId: state.pathParameters['itemId'] ?? '',
+              ),
             ),
           ),
           GoRoute(
             path: '/chat',
             name: 'chat',
-            builder: (context, state) => const ChatPage(),
+            pageBuilder: (context, state) =>
+                _noTransitionPage(state, const ChatPage()),
           ),
           GoRoute(
             path: '/memory',
             name: 'memory',
-            builder: (context, state) => const MemoryPage(),
+            pageBuilder: (context, state) =>
+                _noTransitionPage(state, const MemoryPage()),
           ),
           GoRoute(
             path: '/recap',
             name: 'daily-recap',
-            builder: (context, state) => const DailyRecapPage(),
+            pageBuilder: (context, state) =>
+                _noTransitionPage(state, const DailyRecapPage()),
           ),
           GoRoute(
             path: '/settings',
             name: 'settings',
-            builder: (context, state) => const SettingsPage(),
+            pageBuilder: (context, state) =>
+                _noTransitionPage(state, const SettingsPage()),
           ),
           GoRoute(
             path: '/settings/permissions',
             name: 'settings-permissions',
-            builder: (context, state) => const PermissionGatePage(),
+            pageBuilder: (context, state) =>
+                _noTransitionPage(state, const PermissionGatePage()),
           ),
           GoRoute(
             path: '/settings/model-providers',
             name: 'settings-model-providers',
-            builder: (context, state) => const ModelProviderSettingsPage(),
+            pageBuilder: (context, state) =>
+                _noTransitionPage(state, const ModelProviderSettingsPage()),
           ),
           GoRoute(
             path: '/settings/backup',
             name: 'settings-backup',
-            builder: (context, state) => const BackupPage(),
+            pageBuilder: (context, state) =>
+                _noTransitionPage(state, const BackupPage()),
           ),
           GoRoute(
             path: '/settings/traces',
             name: 'settings-traces',
-            builder: (context, state) => const TraceConsolePage(),
+            pageBuilder: (context, state) =>
+                _noTransitionPage(state, const TraceConsolePage()),
           ),
           GoRoute(
             path: '/todos',
             name: 'todos',
-            builder: (context, state) => const TodosPage(),
+            pageBuilder: (context, state) =>
+                _noTransitionPage(state, const TodosPage()),
           ),
           GoRoute(
             path: '/plugins',
             name: 'plugins',
-            builder: (context, state) => const PluginsPage(),
+            pageBuilder: (context, state) =>
+                _noTransitionPage(state, const PluginsPage()),
           ),
           GoRoute(
             path: '/plugins/packs',
             name: 'pack-library',
-            builder: (context, state) => const PackLibraryPage(),
+            pageBuilder: (context, state) =>
+                _noTransitionPage(state, const PackLibraryPage()),
           ),
           GoRoute(
             path: '/plugins/permissions',
             name: 'permission-gate',
-            builder: (context, state) => const PermissionGatePage(),
+            pageBuilder: (context, state) =>
+                _noTransitionPage(state, const PermissionGatePage()),
           ),
           GoRoute(
             path: '/plugins/model-providers',
             name: 'model-providers',
-            builder: (context, state) => const ModelProviderSettingsPage(),
+            pageBuilder: (context, state) =>
+                _noTransitionPage(state, const ModelProviderSettingsPage()),
           ),
           GoRoute(
             path: '/plugins/backup',
             name: 'backup',
-            builder: (context, state) => const BackupPage(),
+            pageBuilder: (context, state) =>
+                _noTransitionPage(state, const BackupPage()),
           ),
           GoRoute(
             path: '/plugins/traces',
             name: 'trace-console',
-            builder: (context, state) => const TraceConsolePage(),
+            pageBuilder: (context, state) =>
+                _noTransitionPage(state, const TraceConsolePage()),
           ),
         ],
       ),
     ],
   );
+}
+
+NoTransitionPage<void> _noTransitionPage(GoRouterState state, Widget child) {
+  return NoTransitionPage<void>(key: state.pageKey, child: child);
 }
 
 final appRouter = createAppRouter();

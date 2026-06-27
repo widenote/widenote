@@ -284,6 +284,111 @@
   "todosSubtitle": "Source-linked actions with visible record provenance.",
   "todosSurfaceTitle": "Source-linked todos",
   "todosEmpty": "No source-linked todos yet.",
+  "timelineTitle": "Timeline",
+  "timelineSubtitle": "Browse captures, cards, Memory, insights, and todos.",
+  "timelineSearchTooltip": "Search timeline",
+  "timelineBackTooltip": "Back to timeline",
+  "timelineLoadFailed": "Timeline failed to load: {error}",
+  "@timelineLoadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "timelineUnavailableTitle": "Timeline unavailable",
+  "timelineEmptyTitle": "No timeline items yet",
+  "timelineEmptyBody": "Capture something locally to create source-linked cards.",
+  "timelineStartCaptureButton": "Start capture",
+  "timelineSearchTitle": "Search",
+  "timelineSearchSubtitle": "Filter the local timeline without leaving the device.",
+  "timelineSearchUnavailableTitle": "Search unavailable",
+  "timelineSearchFailed": "Timeline search failed: {error}",
+  "@timelineSearchFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "timelineSearchHint": "Filter by type, or use text after retriever setup",
+  "timelineFilterAll": "All",
+  "timelineSearchEmptyTitle": "Nothing to search yet",
+  "timelineSearchEmptyBody": "Create a capture first, then browse cards, Memory, and todos.",
+  "timelineSearchNeedsRetrieverTitle": "Text search needs a retriever",
+  "timelineSearchNeedsRetrieverBody": "Clear the text field to browse locally by type. Semantic search will use a model-backed retriever.",
+  "timelineSearchNoResultsTitle": "No matching timeline items",
+  "timelineSearchNoResultsBody": "Remove the type filter to show more local items.",
+  "timelineSearchResultCount": "{count, plural, =1{1 result} other{{count} results}}",
+  "@timelineSearchResultCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timelineKindCapture": "Capture",
+  "timelineKindCaptures": "Captures",
+  "timelineKindCard": "Card",
+  "timelineKindCards": "Cards",
+  "timelineKindInsight": "Insight",
+  "timelineKindInsights": "Insights",
+  "timelineKindMemory": "Memory",
+  "timelineKindTodo": "Todo",
+  "timelineKindTodos": "Todos",
+  "timelineKindEvent": "Event",
+  "timelineKindDetailTitle": "{kind} Detail",
+  "@timelineKindDetailTitle": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "timelineCardDetailTitle": "Card Detail",
+  "timelineCardDetailSubtitle": "Inspect the card body, provenance, and related items.",
+  "timelineCardUnavailableTitle": "Card unavailable",
+  "timelineCardFailed": "Card detail failed: {error}",
+  "@timelineCardFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "timelineCardNotFoundTitle": "Card not found",
+  "timelineCardNotFoundBody": "The selected card is not in the current local timeline.",
+  "timelineSourceRefsTitle": "Source refs",
+  "timelineRelatedRecordsTitle": "Related records",
+  "timelineRelatedMemoryTitle": "Related Memory",
+  "timelineRelatedTodosTitle": "Related todos",
+  "timelineNoLinkedItems": "No linked items.",
+  "timelineItemDetailTitle": "Timeline Detail",
+  "timelineItemDetailSubtitle": "Inspect the local item, status, metadata, and sources.",
+  "timelineItemUnavailableTitle": "Timeline item unavailable",
+  "timelineItemFailed": "Timeline item failed: {error}",
+  "@timelineItemFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "timelineSourceNotFoundTitle": "Source not found",
+  "timelineSourceNotFoundBody": "This source reference is not available in the current local index yet.",
+  "timelineStatusTitle": "Status",
+  "timelineMetadataTitle": "Metadata",
+  "timelineOpenSourceTooltip": "Open source",
+  "timelineSourceRefCount": "{count, plural, =1{1 source ref} other{{count} source refs}}",
+  "@timelineSourceRefCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timelineStatusActive": "active",
+  "timelineStatusDeleted": "deleted",
   "settingsTitle": "Settings",
   "settingsSubtitle": "Privacy, permissions, models, backup, and logs.",
   "settingsBackTooltip": "Close Settings",

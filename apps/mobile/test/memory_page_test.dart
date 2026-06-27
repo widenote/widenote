@@ -19,6 +19,11 @@ void main() {
 
     expect(find.byKey(const Key('memory-page')), findsOneWidget);
     expect(find.text('Source-linked Memory body.'), findsOneWidget);
+    final searchField = tester.widget<TextField>(
+      find.byKey(const Key('memory-search-field')),
+    );
+    expect(searchField.keyboardType, TextInputType.text);
+    expect(searchField.textInputAction, TextInputAction.search);
 
     await tester.enterText(
       find.byKey(const Key('memory-search-field')),
@@ -43,6 +48,11 @@ void main() {
 
     await tester.tap(find.byKey(const Key('memory-edit-memory-page-1')));
     await tester.pumpAndSettle();
+    final editField = tester.widget<TextField>(
+      find.byKey(const Key('memory-edit-field')),
+    );
+    expect(editField.keyboardType, TextInputType.multiline);
+    expect(editField.textCapitalization, TextCapitalization.sentences);
     await tester.enterText(
       find.byKey(const Key('memory-edit-field')),
       'Edited source-linked Memory body.',

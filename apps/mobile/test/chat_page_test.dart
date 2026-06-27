@@ -67,7 +67,7 @@ void main() {
     expect(find.text('Chat model request failed.'), findsOneWidget);
   });
 
-  testWidgets('chat composer preserves literal input without smart rewriting', (
+  testWidgets('chat composer uses a regular multiline keyboard', (
     tester,
   ) async {
     await _pumpApp(tester);
@@ -77,8 +77,10 @@ void main() {
       find.byKey(const Key('chat-input-field')),
     );
 
-    expect(field.autocorrect, isFalse);
-    expect(field.enableSuggestions, isFalse);
+    expect(field.keyboardType, TextInputType.multiline);
+    expect(field.textCapitalization, TextCapitalization.sentences);
+    expect(field.autocorrect, isTrue);
+    expect(field.enableSuggestions, isTrue);
     expect(field.smartDashesType, SmartDashesType.disabled);
     expect(field.smartQuotesType, SmartQuotesType.disabled);
   });
