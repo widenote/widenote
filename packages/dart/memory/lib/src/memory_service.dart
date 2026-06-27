@@ -218,7 +218,10 @@ final class MemoryService {
     final savedProposal = await _repository.saveProposal(
       proposal.copyWith(
         status: MemoryProposalStatus.autoAccepted,
-        policyReasons: decision.reasons,
+        policyReasons: _appendAllUnique(
+          proposal.policyReasons,
+          decision.reasons,
+        ),
       ),
     );
 
@@ -238,7 +241,10 @@ final class MemoryService {
     final savedProposal = await _repository.saveProposal(
       proposal.copyWith(
         status: MemoryProposalStatus.needsReview,
-        policyReasons: decision.reasons,
+        policyReasons: _appendAllUnique(
+          proposal.policyReasons,
+          decision.reasons,
+        ),
         conflictingMemoryIds: conflicts.map((item) => item.id).toList(),
       ),
     );
@@ -299,6 +305,14 @@ List<String> _appendUnique(List<String> values, String value) {
     return values;
   }
   return <String>[...values, value];
+}
+
+List<String> _appendAllUnique(List<String> values, Iterable<String> incoming) {
+  var result = values;
+  for (final value in incoming) {
+    result = _appendUnique(result, value);
+  }
+  return result;
 }
 
 List<MemorySourceRef> _mergeEvidence(

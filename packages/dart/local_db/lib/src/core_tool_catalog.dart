@@ -26,6 +26,9 @@ final class LocalDbCoreToolCatalog {
        _idFactory = idFactory;
 
   static const contextPacketBuildTool = 'context_packet.build';
+  static const timelineReadTool = 'timeline.read';
+  static const knowledgeReadTool = 'knowledge.read';
+  static const semanticSearchQueryTool = 'semantic_search.query';
   static const memoryReadTool = 'memory.read';
   static const memoryProposeTool = 'memory.propose';
   static const todoSuggestTool = 'todo.suggest';
@@ -53,6 +56,27 @@ final class LocalDbCoreToolCatalog {
             'Reads accepted active local Memory items with source references.',
         requiredPermissions: const <String>{memoryReadTool},
         handler: _handleMemoryRead,
+      ),
+      runtime.ToolDefinition(
+        name: timelineReadTool,
+        description:
+            'Reads local timeline captures with attachment and derived artifact summaries.',
+        requiredPermissions: const <String>{timelineReadTool},
+        handler: _handleTimelineRead,
+      ),
+      runtime.ToolDefinition(
+        name: knowledgeReadTool,
+        description:
+            'Reads local Knowledge outputs: Memory, cards, insights, todos, and derived artifacts.',
+        requiredPermissions: const <String>{knowledgeReadTool},
+        handler: _handleKnowledgeRead,
+      ),
+      runtime.ToolDefinition(
+        name: semanticSearchQueryTool,
+        description:
+            'Builds a model-ready local retrieval packet for a user query without mutating data.',
+        requiredPermissions: const <String>{semanticSearchQueryTool},
+        handler: _handleSemanticSearchQuery,
       ),
       runtime.ToolDefinition(
         name: memoryProposeTool,
@@ -270,6 +294,278 @@ final class LocalDbCoreToolCatalog {
     });
   }
 
+  Future<JsonMap> _handleTimelineRead(runtime.ToolInvocation invocation) async {
+    return _guard(timelineReadTool, () async {
+      final input = invocation.input;
+      _ensureAllowedKeys(timelineReadTool, input, const <String>{
+        'limit',
+        'source_capture_id',
+        'include_attachments',
+        'include_artifacts',
+      });
+      final limit = _limitInput(
+        input['limit'],
+        field: 'limit',
+        defaultValue: 20,
+        maxValue: 100,
+      );
+      final sourceCaptureId = _optionalString(
+        input['source_capture_id'],
+        'source_capture_id',
+      );
+      final includeAttachments = _optionalBool(
+        input['include_attachments'],
+        'include_attachments',
+        defaultValue: true,
+      );
+      final includeArtifacts = _optionalBool(
+        input['include_artifacts'],
+        'include_artifacts',
+        defaultValue: true,
+      );
+
+      final captures =
+          _database.captures
+              .readAll()
+              .where((capture) => capture.status != 'deleted')
+              .where(
+                (capture) =>
+                    sourceCaptureId == null || capture.id == sourceCaptureId,
+              )
+              .toList(growable: false)
+            ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      final items = captures
+          .take(limit)
+          .map(
+            (capture) => _captureOutput(
+              capture,
+              includeAttachments: includeAttachments,
+              includeArtifacts: includeArtifacts,
+              database: _database,
+            ),
+          )
+          .toList(growable: false);
+
+      return _success(timelineReadTool, <String, Object?>{
+        'items': items,
+        'count': items.length,
+        'limit': limit,
+        'filters': <String, Object?>{
+          if (sourceCaptureId != null) 'source_capture_id': sourceCaptureId,
+        },
+      });
+    });
+  }
+
+  Future<JsonMap> _handleKnowledgeRead(
+    runtime.ToolInvocation invocation,
+  ) async {
+    return _guard(knowledgeReadTool, () async {
+      final input = invocation.input;
+      _ensureAllowedKeys(knowledgeReadTool, input, const <String>{
+        'limit',
+        'kind',
+        'source_capture_id',
+        'source_event_id',
+      });
+      final limit = _limitInput(
+        input['limit'],
+        field: 'limit',
+        defaultValue: 20,
+        maxValue: 100,
+      );
+      final kind = _optionalString(input['kind'], 'kind');
+      final sourceCaptureId = _optionalString(
+        input['source_capture_id'],
+        'source_capture_id',
+      );
+      final sourceEventId = _optionalString(
+        input['source_event_id'],
+        'source_event_id',
+      );
+
+      final items =
+          <JsonMap>[
+            if (kind == null || kind == 'memory')
+              ..._database.memoryItems
+                  .readAll(status: 'active')
+                  .where((item) => !item.tombstone)
+                  .where(
+                    (item) => _matchesSourceFilters(
+                      item.sourceRefs,
+                      sourceCaptureId: sourceCaptureId,
+                      sourceEventId: sourceEventId,
+                      directSourceCaptureId: item.sourceCaptureId,
+                      directSourceEventId: item.sourceEventId,
+                    ),
+                  )
+                  .map(
+                    (item) => _knowledgeOutput(
+                      'memory',
+                      item.updatedAt,
+                      _memoryItemOutput(item),
+                    ),
+                  ),
+            if (kind == null || kind == 'card')
+              ..._database.cards
+                  .readAll(status: 'active')
+                  .where(
+                    (card) => _matchesSourceFilters(
+                      card.sourceRefs,
+                      sourceCaptureId: sourceCaptureId,
+                      sourceEventId: sourceEventId,
+                    ),
+                  )
+                  .map(
+                    (card) => _knowledgeOutput(
+                      'card',
+                      card.updatedAt,
+                      _cardOutput(card),
+                    ),
+                  ),
+            if (kind == null || kind == 'insight')
+              ..._database.insights
+                  .readAll(status: 'active')
+                  .where(
+                    (insight) => _matchesSourceFilters(
+                      insight.sourceRefs,
+                      sourceCaptureId: sourceCaptureId,
+                      sourceEventId: sourceEventId,
+                    ),
+                  )
+                  .map(
+                    (insight) => _knowledgeOutput(
+                      'insight',
+                      insight.updatedAt,
+                      _insightOutput(insight),
+                    ),
+                  ),
+            if (kind == null || kind == 'todo')
+              ..._database.todos
+                  .readAll()
+                  .where(_isReadableTodo)
+                  .where(
+                    (todo) => _matchesSourceFilters(
+                      _listValue(todo.payload['source_refs']),
+                      sourceCaptureId: sourceCaptureId,
+                      sourceEventId: sourceEventId,
+                      directSourceCaptureId: todo.sourceCaptureId,
+                      directSourceEventId: todo.sourceEventId,
+                    ),
+                  )
+                  .map(
+                    (todo) => _knowledgeOutput(
+                      'todo',
+                      todo.updatedAt,
+                      _todoOutput(todo),
+                    ),
+                  ),
+            if (kind == null || kind == 'artifact')
+              ..._database.derivedArtifacts
+                  .readAll(status: 'active')
+                  .where(
+                    (artifact) => _matchesSourceFilters(
+                      artifact.sourceRefs,
+                      sourceCaptureId: sourceCaptureId,
+                      sourceEventId: sourceEventId,
+                      directSourceCaptureId: artifact.sourceCaptureId,
+                      directSourceEventId: artifact.sourceEventId,
+                    ),
+                  )
+                  .map(
+                    (artifact) => _knowledgeOutput(
+                      'artifact',
+                      artifact.updatedAt,
+                      _artifactOutput(artifact),
+                    ),
+                  ),
+          ]..sort(
+            (a, b) => (b['_updated_at_sort']! as String).compareTo(
+              a['_updated_at_sort']! as String,
+            ),
+          );
+      final limited = items
+          .take(limit)
+          .map(
+            (item) => <String, Object?>{
+              for (final entry in item.entries)
+                if (entry.key != '_updated_at_sort') entry.key: entry.value,
+            },
+          )
+          .toList(growable: false);
+
+      return _success(knowledgeReadTool, <String, Object?>{
+        'items': limited,
+        'count': limited.length,
+        'limit': limit,
+        'filters': <String, Object?>{
+          if (kind != null) 'kind': kind,
+          if (sourceCaptureId != null) 'source_capture_id': sourceCaptureId,
+          if (sourceEventId != null) 'source_event_id': sourceEventId,
+        },
+      });
+    });
+  }
+
+  Future<JsonMap> _handleSemanticSearchQuery(
+    runtime.ToolInvocation invocation,
+  ) async {
+    return _guard(semanticSearchQueryTool, () async {
+      final input = invocation.input;
+      _ensureAllowedKeys(semanticSearchQueryTool, input, const <String>{
+        'query',
+        'limit',
+        'source_refs',
+        'include_attachment_metadata',
+      });
+      final query = _requiredString(input, 'query');
+      final limit = _limitInput(
+        input['limit'],
+        field: 'limit',
+        defaultValue: 12,
+        maxValue: 50,
+      );
+      final includeAttachmentMetadata = _optionalBool(
+        input['include_attachment_metadata'],
+        'include_attachment_metadata',
+        defaultValue: true,
+      );
+      final result = _contextPacketBuilder.build(
+        ContextPacketBuildRequest(
+          surface: 'chat',
+          intent: query,
+          sourceRefs: _sourceRefsInput(input),
+          cacheKey: 'semantic_search:${_safeId(query)}:$limit',
+          maxItems: limit,
+          permissionMode: 'local_only',
+          permissions: const <String>[
+            timelineReadTool,
+            knowledgeReadTool,
+            memoryReadTool,
+            'record.read',
+            'card.read',
+            'insight.read',
+            'todo.read',
+            'artifact.read',
+          ],
+          redactionPolicy: 'redact_sensitive',
+          disclosureLevel: 'targeted_excerpt',
+          privacyProfile: 'chat_local',
+          includeAttachmentMetadata: includeAttachmentMetadata,
+          allowAttachmentExpansion: false,
+        ),
+      );
+      return _success(semanticSearchQueryTool, <String, Object?>{
+        'query': query,
+        'packet_summary': _packetSummary(result),
+        'sources': _packetSourceSummaries(result.packet),
+        'source_refs': result.packet['source_refs'] ?? const <Object?>[],
+        'selection_strategy': 'context_packet_model_ready',
+        'reused_cache': result.reusedCache,
+      });
+    });
+  }
+
   String? _contextPacketPackId(
     JsonMap input,
     runtime.ToolInvocation invocation,
@@ -326,29 +622,22 @@ final class LocalDbCoreToolCatalog {
         sensitivity: _sensitivity(input['sensitivity']),
         durability: _durability(input['durability']),
       );
-      final conflicts = await _memoryRepository.findConflictingItems(proposal);
-      final policyDecision = const memory.DefaultMemoryPolicy().evaluate(
-        proposal,
-        memory.MemoryPolicyContext(hasConflict: conflicts.isNotEmpty),
-      );
-      final reasons = _appendUnique(
-        policyDecision.reasons,
-        'tool_created_review_required',
-      );
-      final saved = await _memoryRepository.saveProposal(
-        proposal.copyWith(
-          status: memory.MemoryProposalStatus.needsReview,
-          policyReasons: reasons,
-          conflictingMemoryIds: conflicts
-              .map((item) => item.id)
-              .toList(growable: false),
-        ),
-      );
+      final result = await memory.MemoryService(
+        repository: _memoryRepository,
+        clock: _clock,
+        idFactory: () => _nextId('memory_item'),
+      ).submitProposal(proposal);
 
+      final acceptedRecord = result.item == null
+          ? null
+          : _database.memoryItems.readById(result.item!.id);
       return _success(memoryProposeTool, <String, Object?>{
-        'proposal': _memoryProposalOutput(saved),
-        'review_required': true,
-        'accepted_memory_id': null,
+        'proposal': _memoryProposalOutput(result.proposal),
+        'review_required': result.needsReview,
+        'accepted_memory_id': result.item?.id,
+        if (acceptedRecord != null) 'memory': _memoryItemOutput(acceptedRecord),
+        'policy_reasons': result.proposal.policyReasons,
+        'conflicting_memory_ids': result.proposal.conflictingMemoryIds,
       });
     });
   }
@@ -635,6 +924,176 @@ JsonMap _todoOutput(TodoRecord todo) {
     'created_at': todo.createdAt.toUtc().toIso8601String(),
     'updated_at': todo.updatedAt.toUtc().toIso8601String(),
   };
+}
+
+JsonMap _captureOutput(
+  CaptureRecord capture, {
+  required bool includeAttachments,
+  required bool includeArtifacts,
+  required WideNoteLocalDatabase database,
+}) {
+  final attachments = includeAttachments
+      ? database.attachments
+            .readByCapture(capture.id)
+            .where((attachment) => attachment.status != 'deleted')
+            .map(_attachmentOutput)
+            .toList(growable: false)
+      : const <JsonMap>[];
+  final artifacts = includeArtifacts
+      ? database.derivedArtifacts
+            .readByCapture(capture.id)
+            .where((artifact) => artifact.status != 'deleted')
+            .map(_artifactOutput)
+            .toList(growable: false)
+      : const <JsonMap>[];
+  return <String, Object?>{
+    'id': capture.id,
+    'source_type': capture.sourceType,
+    'source_id': capture.sourceId,
+    'status': capture.status,
+    'text': capture.payload['text'],
+    'payload': _redactJsonMap(capture.payload),
+    'source_refs': _sourceRefsFromRecord(
+      const <Object?>[],
+      sourceCaptureId: capture.id,
+      sourceEventId: capture.sourceId,
+    ),
+    if (includeAttachments) 'attachments': attachments,
+    if (includeArtifacts) 'derived_artifacts': artifacts,
+    'created_at': capture.createdAt.toUtc().toIso8601String(),
+    'updated_at': capture.updatedAt.toUtc().toIso8601String(),
+  };
+}
+
+JsonMap _attachmentOutput(AttachmentRecord attachment) {
+  return <String, Object?>{
+    'id': attachment.id,
+    'capture_id': attachment.captureId,
+    'source_event_id': attachment.sourceEventId,
+    'asset_kind': attachment.assetKind,
+    'mime_type': attachment.mimeType,
+    'storage_path': _redactString(attachment.storagePath),
+    'original_file_name': attachment.originalFileName == null
+        ? null
+        : _redactString(attachment.originalFileName!),
+    'sha256': attachment.sha256,
+    'byte_length': attachment.byteLength,
+    'status': attachment.status,
+    'payload': _redactJsonMap(attachment.payload),
+    'created_at': attachment.createdAt.toUtc().toIso8601String(),
+    'updated_at': attachment.updatedAt.toUtc().toIso8601String(),
+  };
+}
+
+JsonMap _cardOutput(CardRecord card) {
+  return <String, Object?>{
+    'id': card.id,
+    'card_kind': card.cardKind,
+    'title': card.title,
+    'body': card.body,
+    'status': card.status,
+    'source_refs': _sourceRefsFromRecord(card.sourceRefs),
+    'payload': _redactJsonMap(card.payload),
+    'created_at': card.createdAt.toUtc().toIso8601String(),
+    'updated_at': card.updatedAt.toUtc().toIso8601String(),
+  };
+}
+
+JsonMap _insightOutput(InsightRecord insight) {
+  return <String, Object?>{
+    'id': insight.id,
+    'insight_kind': insight.insightKind,
+    'title': insight.title,
+    'summary': insight.summary,
+    'metric_label': insight.metricLabel,
+    'metric_value': insight.metricValue,
+    'status': insight.status,
+    'source_refs': _sourceRefsFromRecord(insight.sourceRefs),
+    'payload': _redactJsonMap(insight.payload),
+    'created_at': insight.createdAt.toUtc().toIso8601String(),
+    'updated_at': insight.updatedAt.toUtc().toIso8601String(),
+  };
+}
+
+JsonMap _artifactOutput(DerivedArtifactRecord artifact) {
+  return <String, Object?>{
+    'id': artifact.id,
+    'source_capture_id': artifact.sourceCaptureId,
+    'source_attachment_id': artifact.sourceAttachmentId,
+    'source_event_id': artifact.sourceEventId,
+    'artifact_kind': artifact.artifactKind,
+    'status': artifact.status,
+    'title': artifact.title,
+    'body': artifact.body,
+    'mime_type': artifact.mimeType,
+    'storage_path': artifact.storagePath == null
+        ? null
+        : _redactString(artifact.storagePath!),
+    'content_hash': artifact.contentHash,
+    'source_refs': _sourceRefsFromRecord(artifact.sourceRefs),
+    'sensitivity': artifact.sensitivity,
+    'confidence': artifact.confidence,
+    'generator_id': artifact.generatorId,
+    'generator_version': artifact.generatorVersion,
+    'payload': _redactJsonMap(artifact.payload),
+    'created_at': artifact.createdAt.toUtc().toIso8601String(),
+    'updated_at': artifact.updatedAt.toUtc().toIso8601String(),
+  };
+}
+
+JsonMap _knowledgeOutput(String kind, DateTime updatedAt, JsonMap value) {
+  return <String, Object?>{
+    'kind': kind,
+    'item': value,
+    '_updated_at_sort': updatedAt.toUtc().toIso8601String(),
+  };
+}
+
+bool _isReadableTodo(TodoRecord todo) {
+  return todo.status != 'completed' && todo.status != 'deleted';
+}
+
+bool _matchesSourceFilters(
+  JsonList sourceRefs, {
+  String? sourceCaptureId,
+  String? sourceEventId,
+  String? directSourceCaptureId,
+  String? directSourceEventId,
+}) {
+  final captureMatches =
+      sourceCaptureId == null ||
+      directSourceCaptureId == sourceCaptureId ||
+      _hasSourceRef(sourceRefs, 'capture', sourceCaptureId);
+  final eventMatches =
+      sourceEventId == null ||
+      directSourceEventId == sourceEventId ||
+      _hasSourceRef(sourceRefs, 'event', sourceEventId);
+  return captureMatches && eventMatches;
+}
+
+List<JsonMap> _packetSourceSummaries(JsonMap packet) {
+  final summaries = <JsonMap>[];
+  final sections = _mapList(packet['sections']);
+  for (final section in sections) {
+    final citations = _mapList(section['citations']);
+    for (final citation in citations) {
+      final sourceRef = citation['source_ref'];
+      if (sourceRef is! Map) {
+        continue;
+      }
+      final normalizedRef = _storedSourceRef(sourceRef);
+      if (normalizedRef == null) {
+        continue;
+      }
+      summaries.add(<String, Object?>{
+        'section_kind': section['kind'],
+        'title': section['title'],
+        'source_ref': normalizedRef,
+        'excerpt': citation['excerpt'] ?? _excerpt(section['content']),
+      });
+    }
+  }
+  return summaries.take(20).toList(growable: false);
 }
 
 JsonMap _runOutput(RuntimeRunRecord run) {
@@ -1143,13 +1602,6 @@ String _proposalStatusName(memory.MemoryProposalStatus value) {
   };
 }
 
-List<String> _appendUnique(List<String> values, String value) {
-  if (values.contains(value)) {
-    return values;
-  }
-  return <String>[...values, value];
-}
-
 JsonMap _redactJsonMap(JsonMap value) {
   return _redactJson(value) as JsonMap;
 }
@@ -1207,6 +1659,17 @@ String _redactString(String value) {
     (match) => '${match.group(1)}[redacted]',
   );
   return redacted;
+}
+
+String? _excerpt(Object? value) {
+  if (value is! String) {
+    return null;
+  }
+  final text = value.trim().replaceAll(RegExp(r'\s+'), ' ');
+  if (text.isEmpty) {
+    return null;
+  }
+  return text.length <= 240 ? text : '${text.substring(0, 237)}...';
 }
 
 List<JsonMap> _mapList(Object? value) {
@@ -1267,6 +1730,7 @@ const _allowedSourceRefKinds = <String>{
   'memory',
   'card',
   'insight',
+  'artifact',
   'recap',
   'todo',
   'conversation',

@@ -27,7 +27,7 @@ The manifest declares:
 - Permission requests: `model.complete`, `card.write`, `memory.propose`, `insight.write`
 - Subscription: `wn.capture.created`
 - Native agent: `agent.capture_loop`
-- Prompt reference: `capture.memory_summary.v1`
+- Prompt reference: `capture.memory_candidate.v2`
 - Retry policy: `max_attempts = 2`
 - Output events: `wn.card.created`, `wn.memory.proposed`, `wn.insight.created`
 

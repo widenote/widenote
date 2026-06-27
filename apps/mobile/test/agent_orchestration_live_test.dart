@@ -89,16 +89,34 @@ void main() {
             expect(result.memoryItem.summary.trim(), isNotEmpty);
             expect(result.memoryItem.summary.length, lessThanOrEqualTo(240));
             expect(result.memoryItem.sourceRecordId, isNotEmpty);
-            expect(result.memoryItem.needsReview, isTrue);
-            expect(result.memoryItem.statusLabel, 'needs review');
-            expect(result.reviewCandidate, isNotNull);
+            expect(result.memoryItem.needsReview, scenario.expectReview);
+            expect(
+              result.memoryItem.statusLabel,
+              scenario.expectReview ? 'needs review' : 'auto-accepted',
+            );
+            expect(
+              result.reviewCandidate == null,
+              isNot(scenario.expectReview),
+            );
             expect(result.todo.isSuggested, isTrue);
             expect(
               result.todo.title,
               contains(scenario.input.substring(0, 20)),
             );
-            expect(result.acceptedMemoryCount, 0);
-            expect(result.reviewMemoryCount, index + 1);
+            expect(
+              result.acceptedMemoryCount,
+              scenarios
+                  .take(index + 1)
+                  .where((item) => !item.expectReview)
+                  .length,
+            );
+            expect(
+              result.reviewMemoryCount,
+              scenarios
+                  .take(index + 1)
+                  .where((item) => item.expectReview)
+                  .length,
+            );
             _expectSummaryMatchesScenario(
               result.memoryItem.summary,
               scenario,
@@ -167,6 +185,7 @@ List<_LiveCaptureScenario> _liveCaptureScenarios() {
           '决策摘要发给她，重点是 local-first 和后端扩展点。',
       expectedNeedles: <String>['张雨', 'Project Atlas', 'ADR-12'],
       exclusiveNeedles: <String>['张雨', 'Project Atlas', 'ADR-12'],
+      expectReview: false,
     ),
     _LiveCaptureScenario(
       id: 'health',
@@ -175,12 +194,14 @@ List<_LiveCaptureScenario> _liveCaptureScenarios() {
           '以后晚上 10 点半提醒自己停工。',
       expectedNeedles: <String>['23:40', '焦虑', '跑步', '10 点半'],
       exclusiveNeedles: <String>['23:40', '6/10', '跑步'],
+      expectReview: true,
     ),
     _LiveCaptureScenario(
       id: 'home',
       input: '家里低糖酸奶只剩一盒，周末去山姆买蓝莓、燕麦和无糖苏打水；别买榴莲味零食，我不喜欢。',
       expectedNeedles: <String>['低糖酸奶', '蓝莓', '榴莲', '山姆'],
       exclusiveNeedles: <String>['低糖酸奶', '蓝莓', '榴莲'],
+      expectReview: false,
     ),
     _LiveCaptureScenario(
       id: 'product',
@@ -189,6 +210,7 @@ List<_LiveCaptureScenario> _liveCaptureScenarios() {
           '要在生成 Memory 前保留原始音频引用。',
       expectedNeedles: <String>['WideNote', '嘈杂咖啡馆', '原始音频', 'Memory'],
       exclusiveNeedles: <String>['嘈杂咖啡馆', '原始音频引用'],
+      expectReview: false,
     ),
   ];
 }
@@ -301,12 +323,14 @@ final class _LiveCaptureScenario {
     required this.input,
     required this.expectedNeedles,
     required this.exclusiveNeedles,
+    required this.expectReview,
   });
 
   final String id;
   final String input;
   final List<String> expectedNeedles;
   final List<String> exclusiveNeedles;
+  final bool expectReview;
 }
 
 Set<String> _sourceRefIds(List<Object?> sourceRefs) {

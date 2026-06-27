@@ -27,12 +27,23 @@ final class LocalChatContextSource implements ChatContextSource {
         cacheKey: 'mobile.chat.context_sources',
         maxItems: maxItems,
         permissionMode: 'local_only',
-        permissions: const <String>['memory.read', 'record.read', 'todo.read'],
+        permissions: const <String>[
+          'semantic_search.query',
+          'timeline.read',
+          'knowledge.read',
+          'memory.read',
+          'record.read',
+          'card.read',
+          'insight.read',
+          'todo.read',
+          'artifact.read',
+          'attachment.read',
+        ],
         redactionPolicy: 'redact_sensitive',
         disclosureLevel: 'targeted_excerpt',
         localDate: _dateOnly(_clock()),
         privacyProfile: 'chat_local',
-        includeAttachmentMetadata: false,
+        includeAttachmentMetadata: true,
         allowAttachmentExpansion: false,
       ),
     );
@@ -56,6 +67,7 @@ final class ChatContextLabels {
     this.cardSourceLabel = 'card',
     this.insightSourceLabel = 'insight',
     this.todoSourceLabel = 'todo',
+    this.artifactSourceLabel = 'artifact',
     this.fileSourceLabel = 'file',
     this.genericSourceLabel = 'source',
   });
@@ -75,6 +87,7 @@ final class ChatContextLabels {
       cardSourceLabel = 'card',
       insightSourceLabel = 'insight',
       todoSourceLabel = 'todo',
+      artifactSourceLabel = 'artifact',
       fileSourceLabel = 'file',
       genericSourceLabel = 'source';
 
@@ -92,6 +105,7 @@ final class ChatContextLabels {
   final String cardSourceLabel;
   final String insightSourceLabel;
   final String todoSourceLabel;
+  final String artifactSourceLabel;
   final String fileSourceLabel;
   final String genericSourceLabel;
 
@@ -123,6 +137,7 @@ final class ChatContextLabels {
       'card' => cardSourceLabel,
       'insight' => insightSourceLabel,
       'todo' => todoSourceLabel,
+      'artifact' => artifactSourceLabel,
       'file' => fileSourceLabel,
       _ => genericSourceLabel,
     };

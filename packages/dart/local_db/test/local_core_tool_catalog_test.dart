@@ -27,6 +27,15 @@ void main() {
       final memoryRead = registry.lookup(
         LocalDbCoreToolCatalog.memoryReadTool,
       )!;
+      final timelineRead = registry.lookup(
+        LocalDbCoreToolCatalog.timelineReadTool,
+      )!;
+      final knowledgeRead = registry.lookup(
+        LocalDbCoreToolCatalog.knowledgeReadTool,
+      )!;
+      final semanticSearch = registry.lookup(
+        LocalDbCoreToolCatalog.semanticSearchQueryTool,
+      )!;
       final memoryPropose = registry.lookup(
         LocalDbCoreToolCatalog.memoryProposeTool,
       )!;
@@ -37,6 +46,11 @@ void main() {
 
       expect(context.requiredPermissions, <String>{'context_packet.build'});
       expect(memoryRead.requiredPermissions, <String>{'memory.read'});
+      expect(timelineRead.requiredPermissions, <String>{'timeline.read'});
+      expect(knowledgeRead.requiredPermissions, <String>{'knowledge.read'});
+      expect(semanticSearch.requiredPermissions, <String>{
+        'semantic_search.query',
+      });
       expect(memoryPropose.requiredPermissions, <String>{'memory.propose'});
       expect(todoSuggest.requiredPermissions, <String>{'todo.suggest'});
       expect(traceRead.requiredPermissions, <String>{'trace.read'});
@@ -44,6 +58,9 @@ void main() {
         <runtime.ToolDefinition>[
           context,
           memoryRead,
+          timelineRead,
+          knowledgeRead,
+          semanticSearch,
           memoryPropose,
           todoSuggest,
           traceRead,
@@ -51,6 +68,9 @@ void main() {
         isTrue,
       );
       expect(memoryRead.access, runtime.ToolAccess.read);
+      expect(timelineRead.access, runtime.ToolAccess.read);
+      expect(knowledgeRead.access, runtime.ToolAccess.read);
+      expect(semanticSearch.access, runtime.ToolAccess.read);
       expect(traceRead.access, runtime.ToolAccess.read);
       expect(memoryPropose.access, runtime.ToolAccess.write);
       expect(todoSuggest.access, runtime.ToolAccess.write);
@@ -121,6 +141,100 @@ void main() {
         expect(rejected['success'], isFalse);
         expect((rejected['error']! as Map)['code'], 'unsupported_input');
         expect(database.contextPacketCaches.readAll(), hasLength(cacheCount));
+      },
+    );
+
+    test(
+      'reads timeline, knowledge, and semantic query outputs with artifacts',
+      () async {
+        final now = DateTime.utc(2026, 6, 27, 10, 30);
+        _seedCapture(database, now);
+        database.attachments.insert(
+          AttachmentRecord(
+            id: 'attachment-whiteboard',
+            captureId: 'capture-1',
+            sourceEventId: 'event-1',
+            assetKind: 'photo',
+            mimeType: 'image/jpeg',
+            storagePath: 'fs://Facts/assets/whiteboard.jpg',
+            originalFileName: 'whiteboard.jpg',
+            sha256: 'whiteboard-sha256',
+            payload: const <String, Object?>{
+              'preview_text': 'Whiteboard photo saved locally.',
+            },
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+        database.derivedArtifacts.insert(
+          DerivedArtifactRecord(
+            id: 'artifact-whiteboard-ocr',
+            sourceCaptureId: 'capture-1',
+            sourceAttachmentId: 'attachment-whiteboard',
+            sourceEventId: 'event-1',
+            artifactKind: 'ocr_text',
+            title: 'Whiteboard OCR',
+            body: 'Whiteboard says ship local read tools.',
+            sourceRefs: const <Object?>[
+              <String, Object?>{'kind': 'capture', 'id': 'capture-1'},
+              <String, Object?>{'kind': 'file', 'id': 'attachment-whiteboard'},
+            ],
+            confidence: 'high',
+            generatorId: 'capture.media.ocr',
+            generatorVersion: '1.0.0',
+            createdAt: now,
+            updatedAt: now.add(const Duration(minutes: 1)),
+          ),
+        );
+        database.cards.insert(
+          CardRecord(
+            id: 'card-whiteboard',
+            cardKind: 'timeline_card',
+            title: 'Whiteboard plan',
+            body: 'Local read tools are ready to review.',
+            sourceRefs: const <Object?>[
+              <String, Object?>{'kind': 'capture', 'id': 'capture-1'},
+            ],
+            createdAt: now,
+            updatedAt: now.add(const Duration(minutes: 2)),
+          ),
+        );
+        LocalDbCoreToolCatalog(database).registerInto(registry);
+
+        final timeline = await _invoke(
+          registry,
+          LocalDbCoreToolCatalog.timelineReadTool,
+          const <String, Object?>{'limit': 1},
+        );
+        expect(timeline['success'], isTrue);
+        final capture = ((timeline['items']! as List).single as Map);
+        expect(capture['id'], 'capture-1');
+        expect(capture['attachments'], hasLength(1));
+        expect(capture['derived_artifacts'], hasLength(1));
+
+        final knowledge = await _invoke(
+          registry,
+          LocalDbCoreToolCatalog.knowledgeReadTool,
+          const <String, Object?>{'kind': 'artifact', 'limit': 5},
+        );
+        final knowledgeItem = ((knowledge['items']! as List).single as Map);
+        expect(knowledgeItem['kind'], 'artifact');
+        expect((knowledgeItem['item']! as Map)['body'], contains('read tools'));
+
+        final semantic = await _invoke(
+          registry,
+          LocalDbCoreToolCatalog.semanticSearchQueryTool,
+          const <String, Object?>{
+            'query': 'What does the whiteboard say?',
+            'limit': 6,
+          },
+        );
+        expect(semantic['success'], isTrue);
+        expect(semantic['selection_strategy'], 'context_packet_model_ready');
+        expect(
+          jsonEncode(semantic['sources']),
+          contains('Whiteboard says ship local read tools.'),
+        );
       },
     );
 
@@ -207,7 +321,7 @@ void main() {
     );
 
     test(
-      'creates review-oriented memory proposals and rejects missing refs safely',
+      'auto-accepts safe memory proposals and rejects missing refs safely',
       () async {
         var idCounter = 0;
         LocalDbCoreToolCatalog(
@@ -238,18 +352,26 @@ void main() {
         );
 
         expect(output['success'], isTrue);
-        expect(output['review_required'], isTrue);
+        expect(output['review_required'], isFalse);
+        expect(output['accepted_memory_id'], isNotNull);
         final proposal = output['proposal']! as Map;
-        expect(proposal['status'], 'needs_review');
+        expect(proposal['status'], 'auto_accepted');
         expect(proposal['source_refs'], isNotEmpty);
         expect(database.memoryCandidates.readAll(), hasLength(1));
         expect(
           database.memoryCandidates.readAll().single.status,
-          'needs_review',
+          'auto_accepted',
         );
-        expect(database.memoryItems.readAll(), isEmpty);
+        expect(database.memoryItems.readAll(), hasLength(1));
+        expect(
+          database.memoryItems.readAll().single.body,
+          'The user wants source-linked capture summaries.',
+        );
 
-        final countBeforeMissing = database.memoryCandidates.readAll().length;
+        final candidateCountBeforeMissing = database.memoryCandidates
+            .readAll()
+            .length;
+        final itemCountBeforeMissing = database.memoryItems.readAll().length;
         final missingRefs = await _invoke(
           registry,
           LocalDbCoreToolCatalog.memoryProposeTool,
@@ -262,7 +384,11 @@ void main() {
         expect((missingRefs['error']! as Map)['code'], 'missing_source_refs');
         expect(
           database.memoryCandidates.readAll(),
-          hasLength(countBeforeMissing),
+          hasLength(candidateCountBeforeMissing),
+        );
+        expect(
+          database.memoryItems.readAll(),
+          hasLength(itemCountBeforeMissing),
         );
 
         final illegal = await _invoke(
@@ -279,11 +405,47 @@ void main() {
         expect((illegal['error']! as Map)['code'], 'unsupported_input');
         expect(
           database.memoryCandidates.readAll(),
-          hasLength(countBeforeMissing),
+          hasLength(candidateCountBeforeMissing),
         );
-        expect(database.memoryItems.readAll(), isEmpty);
+        expect(
+          database.memoryItems.readAll(),
+          hasLength(itemCountBeforeMissing),
+        );
       },
     );
+
+    test('routes sensitive memory proposals to review', () async {
+      LocalDbCoreToolCatalog(database).registerInto(registry);
+
+      final output = await _invoke(
+        registry,
+        LocalDbCoreToolCatalog.memoryProposeTool,
+        const <String, Object?>{
+          'key': 'health.sleep',
+          'body': 'The user discussed sleep and anxiety context.',
+          'type': 'health',
+          'confidence': 'high',
+          'sensitivity': 'high',
+          'source_refs': <Object?>[
+            <String, Object?>{
+              'kind': 'event',
+              'id': 'event-sensitive',
+              'excerpt': 'sleep and anxiety context',
+            },
+          ],
+        },
+      );
+
+      expect(output['success'], isTrue);
+      expect(output['review_required'], isTrue);
+      expect(output['accepted_memory_id'], isNull);
+      final proposal = output['proposal']! as Map;
+      expect(proposal['status'], 'needs_review');
+      expect(proposal['policy_reasons'], contains('review_only_type'));
+      expect(proposal['policy_reasons'], contains('sensitive'));
+      expect(database.memoryCandidates.readAll(), hasLength(1));
+      expect(database.memoryItems.readAll(), isEmpty);
+    });
 
     test('creates source-linked todo suggestions only with refs', () async {
       final now = DateTime.utc(2026, 6, 27, 11);

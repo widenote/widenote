@@ -20,7 +20,7 @@ void main() {
       expect(backup.manifest.kind, 'backup_manifest');
       expect(backup.manifest.schemaVersion, 1);
       expect(backup.manifest.format, LocalBackupCodec.formatId);
-      expect(backup.manifest.formatVersion, 3);
+      expect(backup.manifest.formatVersion, 4);
       expect(backup.manifest.backupMode, LocalBackupMode.safe);
       expect(backup.manifest.includesSecrets, isFalse);
       expect(backup.manifest.encryption, isNull);
@@ -32,6 +32,10 @@ void main() {
       expect(backup.manifest.recordCounts, containsPair('event_log', 1));
       expect(backup.manifest.recordCounts, containsPair('captures', 1));
       expect(backup.manifest.recordCounts, containsPair('attachments', 1));
+      expect(
+        backup.manifest.recordCounts,
+        containsPair('derived_artifacts', 1),
+      );
       expect(backup.manifest.recordCounts, containsPair('memory_items', 1));
       expect(
         backup.manifest.recordCounts,
@@ -88,6 +92,12 @@ void main() {
       expect(attachment.captureId, 'capture-backup');
       expect(attachment.assetKind, 'photo');
       expect(attachment.storagePath, 'media/originals/attachment-backup.jpg');
+
+      final artifact = target.derivedArtifacts.readById('artifact-backup-ocr')!;
+      expect(artifact.sourceCaptureId, 'capture-backup');
+      expect(artifact.sourceAttachmentId, 'attachment-backup');
+      expect(artifact.artifactKind, 'ocr_text');
+      expect(artifact.body, contains('restore derived evidence'));
 
       final event = target.eventLog.readById('event-backup')!;
       expect(event.type, 'wn.capture.created');
@@ -424,12 +434,14 @@ void main() {
         manifest.remove('encryption');
         final counts = manifest['record_counts']! as Map<String, Object?>;
         counts.remove('attachments');
+        counts.remove('derived_artifacts');
         counts.remove('runtime_tasks');
         counts.remove('runtime_runs');
         counts.remove('pack_installations');
         counts.remove('permission_grants');
         counts.remove('context_packet_cache');
         root.remove('attachments');
+        root.remove('derived_artifacts');
         root.remove('runtime_tasks');
         root.remove('runtime_runs');
         root.remove('pack_installations');
@@ -443,6 +455,11 @@ void main() {
       expect(backup.manifest.includesSecrets, isTrue);
       expect(backup.attachments, isEmpty);
       expect(backup.manifest.recordCounts, containsPair('attachments', 0));
+      expect(backup.derivedArtifacts, isEmpty);
+      expect(
+        backup.manifest.recordCounts,
+        containsPair('derived_artifacts', 0),
+      );
       expect(backup.runtimeTasks, isEmpty);
       expect(backup.contextPacketCaches, isEmpty);
 
@@ -453,6 +470,7 @@ void main() {
       expect(target.captures.readById('capture-backup'), isNull);
       expect(target.todos.readById('todo-backup'), isNull);
       expect(target.attachments.readAll(), isEmpty);
+      expect(target.derivedArtifacts.readAll(), isEmpty);
       expect(target.runtimeTasks.readAll(), isEmpty);
       expect(target.contextPacketCaches.readAll(), isEmpty);
     });
@@ -625,6 +643,21 @@ void main() {
       );
     });
 
+    test('rejects current backups missing the derived artifacts section', () {
+      final database = WideNoteLocalDatabase.inMemory();
+      addTearDown(database.close);
+
+      final json = LocalBackupService(database).exportJson();
+      final edited = _editBackupJson(json, (root) {
+        root.remove('derived_artifacts');
+      });
+
+      expect(
+        () => LocalBackupCodec.decode(edited),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
     test('rejects duplicate ids inside a backup section', () {
       final database = WideNoteLocalDatabase.inMemory();
       addTearDown(database.close);
@@ -699,6 +732,29 @@ void _seedBackupSource(WideNoteLocalDatabase database) {
       payload: const <String, Object?>{
         'preview_text': 'backup attachment preview',
       },
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+    ),
+  );
+  database.derivedArtifacts.insert(
+    DerivedArtifactRecord(
+      id: 'artifact-backup-ocr',
+      sourceCaptureId: 'capture-backup',
+      sourceAttachmentId: 'attachment-backup',
+      sourceEventId: 'event-backup',
+      artifactKind: 'ocr_text',
+      title: 'Backup OCR text',
+      body: 'The backup demo image says restore derived evidence too.',
+      contentHash: 'hash-backup-artifact',
+      sourceRefs: const <Object?>[
+        <String, Object?>{'kind': 'capture', 'id': 'capture-backup'},
+        <String, Object?>{'kind': 'file', 'id': 'attachment-backup'},
+      ],
+      confidence: 'high',
+      sensitivity: 'low',
+      generatorId: 'ocr.fake',
+      generatorVersion: '1',
+      payload: const <String, Object?>{'language': 'en'},
       createdAt: createdAt,
       updatedAt: updatedAt,
     ),

@@ -628,6 +628,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get insightKindTrend => '趋势洞察';
 
   @override
+  String get insightKindSourceMix => '来源组合洞察';
+
+  @override
+  String get insightKindActionPattern => '行动模式洞察';
+
+  @override
+  String get insightKindAttachmentEvidence => '附件证据洞察';
+
+  @override
   String get insightMetricSourceLinked => '可溯源';
 
   @override

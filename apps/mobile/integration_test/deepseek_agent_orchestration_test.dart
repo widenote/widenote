@@ -70,25 +70,24 @@ void main() {
             database.captures.readAll().any(
               (record) => record.payload['text'] == captureText,
             ) &&
-            database.memoryCandidates
-                .readAll(status: 'needs_review')
-                .isNotEmpty &&
+            database.memoryItems.readAll(status: 'active').isNotEmpty &&
             database.todos.readAll().isNotEmpty,
         description: 'DeepSeek capture pipeline',
         diagnostics: () => _databaseDiagnostics(database),
         timeout: const Duration(seconds: 120),
       );
 
-      final memory = database.memoryCandidates
-          .readAll(status: 'needs_review')
-          .single;
+      final memory = database.memoryItems.readAll(status: 'active').single;
       expect(memory.body.trim(), isNotEmpty);
       expect(memory.body.length, lessThanOrEqualTo(240));
       expect(
         memory.body,
         anyOf(contains('Project Atlas'), contains('ADR-12'), contains('Zhang')),
       );
-      expect(database.memoryItems.readAll(status: 'active'), isEmpty);
+      expect(
+        database.memoryCandidates.readAll(status: 'needs_review'),
+        isEmpty,
+      );
       expect(database.todos.readAll(), hasLength(1));
       expect(
         database.eventLog.readAll().map((event) => event.type),

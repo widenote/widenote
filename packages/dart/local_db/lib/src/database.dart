@@ -9,6 +9,7 @@ final class WideNoteLocalDatabase {
     : eventLog = EventLogDao(_database),
       captures = CapturesDao(_database),
       attachments = AttachmentsDao(_database),
+      derivedArtifacts = DerivedArtifactsDao(_database),
       memoryItems = MemoryItemsDao(_database),
       memoryCandidates = MemoryCandidatesDao(_database),
       cards = CardsDao(_database),
@@ -48,6 +49,7 @@ final class WideNoteLocalDatabase {
   final EventLogDao eventLog;
   final CapturesDao captures;
   final AttachmentsDao attachments;
+  final DerivedArtifactsDao derivedArtifacts;
   final MemoryItemsDao memoryItems;
   final MemoryCandidatesDao memoryCandidates;
   final CardsDao cards;

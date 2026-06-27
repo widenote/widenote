@@ -50,7 +50,7 @@ void main() {
       expect(request.headers['authorization'], startsWith('Bearer '));
       expect(request.redactedHeaders['authorization'], '<redacted>');
       expect(request.body['model'], 'selected-model');
-      expect(request.body['max_tokens'], 512);
+      expect(request.body['max_tokens'], 1024);
       expect(request.body['metadata'], <String, Object?>{
         'source': 'settings-test',
       });
@@ -227,6 +227,7 @@ void main() {
       expect(request.headers['x-api-key'], isNotEmpty);
       expect(request.redactedHeaders['x-api-key'], '<redacted>');
       expect(request.body['thinking'], <String, Object?>{'type': 'disabled'});
+      expect(request.body['max_tokens'], 1024);
       expect(request.body['system'], 'Be useful.');
       expect(request.body['messages'], <Map<String, Object?>>[
         <String, Object?>{'role': 'user', 'content': 'Draft note.'},

@@ -1,7 +1,7 @@
 import 'package:sqlite3/sqlite3.dart';
 
 abstract final class LocalDbSchema {
-  static const currentVersion = 9;
+  static const currentVersion = 10;
 }
 
 final class LocalDbMigrator {
@@ -68,6 +68,10 @@ final class LocalDbMigrator {
       if (currentVersion < 9 && targetVersion >= 9) {
         _migrateToV9(database);
         database.execute('PRAGMA user_version = 9;');
+      }
+      if (currentVersion < 10 && targetVersion >= 10) {
+        _migrateToV10(database);
+        database.execute('PRAGMA user_version = 10;');
       }
       database.execute('COMMIT;');
     } catch (_) {
@@ -700,6 +704,53 @@ ON runtime_approval_requests(task_id, status, requested_at);
       ..execute('''
 CREATE INDEX IF NOT EXISTS runtime_approvals_tool_idx
 ON runtime_approval_requests(tool_name, requested_at);
+''');
+  }
+
+  static void _migrateToV10(Database database) {
+    database
+      ..execute('''
+CREATE TABLE IF NOT EXISTS derived_artifacts (
+  id TEXT PRIMARY KEY,
+  schema_version INTEGER NOT NULL,
+  source_capture_id TEXT NOT NULL,
+  source_attachment_id TEXT,
+  source_event_id TEXT,
+  artifact_kind TEXT NOT NULL,
+  status TEXT NOT NULL,
+  title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  mime_type TEXT,
+  storage_path TEXT,
+  content_hash TEXT,
+  source_refs_json TEXT NOT NULL,
+  sensitivity TEXT NOT NULL,
+  confidence TEXT NOT NULL,
+  generator_id TEXT NOT NULL,
+  generator_version TEXT NOT NULL,
+  payload_json TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  invalidated_at TEXT,
+  FOREIGN KEY(source_capture_id) REFERENCES captures(id) ON DELETE CASCADE,
+  FOREIGN KEY(source_attachment_id) REFERENCES attachments(id) ON DELETE SET NULL
+);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS derived_artifacts_capture_idx
+ON derived_artifacts(source_capture_id, status, updated_at);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS derived_artifacts_attachment_idx
+ON derived_artifacts(source_attachment_id, status, updated_at);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS derived_artifacts_kind_status_idx
+ON derived_artifacts(artifact_kind, status, updated_at);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS derived_artifacts_content_hash_idx
+ON derived_artifacts(content_hash);
 ''');
   }
 }

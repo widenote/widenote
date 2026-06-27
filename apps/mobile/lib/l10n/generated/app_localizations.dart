@@ -1256,6 +1256,24 @@ abstract class AppLocalizations {
   /// **'trend insight'**
   String get insightKindTrend;
 
+  /// No description provided for @insightKindSourceMix.
+  ///
+  /// In en, this message translates to:
+  /// **'source mix insight'**
+  String get insightKindSourceMix;
+
+  /// No description provided for @insightKindActionPattern.
+  ///
+  /// In en, this message translates to:
+  /// **'action pattern insight'**
+  String get insightKindActionPattern;
+
+  /// No description provided for @insightKindAttachmentEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'attachment evidence insight'**
+  String get insightKindAttachmentEvidence;
+
   /// No description provided for @insightMetricSourceLinked.
   ///
   /// In en, this message translates to:

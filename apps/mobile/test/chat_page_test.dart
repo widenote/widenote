@@ -318,6 +318,7 @@ final class _CaptureTestModel implements runtime.ModelClient {
         'memory_type': 'task_context',
         'confidence': 'high',
         'sensitivity': 'low',
+        'durability': 'durable',
       },
     );
   }

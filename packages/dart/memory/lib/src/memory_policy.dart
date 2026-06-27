@@ -33,6 +33,11 @@ final class DefaultMemoryPolicy implements MemoryPolicy {
     MemoryType.health,
     MemoryType.location,
   };
+  static const _policyUnclearReasons = <String>{
+    'policy_unclear',
+    'model_metadata_missing',
+    'model_output_unstructured',
+  };
 
   @override
   MemoryPolicyDecision evaluate(
@@ -46,6 +51,8 @@ final class DefaultMemoryPolicy implements MemoryPolicy {
       if (proposal.sensitivity != MemorySensitivity.low) 'sensitive',
       if (proposal.confidence == MemoryConfidence.low) 'low_confidence',
       if (proposal.durability != MemoryDurability.durable) 'not_durable',
+      if (proposal.policyReasons.any(_policyUnclearReasons.contains))
+        'policy_unclear',
     ];
 
     if (reviewReasons.isNotEmpty) {

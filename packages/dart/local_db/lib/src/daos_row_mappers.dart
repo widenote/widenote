@@ -55,6 +55,32 @@ AttachmentRecord _attachmentFromRow(Row row) {
   );
 }
 
+DerivedArtifactRecord _derivedArtifactFromRow(Row row) {
+  return DerivedArtifactRecord(
+    id: _text(row, 'id'),
+    schemaVersion: _integer(row, 'schema_version'),
+    sourceCaptureId: _text(row, 'source_capture_id'),
+    sourceAttachmentId: _nullableText(row, 'source_attachment_id'),
+    sourceEventId: _nullableText(row, 'source_event_id'),
+    artifactKind: _text(row, 'artifact_kind'),
+    status: _text(row, 'status'),
+    title: _text(row, 'title'),
+    body: _text(row, 'body'),
+    mimeType: _nullableText(row, 'mime_type'),
+    storagePath: _nullableText(row, 'storage_path'),
+    contentHash: _nullableText(row, 'content_hash'),
+    sourceRefs: decodeJsonList(_text(row, 'source_refs_json')),
+    sensitivity: _text(row, 'sensitivity'),
+    confidence: _text(row, 'confidence'),
+    generatorId: _text(row, 'generator_id'),
+    generatorVersion: _text(row, 'generator_version'),
+    payload: decodeJsonMap(_text(row, 'payload_json')),
+    createdAt: _dateTime(row, 'created_at'),
+    updatedAt: _dateTime(row, 'updated_at'),
+    invalidatedAt: _nullableDateTime(row, 'invalidated_at'),
+  );
+}
+
 MemoryItemRecord _memoryItemFromRow(Row row) {
   return MemoryItemRecord(
     id: _text(row, 'id'),

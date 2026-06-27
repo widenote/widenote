@@ -330,6 +330,13 @@ final class ContextPacketBuilder {
             .where(_isLiveTodo)
             .where((todo) => filter.matches('todo', todo.id, _todoRefs(todo)))
             .map(_DerivedSource.todo),
+        ..._database.derivedArtifacts
+            .readAll(status: 'active')
+            .where(
+              (artifact) =>
+                  filter.matches('artifact', artifact.id, artifact.sourceRefs),
+            )
+            .map(_DerivedSource.artifact),
       ]..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
       for (final source in derived) {
         if (!budget.hasRoom) {
@@ -339,6 +346,7 @@ final class ContextPacketBuilder {
           _DerivedKind.card => _cardSection(source.card!, request),
           _DerivedKind.insight => _insightSection(source.insight!, request),
           _DerivedKind.todo => _todoSection(source.todo!, request),
+          _DerivedKind.artifact => _artifactSection(source.artifact!, request),
         };
         if (result != null) {
           add(result);
@@ -628,6 +636,68 @@ final class ContextPacketBuilder {
     );
   }
 
+  _SectionBuildResult? _artifactSection(
+    DerivedArtifactRecord artifact,
+    ContextPacketBuildRequest request,
+  ) {
+    final ownSourceRef = _artifactSourceRef(artifact);
+    final ownVersion = _artifactSourceVersion(artifact);
+    final linkedVersions = _linkedSourceVersions(artifact.sourceRefs);
+    final linkedRefs = linkedVersions.map(_sourceRefFromVersion);
+    if (_shouldRedactSensitivity(artifact.sensitivity, request)) {
+      return _redactedSection(
+        sectionId: 'section_artifact_${_safeId(artifact.id)}',
+        title: 'Derived artifact redacted',
+        sourceRef: ownSourceRef,
+        sourceVersions: <JsonMap>[ownVersion, ...linkedVersions],
+        reason: 'sensitivity_${artifact.sensitivity}',
+        content:
+            'High-sensitivity derived artifact is redacted by the current context policy.',
+        sensitivity: artifact.sensitivity,
+        extraSourceRefs: linkedRefs,
+      );
+    }
+    final body = _truncate(
+      _lines(<String>[
+        'Derived artifact (${artifact.artifactKind}, confidence: ${artifact.confidence})',
+        artifact.title,
+        artifact.body,
+      ]),
+      _derivedExcerptLimit,
+    );
+    if (body.trim().isEmpty) {
+      return null;
+    }
+    final section = <String, Object?>{
+      'id': 'section_artifact_${_safeId(artifact.id)}',
+      'kind': 'derived_artifact',
+      'title': artifact.title,
+      'content': body,
+      'citations': <Object?>[
+        <String, Object?>{
+          'source_ref': ownSourceRef,
+          'evidence_hash': artifact.contentHash ?? _stableHash(body),
+          'excerpt': _excerpt(body),
+        },
+      ],
+      'redactions': const <Object?>[],
+      'sensitivity': _schemaSensitivity(artifact.sensitivity),
+      'metadata': <String, Object?>{
+        'artifact_kind': artifact.artifactKind,
+        'source_capture_id': artifact.sourceCaptureId,
+        if (artifact.sourceAttachmentId != null)
+          'source_attachment_id': artifact.sourceAttachmentId,
+        'generator_id': artifact.generatorId,
+        'generator_version': artifact.generatorVersion,
+      },
+    };
+    return _SectionBuildResult(
+      section: section,
+      sourceRefs: _dedupeSourceRefs(<JsonMap>[ownSourceRef, ...linkedRefs]),
+      sourceVersions: _dedupeJsonMaps(<JsonMap>[ownVersion, ...linkedVersions]),
+    );
+  }
+
   _SectionBuildResult? _captureSection(
     CaptureRecord capture,
     ContextPacketBuildRequest request,
@@ -821,6 +891,10 @@ final class ContextPacketBuilder {
         _database.todos.readById(id) == null
             ? null
             : _todoSourceVersion(_database.todos.readById(id)!),
+      'artifact' =>
+        _database.derivedArtifacts.readById(id) == null
+            ? null
+            : _artifactSourceVersion(_database.derivedArtifacts.readById(id)!),
       'event' =>
         _database.eventLog.readById(id) == null
             ? null
@@ -910,31 +984,42 @@ final class _SectionBudget {
   }
 }
 
-enum _DerivedKind { card, insight, todo }
+enum _DerivedKind { card, insight, todo, artifact }
 
 final class _DerivedSource {
   _DerivedSource.card(CardRecord this.card)
     : kind = _DerivedKind.card,
       insight = null,
       todo = null,
+      artifact = null,
       updatedAt = card.updatedAt;
 
   _DerivedSource.insight(InsightRecord this.insight)
     : kind = _DerivedKind.insight,
       card = null,
       todo = null,
+      artifact = null,
       updatedAt = insight.updatedAt;
 
   _DerivedSource.todo(TodoRecord this.todo)
     : kind = _DerivedKind.todo,
       card = null,
       insight = null,
+      artifact = null,
       updatedAt = todo.updatedAt;
+
+  _DerivedSource.artifact(DerivedArtifactRecord this.artifact)
+    : kind = _DerivedKind.artifact,
+      card = null,
+      insight = null,
+      todo = null,
+      updatedAt = artifact.updatedAt;
 
   final _DerivedKind kind;
   final CardRecord? card;
   final InsightRecord? insight;
   final TodoRecord? todo;
+  final DerivedArtifactRecord? artifact;
   final DateTime updatedAt;
 }
 
@@ -1236,6 +1321,48 @@ JsonMap _todoSourceVersion(TodoRecord todo) {
   };
 }
 
+JsonMap _artifactSourceRef(DerivedArtifactRecord artifact) {
+  return _sourceRef(
+    'artifact',
+    artifact.id,
+    sourceVersion: artifact.updatedAt.toUtc().toIso8601String(),
+    contentHash:
+        artifact.contentHash ??
+        _stableHash(<String, Object?>{
+          'title': artifact.title,
+          'body': artifact.body,
+          'payload': artifact.payload,
+        }),
+    eventId: artifact.sourceEventId,
+    sensitivity: _schemaSensitivity(artifact.sensitivity),
+  );
+}
+
+JsonMap _artifactSourceVersion(DerivedArtifactRecord artifact) {
+  return <String, Object?>{
+    'kind': 'artifact',
+    'id': artifact.id,
+    'source_version': artifact.updatedAt.toUtc().toIso8601String(),
+    'updated_at': artifact.updatedAt.toUtc().toIso8601String(),
+    'status': artifact.status,
+    'artifact_kind': artifact.artifactKind,
+    'source_capture_id': artifact.sourceCaptureId,
+    'source_attachment_id': artifact.sourceAttachmentId,
+    'sensitivity': _schemaSensitivity(artifact.sensitivity),
+    'confidence': artifact.confidence,
+    'content_hash':
+        artifact.contentHash ??
+        _stableHash(<String, Object?>{
+          'title': artifact.title,
+          'body': artifact.body,
+          'source_refs': artifact.sourceRefs,
+          'payload': artifact.payload,
+        }),
+    if (artifact.invalidatedAt != null)
+      'invalidated_at': artifact.invalidatedAt!.toUtc().toIso8601String(),
+  };
+}
+
 JsonMap _eventSourceVersion(EventLogEntry event) {
   return <String, Object?>{
     'kind': 'event',
@@ -1348,6 +1475,7 @@ const _allowedSourceRefKinds = <String>{
   'memory',
   'card',
   'insight',
+  'artifact',
   'recap',
   'todo',
   'conversation',

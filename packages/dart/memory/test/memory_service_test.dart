@@ -102,6 +102,26 @@ void main() {
       expect(await repository.listItems(), isEmpty);
     });
 
+    test(
+      'routes policy-unclear proposals to review and preserves reasons',
+      () async {
+        final repository = InMemoryMemoryRepository();
+        final service = MemoryService(repository: repository);
+
+        final result = await service.submitProposal(
+          _proposal(policyReasons: const <String>['model_metadata_missing']),
+        );
+
+        expect(result.needsReview, isTrue);
+        expect(result.decision.reasons, contains('policy_unclear'));
+        expect(
+          result.proposal.policyReasons,
+          containsAll(<String>['model_metadata_missing', 'policy_unclear']),
+        );
+        expect(await repository.listItems(), isEmpty);
+      },
+    );
+
     test('accepts a reviewed proposal into durable Memory', () async {
       final repository = InMemoryMemoryRepository();
       final service = MemoryService(
@@ -370,6 +390,7 @@ MemoryProposal _proposal({
   MemoryConfidence confidence = MemoryConfidence.medium,
   MemorySensitivity sensitivity = MemorySensitivity.low,
   MemoryDurability durability = MemoryDurability.durable,
+  List<String> policyReasons = const <String>[],
 }) {
   return MemoryProposal(
     id: id,
@@ -388,6 +409,7 @@ MemoryProposal _proposal({
     confidence: confidence,
     sensitivity: sensitivity,
     durability: durability,
+    policyReasons: policyReasons,
   );
 }
 
