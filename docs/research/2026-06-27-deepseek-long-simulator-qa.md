@@ -14,7 +14,7 @@ provider request fix:
 ```text
 20 realistic captures
   -> source-linked runtime outputs
-  -> 20 needs-review Memory candidates
+  -> 20 auto-accepted active Memory items
   -> cards / insights / todos / traces
   -> 6 source-cited chat turns
   -> todo completion
@@ -73,19 +73,19 @@ Environment:
 - Device: `sdk_gphone64_arm64`, API 35
 - Serial: `emulator-5554`
 - Emulator: `Medium_Phone_API_35`
-- Evidence directory: `/tmp/widenote-deepseek-long-qa-android-20260627-143736`
+- Evidence directory: `/tmp/widenote-deepseek-long-qa-android-20260627-161132`
 
 Result:
 
 - Passed after the provider fix.
 - 20 captures persisted as raw records.
-- 20 Memory candidates remained in `needs_review`.
+- 20 low-risk Memory items were auto-accepted.
 - 20 todos existed, and one todo could be completed.
 - Cards, insights, and runtime traces were produced.
 - 6 chat turns produced 12 persisted messages; assistant messages were non-empty
   and source-linked.
 - Safe backup declared `backup_mode=safe`, `includes_secrets=false`, excluded
-  the provider key, and restored captures, chat messages, Memory candidates,
+  the provider key, and restored captures, chat messages, active Memory items,
   and todos into a fresh database.
 - Android crash buffer had 0 lines.
 - Log scan for app fatal errors, Flutter fatal errors, SQLite exceptions,
@@ -107,7 +107,7 @@ Environment:
 - Simulator: iPhone 17
 - Runtime: iOS 26.5
 - Simulator id: `AC67CA3B-F4D5-428C-ABBB-08F5AF83DF1D`
-- Evidence directory: `/tmp/widenote-deepseek-long-qa-ios-20260627-144106`
+- Evidence directory: `/tmp/widenote-deepseek-long-qa-ios-20260627-161132`
 - XcodeBuildMCP screenshot:
   `/var/folders/y0/xpyf8lh91_b3djfpxz94znc00000gn/T/screenshot_optimized_4fde8fbd-41de-49b8-84cd-02e03e04242c.jpg`
 
@@ -135,20 +135,20 @@ Infrastructure note:
 | ID | Severity | Finding | Resolution |
 | --- | --- | --- | --- |
 | DS-BUG-1 | High | DeepSeek-compatible model calls could fail with `missingText` during long capture runs because the provider returned no final text block. | Fixed by disabling thinking for DeepSeek-looking and MIMO Anthropic-compatible configs. |
+| DS-BUG-2 | High | DeepSeek text-only Memory responses carried no metadata, and the mobile capture fallback treated missing confidence/sensitivity as low-confidence/medium-sensitivity, routing every low-risk Memory to review instead of default auto-accept. | Fixed by defaulting missing metadata to medium confidence and low sensitivity, preserving review only for explicit low confidence, non-low sensitivity, review-only types, conflicts, or missing evidence. |
 
 ### Needs Product Decision
 
 | ID | Area | Observation | User impact | Suggested decision |
 | --- | --- | --- | --- | --- |
-| DS-UX-1 | Memory review | DeepSeek capture output creates `needs_review` Memory candidates. Home intentionally does not show sensitive review candidates, and the current Memory page only shows active/deleted Memory. There is no visible user path in this long journey to accept or reject the review queue. | The local loop generates the right intermediate objects, but a user cannot finish the Memory acceptance step from the visible UI when model output requires review. | Add a dedicated review queue, likely on Memory page or a guarded Review page, instead of exposing sensitive candidates on Home. |
-| DS-UX-2 | Long generated todo list | With 20 captures, the Todos page becomes long enough that automation needs careful scrolling to complete the first todo. | Repeated capture sessions can make triage feel heavy if every capture produces a todo. | Decide whether todo generation should be more selective, grouped, or batch-reviewable. |
+| DS-UX-1 | Long generated todo list | With 20 captures, the Todos page becomes long enough that automation needs careful scrolling to complete the first todo. | Repeated capture sessions can make triage feel heavy if every capture produces a todo. | Decide whether todo generation should be more selective, grouped, or batch-reviewable. |
 
 ## Memex Parity Read
 
 WideNote now matches the core Memex-like loop at the phase-one boundary:
 
 ```text
-raw input -> local event/runtime -> Memory candidate -> card/insight/todo
+raw input -> local event/runtime -> Memory policy/write -> card/insight/todo
 -> source-linked chat -> traces -> safe backup
 ```
 
@@ -177,8 +177,8 @@ dart test test/compatible_model_provider_test.dart
 dart analyze lib/src/compatible_model_provider.dart test/compatible_model_provider_test.dart
 
 cd apps/mobile
-flutter test test/model_client_test.dart
-flutter analyze integration_test/deepseek_long_user_journey_test.dart test/model_client_test.dart
+flutter test test/capture_orchestrator_test.dart test/model_client_test.dart
+flutter analyze lib/features/capture/application/capture_orchestrator.dart integration_test/deepseek_long_user_journey_test.dart test/capture_orchestrator_test.dart test/model_client_test.dart
 flutter test integration_test/deepseek_long_user_journey_test.dart -d emulator-5554 --flavor dev --dart-define=WIDENOTE_QA_DEEPSEEK_API_KEY=<redacted> --dart-define=WIDENOTE_QA_DEEPSEEK_ENDPOINT=https://api.deepseek.com/anthropic --dart-define=WIDENOTE_QA_DEEPSEEK_MODEL=deepseek-v4-flash
 flutter test integration_test/deepseek_long_user_journey_test.dart -d AC67CA3B-F4D5-428C-ABBB-08F5AF83DF1D --flavor dev --dart-define=WIDENOTE_QA_DEEPSEEK_API_KEY=<redacted> --dart-define=WIDENOTE_QA_DEEPSEEK_ENDPOINT=https://api.deepseek.com/anthropic --dart-define=WIDENOTE_QA_DEEPSEEK_MODEL=deepseek-v4-flash
 ```

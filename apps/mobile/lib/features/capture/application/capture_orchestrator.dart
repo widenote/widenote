@@ -879,7 +879,7 @@ memory.MemoryConfidence _confidence(Object? value) {
   if (value == 'high') {
     return memory.MemoryConfidence.high;
   }
-  return memory.MemoryConfidence.low;
+  return memory.MemoryConfidence.medium;
 }
 
 memory.MemorySensitivity _sensitivity(Object? value) {
@@ -892,7 +892,7 @@ memory.MemorySensitivity _sensitivity(Object? value) {
   if (value == 'low') {
     return memory.MemorySensitivity.low;
   }
-  return memory.MemorySensitivity.medium;
+  return memory.MemorySensitivity.low;
 }
 
 memory.MemoryType _memoryType(Object? value) {

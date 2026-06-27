@@ -62,8 +62,8 @@ void main() {
       expect(find.byKey(const Key('home-page')), findsOneWidget);
 
       for (final text in _memexInspiredCaptureCorpus) {
-        final reviewBefore = database.memoryCandidates
-            .readAll(status: 'needs_review')
+        final acceptedBefore = database.memoryItems
+            .readAll(status: 'active')
             .length;
         await _submitCapture(tester, text);
         await _waitFor(
@@ -77,9 +77,9 @@ void main() {
         await _waitFor(
           tester,
           () =>
-              database.memoryCandidates.readAll(status: 'needs_review').length >
-              reviewBefore,
-          description: 'model-backed Memory proposal',
+              database.memoryItems.readAll(status: 'active').length >
+              acceptedBefore,
+          description: 'model-backed Memory auto-accept',
           diagnostics: () => _databaseDiagnostics(database),
           timeout: const Duration(seconds: 120),
         );
@@ -90,10 +90,13 @@ void main() {
         hasLength(_memexInspiredCaptureCorpus.length),
       );
       expect(
-        database.memoryCandidates.readAll(status: 'needs_review'),
+        database.memoryItems.readAll(status: 'active'),
         hasLength(_memexInspiredCaptureCorpus.length),
       );
-      expect(database.memoryItems.readAll(status: 'active'), isEmpty);
+      expect(
+        database.memoryCandidates.readAll(status: 'needs_review'),
+        isEmpty,
+      );
       expect(
         database.todos.readAll(),
         hasLength(_memexInspiredCaptureCorpus.length),
@@ -170,10 +173,7 @@ void main() {
       await tester.tap(find.byKey(const Key('open-memory-button')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('memory-page')), findsOneWidget);
-      expect(
-        database.memoryCandidates.readAll(status: 'needs_review'),
-        isNotEmpty,
-      );
+      expect(database.memoryItems.readAll(status: 'active'), isNotEmpty);
 
       final backupJson = LocalBackupService(database).exportJson();
       expect(backupJson, contains('"backup_mode": "safe"'));
@@ -189,7 +189,7 @@ void main() {
       );
       expect(restored.chatMessages.readAll(), hasLength(_chatTurns.length * 2));
       expect(
-        restored.memoryCandidates.readAll(status: 'needs_review'),
+        restored.memoryItems.readAll(status: 'active'),
         hasLength(_memexInspiredCaptureCorpus.length),
       );
       expect(
@@ -220,7 +220,7 @@ const _memexInspiredCaptureCorpus = <String>[
   'Backup note: safe export should include records, traces, Memory, todos, cards, and provider metadata, but never credential values.',
   'Runtime note: pack.default should produce Memory, cards, insights, todos, and trace events after capture without overwriting raw text.',
   'Chat note: later I will ask what changed between the old import-first preference and the new quick-capture-first preference.',
-  'Review note: low-risk durable facts can be accepted into Memory, but sensitive or conflicting facts need visible review affordances.',
+  'Review note: low-risk durable facts should become Memory silently, while explicit sensitive or conflicting metadata can still use review.',
   'Release note: before publishing, rerun targeted tests, Android emulator QA, iOS simulator QA, and a secret scan.',
 ];
 
