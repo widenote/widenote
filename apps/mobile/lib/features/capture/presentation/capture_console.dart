@@ -8,61 +8,50 @@ class CaptureConsole extends StatelessWidget {
   const CaptureConsole({
     required this.controller,
     required this.onSubmit,
-    required this.onModeChanged,
     required this.onAddCamera,
     required this.onAddGallery,
-    required this.onStartVoice,
-    required this.onStopVoice,
-    required this.onCancelVoice,
     required this.onRemoveAttachment,
     required this.onAcceptAttachmentReview,
     required this.isProcessing,
     required this.inputState,
+    this.onClose,
     super.key,
   });
 
   final TextEditingController controller;
   final VoidCallback onSubmit;
-  final ValueChanged<CaptureMode> onModeChanged;
   final VoidCallback onAddCamera;
   final VoidCallback onAddGallery;
-  final VoidCallback onStartVoice;
-  final VoidCallback onStopVoice;
-  final VoidCallback onCancelVoice;
   final ValueChanged<String> onRemoveAttachment;
   final ValueChanged<String> onAcceptAttachmentReview;
   final bool isProcessing;
   final CaptureInputState inputState;
+  final VoidCallback? onClose;
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
     final inputBusy = inputState.isBusy || isProcessing;
     return DecoratedBox(
+      key: const Key('capture-sheet'),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: const Color(0xFFD3DAE6)),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x14000000),
-            blurRadius: 20,
-            offset: Offset(0, 8),
+            color: Color(0x24000000),
+            blurRadius: 32,
+            offset: Offset(0, 16),
           ),
         ],
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _ConsoleHeader(title: l10n.quickCaptureTitle),
-            const SizedBox(height: 14),
-            _ModeSelector(
-              selected: inputState.mode,
-              enabled: !inputBusy,
-              onChanged: onModeChanged,
-            ),
+            _ConsoleHeader(onClose: onClose),
             const SizedBox(height: 14),
             TextField(
               key: const Key('quick-capture-field'),
@@ -74,31 +63,21 @@ class CaptureConsole extends StatelessWidget {
               enableSuggestions: true,
               smartDashesType: SmartDashesType.disabled,
               smartQuotesType: SmartQuotesType.disabled,
-              minLines: 3,
-              maxLines: 5,
+              minLines: 7,
+              maxLines: 12,
               textInputAction: TextInputAction.newline,
-              decoration: InputDecoration(
-                hintText: _hintForMode(l10n, inputState.mode),
-              ),
+              decoration: InputDecoration(hintText: context.l10n.newRecordHint),
             ),
-            const SizedBox(height: 12),
-            _ModePanel(
-              mode: inputState.mode,
-              inputBusy: inputBusy,
-              isRecordingVoice: inputState.isRecordingVoice,
-              onAddCamera: onAddCamera,
-              onAddGallery: onAddGallery,
-              onStartVoice: onStartVoice,
-              onStopVoice: onStopVoice,
-              onCancelVoice: onCancelVoice,
-            ),
+            if (inputState.isRecordingVoice) ...[
+              const SizedBox(height: 12),
+              const _RecordingInProgressLine(),
+            ],
             const SizedBox(height: 12),
             _ConsoleActions(
               inputBusy: inputBusy,
               isProcessing: isProcessing,
               onAddCamera: onAddCamera,
               onAddGallery: onAddGallery,
-              onStartVoice: onStartVoice,
               onSubmit: onSubmit,
             ),
             if (inputState.errorMessage != null) ...[
@@ -121,12 +100,13 @@ class CaptureConsole extends StatelessWidget {
 }
 
 class _ConsoleHeader extends StatelessWidget {
-  const _ConsoleHeader({required this.title});
+  const _ConsoleHeader({this.onClose});
 
-  final String title;
+  final VoidCallback? onClose;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final colorScheme = Theme.of(context).colorScheme;
     return Row(
       children: [
@@ -137,340 +117,37 @@ class _ConsoleHeader extends StatelessWidget {
             color: colorScheme.primaryContainer,
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(Icons.bolt_outlined, color: colorScheme.primary),
+          child: Icon(Icons.edit_note_outlined, color: colorScheme.primary),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: Text(
-            title,
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.newRecordTitle,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                l10n.newRecordSubtitle,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
           ),
         ),
+        if (onClose != null)
+          IconButton(
+            key: const Key('capture-sheet-close-button'),
+            tooltip: l10n.cancelButton,
+            onPressed: onClose,
+            icon: const Icon(Icons.close),
+          ),
       ],
-    );
-  }
-}
-
-class _ModeSelector extends StatelessWidget {
-  const _ModeSelector({
-    required this.selected,
-    required this.enabled,
-    required this.onChanged,
-  });
-
-  final CaptureMode selected;
-  final bool enabled;
-  final ValueChanged<CaptureMode> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return SegmentedButton<CaptureMode>(
-      key: const Key('capture-mode-selector'),
-      showSelectedIcon: false,
-      segments: [
-        ButtonSegment<CaptureMode>(
-          value: CaptureMode.text,
-          icon: const Icon(Icons.notes_outlined),
-          label: Text(l10n.captureModeText),
-        ),
-        ButtonSegment<CaptureMode>(
-          value: CaptureMode.voice,
-          icon: const Icon(Icons.graphic_eq_outlined),
-          label: Text(l10n.captureModeVoice),
-        ),
-        ButtonSegment<CaptureMode>(
-          value: CaptureMode.media,
-          icon: const Icon(Icons.file_upload_outlined),
-          label: Text(l10n.captureModeMedia),
-        ),
-      ],
-      selected: {selected},
-      onSelectionChanged: enabled
-          ? (selection) => onChanged(selection.single)
-          : null,
-    );
-  }
-}
-
-class _ModePanel extends StatelessWidget {
-  const _ModePanel({
-    required this.mode,
-    required this.inputBusy,
-    required this.isRecordingVoice,
-    required this.onAddCamera,
-    required this.onAddGallery,
-    required this.onStartVoice,
-    required this.onStopVoice,
-    required this.onCancelVoice,
-  });
-
-  final CaptureMode mode;
-  final bool inputBusy;
-  final bool isRecordingVoice;
-  final VoidCallback onAddCamera;
-  final VoidCallback onAddGallery;
-  final VoidCallback onStartVoice;
-  final VoidCallback onStopVoice;
-  final VoidCallback onCancelVoice;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 180),
-      child: switch (mode) {
-        CaptureMode.text => _ModeHint(
-          key: const Key('capture-mode-text-panel'),
-          icon: Icons.edit_note_outlined,
-          title: l10n.captureModeTextTitle,
-          body: l10n.captureModeTextBody,
-        ),
-        CaptureMode.voice => _VoiceDraftPanel(
-          inputBusy: inputBusy,
-          isRecording: isRecordingVoice,
-          onStartVoice: onStartVoice,
-          onStopVoice: onStopVoice,
-          onCancelVoice: onCancelVoice,
-        ),
-        CaptureMode.media => _MediaPanel(
-          inputBusy: inputBusy,
-          onAddCamera: onAddCamera,
-          onAddGallery: onAddGallery,
-        ),
-      },
-    );
-  }
-}
-
-class _ModeHint extends StatelessWidget {
-  const _ModeHint({
-    required this.icon,
-    required this.title,
-    required this.body,
-    super.key,
-  });
-
-  final IconData icon;
-  final String title;
-  final String body;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFD),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE1E7F0)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: colorScheme.primary),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    body,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _VoiceDraftPanel extends StatelessWidget {
-  const _VoiceDraftPanel({
-    required this.inputBusy,
-    required this.isRecording,
-    required this.onStartVoice,
-    required this.onStopVoice,
-    required this.onCancelVoice,
-  });
-
-  final bool inputBusy;
-  final bool isRecording;
-  final VoidCallback onStartVoice;
-  final VoidCallback onStopVoice;
-  final VoidCallback onCancelVoice;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    if (isRecording) {
-      return _ModeHintWithAction(
-        key: const Key('capture-mode-voice-panel'),
-        icon: Icons.graphic_eq_outlined,
-        title: l10n.captureVoiceRecordingTitle,
-        body: l10n.captureVoiceRecordingBody,
-        buttonKey: const Key('capture-voice-stop-button'),
-        buttonIcon: Icons.stop_circle_outlined,
-        buttonLabel: l10n.captureVoiceStopButton,
-        onPressed: inputBusy ? null : onStopVoice,
-        secondaryButtonKey: const Key('capture-voice-cancel-button'),
-        secondaryButtonIcon: Icons.close,
-        secondaryButtonLabel: l10n.captureVoiceCancelButton,
-        onSecondaryPressed: inputBusy ? null : onCancelVoice,
-      );
-    }
-    return _ModeHintWithAction(
-      key: const Key('capture-mode-voice-panel'),
-      icon: Icons.graphic_eq_outlined,
-      title: l10n.captureVoiceTitle,
-      body: l10n.captureVoiceBody,
-      buttonKey: const Key('capture-voice-start-button'),
-      buttonIcon: Icons.mic_none_outlined,
-      buttonLabel: l10n.captureVoiceStartButton,
-      onPressed: inputBusy ? null : onStartVoice,
-    );
-  }
-}
-
-class _MediaPanel extends StatelessWidget {
-  const _MediaPanel({
-    required this.inputBusy,
-    required this.onAddCamera,
-    required this.onAddGallery,
-  });
-
-  final bool inputBusy;
-  final VoidCallback onAddCamera;
-  final VoidCallback onAddGallery;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return _ModeHintWithAction(
-      key: const Key('capture-mode-media-panel'),
-      icon: Icons.perm_media_outlined,
-      title: l10n.captureMediaTitle,
-      body: l10n.captureMediaBody,
-      buttonKey: const Key('capture-media-camera-button'),
-      buttonIcon: Icons.photo_camera_outlined,
-      buttonLabel: l10n.captureMediaCameraButton,
-      onPressed: inputBusy ? null : onAddCamera,
-      secondaryButtonKey: const Key('capture-media-gallery-button'),
-      secondaryButtonIcon: Icons.photo_library_outlined,
-      secondaryButtonLabel: l10n.captureMediaGalleryButton,
-      onSecondaryPressed: inputBusy ? null : onAddGallery,
-    );
-  }
-}
-
-class _ModeHintWithAction extends StatelessWidget {
-  const _ModeHintWithAction({
-    required this.icon,
-    required this.title,
-    required this.body,
-    required this.buttonKey,
-    required this.buttonIcon,
-    required this.buttonLabel,
-    required this.onPressed,
-    this.secondaryButtonKey,
-    this.secondaryButtonIcon,
-    this.secondaryButtonLabel,
-    this.onSecondaryPressed,
-    super.key,
-  });
-
-  final IconData icon;
-  final String title;
-  final String body;
-  final Key buttonKey;
-  final IconData buttonIcon;
-  final String buttonLabel;
-  final VoidCallback? onPressed;
-  final Key? secondaryButtonKey;
-  final IconData? secondaryButtonIcon;
-  final String? secondaryButtonLabel;
-  final VoidCallback? onSecondaryPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFD),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE1E7F0)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(icon, color: Theme.of(context).colorScheme.primary),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        body,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                FilledButton.icon(
-                  key: buttonKey,
-                  onPressed: onPressed,
-                  icon: Icon(buttonIcon),
-                  label: Text(buttonLabel),
-                ),
-                if (secondaryButtonKey != null &&
-                    secondaryButtonIcon != null &&
-                    secondaryButtonLabel != null)
-                  OutlinedButton.icon(
-                    key: secondaryButtonKey,
-                    onPressed: onSecondaryPressed,
-                    icon: Icon(secondaryButtonIcon),
-                    label: Text(secondaryButtonLabel!),
-                  ),
-              ],
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -481,7 +158,6 @@ class _ConsoleActions extends StatelessWidget {
     required this.isProcessing,
     required this.onAddCamera,
     required this.onAddGallery,
-    required this.onStartVoice,
     required this.onSubmit,
   });
 
@@ -489,7 +165,6 @@ class _ConsoleActions extends StatelessWidget {
   final bool isProcessing;
   final VoidCallback onAddCamera;
   final VoidCallback onAddGallery;
-  final VoidCallback onStartVoice;
   final VoidCallback onSubmit;
 
   @override
@@ -512,21 +187,49 @@ class _ConsoleActions extends StatelessWidget {
           icon: const Icon(Icons.photo_library_outlined),
           label: Text(l10n.captureActionGallery),
         ),
-        OutlinedButton.icon(
-          key: const Key('add-voice-recording-button'),
-          onPressed: inputBusy ? null : onStartVoice,
-          icon: const Icon(Icons.graphic_eq_outlined),
-          label: Text(l10n.captureActionVoice),
-        ),
         FilledButton.icon(
           key: const Key('record-capture-button'),
           onPressed: isProcessing ? null : onSubmit,
-          icon: const Icon(Icons.fiber_manual_record),
+          icon: const Icon(Icons.check),
           label: Text(
-            isProcessing ? l10n.recordButtonProcessing : l10n.recordButton,
+            isProcessing ? l10n.recordButtonProcessing : l10n.saveRecordButton,
           ),
         ),
       ],
+    );
+  }
+}
+
+class _RecordingInProgressLine extends StatelessWidget {
+  const _RecordingInProgressLine();
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7F4),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFF0C4B9)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Row(
+          children: [
+            Icon(Icons.mic_outlined, color: colorScheme.error),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                context.l10n.backgroundVoiceComposerBusy,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -671,14 +374,6 @@ IconData _attachmentIcon(CaptureAssetKind kind) {
     CaptureAssetKind.photo => Icons.image_outlined,
     CaptureAssetKind.voice => Icons.graphic_eq_outlined,
     CaptureAssetKind.share => Icons.file_upload_outlined,
-  };
-}
-
-String _hintForMode(AppLocalizations l10n, CaptureMode mode) {
-  return switch (mode) {
-    CaptureMode.text => l10n.quickCaptureHint,
-    CaptureMode.voice => l10n.captureVoiceHint,
-    CaptureMode.media => l10n.captureMediaHint,
   };
 }
 

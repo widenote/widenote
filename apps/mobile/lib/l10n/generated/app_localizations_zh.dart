@@ -24,7 +24,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get tabPlugins => '插件';
 
   @override
-  String get homeSubtitle => '快速记录 -> 时间线 -> 记忆 -> 洞察';
+  String get homeSubtitle => '新记录 -> 时间线 -> 记忆 -> 洞察';
 
   @override
   String get homeOpenTimelineTooltip => '打开时间线';
@@ -40,6 +40,54 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get homeOpenSettingsTooltip => '打开设置';
+
+  @override
+  String get homeNewRecordTitle => '新记录';
+
+  @override
+  String get homeNewRecordBody => '沉浸式写一段内容，然后添加图片或本地来源文件。';
+
+  @override
+  String get homeBackgroundVoiceTitle => '后台录音';
+
+  @override
+  String get homeBackgroundVoiceBody => '先在后台录音，结束后再补充上下文并保存。';
+
+  @override
+  String get homeBackgroundVoiceActiveBody => '录音已经在后台进行中。';
+
+  @override
+  String get homeSummaryRecords => '记录';
+
+  @override
+  String get homeSummaryMemory => '记忆';
+
+  @override
+  String get homeSummaryInsights => '洞察';
+
+  @override
+  String get newRecordTitle => '新记录';
+
+  @override
+  String get newRecordSubtitle => '原始输入留在本地，AI 不会覆盖它。';
+
+  @override
+  String get newRecordHint => '写下一个想法、情绪、项目上下文、会议片段或生活事件...';
+
+  @override
+  String get saveRecordButton => '保存记录';
+
+  @override
+  String get backgroundVoiceActiveTitle => '后台录音中';
+
+  @override
+  String get backgroundVoiceActiveBody => '音频会作为本地原始素材保留。停止后可以复核草稿并补充上下文。';
+
+  @override
+  String get backgroundVoiceTimerPlaceholder => '录音中';
+
+  @override
+  String get backgroundVoiceComposerBusy => '后台录音仍在进行中。请先停止录音，再保存这条记录。';
 
   @override
   String get recapTitle => '每日回顾';

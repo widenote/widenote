@@ -24,7 +24,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tabPlugins => 'Packs';
 
   @override
-  String get homeSubtitle => 'quick capture -> timeline -> memory -> insight';
+  String get homeSubtitle => 'new records -> timeline -> memory -> insight';
 
   @override
   String get homeOpenTimelineTooltip => 'Open Timeline';
@@ -40,6 +40,60 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeOpenSettingsTooltip => 'Open Settings';
+
+  @override
+  String get homeNewRecordTitle => 'New record';
+
+  @override
+  String get homeNewRecordBody =>
+      'Write a focused note, then attach photos or local source files.';
+
+  @override
+  String get homeBackgroundVoiceTitle => 'Background voice';
+
+  @override
+  String get homeBackgroundVoiceBody =>
+      'Record audio in the background, then add context before saving.';
+
+  @override
+  String get homeBackgroundVoiceActiveBody => 'Recording is already running.';
+
+  @override
+  String get homeSummaryRecords => 'Records';
+
+  @override
+  String get homeSummaryMemory => 'Memory';
+
+  @override
+  String get homeSummaryInsights => 'Insights';
+
+  @override
+  String get newRecordTitle => 'New record';
+
+  @override
+  String get newRecordSubtitle =>
+      'Original input stays local and is never overwritten by AI.';
+
+  @override
+  String get newRecordHint =>
+      'Write a thought, feeling, project context, meeting fragment, or life event...';
+
+  @override
+  String get saveRecordButton => 'Save record';
+
+  @override
+  String get backgroundVoiceActiveTitle => 'Recording in background';
+
+  @override
+  String get backgroundVoiceActiveBody =>
+      'Audio is being preserved as local source material. Stop to review the draft and add context.';
+
+  @override
+  String get backgroundVoiceTimerPlaceholder => 'REC';
+
+  @override
+  String get backgroundVoiceComposerBusy =>
+      'A background recording is still running. Stop it before saving this record.';
 
   @override
   String get recapTitle => 'Daily Recap';

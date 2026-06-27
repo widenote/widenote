@@ -1,0 +1,1429 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WideNote Capture Input Interaction Options</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #172033;
+        --muted: #5f6b7a;
+        --quiet: #f5f7fa;
+        --surface: #ffffff;
+        --line: #d9e0ea;
+        --line-strong: #b8c3d2;
+        --green: #138a63;
+        --green-soft: #e5f4ee;
+        --blue: #275fbd;
+        --blue-soft: #e8eefb;
+        --coral: #bd4b37;
+        --coral-soft: #fae8e3;
+        --amber: #a76c19;
+        --amber-soft: #f7eddc;
+        --violet: #6854c8;
+        --violet-soft: #edeafd;
+        --shadow: 0 18px 44px rgba(23, 32, 51, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: #eef2f6;
+        color: var(--ink);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        letter-spacing: 0;
+      }
+
+      button,
+      textarea,
+      input {
+        font: inherit;
+      }
+
+      a {
+        color: var(--blue);
+      }
+
+      .page {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 28px 18px 48px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 18px;
+      }
+
+      .title-block {
+        max-width: 760px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 28px;
+        line-height: 1.18;
+        font-weight: 760;
+      }
+
+      .subtitle {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.55;
+      }
+
+      .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 36px;
+        padding: 8px 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--muted);
+        font-size: 13px;
+        white-space: nowrap;
+      }
+
+      .section {
+        margin-top: 18px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+      }
+
+      .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 16px 18px 0;
+      }
+
+      .section h2 {
+        font-size: 18px;
+        line-height: 1.2;
+      }
+
+      .section-body {
+        padding: 16px 18px 18px;
+      }
+
+      .finding-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .finding {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 12px;
+        background: #fbfcfe;
+      }
+
+      .finding strong {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 14px;
+      }
+
+      .finding p {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .option-tabs {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        padding: 0 18px 16px;
+      }
+
+      .tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 38px;
+        padding: 8px 12px;
+        border: 1px solid var(--line-strong);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--ink);
+        cursor: pointer;
+      }
+
+      .tab[aria-selected="true"] {
+        border-color: var(--green);
+        background: var(--green-soft);
+        color: #0d6248;
+        font-weight: 700;
+      }
+
+      .option-layout {
+        display: grid;
+        grid-template-columns: 390px minmax(0, 1fr);
+        gap: 18px;
+      }
+
+      .phone-wrap {
+        display: flex;
+        justify-content: center;
+      }
+
+      .phone {
+        position: relative;
+        width: 354px;
+        min-height: 720px;
+        overflow: hidden;
+        border: 1px solid #222b38;
+        border-radius: 34px;
+        background: #f7f9fc;
+        box-shadow: var(--shadow);
+      }
+
+      .phone::before {
+        content: "";
+        position: absolute;
+        top: 11px;
+        left: 50%;
+        width: 84px;
+        height: 5px;
+        transform: translateX(-50%);
+        border-radius: 999px;
+        background: #222b38;
+        opacity: 0.26;
+        z-index: 5;
+      }
+
+      .screen {
+        min-height: 720px;
+        padding: 30px 14px 18px;
+      }
+
+      .app-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        min-width: 0;
+      }
+
+      .mark {
+        display: grid;
+        width: 32px;
+        height: 32px;
+        place-items: center;
+        border-radius: 8px;
+        background: #162033;
+        color: #fff;
+      }
+
+      .brand-title {
+        font-size: 18px;
+        font-weight: 780;
+        line-height: 1;
+      }
+
+      .brand-sub {
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.2;
+      }
+
+      .icon-button {
+        display: inline-grid;
+        width: 36px;
+        height: 36px;
+        place-items: center;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--ink);
+        cursor: pointer;
+      }
+
+      .summary-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .metric {
+        min-height: 58px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        padding: 8px;
+      }
+
+      .metric b {
+        display: block;
+        font-size: 17px;
+      }
+
+      .metric span {
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .composer {
+        border: 1px solid var(--line-strong);
+        border-radius: 8px;
+        background: var(--surface);
+        padding: 12px;
+      }
+
+      .composer.focus {
+        border-color: var(--green);
+        box-shadow: 0 0 0 3px rgba(19, 138, 99, 0.12);
+      }
+
+      .composer-label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+
+      .composer-label strong {
+        font-size: 13px;
+      }
+
+      .composer textarea {
+        width: 100%;
+        min-height: 108px;
+        resize: vertical;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfcfe;
+        color: var(--ink);
+        padding: 10px;
+        font-size: 14px;
+        line-height: 1.45;
+        outline: none;
+      }
+
+      .composer textarea:focus {
+        border-color: var(--green);
+      }
+
+      .tool-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .tool-group {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .save-button,
+      .secondary-button,
+      .ghost-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        min-height: 38px;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+
+      .save-button {
+        border: 1px solid var(--green);
+        background: var(--green);
+        color: #fff;
+        padding: 8px 12px;
+        font-weight: 720;
+      }
+
+      .secondary-button {
+        border: 1px solid var(--line-strong);
+        background: var(--surface);
+        color: var(--ink);
+        padding: 8px 10px;
+      }
+
+      .ghost-button {
+        width: 36px;
+        border: 1px solid var(--line);
+        background: #fbfcfe;
+        color: var(--ink);
+      }
+
+      .chip-row {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+      }
+
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        min-height: 27px;
+        max-width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfcfe;
+        padding: 5px 8px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .feed {
+        margin-top: 12px;
+      }
+
+      .feed-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin: 14px 0 8px;
+      }
+
+      .feed-title h3 {
+        font-size: 14px;
+      }
+
+      .feed-title span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .record-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .record {
+        display: grid;
+        grid-template-columns: 28px minmax(0, 1fr);
+        gap: 9px;
+        min-height: 66px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        padding: 10px;
+      }
+
+      .record-icon {
+        display: grid;
+        width: 28px;
+        height: 28px;
+        place-items: center;
+        border-radius: 8px;
+        background: var(--blue-soft);
+        color: var(--blue);
+      }
+
+      .record h4 {
+        margin: 0;
+        overflow: hidden;
+        font-size: 13px;
+        font-weight: 700;
+        line-height: 1.3;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .record p {
+        margin-top: 3px;
+        display: -webkit-box;
+        overflow: hidden;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.35;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+      }
+
+      .bottom-dock {
+        position: absolute;
+        right: 14px;
+        bottom: 16px;
+        left: 14px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 42px;
+        gap: 8px;
+        border: 1px solid var(--line-strong);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.96);
+        padding: 8px;
+        box-shadow: 0 12px 28px rgba(23, 32, 51, 0.16);
+      }
+
+      .dock-field {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .dock-field span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .sheet {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        display: none;
+        border-top: 1px solid var(--line-strong);
+        border-radius: 18px 18px 0 0;
+        background: var(--surface);
+        padding: 12px 14px 16px;
+        box-shadow: 0 -20px 36px rgba(23, 32, 51, 0.18);
+      }
+
+      .phone.sheet-open .sheet {
+        display: block;
+      }
+
+      .phone.sheet-open .bottom-dock {
+        display: none;
+      }
+
+      .sheet-handle {
+        width: 48px;
+        height: 4px;
+        margin: 0 auto 12px;
+        border-radius: 999px;
+        background: #c5ceda;
+      }
+
+      .sheet-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .sheet-head strong {
+        font-size: 14px;
+      }
+
+      .sheet textarea {
+        width: 100%;
+        min-height: 168px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        resize: vertical;
+        padding: 10px;
+        outline: none;
+      }
+
+      .fab {
+        position: absolute;
+        right: 18px;
+        bottom: 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 56px;
+        height: 56px;
+        border: 1px solid var(--green);
+        border-radius: 18px;
+        background: var(--green);
+        color: #fff;
+        box-shadow: 0 12px 28px rgba(19, 138, 99, 0.32);
+        cursor: pointer;
+      }
+
+      .modal-backdrop {
+        position: absolute;
+        inset: 0;
+        display: none;
+        background: rgba(18, 25, 37, 0.32);
+        padding: 74px 14px 18px;
+      }
+
+      .phone.modal-open .modal-backdrop {
+        display: block;
+      }
+
+      .capture-modal {
+        min-height: 556px;
+        border: 1px solid var(--line-strong);
+        border-radius: 8px;
+        background: var(--surface);
+        padding: 14px;
+        box-shadow: var(--shadow);
+      }
+
+      .command {
+        border: 1px solid var(--line-strong);
+        border-radius: 8px;
+        background: var(--surface);
+        padding: 10px;
+      }
+
+      .command-field {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfcfe;
+        padding: 10px;
+      }
+
+      .command-field input {
+        min-width: 0;
+        width: 100%;
+        border: 0;
+        background: transparent;
+        outline: none;
+      }
+
+      .intent-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .intent {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 48px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfcfe;
+        padding: 9px;
+        color: var(--ink);
+      }
+
+      .voice-band {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--coral-soft);
+        padding: 10px;
+      }
+
+      .primary-actions {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .home-action {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-height: 68px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        padding: 12px;
+        color: var(--ink);
+        text-align: left;
+        cursor: pointer;
+      }
+
+      .home-action.primary {
+        border-color: rgba(19, 138, 99, 0.45);
+        background: linear-gradient(180deg, #ffffff 0%, #f1faf6 100%);
+      }
+
+      .home-action strong {
+        display: block;
+        font-size: 15px;
+      }
+
+      .home-action span {
+        display: block;
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.35;
+      }
+
+      .recorder-card {
+        border: 1px solid rgba(189, 75, 55, 0.36);
+        border-radius: 8px;
+        background: #fff8f5;
+        padding: 12px;
+      }
+
+      .recorder-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .recorder-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 760;
+      }
+
+      .timer {
+        color: var(--coral);
+        font-variant-numeric: tabular-nums;
+        font-weight: 780;
+      }
+
+      .recorder-card p {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .recorder-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+      }
+
+      .wave {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        height: 22px;
+      }
+
+      .wave i {
+        display: block;
+        width: 4px;
+        border-radius: 999px;
+        background: var(--coral);
+      }
+
+      .wave i:nth-child(1) {
+        height: 9px;
+      }
+
+      .wave i:nth-child(2) {
+        height: 18px;
+      }
+
+      .wave i:nth-child(3) {
+        height: 12px;
+      }
+
+      .wave i:nth-child(4) {
+        height: 21px;
+      }
+
+      .wave i:nth-child(5) {
+        height: 14px;
+      }
+
+      .analysis-panel {
+        min-width: 0;
+      }
+
+      .analysis-card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfcfe;
+        padding: 14px;
+      }
+
+      .analysis-card + .analysis-card {
+        margin-top: 12px;
+      }
+
+      .analysis-card h3 {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 15px;
+      }
+
+      .analysis-card p,
+      .analysis-card li {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.52;
+      }
+
+      .analysis-card p {
+        margin-top: 8px;
+      }
+
+      .analysis-card ul {
+        margin: 10px 0 0;
+        padding-left: 18px;
+      }
+
+      .verdict {
+        display: inline-flex;
+        align-items: center;
+        min-height: 28px;
+        margin-top: 10px;
+        border-radius: 8px;
+        padding: 5px 8px;
+        font-size: 12px;
+        font-weight: 720;
+      }
+
+      .verdict.good {
+        background: var(--green-soft);
+        color: #0d6248;
+      }
+
+      .verdict.warn {
+        background: var(--amber-soft);
+        color: #744a11;
+      }
+
+      .verdict.risky {
+        background: var(--coral-soft);
+        color: #883526;
+      }
+
+      .sources {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .source {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfcfe;
+        padding: 10px;
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .source strong {
+        display: block;
+        margin-bottom: 4px;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      @media (max-width: 980px) {
+        .topbar {
+          display: block;
+        }
+
+        .status-pill {
+          margin-top: 12px;
+          white-space: normal;
+        }
+
+        .finding-grid,
+        .option-layout,
+        .sources {
+          grid-template-columns: 1fr;
+        }
+
+        .option-layout {
+          gap: 14px;
+        }
+      }
+
+      @media (max-width: 430px) {
+        .page {
+          padding-inline: 10px;
+        }
+
+        .phone {
+          width: min(354px, 100%);
+        }
+
+        .summary-row {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <div class="topbar">
+        <div class="title-block">
+          <h1>WideNote 首页输入交互方案</h1>
+          <p class="subtitle">
+            目标先收窄到一个问题：把“快速记录”从调试控制台改成明确、低摩擦、不会被误读成录音机的输入入口。
+          </p>
+        </div>
+        <div class="status-pill">
+          <i data-lucide="file-input" aria-hidden="true"></i>
+          设计决策稿 · 2026-06-27
+        </div>
+      </div>
+
+      <section class="section" aria-labelledby="diagnosis-title">
+        <div class="section-header">
+          <h2 id="diagnosis-title">当前实现诊断</h2>
+        </div>
+        <div class="section-body">
+          <div class="finding-grid">
+            <article class="finding">
+              <strong>首页像运行控制台</strong>
+              <p>
+                第一屏后面连续展示处理阶段、卡片、洞察、记录、Memory、Trace。它们都重要，但不应该和输入入口抢第一眼注意力。
+              </p>
+            </article>
+            <article class="finding">
+              <strong>快速记录内重复暴露能力</strong>
+              <p>
+                文字/语音/媒体分段、模式说明面板、底部相机/相册/语音/记录按钮同时出现，用户需要先学习结构再输入。
+              </p>
+            </article>
+            <article class="finding">
+              <strong>提交动作被录音语义污染</strong>
+              <p>
+                现在主按钮是实心录制圆点加“记录”。在语音场景里，这会自然读成开始录音，而不是保存这条原始记录。
+              </p>
+            </article>
+            <article class="finding">
+              <strong>Memory / 待办不应抢首页</strong>
+              <p>
+                Memory 候选可以是后台策略对象，但默认捕获应静默进入。待办已经有专门 tab，首页只需要提示入口或状态，不放任务列表。
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="benchmark-title">
+        <div class="section-header">
+          <h2 id="benchmark-title">竞品输入模式</h2>
+        </div>
+        <div class="section-body">
+          <div class="finding-grid">
+            <article class="finding">
+              <strong>Memex：单输入流</strong>
+              <p>
+                主心智是“捕获任何碎片”：文字、照片、长按录音被收进同一个输入流程，用户不先面对一排同权按钮。
+              </p>
+            </article>
+            <article class="finding">
+              <strong>Omi / Limitless：录音是主任务</strong>
+              <p>
+                它们的产品承诺是录会议和对话，录音入口大而明确是合理的。WideNote 若不是 voice-first，就不该让录音图标统治提交动作。
+              </p>
+            </article>
+            <article class="finding">
+              <strong>Supermemory / Granola：入口分层</strong>
+              <p>
+                Supermemory 用 Add Memory 对话框区分 Note、Link、File、Connect；Granola 把一键捕获和手写 note editor 分开，减少首页按钮密度。
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="scenario-title">
+        <div class="section-header">
+          <h2 id="scenario-title">场景重新梳理</h2>
+        </div>
+        <div class="section-body">
+          <div class="finding-grid">
+            <article class="finding">
+              <strong>场景 1：沉浸式输入</strong>
+              <p>
+                用户主动写一段东西，可能很长，也可能附带图片、截图、链接或文件。入口应是“新记录”，进入大弹窗后专心输入和保存。
+              </p>
+            </article>
+            <article class="finding">
+              <strong>场景 2：后台录音</strong>
+              <p>
+                用户开始录音后继续做别的事。首页只显示持续录音状态、计时、暂停/停止；停止后音频成为一条可保存或补充说明的原始记录。
+              </p>
+            </article>
+            <article class="finding">
+              <strong>首页职责</strong>
+              <p>
+                首页负责“开始记录”和“看最近发生了什么”。Memory 管理、待办处理、Trace 调试和候选复核应下沉到对应 tab 或二级入口。
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="prototype-title">
+        <div class="section-header">
+          <h2 id="prototype-title">交互原型</h2>
+        </div>
+        <div class="option-tabs" role="tablist" aria-label="Capture input options">
+          <button class="tab" type="button" role="tab" aria-selected="true" data-option="sheet">
+            <i data-lucide="square-plus" aria-hidden="true"></i>
+            C 新记录弹窗（推荐）
+          </button>
+          <button class="tab" type="button" role="tab" aria-selected="false" data-option="voice">
+            <i data-lucide="radio" aria-hidden="true"></i>
+            后台录音
+          </button>
+          <button class="tab" type="button" role="tab" aria-selected="false" data-option="dock">
+            <i data-lucide="panel-bottom" aria-hidden="true"></i>
+            B 底部轻入口
+          </button>
+          <button class="tab" type="button" role="tab" aria-selected="false" data-option="inline">
+            <i data-lucide="panel-top" aria-hidden="true"></i>
+            A 内联对照
+          </button>
+        </div>
+
+        <div class="section-body">
+          <div class="option-layout">
+            <div class="phone-wrap">
+              <div class="phone" id="phone">
+                <div class="screen" id="screen"></div>
+              </div>
+            </div>
+            <aside class="analysis-panel" id="analysis"></aside>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="source-title">
+        <div class="section-header">
+          <h2 id="source-title">参考来源</h2>
+        </div>
+        <div class="section-body">
+          <div class="sources">
+            <div class="source">
+              <strong>Memex</strong>
+              官方站和商店页都强调“text, photos, voice”和“single input flow”。
+              <a href="https://www.memexlab.ai/">memexlab.ai</a>
+            </div>
+            <div class="source">
+              <strong>Omi</strong>
+              官方说明聚焦记录会议/对话，并生成 transcripts、summaries、action items、memories。
+              <a href="https://www.omi.me/">omi.me</a>
+            </div>
+            <div class="source">
+              <strong>Limitless</strong>
+              应用商店定位是 voice recorder、meeting note taker、transcription tool。
+              <a href="https://apps.apple.com/us/app/limitless-ai-voice-recorder/id6737710033">App Store</a>
+            </div>
+            <div class="source">
+              <strong>Supermemory / Granola</strong>
+              Supermemory 的 Add Memory 区分 Note/Link/File/Connect；Granola iOS 强调一键捕获和 note editor。
+              <a href="https://supermemory.ai/blog/unified-memory-that-works-where-you-work-your-second-brain-with-supermemory/">Supermemory</a>
+              ·
+              <a href="https://docs.granola.ai/help-center/taking-notes/taking-notes-in-granola">Granola</a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script>
+      const optionData = {
+        inline: {
+          verdictClass: "warn",
+          verdict: "仅保留为低成本对照",
+          title: "A. 首页内联输入框",
+          body:
+            "保留第一屏输入框，但把模式切换和说明面板降级。它比当前实现清楚很多，不过仍然会占据首页注意力。",
+          strengths: [
+            "最低实现成本，最贴合当前 HomePage/CaptureConsole 结构。",
+            "不会把录音误认为主提交动作。",
+            "首页仍然有立即捕获的心智，符合 WideNote 产品 brief。",
+          ],
+          risks: [
+            "如果下方内容继续全量展示，首页还是会长。",
+            "语音、图片、导入的说明需要移动到权限/附件状态里。",
+          ],
+        },
+        dock: {
+          verdictClass: "warn",
+          verdict: "可作为 C 的快速入口变体",
+          title: "B. 底部轻入口 + 展开 Sheet",
+          body:
+            "首页主体让给今日摘要和最近记录，输入入口固定在底部。点击后展开输入 Sheet，适合保留随手写一条的速度。",
+          strengths: [
+            "第一屏明显更干净，符合移动端常见 composer 模式。",
+            "输入时空间足够，未输入时只占一条。",
+            "未来可自然承接分享、剪贴板、附件预览。",
+          ],
+          risks: [
+            "比 A 多一个展开状态和键盘避让状态。",
+            "需要确保空状态时用户不会错过底部入口。",
+          ],
+        },
+        sheet: {
+          verdictClass: "good",
+          verdict: "推荐主方向",
+          title: "C. 新记录弹窗",
+          body:
+            "首页不直接摆输入框，只保留明确的新记录和后台录音入口。点击新记录后进入大弹窗，用户专心写完、加图片、保存原始记录。",
+          strengths: [
+            "首页最安静，记录编辑体验最好。",
+            "图片、链接、文件等附件能力可以做成清晰工具栏。",
+            "Memory 候选和待办不在首页常驻，信息架构更接近产品决策。",
+          ],
+          risks: [
+            "捕获摩擦比 A/B 略高，和“我脑子刚出现一个东西”有一点距离。",
+            "需要动画、键盘、草稿恢复的完整状态设计。",
+          ],
+        },
+        voice: {
+          verdictClass: "good",
+          verdict: "作为第二主场景独立设计",
+          title: "后台录音状态",
+          body:
+            "录音不是保存按钮的一种状态，而是一条独立后台任务。开始后首页显示计时、暂停/停止和补充说明入口，停止后变成可保存的原始音频记录。",
+          strengths: [
+            "录音语义和文字保存语义完全分开。",
+            "支持用户边录边看最近记录或切换 tab。",
+            "停止后可以补文字说明、附图片，再进入同一条记录保存链路。",
+          ],
+          risks: [
+            "涉及后台音频权限、生命周期、锁屏/中断等平台细节。",
+            "需要明确录音草稿未保存时的恢复和丢弃规则。",
+          ],
+        },
+      };
+
+      const records = [
+        {
+          icon: "notebook-pen",
+          title: "和设计评审里的输入框问题",
+          body: "需要把原始输入和录音附件分开，保存按钮不能再像录音按钮。",
+        },
+        {
+          icon: "image",
+          title: "白板照片和一段补充说明",
+          body: "图片作为原始附件进入记录，后续整理不覆盖源文件。",
+        },
+        {
+          icon: "mic",
+          title: "后台录音草稿",
+          body: "会议录音结束后，先保留本地音频和时间信息，再让用户补一句上下文。",
+        },
+      ];
+
+      function icon(name, size = 18) {
+        return `<i data-lucide="${name}" style="width:${size}px;height:${size}px" aria-hidden="true"></i>`;
+      }
+
+      function appHeader() {
+        return `
+          <header class="app-header">
+            <div class="brand">
+              <div class="mark">${icon("braces", 17)}</div>
+              <div>
+                <div class="brand-title">广记</div>
+                <div class="brand-sub">本地记录 · Memory · 洞察</div>
+              </div>
+            </div>
+            <button class="icon-button" type="button" aria-label="设置">${icon("settings")}</button>
+          </header>
+        `;
+      }
+
+      function summaryRow() {
+        return `
+          <div class="summary-row">
+            <div class="metric"><b>12</b><span>今日记录</span></div>
+            <div class="metric"><b>5</b><span>媒体附件</span></div>
+            <div class="metric"><b>3</b><span>新洞察</span></div>
+          </div>
+        `;
+      }
+
+      function homeActions() {
+        return `
+          <div class="primary-actions" aria-label="主要记录入口">
+            <button class="home-action primary" type="button" data-open-modal>
+              <span>
+                <strong>新记录</strong>
+                <span>沉浸式写一段内容，或添加图片、链接、文件。</span>
+              </span>
+              ${icon("arrow-up-right", 18)}
+            </button>
+            <button class="home-action" type="button">
+              <span>
+                <strong>后台录音</strong>
+                <span>开始后可离开输入页，录音结束再补充说明。</span>
+              </span>
+              ${icon("mic", 18)}
+            </button>
+          </div>
+        `;
+      }
+
+      function activeRecorder() {
+        return `
+          <div class="recorder-card" aria-label="后台录音中">
+            <div class="recorder-top">
+              <div class="recorder-title">
+                ${icon("radio", 18)}
+                后台录音中
+              </div>
+              <div class="timer">18:42</div>
+            </div>
+            <div class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+            <p>录音会先作为本地原始音频保存。停止后可补充文字说明，再进入记录整理链路。</p>
+            <div class="recorder-actions">
+              <button class="secondary-button" type="button">${icon("pause")}暂停</button>
+              <button class="save-button" type="button">${icon("square")}停止并保存草稿</button>
+            </div>
+          </div>
+        `;
+      }
+
+      function feed(compact = false) {
+        return `
+          <section class="feed" aria-label="最近内容">
+            <div class="feed-title">
+              <h3>${compact ? "最近记录" : "今天流入"}</h3>
+              <span>来源可追溯</span>
+            </div>
+            <div class="record-list">
+              ${records
+                .map(
+                  (item) => `
+                    <article class="record">
+                      <div class="record-icon">${icon(item.icon, 15)}</div>
+                      <div>
+                        <h4>${item.title}</h4>
+                        <p>${item.body}</p>
+                      </div>
+                    </article>
+                  `,
+                )
+                .join("")}
+            </div>
+          </section>
+        `;
+      }
+
+      function inlineScreen() {
+        return `
+          ${appHeader()}
+          <div class="composer focus">
+            <div class="composer-label">
+              <strong>快速记录</strong>
+              <span class="chip">${icon("lock", 12)}本地草稿</span>
+            </div>
+            <textarea aria-label="快速记录" placeholder="扔进一个想法、承诺、会议片段或原始记忆..."></textarea>
+            <div class="chip-row" aria-label="附件状态">
+              <span class="chip">${icon("image", 12)}图片可选</span>
+              <span class="chip">${icon("mic", 12)}语音作为附件</span>
+            </div>
+            <div class="tool-row">
+              <div class="tool-group">
+                <button class="ghost-button" type="button" aria-label="添加图片">${icon("image")}</button>
+                <button class="ghost-button" type="button" aria-label="拍照">${icon("camera")}</button>
+                <button class="ghost-button" type="button" aria-label="添加语音">${icon("mic")}</button>
+              </div>
+              <button class="save-button" type="button">${icon("check")}保存记录</button>
+            </div>
+          </div>
+          ${feed(true)}
+        `;
+      }
+
+      function dockScreen() {
+        return `
+          ${appHeader()}
+          ${homeActions()}
+          ${summaryRow()}
+          ${feed()}
+          <div class="bottom-dock">
+            <button class="secondary-button dock-field" type="button" data-open-sheet>
+              ${icon("pen-line")}
+              <span>写下刚刚想到的东西...</span>
+            </button>
+            <button class="save-button" type="button" aria-label="新记录" data-open-sheet>${icon("plus")}</button>
+          </div>
+          <div class="sheet" aria-label="记录输入面板">
+            <div class="sheet-handle"></div>
+            <div class="sheet-head">
+              <strong>新记录</strong>
+              <button class="icon-button" type="button" aria-label="关闭" data-close-sheet>${icon("x")}</button>
+            </div>
+            <textarea placeholder="先写原始记录，不用分类..."></textarea>
+            <div class="tool-row">
+              <div class="tool-group">
+                <button class="ghost-button" type="button" aria-label="图片">${icon("image")}</button>
+                <button class="ghost-button" type="button" aria-label="相机">${icon("camera")}</button>
+                <button class="ghost-button" type="button" aria-label="语音附件">${icon("mic")}</button>
+              </div>
+              <button class="save-button" type="button">${icon("check")}保存</button>
+            </div>
+          </div>
+        `;
+      }
+
+      function sheetScreen() {
+        return `
+          ${appHeader()}
+          ${homeActions()}
+          ${summaryRow()}
+          ${feed()}
+          <button class="fab" type="button" aria-label="新记录" data-open-modal>${icon("plus", 24)}</button>
+          <div class="modal-backdrop">
+            <div class="capture-modal">
+              <div class="sheet-head">
+                <strong>新记录</strong>
+                <button class="icon-button" type="button" aria-label="关闭" data-close-modal>${icon("x")}</button>
+              </div>
+              <div class="composer">
+                <textarea aria-label="原始记录" placeholder="在这里沉浸式写一段原始记录。可以是想法、情绪、项目上下文、会议片段或生活事件..."></textarea>
+                <div class="chip-row">
+                  <span class="chip">${icon("shield-check", 12)}原始输入不会被 AI 覆写</span>
+                  <span class="chip">${icon("database", 12)}保存后自动进入本地 Memory 流</span>
+                </div>
+                <div class="tool-row">
+                  <div class="tool-group">
+                    <button class="ghost-button" type="button" aria-label="图片">${icon("image")}</button>
+                    <button class="ghost-button" type="button" aria-label="链接">${icon("link")}</button>
+                    <button class="ghost-button" type="button" aria-label="文件">${icon("paperclip")}</button>
+                  </div>
+                  <button class="save-button" type="button">${icon("check")}保存记录</button>
+                </div>
+              </div>
+              <div class="voice-band">
+                ${icon("mic", 18)}
+                <div class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+                <p>录音是单独的后台任务；文字弹窗里不把麦克风伪装成保存按钮。</p>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      function voiceScreen() {
+        return `
+          ${appHeader()}
+          ${activeRecorder()}
+          ${summaryRow()}
+          ${feed()}
+        `;
+      }
+
+      function analysis(optionKey) {
+        const data = optionData[optionKey];
+        return `
+          <article class="analysis-card">
+            <h3>${icon("target")} ${data.title}</h3>
+            <p>${data.body}</p>
+            <span class="verdict ${data.verdictClass}">${data.verdict}</span>
+          </article>
+          <article class="analysis-card">
+            <h3>${icon("thumbs-up")} 优点</h3>
+            <ul>${data.strengths.map((item) => `<li>${item}</li>`).join("")}</ul>
+          </article>
+          <article class="analysis-card">
+            <h3>${icon("triangle-alert")} 风险</h3>
+            <ul>${data.risks.map((item) => `<li>${item}</li>`).join("")}</ul>
+          </article>
+          <article class="analysis-card">
+            <h3>${icon("wrench")} 对 Flutter 的改造暗示</h3>
+            <p>
+              提交按钮建议改成 check/send/save 语义；语音从 CaptureConsole 的同权按钮里抽出，变成独立后台录音控制。首页隐藏 Memory 候选、
+              待办列表和 Trace 调试，只保留最近记录、状态摘要和对应 tab 入口。
+            </p>
+          </article>
+        `;
+      }
+
+      function render(optionKey) {
+        const phone = document.getElementById("phone");
+        const screen = document.getElementById("screen");
+        const panel = document.getElementById("analysis");
+        phone.classList.remove("sheet-open", "modal-open");
+
+        if (optionKey === "inline") screen.innerHTML = inlineScreen();
+        if (optionKey === "dock") screen.innerHTML = dockScreen();
+        if (optionKey === "sheet") screen.innerHTML = sheetScreen();
+        if (optionKey === "voice") screen.innerHTML = voiceScreen();
+        if (optionKey === "sheet") phone.classList.add("modal-open");
+
+        panel.innerHTML = analysis(optionKey);
+        document.querySelectorAll(".tab").forEach((tab) => {
+          tab.setAttribute("aria-selected", String(tab.dataset.option === optionKey));
+        });
+
+        screen.querySelectorAll("[data-open-sheet]").forEach((button) => {
+          button.addEventListener("click", () => phone.classList.add("sheet-open"));
+        });
+        screen.querySelectorAll("[data-close-sheet]").forEach((button) => {
+          button.addEventListener("click", () => phone.classList.remove("sheet-open"));
+        });
+        screen.querySelectorAll("[data-open-modal]").forEach((button) => {
+          button.addEventListener("click", () => phone.classList.add("modal-open"));
+        });
+        screen.querySelectorAll("[data-close-modal]").forEach((button) => {
+          button.addEventListener("click", () => phone.classList.remove("modal-open"));
+        });
+
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+      }
+
+      document.querySelectorAll(".tab").forEach((tab) => {
+        tab.addEventListener("click", () => render(tab.dataset.option));
+      });
+
+      render("sheet");
+    </script>
+  </body>
+</html>

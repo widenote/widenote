@@ -235,12 +235,20 @@ class CaptureInputController extends Notifier<CaptureInputState> {
     state = CaptureInputState.initial();
   }
 
+  void clearError() {
+    state = state.copyWith(clearError: true);
+  }
+
   void markSubmitBlocked() {
     final message = state.isRecordingVoice
         ? 'Stop or cancel the voice recording before saving.'
         : state.hasBlockedAttachment
         ? 'Remove blocked attachments before saving.'
         : 'Review attachments before saving.';
+    state = state.copyWith(errorMessage: message);
+  }
+
+  void markEmptySubmitBlocked(String message) {
     state = state.copyWith(errorMessage: message);
   }
 
