@@ -1,0 +1,24 @@
+{
+  "$schema": "../../src/agent_pack/agent_pack_marketplace.schema.json",
+  "schema_version": 1,
+  "source": "github",
+  "updated_at": "2026-06-28",
+  "packs": [
+    {
+      "id": "pack.synthetic_contract",
+      "manifest_path": "valid/agent_pack_manifest.json",
+      "publisher": "widenote",
+      "edition": "local_dev",
+      "trust_level": "local_dev",
+      "status": "preview",
+      "categories": [
+        "test"
+      ],
+      "capabilities": [
+        "memory.read"
+      ],
+      "repository_url": null,
+      "docs_path": null
+    }
+  ]
+}

@@ -26,6 +26,20 @@ version: 0.1.0
 schema_version: 1
 publisher: widenote
 edition: official
+marketplace:
+  source: bundled
+  trust_level: official
+  install_mode: bundled
+  repository_url: https://github.com/widenote/widenote
+  docs_path: packs/official/default/README.md
+  categories:
+    - capture
+    - memory
+  capabilities:
+    - memory.propose
+  status: available
+additive_slots: []
+replacement_slots: []
 permissions:
   - model.complete
   - memory.propose
@@ -59,6 +73,9 @@ agents:
 | `schema_version` | Yes | Manifest schema version |
 | `publisher` | Yes | Official, user, or community publisher |
 | `edition` | Yes | `official`, `store`, `community`, or `local_dev` |
+| `marketplace` | No | Display and catalog metadata for GitHub-first marketplace entries |
+| `additive_slots[]` | No | Declares extension points that add capability without replacing core flow |
+| `replacement_slots[]` | No | Declares replacement points; phase-one validator allows only `official` and `local_dev` packs |
 | `permissions[]` | Yes | Pack-level requested permissions |
 | `subscriptions[]` | Yes | Event triggers |
 | `agents[]` | Yes | Agent handlers and prompts |
@@ -74,20 +91,68 @@ Phase-one source schemas live under `packages/schemas/src`:
 | Event envelope | `packages/schemas/src/event/event.schema.json` |
 | Memory candidate/item | `packages/schemas/src/memory/memory.schema.json` |
 | Agent Pack manifest | `packages/schemas/src/agent_pack/agent_pack_manifest.schema.json` |
+| Agent Pack marketplace index | `packages/schemas/src/agent_pack/agent_pack_marketplace.schema.json` |
 | Permission declaration | `packages/schemas/src/permission/permission.schema.json` |
 | Trace event | `packages/schemas/src/trace/trace.schema.json` |
 
 Official phase-one pack manifests live under `packs/official/*/manifest.json`.
+The bundled GitHub-first catalog lives at `packs/marketplace/index.json`.
 
 ## Manifest Validation
 
 Phase-one official manifests are checked with the lightweight validator:
 
 ```sh
-node tools/pack_validator/validate.mjs packs/official/default/manifest.json packs/official/todo/manifest.json
+node tools/pack_validator/validate.mjs packs/official/default/manifest.json packs/official/todo/manifest.json packs/official/pkm_library/manifest.json packs/marketplace/index.json
 ```
 
 This is a lightweight validator, not a complete JSON Schema validator. It currently checks JSON parse, required manifest shape, intra-manifest references, subscription dependency references and cycles, agent permission subsets, non-empty output events, retry policy bounds, script-execution rejection, and the `pack.default` / `pack.todo` phase-one guardrails.
+
+Run validator self-tests after schema or guardrail changes:
+
+```sh
+node tools/pack_validator/validate_test.mjs
+```
+
+## Marketplace Contract
+
+Phase one uses a GitHub-first marketplace rather than a hosted registry:
+
+- `packs/marketplace/index.json` is the bundled catalog index.
+- Each catalog entry points to a manifest path and repeats display metadata
+  used for cheap listing and drift checks.
+- Each manifest may carry a `marketplace` block with source, trust level,
+  install mode, docs path, categories, capabilities, and status.
+- The mobile Pack Library currently displays installed/bundled Pack metadata
+  and enable/disable state. Remote download, update channels, signatures, and
+  hosted registry search are deferred.
+- Index validation checks entry ids, duplicate ids, manifest path existence,
+  manifest validity, and metadata alignment for name, version, source, trust
+  level, categories, capabilities, and status.
+
+Supported phase-one marketplace enum values:
+
+| Field | Values |
+| --- | --- |
+| `marketplace.source` | `bundled`, `github`, `local`, `remote_registry` |
+| `marketplace.trust_level` | `official`, `verified`, `community`, `local_dev` |
+| `marketplace.install_mode` | `bundled`, `manual_git`, `remote_registry`, `local_dev` |
+| `marketplace.status` | `available`, `experimental`, `deprecated`, `disabled` |
+
+## Slot Contract
+
+Slots document where Packs extend or replace behavior:
+
+- Additive slots add output or capability while preserving the main flow. The
+  PKM Pack uses `knowledge.organization` to create derived PKM artifacts.
+- Replacement slots replace a core mechanism such as Memory write policy,
+  retrieval, model routing, or orchestration. They are reserved for `official`
+  and `local_dev` packs in phase one.
+- Replacement slots must not ship as community/store behavior until the project
+  accepts permission design, rollback behavior, trace review, and conflict
+  policy.
+- Slots are declarative in the manifest first. Runtime arbitration and UI
+  conflict resolution are future work.
 
 ## Subscription Contract
 
@@ -120,6 +185,7 @@ Examples:
 - `card.write`
 - `insight.write`
 - `todo.suggest`
+- `artifact.write`
 - `file.read.user_selected`
 - `network.call.declared_host`
 - `model.complete`
@@ -167,9 +233,28 @@ Pack prompts should follow progressive context disclosure:
 | --- | --- | --- |
 | `pack.default` | Yes | Capture to Memory/card/insight |
 | `pack.todo` | Yes | Source-linked todos and lightweight action review |
-| `pack.conversation` | Yes | Chat over local Memory and records |
-| `pack.backup_export` | Yes | Local export/import and backup |
-| `pack.companion` | Optional mode | Companion behavior inside Conversations |
+| `pack.pkm_library` | Yes | Official PKM example that writes source-linked derived artifacts through `knowledge.organization` |
+
+## Pack Developer Flow
+
+1. Create a Pack folder under `packs/official/<id>` for official examples or a
+   separate GitHub repository for community experiments.
+2. Add `manifest.json` with public permissions, subscriptions, agents,
+   `marketplace`, and slot declarations.
+3. Use additive slots for extension behavior. Do not declare replacement slots
+   for community/store packs.
+4. Emit public runtime events only. Derived output should use source refs and
+   must not mutate raw capture or accepted Memory directly.
+5. If the Pack should appear in the bundled catalog, add it to
+   `packs/marketplace/index.json`.
+6. If it is a native official Pack, embed the manifest in
+   `apps/mobile/lib/features/plugins/application/official_pack_manifests.dart`,
+   register the native handler in the capture/runtime host, and add Pack
+   Library/permission/runtime tests.
+7. Update `packs/README.md`, affected module READMEs, and
+   `docs/agent-context/project-map.md`.
+8. Run schema fixtures, pack validator tests, targeted runtime tests, and
+   mobile widget tests for user-visible Pack Library changes.
 
 ## Migration Plan
 
@@ -184,6 +269,7 @@ Pack prompts should follow progressive context disclosure:
 
 - Script pack runtime. Manifest fields may describe it, but phase-one validators and the local runtime reject execution until a sandbox RFC is accepted.
 - Community pack store.
+- Hosted marketplace registry and remote install/update.
 - Remote runner execution.
 - Dynamic UI block scripting.
 - Cross-device sync of pack state.

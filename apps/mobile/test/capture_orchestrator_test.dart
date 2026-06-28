@@ -9,6 +9,8 @@ import 'package:widenote_mobile/features/capture/application/capture_orchestrato
 import 'package:widenote_mobile/features/capture/media/capture_media.dart';
 import 'package:widenote_mobile/features/plugins/application/official_pack_manifests.dart';
 
+const _corePackIds = <String>['pack.default', 'pack.todo'];
+
 void main() {
   test(
     'orchestrator registers official native packs aligned with manifests',
@@ -23,6 +25,7 @@ void main() {
       expect(packs.map((pack) => pack.id), <String>[
         'pack.default',
         'pack.todo',
+        'pack.pkm_library',
       ]);
 
       for (final pack in packs) {
@@ -67,12 +70,23 @@ void main() {
             .toList(growable: false),
         <String>['agent.todo_loop'],
       );
+      expect(
+        packs
+            .singleWhere((pack) => pack.id == 'pack.pkm_library')
+            .agents
+            .keys
+            .toList(growable: false),
+        <String>['agent.pkm_profile_builder'],
+      );
     },
   );
 
   test('quick capture runs runtime and silently auto-accepts Memory', () async {
     final model = _SequenceMetadataModel(
-      responses: <String>['Lin prefers source-linked WideNote todos.'],
+      responses: <String>[
+        'Lin prefers source-linked WideNote todos.',
+        '{"title":"Lin WideNote preference","summary":"Lin prefers source-linked WideNote todos.","topics":["WideNote","todos"],"people":["Lin"],"projects":["WideNote"],"source_excerpt":"Met Lin about WideNote source-linked todos.","confidence":"high","sensitivity":"low"}',
+      ],
     );
     final orchestrator = CaptureOrchestrator.local(
       clock: TickingWnClock(DateTime.utc(2026, 6, 23, 1)),
@@ -112,13 +126,16 @@ void main() {
       result.insights.map((insight) => insight.sourceLabel),
       everyElement(startsWith('source:')),
     );
-    expect(model.requests.single.prompt, contains('Met Lin'));
+    expect(model.requests, hasLength(2));
+    expect(model.requests.first.prompt, contains('Met Lin'));
     expect(
-      model.requests.single.prompt,
+      model.requests.first.prompt,
       contains(captureMemoryPromptCaptureTextMarker),
     );
-    expect(model.requests.single.prompt, contains('Return exactly one JSON'));
-    expect(model.requests.single.context['prompt_ref'], captureMemoryPromptRef);
+    expect(model.requests.first.prompt, contains('Return exactly one JSON'));
+    expect(model.requests.first.context['prompt_ref'], captureMemoryPromptRef);
+    expect(model.requests.last.prompt, contains('PKM Personal Library Agent'));
+    expect(model.requests.last.context['prompt_ref'], pkmProfilePromptRef);
     expect(
       result.eventTypes,
       containsAllInOrder(<String>[
@@ -127,6 +144,7 @@ void main() {
         runtime.WnEventTypes.cardCreated,
         runtime.WnEventTypes.insightCreated,
         runtime.WnEventTypes.todoSuggested,
+        runtime.WnEventTypes.artifactCreated,
       ]),
     );
     _expectEventOrigin(
@@ -162,19 +180,72 @@ void main() {
       packId: 'pack.todo',
       agentId: 'agent.todo_loop',
     );
+    _expectEventOrigin(
+      result.events,
+      runtime.WnEventTypes.artifactCreated,
+      packId: 'pack.pkm_library',
+      agentId: 'agent.pkm_profile_builder',
+    );
+    final artifactEvent = result.events.singleWhere(
+      (event) => event.type == runtime.WnEventTypes.artifactCreated,
+    );
+    expect(artifactEvent.payload['artifact_kind'], 'pkm_profile_entry');
+    expect(artifactEvent.payload['derived_output'], isTrue);
+    expect(
+      artifactEvent.payload['source_truth'],
+      'raw_capture_and_memory_remain_canonical',
+    );
+    expect(
+      _sourceRefIds(artifactEvent.payload['source_refs']! as List<Object?>),
+      containsAll(<String>[result.record.id, sourceEventId]),
+    );
     expect(
       result.traces.map((trace) => trace.label),
       contains('runtime.run.completed'),
     );
     expect(
       result.traces.where((trace) => trace.label == 'runtime.run.completed'),
-      hasLength(2),
+      hasLength(3),
     );
     expect(
       result.traces
           .where((trace) => trace.label == 'runtime.run.completed')
           .map((trace) => trace.packId),
+      containsAll(<String>['pack.default', 'pack.todo', 'pack.pkm_library']),
+    );
+  });
+
+  test('disabled PKM pack skips artifact output', () async {
+    final model = _SequenceMetadataModel(
+      responses: <String>['Core capture memory only.'],
+    );
+    final orchestrator = CaptureOrchestrator.local(
+      clock: TickingWnClock(DateTime.utc(2026, 6, 23, 1, 30)),
+      idGenerator: SequenceWnIdGenerator(seed: 'pkm-disabled'),
+      model: model,
+      enabledPackIds: _corePackIds,
+    );
+
+    final result = await orchestrator.processCapture(
+      'Do not project this capture into the PKM library.',
+    );
+
+    expect(
+      result.eventTypes,
+      isNot(contains(runtime.WnEventTypes.artifactCreated)),
+    );
+    expect(model.requests, hasLength(1));
+    expect(
+      result.traces
+          .where((trace) => trace.label == 'runtime.run.completed')
+          .map((trace) => trace.packId),
       containsAll(<String>['pack.default', 'pack.todo']),
+    );
+    expect(
+      result.traces
+          .where((trace) => trace.label == 'runtime.run.completed')
+          .map((trace) => trace.packId),
+      isNot(contains('pack.pkm_library')),
     );
   });
 
@@ -187,6 +258,7 @@ void main() {
       model: _SequenceMetadataModel(
         responses: <String>['First durable memory.'],
       ),
+      enabledPackIds: _corePackIds,
     );
     final firstResult = await first.processCapture(
       'First capture before restart.',
@@ -200,6 +272,7 @@ void main() {
       model: _SequenceMetadataModel(
         responses: <String>['Second durable memory.'],
       ),
+      enabledPackIds: _corePackIds,
     );
     final secondResult = await second.processCapture(
       'Second capture after restart.',
@@ -226,6 +299,7 @@ void main() {
           '{"text":"The user pasted credential-like material that needs review.","memory_type":"credential","confidence":"high","sensitivity":"high","durability":"durable"}',
         ],
       ),
+      enabledPackIds: _corePackIds,
     );
 
     final result = await orchestrator.processCapture(
@@ -269,6 +343,7 @@ void main() {
       model: _SequenceMetadataModel(
         responses: <String>['First summary.', 'Second summary.'],
       ),
+      enabledPackIds: _corePackIds,
     );
 
     final first = await orchestrator.processCapture('First repeat capture.');
@@ -384,6 +459,7 @@ void main() {
         clock: TickingWnClock(DateTime.utc(2026, 6, 23, 4)),
         idGenerator: SequenceWnIdGenerator(seed: 'fallback'),
         model: const _FailingModel(),
+        enabledPackIds: _corePackIds,
       );
 
       await expectLater(
@@ -420,6 +496,7 @@ void main() {
       clock: TickingWnClock(DateTime.utc(2026, 6, 23, 5)),
       idGenerator: SequenceWnIdGenerator(seed: 'rate'),
       model: const _StatusCodeFailingModel(),
+      enabledPackIds: _corePackIds,
     );
 
     await expectLater(
@@ -447,6 +524,7 @@ void main() {
             '{"text":"Lin prefers source-linked WideNote todos.","memory_type":"preference","confidence":"high","sensitivity":"low","durability":"durable"}',
           ],
         ),
+        enabledPackIds: _corePackIds,
       );
 
       final result = await orchestrator.processCapture(
@@ -478,6 +556,7 @@ void main() {
       model: runtime.FakeModel(
         responses: const <String>['Lin prefers source-linked WideNote todos.'],
       ),
+      enabledPackIds: _corePackIds,
     );
 
     final result = await orchestrator.processCapture(
@@ -513,6 +592,7 @@ void main() {
           '{"text":"The user wants to remember a sleep and anxiety pattern.","memory_type":"health","confidence":"high","sensitivity":"medium","durability":"durable"}',
         ],
       ),
+      enabledPackIds: _corePackIds,
     );
 
     final result = await orchestrator.processCapture(
@@ -543,6 +623,7 @@ void main() {
         clock: TickingWnClock(DateTime.utc(2026, 6, 24, 6)),
         idGenerator: SequenceWnIdGenerator(seed: 'media'),
         model: model,
+        enabledPackIds: _corePackIds,
       );
       const guard = AssetSafetyGuard();
       final photo = guard.buildAttachment(
@@ -642,6 +723,7 @@ void main() {
       clock: TickingWnClock(DateTime.utc(2026, 6, 23, 5)),
       idGenerator: SequenceWnIdGenerator(seed: 'capture-id'),
       model: runtime.FakeModel(responses: <String>['Persisted record id.']),
+      enabledPackIds: _corePackIds,
     );
 
     final result = await orchestrator.processCapture(
@@ -678,6 +760,7 @@ void main() {
           },
         ],
       ),
+      enabledPackIds: _corePackIds,
     );
 
     final first = await orchestrator.processCapture(

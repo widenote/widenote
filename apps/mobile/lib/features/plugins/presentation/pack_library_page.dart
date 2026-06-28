@@ -114,6 +114,44 @@ class _PackRow extends StatelessWidget {
                   _Tag(label: _runtimeStatusLabel(l10n, pack.runtimeStatus)),
                   _Tag(label: l10n.packLibraryPublisher(pack.publisher)),
                   _Tag(label: l10n.packLibraryEdition(pack.edition)),
+                  _Tag(
+                    key: Key('pack-marketplace-source-${pack.id}'),
+                    label: l10n.packLibraryMarketplaceSource(
+                      pack.marketplaceSource,
+                    ),
+                  ),
+                  _Tag(
+                    key: Key('pack-trust-${pack.id}'),
+                    label: l10n.packLibraryTrustLevel(pack.trustLevel),
+                  ),
+                  if (pack.categories.isNotEmpty)
+                    _Tag(
+                      key: Key('pack-categories-${pack.id}'),
+                      label: l10n.packLibraryCategories(
+                        pack.categories.join(', '),
+                      ),
+                    ),
+                  if (pack.capabilities.isNotEmpty)
+                    _Tag(
+                      key: Key('pack-capabilities-${pack.id}'),
+                      label: l10n.packLibraryCapabilities(
+                        pack.capabilities.join(', '),
+                      ),
+                    ),
+                  if (pack.replacementSlots.isNotEmpty)
+                    _Tag(
+                      key: Key('pack-replacement-slots-${pack.id}'),
+                      label: l10n.packLibraryReplacementSlots(
+                        pack.replacementSlots.join(', '),
+                      ),
+                    ),
+                  if (pack.additiveSlots.isNotEmpty)
+                    _Tag(
+                      key: Key('pack-additive-slots-${pack.id}'),
+                      label: l10n.packLibraryAdditiveSlots(
+                        pack.additiveSlots.join(', '),
+                      ),
+                    ),
                   _Tag(label: l10n.packLibraryEntrypoint(pack.entrypointKind)),
                   _Tag(
                     label: l10n.packLibraryPermissionCount(

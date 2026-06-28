@@ -1,12 +1,12 @@
 {
   "$schema": "../../../packages/schemas/src/agent_pack/agent_pack_manifest.schema.json",
-  "id": "pack.default",
-  "name": "Default Capture Loop",
+  "id": "pack.pkm_library",
+  "name": "PKM Personal Library",
   "version": "0.1.0",
   "schema_version": 1,
   "publisher": "widenote",
   "edition": "official",
-  "description": "Conservative built-in pack for capture cards, Memory candidates, and lightweight insight.",
+  "description": "Official example Pack that projects captures into source-linked PKM profile artifacts without replacing Memory as source truth.",
   "compatibility": {
     "widenote_min": "0.1.0",
     "widenote_max": null,
@@ -17,55 +17,55 @@
     "trust_level": "official",
     "install_mode": "bundled",
     "repository_url": "https://github.com/widenote/widenote",
-    "docs_path": "packs/official/default/README.md",
+    "docs_path": "packs/official/pkm_library/README.md",
     "icon_path": null,
     "categories": [
-      "capture",
-      "memory"
+      "pkm",
+      "knowledge"
     ],
     "capabilities": [
-      "memory.propose",
-      "card.write",
-      "insight.write"
+      "derived_artifact",
+      "knowledge.organization"
     ],
     "status": "available"
   },
+  "additive_slots": [
+    {
+      "id": "knowledge.organization",
+      "mode": "additive",
+      "description": "Create derived organization artifacts such as PKM profile entries."
+    }
+  ],
   "entrypoint_kind": "native",
   "permissions": [
     "model.complete",
-    "card.write",
-    "memory.propose",
-    "insight.write"
+    "artifact.write"
   ],
   "subscriptions": [
     {
-      "id": "sub.capture_created",
+      "id": "sub.pkm_capture_created",
       "event_types": [
         "wn.capture.created"
       ],
-      "agent_id": "agent.capture_loop",
+      "agent_id": "agent.pkm_profile_builder",
       "delivery": "async",
       "enabled_by_default": true
     }
   ],
   "agents": [
     {
-      "id": "agent.capture_loop",
+      "id": "agent.pkm_profile_builder",
       "runtime": "native",
-      "name": "Capture Loop Agent",
-      "prompt_ref": "capture.memory_candidate.v2",
+      "name": "PKM Profile Builder",
+      "prompt_ref": "pkm.profile_entry.v1",
       "model_profile_ref": "local_or_user_selected_model",
       "permissions": [
         "model.complete",
-        "card.write",
-        "memory.propose",
-        "insight.write"
+        "artifact.write"
       ],
       "tools": [],
       "output_events": [
-        "wn.card.created",
-        "wn.memory.proposed",
-        "wn.insight.created"
+        "wn.artifact.created"
       ],
       "retry_policy": {
         "max_attempts": 2
@@ -75,8 +75,14 @@
   "model_profiles": [
     {
       "id": "local_or_user_selected_model",
-      "purpose": "Summarize captures into cards, Memory candidates, and lightweight insights.",
-      "required": false
+      "purpose": "Extract compact source-linked PKM profile entries from captures.",
+      "required": false,
+      "routing_policy": "app_default",
+      "required_capabilities": [
+        "chat",
+        "completion"
+      ],
+      "allow_fallback": false
     }
   ],
   "tools": [],
@@ -90,6 +96,8 @@
   },
   "metadata": {
     "status": "draft",
-    "source": "packs/official/default/manifest.json"
+    "source": "packs/official/pkm_library/manifest.json",
+    "derived_output": true,
+    "source_truth": "raw_capture_and_memory_remain_canonical"
   }
 }

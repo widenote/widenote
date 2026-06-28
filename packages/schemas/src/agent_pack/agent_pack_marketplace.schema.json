@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://widenote.dev/schemas/agent_pack_marketplace.schema.json",
+  "title": "WideNote Agent Pack Marketplace Index",
+  "description": "GitHub-first catalog index for installable Agent Packs.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "source",
+    "updated_at",
+    "packs"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "github"
+      ]
+    },
+    "updated_at": {
+      "type": "string"
+    },
+    "packs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/pack_entry"
+      },
+      "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "pack_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "manifest_path",
+        "publisher",
+        "edition",
+        "trust_level",
+        "status",
+        "categories",
+        "capabilities"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/pack_id"
+        },
+        "manifest_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "publisher": {
+          "type": "string",
+          "minLength": 1
+        },
+        "edition": {
+          "type": "string",
+          "enum": [
+            "official",
+            "store",
+            "community",
+            "local_dev"
+          ]
+        },
+        "trust_level": {
+          "type": "string",
+          "enum": [
+            "official",
+            "reviewed",
+            "community",
+            "local_dev"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "available",
+            "preview",
+            "deferred",
+            "disabled"
+          ]
+        },
+        "categories": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/tag"
+          },
+          "uniqueItems": true
+        },
+        "capabilities": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/tag"
+          },
+          "uniqueItems": true
+        },
+        "repository_url": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "docs_path": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "pack_id": {
+      "type": "string",
+      "pattern": "^pack\\.[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$"
+    },
+    "tag": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$"
+    }
+  }
+}

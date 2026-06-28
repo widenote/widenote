@@ -99,8 +99,9 @@ class _PermissionRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final statusLabel = _statusLabel(l10n, permission);
+    final suffix = _permissionKeySuffix(permission);
     return Row(
-      key: Key('permission-row-${permission.permission}'),
+      key: Key('permission-row-$suffix'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(
@@ -123,7 +124,7 @@ class _PermissionRow extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 _impactLabel(l10n, permission),
-                key: Key('permission-impact-${permission.permission}'),
+                key: Key('permission-impact-$suffix'),
                 style: _mutedStyle(context),
               ),
               const SizedBox(height: 8),

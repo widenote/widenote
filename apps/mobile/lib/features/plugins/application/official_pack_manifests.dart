@@ -2,7 +2,11 @@ import 'dart:convert';
 
 import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
 
-const officialPackManifestIds = <String>['pack.default', 'pack.todo'];
+const officialPackManifestIds = <String>[
+  'pack.default',
+  'pack.todo',
+  'pack.pkm_library',
+];
 
 const officialPackManifestMaps = <String, Map<String, Object?>>{
   'pack.default': <String, Object?>{
@@ -20,6 +24,17 @@ const officialPackManifestMaps = <String, Map<String, Object?>>{
       'widenote_min': '0.1.0',
       'widenote_max': null,
       'schema_version': 1,
+    },
+    'marketplace': <String, Object?>{
+      'source': 'bundled',
+      'trust_level': 'official',
+      'install_mode': 'bundled',
+      'repository_url': 'https://github.com/widenote/widenote',
+      'docs_path': 'packs/official/default/README.md',
+      'icon_path': null,
+      'categories': <String>['capture', 'memory'],
+      'capabilities': <String>['memory.propose', 'card.write', 'insight.write'],
+      'status': 'available',
     },
     'entrypoint_kind': 'native',
     'permissions': <String>[
@@ -91,6 +106,17 @@ const officialPackManifestMaps = <String, Map<String, Object?>>{
       'widenote_max': null,
       'schema_version': 1,
     },
+    'marketplace': <String, Object?>{
+      'source': 'bundled',
+      'trust_level': 'official',
+      'install_mode': 'bundled',
+      'repository_url': 'https://github.com/widenote/widenote',
+      'docs_path': 'packs/official/todo/README.md',
+      'icon_path': null,
+      'categories': <String>['task', 'capture'],
+      'capabilities': <String>['todo.suggest'],
+      'status': 'available',
+    },
     'entrypoint_kind': 'native',
     'permissions': <String>['todo.suggest'],
     'subscriptions': <Map<String, Object?>>[
@@ -123,6 +149,87 @@ const officialPackManifestMaps = <String, Map<String, Object?>>{
     'metadata': <String, Object?>{
       'status': 'draft',
       'source': 'packs/official/todo/manifest.json',
+    },
+  },
+  'pack.pkm_library': <String, Object?>{
+    r'$schema':
+        '../../../packages/schemas/src/agent_pack/agent_pack_manifest.schema.json',
+    'id': 'pack.pkm_library',
+    'name': 'PKM Personal Library',
+    'version': '0.1.0',
+    'schema_version': 1,
+    'publisher': 'widenote',
+    'edition': 'official',
+    'description':
+        'Official example Pack that projects captures into source-linked PKM profile artifacts without replacing Memory as source truth.',
+    'compatibility': <String, Object?>{
+      'widenote_min': '0.1.0',
+      'widenote_max': null,
+      'schema_version': 1,
+    },
+    'marketplace': <String, Object?>{
+      'source': 'bundled',
+      'trust_level': 'official',
+      'install_mode': 'bundled',
+      'repository_url': 'https://github.com/widenote/widenote',
+      'docs_path': 'packs/official/pkm_library/README.md',
+      'icon_path': null,
+      'categories': <String>['pkm', 'knowledge'],
+      'capabilities': <String>['derived_artifact', 'knowledge.organization'],
+      'status': 'available',
+    },
+    'additive_slots': <Map<String, Object?>>[
+      <String, Object?>{
+        'id': 'knowledge.organization',
+        'mode': 'additive',
+        'description':
+            'Create derived organization artifacts such as PKM profile entries.',
+      },
+    ],
+    'entrypoint_kind': 'native',
+    'permissions': <String>['model.complete', 'artifact.write'],
+    'subscriptions': <Map<String, Object?>>[
+      <String, Object?>{
+        'id': 'sub.pkm_capture_created',
+        'event_types': <String>['wn.capture.created'],
+        'agent_id': 'agent.pkm_profile_builder',
+        'delivery': 'async',
+        'enabled_by_default': true,
+      },
+    ],
+    'agents': <Map<String, Object?>>[
+      <String, Object?>{
+        'id': 'agent.pkm_profile_builder',
+        'runtime': 'native',
+        'name': 'PKM Profile Builder',
+        'prompt_ref': 'pkm.profile_entry.v1',
+        'model_profile_ref': 'local_or_user_selected_model',
+        'permissions': <String>['model.complete', 'artifact.write'],
+        'tools': <String>[],
+        'output_events': <String>['wn.artifact.created'],
+        'retry_policy': <String, Object?>{'max_attempts': 2},
+      },
+    ],
+    'model_profiles': <Map<String, Object?>>[
+      <String, Object?>{
+        'id': 'local_or_user_selected_model',
+        'purpose':
+            'Extract compact source-linked PKM profile entries from captures.',
+        'required': false,
+        'routing_policy': 'app_default',
+        'required_capabilities': <String>['chat', 'completion'],
+        'allow_fallback': false,
+      },
+    ],
+    'tools': <Map<String, Object?>>[],
+    'ui_blocks': <Map<String, Object?>>[],
+    'storage_quota': <String, Object?>{'local_bytes': 0},
+    'integrity': <String, Object?>{'checksum_sha256': null, 'signature': null},
+    'metadata': <String, Object?>{
+      'status': 'draft',
+      'source': 'packs/official/pkm_library/manifest.json',
+      'derived_output': true,
+      'source_truth': 'raw_capture_and_memory_remain_canonical',
     },
   },
 };

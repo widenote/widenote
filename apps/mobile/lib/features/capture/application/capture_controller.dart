@@ -23,6 +23,7 @@ final captureOrchestratorProvider = Provider<CaptureOrchestrator>((ref) {
     ),
     runtimeStore: localdb.LocalDbRuntimeStore(database),
     autoGrantOfficialPermissions: false,
+    enabledPackIds: _enabledOfficialPackIds(database),
     knowledgeSink: LocalDbCaptureKnowledgeSink(database),
     model: ref.watch(modelClientProvider),
   );
@@ -265,4 +266,13 @@ void _seedDefaultOfficialPermissionGrants(
       );
     }
   }
+}
+
+List<String> _enabledOfficialPackIds(localdb.WideNoteLocalDatabase database) {
+  return <String>[
+    for (final manifest in officialPackManifestSnapshots)
+      if (database.packInstallations.readById(manifest.id)?.status !=
+          'disabled')
+        manifest.id,
+  ];
 }

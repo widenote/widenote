@@ -8,10 +8,14 @@ Owns the Agent Pack and runtime control-entry tab.
 
 This feature presents pack, Agent Platform queue/status, permission, model,
 backup, and trace entry points. It routes pack, permission, backup, trace, and
-model-provider rows to dedicated pages, but does not dynamically install packs
-or grant high-risk permissions. Built-in official pack metadata comes from the
-mobile embedded manifest bridge and is checked against `packs/official/*`
-manifest JSON in focused tests. Agent Platform status reads local trace events.
+model-provider rows to dedicated pages. Pack Library displays installed and
+bundled marketplace metadata, including source, trust level, categories,
+capabilities, and additive/replacement slot declarations. It can enable or
+disable built-in official Packs for future local runtime registration, but does
+not dynamically download remote Packs or grant high-risk permissions. Built-in
+official pack metadata comes from the mobile embedded manifest bridge and is
+checked against `packs/official/*` manifest JSON in focused tests. Agent
+Platform status reads local trace events.
 
 ## Dependencies
 

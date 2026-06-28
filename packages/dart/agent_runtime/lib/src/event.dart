@@ -9,6 +9,7 @@ abstract final class WnEventTypes {
   static const cardCreated = 'wn.card.created';
   static const insightCreated = 'wn.insight.created';
   static const todoSuggested = 'wn.todo.suggested';
+  static const artifactCreated = 'wn.artifact.created';
 }
 
 enum WnActor { user, agent, plugin, system }

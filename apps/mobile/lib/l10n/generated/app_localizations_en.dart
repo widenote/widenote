@@ -1460,6 +1460,36 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String packLibraryMarketplaceSource(String source) {
+    return 'source: $source';
+  }
+
+  @override
+  String packLibraryTrustLevel(String trust) {
+    return 'trust: $trust';
+  }
+
+  @override
+  String packLibraryCategories(String categories) {
+    return 'categories: $categories';
+  }
+
+  @override
+  String packLibraryCapabilities(String capabilities) {
+    return 'capabilities: $capabilities';
+  }
+
+  @override
+  String packLibraryReplacementSlots(String slots) {
+    return 'replacement slots: $slots';
+  }
+
+  @override
+  String packLibraryAdditiveSlots(String slots) {
+    return 'additive slots: $slots';
+  }
+
+  @override
   String packLibraryEntrypoint(String entrypoint) {
     return 'runtime: $entrypoint';
   }

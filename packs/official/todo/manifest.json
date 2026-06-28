@@ -12,6 +12,22 @@
     "widenote_max": null,
     "schema_version": 1
   },
+  "marketplace": {
+    "source": "bundled",
+    "trust_level": "official",
+    "install_mode": "bundled",
+    "repository_url": "https://github.com/widenote/widenote",
+    "docs_path": "packs/official/todo/README.md",
+    "icon_path": null,
+    "categories": [
+      "task",
+      "capture"
+    ],
+    "capabilities": [
+      "todo.suggest"
+    ],
+    "status": "available"
+  },
   "entrypoint_kind": "native",
   "permissions": [
     "todo.suggest"

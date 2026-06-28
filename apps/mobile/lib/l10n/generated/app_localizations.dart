@@ -2465,6 +2465,42 @@ abstract class AppLocalizations {
   /// **'edition: {edition}'**
   String packLibraryEdition(String edition);
 
+  /// No description provided for @packLibraryMarketplaceSource.
+  ///
+  /// In en, this message translates to:
+  /// **'source: {source}'**
+  String packLibraryMarketplaceSource(String source);
+
+  /// No description provided for @packLibraryTrustLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'trust: {trust}'**
+  String packLibraryTrustLevel(String trust);
+
+  /// No description provided for @packLibraryCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'categories: {categories}'**
+  String packLibraryCategories(String categories);
+
+  /// No description provided for @packLibraryCapabilities.
+  ///
+  /// In en, this message translates to:
+  /// **'capabilities: {capabilities}'**
+  String packLibraryCapabilities(String capabilities);
+
+  /// No description provided for @packLibraryReplacementSlots.
+  ///
+  /// In en, this message translates to:
+  /// **'replacement slots: {slots}'**
+  String packLibraryReplacementSlots(String slots);
+
+  /// No description provided for @packLibraryAdditiveSlots.
+  ///
+  /// In en, this message translates to:
+  /// **'additive slots: {slots}'**
+  String packLibraryAdditiveSlots(String slots);
+
   /// No description provided for @packLibraryEntrypoint.
   ///
   /// In en, this message translates to:

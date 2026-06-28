@@ -25,6 +25,7 @@ historical decisions, rationale, and supersession history, use
 - [Cross-Platform Long Conversation Test Plan](./research/2026-06-27-cross-platform-long-conversation-test-plan.md)
 - [Cross-Platform Core Smoke Results](./research/2026-06-27-cross-platform-core-smoke-results.md)
 - [Live LLM Long Journey QA](./research/2026-06-27-live-llm-long-journey-qa.md)
+- [Marketplace and PKM Plan](./research/2026-06-28-marketplace-pkm-plan.md)
 - [Local Semantic Rule Audit](./research/2026-06-27-local-semantic-rule-audit.md)
 - [Agent Runtime Roadmap Research](./research/2026-06-27-agent-runtime-roadmap-research.md)
 - [Agent Orchestration Parity](./research/2026-06-27-agent-orchestration-parity.md)
@@ -73,13 +74,15 @@ historical decisions, rationale, and supersession history, use
 - [Schema sources](../packages/schemas/README.md)
 - [Official default Agent Pack manifest](../packs/official/default/manifest.json)
 - [Official todo Agent Pack manifest](../packs/official/todo/manifest.json)
+- [Official PKM Agent Pack manifest](../packs/official/pkm_library/manifest.json)
+- [Marketplace index](../packs/marketplace/index.json)
 
 ## Contract Validation
 
 Validate phase-one official Agent Pack manifests with the lightweight validator:
 
 ```sh
-node tools/pack_validator/validate.mjs packs/official/default/manifest.json packs/official/todo/manifest.json
+node tools/pack_validator/validate.mjs packs/official/default/manifest.json packs/official/todo/manifest.json packs/official/pkm_library/manifest.json packs/marketplace/index.json
 ```
 
 This is a lightweight validator, not a complete JSON Schema validator.

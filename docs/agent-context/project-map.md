@@ -28,6 +28,7 @@ It should stay short. It points to the right local context instead of duplicatin
 
 ## Research
 
+- `docs/research/2026-06-28-marketplace-pkm-plan.md`
 - `docs/research/2026-06-27-agent-runtime-roadmap-research.md`
 - `docs/research/2026-06-27-deepseek-long-simulator-qa.md`
 - `docs/research/2026-06-27-ai-native-project-structure-patterns.md`
@@ -94,6 +95,8 @@ It should stay short. It points to the right local context instead of duplicatin
 - `packages/schemas/src/`
 - `packs/official/default/manifest.json`
 - `packs/official/todo/manifest.json`
+- `packs/official/pkm_library/manifest.json`
+- `packs/marketplace/index.json`
 - `tools/pack_validator/validate.mjs`
 
 ## Areas
@@ -137,6 +140,8 @@ It should stay short. It points to the right local context instead of duplicatin
 | TS agent SDK | `packages/ts/agent_sdk/README.md` | Runner-side Agent Pack SDK |
 | Default Agent Pack | `packs/official/default/README.md` | Default capture to insight loop |
 | Todo Agent Pack | `packs/official/todo/README.md` | Source-linked todo suggestion loop |
+| PKM Agent Pack | `packs/official/pkm_library/README.md` | Source-linked PKM profile artifacts |
+| Marketplace index | `packs/marketplace/index.json` | GitHub-first bundled Agent Pack catalog |
 | Pack validator | `tools/pack_validator/README.md` | Lightweight Agent Pack manifest checks |
 
 ## Maintenance Rule
