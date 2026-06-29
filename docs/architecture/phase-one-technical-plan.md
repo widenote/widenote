@@ -133,7 +133,7 @@ media/
   derived/{attachment_id}/thumb.webp
   derived/{attachment_id}/waveform.json
 exports/{export_job_id}/
-backups/{backup_id}.widenote-backup
+backups/{backup_id}.widenote
 plugins/
   installed/{plugin_id}/{version}/
   cache/{source_hash}/

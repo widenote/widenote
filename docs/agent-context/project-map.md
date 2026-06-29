@@ -115,7 +115,7 @@ It should stay short. It points to the right local context instead of duplicatin
 | Module | Context | Purpose |
 | --- | --- | --- |
 | Mobile app | `apps/mobile/README.md` | Flutter client and local runtime host |
-| Mobile backup | `apps/mobile/lib/features/backup/README.md` | Local JSON backup export/import UI |
+| Mobile backup | `apps/mobile/lib/features/backup/README.md` | Local `.widenote` archive backup export/import UI |
 | Mobile capture | `apps/mobile/lib/features/capture/README.md` | Home capture console, persistent text draft, read-model feedback, and Memory review |
 | Mobile capture media | `apps/mobile/lib/features/capture/media/README.md` | Camera, gallery, voice, share, fake adapters, and attachment safety boundary |
 | Mobile chat | `apps/mobile/lib/features/chat/README.md` | Model-required local chat sessions with source-linked Context Packet citations |

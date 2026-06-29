@@ -1950,13 +1950,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get backupSubtitle => '导出和导入本地记录、记忆、卡片、对话、模型提供商、待办和追踪数据。';
 
   @override
-  String get backupIdleStatus => '本地数据会留在这台设备上，直到你导出或粘贴备份。';
+  String get backupIdleStatus => '本地数据会留在这台设备上，直到你创建或导入备份。';
 
   @override
-  String get backupExportReadyStatus => '安全备份 JSON 已准备好。';
+  String get backupExportReadyStatus => 'WideNote 备份归档已准备好。';
 
   @override
-  String get backupSavedFileStatus => '备份文件已保存到本地。';
+  String get backupSavedFileStatus => 'WideNote 备份归档已保存到本地。';
 
   @override
   String get backupImportDoneStatus => '备份已导入本地存储。';
@@ -1985,18 +1985,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get backupExportSectionTitle => '导出与恢复边界';
 
   @override
-  String get backupExportButton => '导出安全恢复 JSON';
+  String get backupExportButton => '创建 .widenote 备份';
 
   @override
   String get backupExportEmpty =>
-      '导出会创建带 manifest 计数的安全恢复 JSON，以及可读的 Owner Export Markdown 投影。';
+      '导出会创建一个压缩的 .widenote 归档，里面包含安全恢复 JSON 和可读的 Owner Export Markdown。';
 
   @override
   String get backupSecretWarning => '安全导出不会包含模型提供商 API Key，恢复后需要重新填写。';
 
   @override
   String get backupSafeRestoreBoundary =>
-      '安全恢复 JSON 会恢复记录、记忆、待办、模型提供商元数据、Pack 安装、权限、运行时状态和追踪，但不包含 Provider Key。';
+      '.widenote 归档会恢复记录、记忆、待办、模型提供商元数据、Pack 安装、权限、运行时状态和追踪，但不包含 Provider Key。';
 
   @override
   String get backupOwnerExportBoundary =>
@@ -2026,13 +2026,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get backupCopyMarkdownButton => '复制 Markdown';
 
   @override
-  String get backupSaveFilesButton => '保存文件';
+  String get backupSaveFilesButton => '保存 .widenote 文件';
 
   @override
   String get backupSavedJsonPath => 'JSON 文件';
 
   @override
   String get backupSavedMarkdownPath => 'Markdown 文件';
+
+  @override
+  String get backupSavedArchivePath => 'WideNote 备份';
 
   @override
   String get backupCopiedStatus => '导出内容已复制。';
@@ -2047,13 +2050,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get backupImportSectionTitle => '导入';
 
   @override
-  String get backupImportHint => '粘贴 WideNote 本地备份 JSON...';
+  String get backupImportHint => '粘贴旧版 WideNote 本地备份 JSON...';
 
   @override
   String get backupImportButton => '导入备份';
 
   @override
-  String get backupImportLatestFileButton => '导入最近保存的文件';
+  String get backupImportLatestFileButton => '导入最近的 .widenote 文件';
 
   @override
   String backupImportNeedsProviderKeys(int count) {

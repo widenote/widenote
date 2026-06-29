@@ -7,6 +7,8 @@ environment:
   sdk: ^3.11.0
 
 dependencies:
+  archive: ^4.0.0
+  crypto: ^3.0.7
   widenote_agent_runtime:
     path: ../agent_runtime
   widenote_memory:

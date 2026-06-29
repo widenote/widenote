@@ -165,17 +165,12 @@ class _ExportSurface extends ConsumerWidget {
                 ),
               ],
             ),
-            if (state.exportedJsonPath != null) ...[
+            if (state.exportedArchivePath != null) ...[
               const SizedBox(height: 12),
               _FilePathLine(
-                label: l10n.backupSavedJsonPath,
-                path: state.exportedJsonPath!,
+                label: l10n.backupSavedArchivePath,
+                path: state.exportedArchivePath!,
               ),
-              if (state.exportedMarkdownPath != null)
-                _FilePathLine(
-                  label: l10n.backupSavedMarkdownPath,
-                  path: state.exportedMarkdownPath!,
-                ),
             ],
             const SizedBox(height: 12),
             Text(

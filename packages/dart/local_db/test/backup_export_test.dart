@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:archive/archive_io.dart';
 import 'package:test/test.dart';
 import 'package:widenote_local_db/widenote_local_db.dart';
 
@@ -537,6 +539,135 @@ void main() {
       expect(restored.body, isEmpty);
       expect(restored.revision, 4);
       expect(restored.payload['purge_after'], '2026-07-24T08:00:00.000Z');
+    });
+
+    test(
+      'writes a compressed .widenote directory archive and restores it',
+      () async {
+        final temp = await Directory.systemTemp.createTemp('widenote-archive-');
+        addTearDown(() async {
+          if (await temp.exists()) {
+            await temp.delete(recursive: true);
+          }
+        });
+        final source = WideNoteLocalDatabase.inMemory();
+        final target = WideNoteLocalDatabase.inMemory();
+        addTearDown(source.close);
+        addTearDown(target.close);
+        _seedBackupSource(source);
+
+        final backup = LocalBackupService(
+          source,
+          clock: () => DateTime.utc(2026, 6, 24, 9),
+        ).exportBackup();
+        final archivePath = '${temp.path}/widenote-backup-test.widenote';
+
+        final writeResult = await LocalBackupArchiveCodec.writeArchive(
+          backup: backup,
+          outputPath: archivePath,
+        );
+
+        expect(writeResult.path, archivePath);
+        expect(writeResult.sizeBytes, greaterThan(0));
+        expect(writeResult.manifest.format, LocalBackupArchiveCodec.formatId);
+        expect(writeResult.manifest.backupMode, LocalBackupMode.safe);
+        expect(writeResult.manifest.includesSecrets, isFalse);
+        expect(
+          writeResult.manifest.entries.map((entry) => entry.path),
+          containsAll(<String>[
+            LocalBackupArchiveCodec.restoreJsonPath,
+            LocalBackupArchiveCodec.ownerExportPath,
+          ]),
+        );
+
+        final manifest = await LocalBackupArchiveCodec.readManifest(
+          archivePath,
+        );
+        expect(manifest.recordCounts, containsPair('captures', 1));
+        expect(manifest.recordCounts, containsPair('trace_events', 1));
+
+        final stagingPath = '${temp.path}/staging';
+        final extract = await LocalBackupArchiveCodec.extractToDirectory(
+          archivePath: archivePath,
+          stagingDirectory: stagingPath,
+        );
+        final restoreJson = await File(extract.restoreJsonPath).readAsString();
+        final ownerMarkdown = await File(
+          extract.ownerExportPath!,
+        ).readAsString();
+        expect(restoreJson, contains('"format": "widenote.local_data_backup"'));
+        expect(ownerMarkdown, contains('# WideNote Owner Export'));
+        expect(ownerMarkdown, isNot(contains(_backupCredential())));
+
+        final report = LocalBackupService(
+          target,
+        ).importBackup(LocalBackupCodec.decode(restoreJson));
+
+        expect(report.requiresCredentialReentry, isTrue);
+        expect(
+          target.captures.readById('capture-backup')!.payload['text'],
+          'Remember the backup demo.',
+        );
+        expect(target.traceEvents.readById('trace-backup'), isNotNull);
+      },
+    );
+
+    test('rejects .widenote archives with checksum mismatches', () async {
+      final temp = await Directory.systemTemp.createTemp(
+        'widenote-bad-archive-',
+      );
+      addTearDown(() async {
+        if (await temp.exists()) {
+          await temp.delete(recursive: true);
+        }
+      });
+      final source = WideNoteLocalDatabase.inMemory();
+      addTearDown(source.close);
+      _seedBackupSource(source);
+
+      final backup = LocalBackupService(source).exportBackup();
+      final restoreBytes = utf8.encode(LocalBackupCodec.encode(backup));
+      final ownerBytes = utf8.encode(
+        const LocalMarkdownExportService().exportBackup(backup),
+      );
+      final manifest = LocalBackupArchiveManifest(
+        createdAt: backup.manifest.createdAt,
+        backupFormat: backup.manifest.format,
+        backupFormatVersion: backup.manifest.formatVersion,
+        backupMode: backup.manifest.backupMode,
+        includesSecrets: backup.manifest.includesSecrets,
+        localDbSchemaVersion: backup.manifest.localDbSchemaVersion,
+        recordCounts: backup.manifest.recordCounts,
+        entries: <LocalBackupArchiveEntry>[
+          LocalBackupArchiveEntry(
+            path: LocalBackupArchiveCodec.restoreJsonPath,
+            role: 'restore_json',
+            sizeBytes: restoreBytes.length,
+            sha256: ''.padLeft(64, '0'),
+          ),
+          LocalBackupArchiveEntry(
+            path: LocalBackupArchiveCodec.ownerExportPath,
+            role: 'owner_export_markdown',
+            sizeBytes: ownerBytes.length,
+            sha256: ''.padLeft(64, '0'),
+          ),
+        ],
+      );
+      final archivePath = '${temp.path}/broken.widenote';
+      _writeArchiveForTest(
+        archivePath: archivePath,
+        restoreBytes: restoreBytes,
+        ownerBytes: ownerBytes,
+        manifest: manifest,
+      );
+
+      expect(
+        () => LocalBackupArchiveCodec.extractRestoreJson(
+          archivePath: archivePath,
+          stagingDirectory: '${temp.path}/staging',
+        ),
+        throwsA(isA<FormatException>()),
+      );
     });
   });
 
@@ -1112,4 +1243,42 @@ String _editBackupJson(
   final root = jsonDecode(json) as Map<String, Object?>;
   edit(root);
   return jsonEncode(root);
+}
+
+void _writeArchiveForTest({
+  required String archivePath,
+  required List<int> restoreBytes,
+  required List<int> ownerBytes,
+  required LocalBackupArchiveManifest manifest,
+}) {
+  final encoder = ZipFileEncoder();
+  encoder.create(archivePath, level: ZipFileEncoder.gzip);
+  try {
+    encoder.addArchiveFile(
+      ArchiveFile(
+        LocalBackupArchiveCodec.restoreJsonPath,
+        restoreBytes.length,
+        restoreBytes,
+      ),
+    );
+    encoder.addArchiveFile(
+      ArchiveFile(
+        LocalBackupArchiveCodec.ownerExportPath,
+        ownerBytes.length,
+        ownerBytes,
+      ),
+    );
+    final manifestBytes = utf8.encode(
+      const JsonEncoder.withIndent('  ').convert(manifest.toJson()),
+    );
+    encoder.addArchiveFile(
+      ArchiveFile(
+        LocalBackupArchiveCodec.manifestPath,
+        manifestBytes.length,
+        manifestBytes,
+      ),
+    );
+  } finally {
+    encoder.closeSync();
+  }
 }

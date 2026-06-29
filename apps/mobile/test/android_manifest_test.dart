@@ -54,4 +54,39 @@ void main() {
       contains('manifestPlaceholders["appLabel"] = "WideNote Dev"'),
     );
   });
+
+  test('Android app can open .widenote backup files without storage scope', () {
+    final manifest = File('android/app/src/main/AndroidManifest.xml');
+    final activity = File(
+      'android/app/src/main/kotlin/app/widenote/MainActivity.kt',
+    );
+    final handler = File(
+      'android/app/src/main/kotlin/app/widenote/channels/'
+      'BackupImportChannelHandler.kt',
+    );
+
+    expect(manifest.existsSync(), isTrue);
+    expect(activity.existsSync(), isTrue);
+    expect(handler.existsSync(), isTrue);
+
+    final manifestContents = manifest.readAsStringSync();
+    expect(manifestContents, contains('android.intent.action.VIEW'));
+    expect(manifestContents, contains('android.intent.action.SEND'));
+    expect(manifestContents, contains('application/x-widenote-backup'));
+    expect(manifestContents, contains('.*\\\\.widenote'));
+    expect(manifestContents, contains('android:launchMode="singleTask"'));
+    expect(
+      manifestContents,
+      isNot(contains('android.permission.MANAGE_EXTERNAL_STORAGE')),
+    );
+
+    final activityContents = activity.readAsStringSync();
+    expect(activityContents, contains('BackupImportChannelHandler'));
+    expect(activityContents, contains('onNewIntent'));
+
+    final handlerContents = handler.readAsStringSync();
+    expect(handlerContents, contains('app.widenote/backup_import'));
+    expect(handlerContents, contains('ByteArray(8 * 1024)'));
+    expect(handlerContents, contains('Intent.EXTRA_STREAM'));
+  });
 }

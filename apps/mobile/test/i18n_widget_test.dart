@@ -66,7 +66,7 @@ void main() {
     await tester.tap(find.byKey(const Key('backup-entry')));
     await tester.pumpAndSettle();
     expect(find.text('备份'), findsWidgets);
-    expect(find.text('导出安全恢复 JSON'), findsOneWidget);
+    expect(find.text('创建 .widenote 备份'), findsOneWidget);
     expect(find.textContaining('当前版本不提供操作入口'), findsOneWidget);
     expect(find.textContaining('但不包含 Provider Key'), findsOneWidget);
   });

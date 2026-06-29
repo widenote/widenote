@@ -26,12 +26,52 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<false/>
 	<key>NSCameraUsageDescription</key>
 	<string>WideNote uses the camera to save photo records as local raw capture attachments.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>WideNote uses the microphone to save voice recordings as local raw capture attachments.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>WideNote reads selected photos so they can be stored as local capture attachments with source metadata.</string>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>app.widenote.backup</string>
+			<key>UTTypeDescription</key>
+			<string>WideNote Backup</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.zip-archive</string>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>widenote</string>
+				</array>
+				<key>public.mime-type</key>
+				<string>application/x-widenote-backup</string>
+			</dict>
+		</dict>
+	</array>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>WideNote Backup</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Owner</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>app.widenote.backup</string>
+			</array>
+		</dict>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
