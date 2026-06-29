@@ -23,6 +23,8 @@ rendering.
 - `openInMemoryWideNoteLocalDatabase`
 - `LocalDbMigrator`
 - `LocalBackupService`
+- `LocalBackupArchiveCodec`
+- `LocalBackupArchiveManifest`
 - `LocalBackupCodec`
 - `LocalBackupManifest`
 - `LocalBackupImportReport`
@@ -103,6 +105,21 @@ durable runtime, pack, permission, and context cache sections. Older backups
 without those sections import them as empty. `context_packet_cache` is
 rebuildable derived state, so restore also tolerates that section missing from a
 current backup.
+
+`LocalBackupArchiveCodec` wraps that safe restore document in the user-facing
+`.widenote` format. The archive is a zip-compatible compressed directory with:
+
+- `widenote-backup/manifest.json`: archive format, nested backup format,
+  backup mode, counts, entry sizes, and sha256 checksums.
+- `widenote-backup/restore/safe-backup.json`: the restorable
+  `widenote.local_data_backup` JSON.
+- `widenote-backup/owner-export/owner-export.md`: the readable secret-free
+  Owner Export projection.
+
+Archive writes use a file-streaming zip encoder and temp-file rename. Archive
+imports extract entries to a staging directory and verify checksums before the
+existing safe restore JSON is imported. The `.widenote` MIME type is
+`application/x-widenote-backup`.
 
 `LocalBackupMode.safe` is the default and excludes provider API key values while
 preserving provider metadata, default-provider state, and whether a key was

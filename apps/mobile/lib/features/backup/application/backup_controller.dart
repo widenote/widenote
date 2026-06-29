@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
@@ -26,10 +27,13 @@ final backupControllerProvider =
 enum BackupOutcome { idle, exported, savedFile, imported, failed }
 
 final class BackupFileResult {
-  const BackupFileResult({required this.jsonPath, this.markdownPath});
+  const BackupFileResult({
+    required this.archivePath,
+    this.archiveSizeBytes = 0,
+  });
 
-  final String jsonPath;
-  final String? markdownPath;
+  final String archivePath;
+  final int archiveSizeBytes;
 }
 
 abstract interface class BackupFileStore {
@@ -40,6 +44,8 @@ abstract interface class BackupFileStore {
   });
 
   Future<String> readLatestJson();
+
+  Future<String> readArchiveJson(String archivePath);
 }
 
 final class AppSupportBackupFileStore implements BackupFileStore {
@@ -53,33 +59,55 @@ final class AppSupportBackupFileStore implements BackupFileStore {
   }) async {
     final directory = await _exportsDirectory();
     final stamp = _fileStamp(createdAt);
-    final jsonFile = File('${directory.path}/widenote-backup-$stamp.json');
-    final markdownFile = File('${directory.path}/widenote-backup-$stamp.md');
-    await jsonFile.writeAsString(json);
-    await markdownFile.writeAsString(markdown);
+    final archivePath =
+        '${directory.path}/widenote-backup-$stamp'
+        '${LocalBackupArchiveCodec.fileExtension}';
+    final result = await Isolate.run(
+      () => _writeBackupArchiveFromJson(
+        _BackupArchiveWriteJob(
+          json: json,
+          markdown: markdown,
+          outputPath: archivePath,
+        ),
+      ),
+    );
     return BackupFileResult(
-      jsonPath: jsonFile.path,
-      markdownPath: markdownFile.path,
+      archivePath: result.path,
+      archiveSizeBytes: result.archiveSizeBytes,
     );
   }
 
   @override
   Future<String> readLatestJson() async {
     final directory = await _exportsDirectory();
-    final files =
-        directory
-            .listSync()
-            .whereType<File>()
-            .where((file) => file.path.endsWith('.json'))
-            .toList()
-          ..sort((a, b) {
-            final time = b.lastModifiedSync().compareTo(a.lastModifiedSync());
-            return time == 0 ? b.path.compareTo(a.path) : time;
-          });
+    final files = _latestBackupFiles(directory);
     if (files.isEmpty) {
       throw const FileSystemException('No WideNote backup file found.');
     }
-    return files.first.readAsString();
+    final latest = files.first;
+    if (LocalBackupArchiveCodec.hasArchiveExtension(latest.path)) {
+      return readArchiveJson(latest.path);
+    }
+    return latest.readAsString();
+  }
+
+  @override
+  Future<String> readArchiveJson(String archivePath) async {
+    final stagingDirectory = await _stagingDirectory();
+    try {
+      return Isolate.run(
+        () => _extractRestoreJsonFromArchive(
+          _BackupArchiveReadJob(
+            archivePath: archivePath,
+            stagingDirectory: stagingDirectory.path,
+          ),
+        ),
+      );
+    } finally {
+      if (await stagingDirectory.exists()) {
+        await stagingDirectory.delete(recursive: true);
+      }
+    }
   }
 
   Future<Directory> _exportsDirectory() async {
@@ -88,14 +116,22 @@ final class AppSupportBackupFileStore implements BackupFileStore {
     await directory.create(recursive: true);
     return directory;
   }
+
+  Future<Directory> _stagingDirectory() async {
+    final support = await getApplicationSupportDirectory();
+    return Directory(
+      '${support.path}/local-data/tmp/backup-import-'
+      '${DateTime.now().microsecondsSinceEpoch}',
+    )..createSync(recursive: true);
+  }
 }
 
 final class BackupState {
   const BackupState({
     this.exportedJson,
     this.exportedMarkdown,
-    this.exportedJsonPath,
-    this.exportedMarkdownPath,
+    this.exportedArchivePath,
+    this.exportedArchiveSizeBytes,
     this.recordCounts = const <String, int>{},
     this.importDraft = '',
     this.lastImportReport,
@@ -106,8 +142,8 @@ final class BackupState {
 
   final String? exportedJson;
   final String? exportedMarkdown;
-  final String? exportedJsonPath;
-  final String? exportedMarkdownPath;
+  final String? exportedArchivePath;
+  final int? exportedArchiveSizeBytes;
   final Map<String, int> recordCounts;
   final String importDraft;
   final LocalBackupImportReport? lastImportReport;
@@ -120,8 +156,8 @@ final class BackupState {
   BackupState copyWith({
     String? exportedJson,
     String? exportedMarkdown,
-    String? exportedJsonPath,
-    String? exportedMarkdownPath,
+    String? exportedArchivePath,
+    int? exportedArchiveSizeBytes,
     Map<String, int>? recordCounts,
     String? importDraft,
     LocalBackupImportReport? lastImportReport,
@@ -135,12 +171,12 @@ final class BackupState {
     return BackupState(
       exportedJson: exportedJson ?? this.exportedJson,
       exportedMarkdown: exportedMarkdown ?? this.exportedMarkdown,
-      exportedJsonPath: clearFilePaths
+      exportedArchivePath: clearFilePaths
           ? null
-          : exportedJsonPath ?? this.exportedJsonPath,
-      exportedMarkdownPath: clearFilePaths
+          : exportedArchivePath ?? this.exportedArchivePath,
+      exportedArchiveSizeBytes: clearFilePaths
           ? null
-          : exportedMarkdownPath ?? this.exportedMarkdownPath,
+          : exportedArchiveSizeBytes ?? this.exportedArchiveSizeBytes,
       recordCounts: recordCounts ?? this.recordCounts,
       importDraft: importDraft ?? this.importDraft,
       lastImportReport: clearImportReport
@@ -178,8 +214,8 @@ final class BackupController extends Notifier<BackupState> {
         exportedMarkdown: const LocalMarkdownExportService().exportBackup(
           backup,
         ),
-        exportedJsonPath: null,
-        exportedMarkdownPath: null,
+        exportedArchivePath: null,
+        exportedArchiveSizeBytes: null,
         recordCounts: backup.manifest.recordCounts,
         safeProviderSecretOmissionCount:
             backup.providerConfigsNeedingCredentialReentry.length,
@@ -209,8 +245,8 @@ final class BackupController extends Notifier<BackupState> {
             createdAt: DateTime.now().toUtc(),
           );
       state = state.copyWith(
-        exportedJsonPath: result.jsonPath,
-        exportedMarkdownPath: result.markdownPath,
+        exportedArchivePath: result.archivePath,
+        exportedArchiveSizeBytes: result.archiveSizeBytes,
         outcome: BackupOutcome.savedFile,
         clearError: true,
       );
@@ -264,6 +300,29 @@ final class BackupController extends Notifier<BackupState> {
     }
   }
 
+  Future<bool> importArchivePath(String archivePath) async {
+    try {
+      final json = await ref
+          .read(backupFileStoreProvider)
+          .readArchiveJson(archivePath);
+      final report = ref.read(backupServiceProvider).importJson(json);
+      _refreshImportedData();
+      state = state.copyWith(
+        importDraft: json,
+        lastImportReport: report,
+        outcome: BackupOutcome.imported,
+        clearError: true,
+      );
+      return true;
+    } catch (error) {
+      state = state.copyWith(
+        outcome: BackupOutcome.failed,
+        errorDetails: _safeBackupError(error),
+      );
+      return false;
+    }
+  }
+
   void _refreshImportedData() {
     ref
       ..invalidate(captureControllerProvider)
@@ -292,4 +351,70 @@ String _fileStamp(DateTime value) {
       .toIso8601String()
       .replaceAll(':', '')
       .replaceAll('.', '-');
+}
+
+List<File> _latestBackupFiles(Directory directory) {
+  final files =
+      directory.listSync().whereType<File>().where((file) {
+        return LocalBackupArchiveCodec.hasArchiveExtension(file.path) ||
+            file.path.endsWith('.json');
+      }).toList()..sort((a, b) {
+        final time = b.lastModifiedSync().compareTo(a.lastModifiedSync());
+        return time == 0 ? b.path.compareTo(a.path) : time;
+      });
+  return files;
+}
+
+final class _BackupArchiveWriteJob {
+  const _BackupArchiveWriteJob({
+    required this.json,
+    required this.markdown,
+    required this.outputPath,
+  });
+
+  final String json;
+  final String markdown;
+  final String outputPath;
+}
+
+final class _BackupArchiveWriteResult {
+  const _BackupArchiveWriteResult({
+    required this.path,
+    required this.archiveSizeBytes,
+  });
+
+  final String path;
+  final int archiveSizeBytes;
+}
+
+Future<_BackupArchiveWriteResult> _writeBackupArchiveFromJson(
+  _BackupArchiveWriteJob job,
+) async {
+  final backup = LocalBackupCodec.decode(job.json);
+  final result = await LocalBackupArchiveCodec.writeArchive(
+    backup: backup,
+    ownerMarkdown: job.markdown,
+    outputPath: job.outputPath,
+  );
+  return _BackupArchiveWriteResult(
+    path: result.path,
+    archiveSizeBytes: result.sizeBytes,
+  );
+}
+
+final class _BackupArchiveReadJob {
+  const _BackupArchiveReadJob({
+    required this.archivePath,
+    required this.stagingDirectory,
+  });
+
+  final String archivePath;
+  final String stagingDirectory;
+}
+
+Future<String> _extractRestoreJsonFromArchive(_BackupArchiveReadJob job) {
+  return LocalBackupArchiveCodec.extractRestoreJson(
+    archivePath: job.archivePath,
+    stagingDirectory: job.stagingDirectory,
+  );
 }

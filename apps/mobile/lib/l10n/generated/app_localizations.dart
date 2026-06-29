@@ -3570,19 +3570,19 @@ abstract class AppLocalizations {
   /// No description provided for @backupIdleStatus.
   ///
   /// In en, this message translates to:
-  /// **'Local data stays on this device until you export or paste a backup.'**
+  /// **'Local data stays on this device until you create or import a backup.'**
   String get backupIdleStatus;
 
   /// No description provided for @backupExportReadyStatus.
   ///
   /// In en, this message translates to:
-  /// **'Safe backup JSON is ready.'**
+  /// **'WideNote backup archive is ready.'**
   String get backupExportReadyStatus;
 
   /// No description provided for @backupSavedFileStatus.
   ///
   /// In en, this message translates to:
-  /// **'Backup files saved locally.'**
+  /// **'WideNote backup archive saved locally.'**
   String get backupSavedFileStatus;
 
   /// No description provided for @backupImportDoneStatus.
@@ -3636,13 +3636,13 @@ abstract class AppLocalizations {
   /// No description provided for @backupExportButton.
   ///
   /// In en, this message translates to:
-  /// **'Export safe restore JSON'**
+  /// **'Create .widenote backup'**
   String get backupExportButton;
 
   /// No description provided for @backupExportEmpty.
   ///
   /// In en, this message translates to:
-  /// **'Export creates a safe, versioned restore JSON and a readable Owner Export Markdown projection.'**
+  /// **'Export creates one compressed .widenote archive with a safe restore JSON and readable Owner Export Markdown inside.'**
   String get backupExportEmpty;
 
   /// No description provided for @backupSecretWarning.
@@ -3654,7 +3654,7 @@ abstract class AppLocalizations {
   /// No description provided for @backupSafeRestoreBoundary.
   ///
   /// In en, this message translates to:
-  /// **'Safe restore JSON brings back records, Memory, todos, provider metadata, pack installs, permissions, runtime state, and traces. Provider keys are omitted.'**
+  /// **'The .widenote archive restores records, Memory, todos, provider metadata, pack installs, permissions, runtime state, and traces. Provider keys are omitted.'**
   String get backupSafeRestoreBoundary;
 
   /// No description provided for @backupOwnerExportBoundary.
@@ -3702,7 +3702,7 @@ abstract class AppLocalizations {
   /// No description provided for @backupSaveFilesButton.
   ///
   /// In en, this message translates to:
-  /// **'Save files'**
+  /// **'Save .widenote file'**
   String get backupSaveFilesButton;
 
   /// No description provided for @backupSavedJsonPath.
@@ -3716,6 +3716,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Markdown file'**
   String get backupSavedMarkdownPath;
+
+  /// No description provided for @backupSavedArchivePath.
+  ///
+  /// In en, this message translates to:
+  /// **'WideNote backup'**
+  String get backupSavedArchivePath;
 
   /// No description provided for @backupCopiedStatus.
   ///
@@ -3744,7 +3750,7 @@ abstract class AppLocalizations {
   /// No description provided for @backupImportHint.
   ///
   /// In en, this message translates to:
-  /// **'Paste a WideNote local backup JSON...'**
+  /// **'Paste a legacy WideNote local backup JSON...'**
   String get backupImportHint;
 
   /// No description provided for @backupImportButton.
@@ -3756,7 +3762,7 @@ abstract class AppLocalizations {
   /// No description provided for @backupImportLatestFileButton.
   ///
   /// In en, this message translates to:
-  /// **'Import latest saved file'**
+  /// **'Import latest .widenote file'**
   String get backupImportLatestFileButton;
 
   /// No description provided for @backupImportNeedsProviderKeys.

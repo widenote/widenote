@@ -3,18 +3,22 @@
 ## Purpose
 
 Provides the user-facing local backup and import surface for WideNote mobile.
-It wraps the `widenote_local_db` backup codec so users can export a portable
-safe restore JSON, inspect manifest counts, copy a readable Owner Export
-Markdown projection, and import a pasted backup into the local database.
+It wraps the `widenote_local_db` backup codec so users can create a portable
+`.widenote` archive, inspect manifest counts, copy the nested safe restore JSON
+or readable Owner Export Markdown projection, and import either a `.widenote`
+file or a legacy pasted backup JSON into the local database.
 
 ## Ownership Boundary
 
 - Owns mobile backup UI state and presentation.
 - Does not define the backup format; `packages/dart/local_db` is the source of
   truth for backup schema, validation, import, export, and migration rejection.
-- Defaults to safe restore JSON. Provider credential presence is preserved, but
-  credential values are omitted and the import report tells the user which
-  provider keys must be re-entered.
+- Defaults to a compressed `.widenote` archive with a directory-style manifest,
+  nested safe restore JSON, and Owner Export Markdown. Provider credential
+  presence is preserved, but credential values are omitted and the import
+  report tells the user which provider keys must be re-entered.
+- Runs archive compression and decompression off the main Flutter isolate, and
+  imports extracted restore JSON from a staging directory.
 - Treats provider payload fields with secret-like names as unsafe for safe
   backup and recursively redacts them while preserving ordinary metadata such as
   provider name, endpoint, model, capabilities, default state, and
@@ -35,10 +39,11 @@ Markdown projection, and import a pasted backup into the local database.
 
 - `BackupPage`
 - `backupControllerProvider`
+- `BackupImportListener`
 
 ## User-Tested Boundaries
 
-- Safe restore JSON restores records, Memory, todos, provider metadata, pack
+- `.widenote` archives restore records, Memory, todos, provider metadata, pack
   installation state, permission grants, runtime state, context cache rows when
   present, and traces.
 - Safe restore JSON never exports provider API key values.
@@ -46,6 +51,7 @@ Markdown projection, and import a pasted backup into the local database.
   values, including common serialized string assignment forms.
 - Owner Export Markdown never includes provider API key values or Context
   Packet cache contents.
+- Android and iOS register `.widenote` as an app-openable backup file type.
 - Import errors are recoverable; a malformed JSON paste does not write partial
   rows and a later valid JSON can still import.
 

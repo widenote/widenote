@@ -255,8 +255,22 @@ void main() {
         identical(newCaptureOrchestrator, oldCaptureOrchestrator),
         isFalse,
       );
+      const captureId = 'capture-provider-switch';
+      final captureCreatedAt = DateTime.utc(2026, 6, 26, 11);
+      database.captures.insert(
+        CaptureRecord(
+          id: captureId,
+          sourceType: 'manual',
+          payload: const <String, Object?>{
+            'text': 'Capture should use the new provider.',
+          },
+          createdAt: captureCreatedAt,
+          updatedAt: captureCreatedAt,
+        ),
+      );
       final captureResult = await newCaptureOrchestrator.processCapture(
         'Capture should use the new provider.',
+        captureId: captureId,
       );
       expect(captureResult.memoryItem.summary, 'New provider memory.');
     },

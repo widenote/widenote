@@ -13,7 +13,7 @@ void main() {
     await _pumpBackupPage(tester, database: database);
 
     expect(find.byKey(const Key('backup-page')), findsOneWidget);
-    expect(find.text('Export safe restore JSON'), findsOneWidget);
+    expect(find.text('Create .widenote backup'), findsOneWidget);
     expect(find.text('Import backup'), findsOneWidget);
   });
 
@@ -25,7 +25,7 @@ void main() {
     await _pumpBackupPage(tester, database: database);
 
     expect(
-      find.textContaining('Safe restore JSON brings back records'),
+      find.textContaining('The .widenote archive restores records'),
       findsOneWidget,
     );
     expect(
@@ -105,7 +105,7 @@ void main() {
   });
 
   testWidgets(
-    'backup page saves exported JSON and Markdown through file store',
+    'backup page saves exported .widenote archive through file store',
     (tester) async {
       final database = WideNoteLocalDatabase.inMemory();
       _seedLocalData(database);
@@ -132,7 +132,10 @@ void main() {
       expect(fileStore.savedJson, isNot(contains(_backupPageCredential())));
       expect(fileStore.savedMarkdown, contains('Portable local backup'));
       expect(fileStore.savedMarkdown, isNot(contains(_backupPageCredential())));
-      expect(find.textContaining('/tmp/widenote-backup.json'), findsOneWidget);
+      expect(
+        find.textContaining('/tmp/widenote-backup.widenote'),
+        findsOneWidget,
+      );
     },
   );
 
@@ -207,7 +210,7 @@ void main() {
     );
   });
 
-  testWidgets('backup page imports latest saved JSON file into local DB', (
+  testWidgets('backup page imports latest saved .widenote file into local DB', (
     tester,
   ) async {
     final source = WideNoteLocalDatabase.inMemory();
@@ -360,8 +363,8 @@ final class _MemoryBackupFileStore implements BackupFileStore {
     savedMarkdown = markdown;
     latestJson = json;
     return const BackupFileResult(
-      jsonPath: '/tmp/widenote-backup.json',
-      markdownPath: '/tmp/widenote-backup.md',
+      archivePath: '/tmp/widenote-backup.widenote',
+      archiveSizeBytes: 42,
     );
   }
 
@@ -372,6 +375,11 @@ final class _MemoryBackupFileStore implements BackupFileStore {
       throw StateError('No backup JSON seeded.');
     }
     return json;
+  }
+
+  @override
+  Future<String> readArchiveJson(String archivePath) {
+    return readLatestJson();
   }
 }
 

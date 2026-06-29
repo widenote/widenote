@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../features/chat/application/chat_controller.dart';
 import '../features/chat/application/local_chat_context_source.dart';
+import '../features/backup/presentation/backup_import_listener.dart';
 import '../l10n/l10n.dart';
 import 'app_theme.dart';
 import 'app_router.dart';
@@ -53,7 +54,7 @@ class _WideNoteAppState extends State<WideNoteApp> {
               ),
             ),
           ],
-          child: child ?? const SizedBox.shrink(),
+          child: BackupImportListener(child: child ?? const SizedBox.shrink()),
         );
       },
     );
