@@ -1,10 +1,15 @@
 PODS:
   - Flutter (1.0.0)
+  - flutter_secure_storage_darwin (10.0.0):
+    - Flutter
+    - FlutterMacOS
   - image_picker_ios (0.0.1):
     - Flutter
   - integration_test (0.0.1):
     - Flutter
   - record_ios (1.2.1):
+    - Flutter
+  - sherpa_onnx_ios (1.13.3):
     - Flutter
   - sqlite3 (3.52.0):
     - sqlite3/common (= 3.52.0)
@@ -34,9 +39,11 @@ PODS:
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
+  - flutter_secure_storage_darwin (from `.symlinks/plugins/flutter_secure_storage_darwin/darwin`)
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
   - integration_test (from `.symlinks/plugins/integration_test/ios`)
   - record_ios (from `.symlinks/plugins/record_ios/ios`)
+  - sherpa_onnx_ios (from `.symlinks/plugins/sherpa_onnx_ios/ios`)
   - sqlite3_flutter_libs (from `.symlinks/plugins/sqlite3_flutter_libs/darwin`)
 
 SPEC REPOS:
@@ -46,20 +53,26 @@ SPEC REPOS:
 EXTERNAL SOURCES:
   Flutter:
     :path: Flutter
+  flutter_secure_storage_darwin:
+    :path: ".symlinks/plugins/flutter_secure_storage_darwin/darwin"
   image_picker_ios:
     :path: ".symlinks/plugins/image_picker_ios/ios"
   integration_test:
     :path: ".symlinks/plugins/integration_test/ios"
   record_ios:
     :path: ".symlinks/plugins/record_ios/ios"
+  sherpa_onnx_ios:
+    :path: ".symlinks/plugins/sherpa_onnx_ios/ios"
   sqlite3_flutter_libs:
     :path: ".symlinks/plugins/sqlite3_flutter_libs/darwin"
 
 SPEC CHECKSUMS:
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  flutter_secure_storage_darwin: acdb3f316ed05a3e68f856e0353b133eec373a23
   image_picker_ios: e0ece4aa2a75771a7de3fa735d26d90817041326
   integration_test: 4a889634ef21a45d28d50d622cf412dc6d9f586e
   record_ios: 980fd386a97a35987d0fce3dfda4b26a38c90f4c
+  sherpa_onnx_ios: 0f9313326cfea79185f98aeb25dbcf647c9210c8
   sqlite3: a51c07cf16e023d6c48abd5e5791a61a47354921
   sqlite3_flutter_libs: b3e120efe9a82017e5552a620f696589ed4f62ab
 

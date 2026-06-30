@@ -5,6 +5,8 @@ import 'package:widenote_local_db/widenote_local_db.dart' as localdb;
 import '../../../app/local_database.dart';
 import '../../../app/model_client.dart';
 import '../../plugins/application/official_pack_manifests.dart';
+import '../../transcription/transcription_service.dart';
+import '../../transcription/transcription_types.dart';
 import 'capture_orchestrator.dart';
 import 'local_capture_read_model.dart';
 import 'local_knowledge_sink.dart';
@@ -56,7 +58,8 @@ class CaptureController extends Notifier<CaptureState> {
       return;
     }
 
-    final recordBody = body.isEmpty ? _attachmentRecordBody(attachments) : body;
+    var processingAttachments = attachments;
+    var recordBody = body.isEmpty ? _attachmentRecordBody(attachments) : body;
 
     final pendingRecord = CaptureRecord(
       id: 'local-${DateTime.now().toUtc().microsecondsSinceEpoch}',
@@ -73,15 +76,43 @@ class CaptureController extends Notifier<CaptureState> {
     );
 
     try {
+      processingAttachments = await _transcribeVoiceAttachments(
+        pendingRecord,
+        attachments,
+      );
+      final transcriptText = _transcriptText(processingAttachments);
+      final processingBody = _processingBody(
+        typedText: body,
+        transcriptText: transcriptText,
+        fallbackText: recordBody,
+      );
+      if (processingBody != recordBody) {
+        final transcriptReadyRecord = pendingRecord.copyWith(
+          body: processingBody,
+          status: 'Saved locally, transcript ready',
+        );
+        _readModelStore().saveCapture(
+          transcriptReadyRecord,
+          attachments: processingAttachments,
+        );
+        state = state.copyWith(
+          records: _replaceRecord(
+            state.records,
+            pendingRecord.id,
+            transcriptReadyRecord,
+          ),
+        );
+        recordBody = processingBody;
+      }
       final result = await ref
           .read(captureOrchestratorProvider)
           .processCapture(
-            body,
-            attachments: attachments,
+            recordBody,
+            attachments: processingAttachments,
             captureId: pendingRecord.id,
           );
       final readModel = _readModelStore()
-        ..saveCapture(result.record, attachments: attachments);
+        ..saveCapture(result.record, attachments: processingAttachments);
       if (result.todo.isSuggested) {
         readModel.saveTodo(result.todo);
       }
@@ -108,7 +139,10 @@ class CaptureController extends Notifier<CaptureState> {
       final failedRecord = pendingRecord.copyWith(
         status: 'Saved locally, agent failed',
       );
-      _readModelStore().saveCapture(failedRecord, attachments: attachments);
+      _readModelStore().saveCapture(
+        failedRecord,
+        attachments: processingAttachments,
+      );
       state = state.copyWith(
         records: _replaceRecord(state.records, pendingRecord.id, failedRecord),
         isProcessing: false,
@@ -206,6 +240,95 @@ class CaptureController extends Notifier<CaptureState> {
   LocalCaptureReadModelStore _readModelStore() {
     return LocalCaptureReadModelStore(ref.read(localDatabaseProvider));
   }
+
+  Future<List<CaptureAttachment>> _transcribeVoiceAttachments(
+    CaptureRecord record,
+    List<CaptureAttachment> attachments,
+  ) async {
+    final updated = <CaptureAttachment>[];
+    for (final attachment in attachments) {
+      if (attachment.kind != CaptureAssetKind.voice || !attachment.isReady) {
+        updated.add(attachment);
+        continue;
+      }
+      final result = await ref
+          .read(transcriptionServiceProvider)
+          .transcribeAttachment(attachment.id);
+      updated.add(_attachmentWithTranscript(attachment, result));
+    }
+    return List<CaptureAttachment>.unmodifiable(updated);
+  }
+
+  CaptureAttachment _attachmentWithTranscript(
+    CaptureAttachment attachment,
+    TranscriptionResult result,
+  ) {
+    if (result.status != TranscriptStatus.active ||
+        result.text.trim().isEmpty) {
+      return attachment.copyWith(
+        rawMetadata: <String, Object?>{
+          ...attachment.rawMetadata,
+          'transcript_status': result.status.wireName,
+          if (result.errorCode != null)
+            'last_error_code': result.errorCode!.wireName,
+        },
+      );
+    }
+    return attachment.copyWith(
+      previewText: result.text,
+      rawMetadata: <String, Object?>{
+        ...attachment.rawMetadata,
+        'transcript': result.text,
+        'transcript_status': result.status.wireName,
+        'transcription_provider_id': result.providerId,
+        'transcription_provider_kind': result.providerKind.wireName,
+      },
+    );
+  }
+
+  String _transcriptText(List<CaptureAttachment> attachments) {
+    final transcripts = <String>[];
+    for (final attachment in attachments) {
+      if (attachment.kind != CaptureAssetKind.voice) {
+        continue;
+      }
+      final transcript = _metadataText(attachment.rawMetadata, 'transcript');
+      if (transcript != null) {
+        transcripts.add(transcript);
+      }
+    }
+    return transcripts.join('\n');
+  }
+
+  String _processingBody({
+    required String typedText,
+    required String transcriptText,
+    required String fallbackText,
+  }) {
+    final parts = <String>[
+      if (typedText.trim().isNotEmpty) typedText.trim(),
+      if (transcriptText.trim().isNotEmpty) transcriptText.trim(),
+    ];
+    if (parts.isEmpty) {
+      return fallbackText;
+    }
+    return parts.join('\n');
+  }
+}
+
+String? _metadataText(Map<String, Object?> metadata, String key) {
+  final value = metadata[key];
+  if (value is String && value.trim().isNotEmpty) {
+    return value.trim();
+  }
+  final nested = metadata['adapter_metadata'];
+  if (nested is Map) {
+    final nestedValue = nested[key];
+    if (nestedValue is String && nestedValue.trim().isNotEmpty) {
+      return nestedValue.trim();
+    }
+  }
+  return null;
 }
 
 String _captureFailureMessage(Object error) {

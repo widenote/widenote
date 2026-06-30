@@ -37,6 +37,7 @@ final class DefaultMemoryPolicy implements MemoryPolicy {
     'policy_unclear',
     'model_metadata_missing',
     'model_output_unstructured',
+    'local_sensitive_detector',
   };
 
   @override

@@ -1,0 +1,17 @@
+{
+  "id": "network.call.declared_host",
+  "title": "Call a declared network host",
+  "description": "Allows a runtime or provider adapter to call only hosts declared in provider or tool configuration.",
+  "risk": "medium",
+  "grant_behavior": "grant_on_enable",
+  "scope": {
+    "host_policy": "declared_host_only"
+  },
+  "side_effects": [
+    "network"
+  ],
+  "requires_trace": true,
+  "metadata": {
+    "fixture": true
+  }
+}

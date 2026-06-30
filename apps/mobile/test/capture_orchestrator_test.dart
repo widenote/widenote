@@ -26,6 +26,7 @@ void main() {
         'pack.default',
         'pack.todo',
         'pack.pkm_library',
+        'pack.transcript_correction',
       ]);
 
       for (final pack in packs) {
@@ -613,6 +614,40 @@ void main() {
     expect(memoryEvent.payload['sensitivity'], 'medium');
   });
 
+  test('local risk gate routes mislabeled health capture to review', () async {
+    final orchestrator = CaptureOrchestrator.local(
+      clock: TickingWnClock(DateTime.utc(2026, 6, 23, 5, 50)),
+      idGenerator: SequenceWnIdGenerator(seed: 'local-health-risk'),
+      model: runtime.FakeModel(
+        responses: const <String>[
+          '{"text":"A13-Run records a stable morning run pattern.","memory_type":"task_context","confidence":"high","sensitivity":"low","durability":"durable"}',
+        ],
+      ),
+      enabledPackIds: _corePackIds,
+    );
+
+    final result = await orchestrator.processCapture(
+      'A13-Run 今天晨跑配速 6 分 20 秒，膝盖没有不适；'
+      '如果连续三次都稳定，再把周末长跑加到 8 公里。',
+    );
+
+    expect(result.memoryItem.statusLabel, 'needs review');
+    expect(result.reviewCandidate, isNotNull);
+    expect(result.acceptedMemoryCount, 0);
+    expect(result.reviewMemoryCount, 1);
+    expect(result.reviewCandidate!.typeLabel, contains('health'));
+    expect(result.reviewCandidate!.reasonLabel, contains('review_only_type'));
+    final memoryEvent = result.events.singleWhere(
+      (event) => event.type == runtime.WnEventTypes.memoryProposed,
+    );
+    expect(memoryEvent.payload['memory_type'], 'health');
+    expect(memoryEvent.payload['sensitivity'], 'medium');
+    expect(
+      memoryEvent.payload['policy_reasons'],
+      containsAll(<String>['local_sensitive_detector', 'health_source']),
+    );
+  });
+
   test(
     'media attachments are preserved on source-linked capture event',
     () async {
@@ -692,9 +727,9 @@ void main() {
         RawCaptureAsset(
           id: 'voice-review',
           kind: CaptureAssetKind.voice,
-          displayName: 'Voice review.m4a',
-          mimeType: 'audio/m4a',
-          sourceUri: 'fake://voice/review.m4a',
+          displayName: 'Voice review.wav',
+          mimeType: 'audio/wav',
+          sourceUri: 'fake://voice/review.wav',
           createdAt: DateTime.utc(2026, 6, 24, 7, 2),
           previewText: 'Voice transcript needs review.',
           rawMetadata: const <String, Object?>{

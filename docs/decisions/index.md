@@ -14,6 +14,7 @@
 | [ADR-0009](./0009-use-object-truth-and-context-packets.md) | Use object truth and generated context packets for phase-one mobile memory | accepted | 2026-06-26 |
 | [ADR-0010](./0010-delegate-semantic-selection-to-models.md) | No local content keyword heuristics in core | accepted | 2026-06-27 |
 | [ADR-0011](./0011-adopt-agent-runtime-roadmap.md) | Adopt the WideNote Agent Runtime and Capability Roadmap | accepted | 2026-06-27 |
+| [ADR-0012](./0012-accept-voice-transcription-and-correction-boundaries.md) | Accept voice transcription and correction boundaries | accepted | 2026-07-01 |
 
 ## RFC Status
 

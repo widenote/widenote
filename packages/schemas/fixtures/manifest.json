@@ -5,6 +5,22 @@
       "fixture": "valid/event_capture_created.json"
     },
     {
+      "schema": "../src/transcript/transcript.schema.json",
+      "fixture": "valid/event_transcript_requested.json"
+    },
+    {
+      "schema": "../src/transcript/transcript.schema.json",
+      "fixture": "valid/event_transcript_created.json"
+    },
+    {
+      "schema": "../src/transcript/transcript.schema.json",
+      "fixture": "valid/event_transcript_failed.json"
+    },
+    {
+      "schema": "../src/transcript/transcript.schema.json",
+      "fixture": "valid/event_transcript_corrected.json"
+    },
+    {
       "schema": "../src/memory/memory.schema.json",
       "fixture": "valid/memory_candidate.json"
     },
@@ -27,6 +43,26 @@
     {
       "schema": "../src/permission/permission.schema.json",
       "fixture": "valid/permission_declaration.json"
+    },
+    {
+      "schema": "../src/permission/permission.schema.json",
+      "fixture": "valid/permission_audio_upload_remote_asr.json"
+    },
+    {
+      "schema": "../src/permission/permission.schema.json",
+      "fixture": "valid/permission_network_declared_host.json"
+    },
+    {
+      "schema": "../src/permission/permission.schema.json",
+      "fixture": "valid/permission_source_read_transcript.json"
+    },
+    {
+      "schema": "../src/permission/permission.schema.json",
+      "fixture": "valid/permission_source_write_transcript.json"
+    },
+    {
+      "schema": "../src/permission/permission.schema.json",
+      "fixture": "valid/permission_source_write_transcript_correction.json"
     },
     {
       "schema": "../src/trace/trace.schema.json",

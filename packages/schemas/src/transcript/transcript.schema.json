@@ -1,0 +1,651 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://widenote.dev/schemas/transcript_event.schema.json",
+  "title": "WideNote Transcript Events",
+  "description": "Public event payload contract for audio transcription requests, results, failures, and corrections.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "type",
+    "schema_version",
+    "actor",
+    "payload",
+    "privacy",
+    "device_id",
+    "created_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "wn.transcript.requested",
+        "wn.transcript.created",
+        "wn.transcript.failed",
+        "wn.transcript.corrected"
+      ]
+    },
+    "schema_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "actor": {
+      "type": "string",
+      "enum": [
+        "user",
+        "agent",
+        "plugin",
+        "system"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "recorded",
+        "pending",
+        "processed",
+        "failed",
+        "deleted"
+      ]
+    },
+    "pack_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "agent_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "source_capture_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "source_event_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "subject_ref": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/source_ref"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "payload": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/transcript_requested_payload"
+        },
+        {
+          "$ref": "#/$defs/transcript_created_payload"
+        },
+        {
+          "$ref": "#/$defs/transcript_failed_payload"
+        },
+        {
+          "$ref": "#/$defs/transcript_corrected_payload"
+        }
+      ]
+    },
+    "privacy": {
+      "type": "string",
+      "enum": [
+        "local_only",
+        "encrypted_sync",
+        "remote_allowed"
+      ]
+    },
+    "causation_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "correlation_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "trace_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "idempotency_key": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "device_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "retention": {
+      "$ref": "#/$defs/retention"
+    },
+    "redaction": {
+      "$ref": "#/$defs/redaction"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "transcript_requested_payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_id",
+        "capture_id",
+        "attachment_id",
+        "source_format",
+        "source_attachment_sha256",
+        "provider_preference",
+        "realtime_preview_enabled",
+        "fallback_policy"
+      ],
+      "properties": {
+        "request_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "capture_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "attachment_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_format": {
+          "type": "string",
+          "enum": [
+            "wav"
+          ]
+        },
+        "source_attachment_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "provider_preference": {
+          "type": "string",
+          "enum": [
+            "local_first",
+            "local_only",
+            "remote_only",
+            "manual_retry"
+          ]
+        },
+        "duration_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "realtime_preview_enabled": {
+          "type": "boolean"
+        },
+        "fallback_policy": {
+          "$ref": "#/$defs/fallback_policy"
+        }
+      }
+    },
+    "transcript_created_payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "transcript_id",
+        "artifact_kind",
+        "transcript_status",
+        "text",
+        "text_sha256",
+        "language",
+        "provider_id",
+        "provider_kind",
+        "model",
+        "duration_ms",
+        "chunk_count",
+        "confidence",
+        "source_attachment_sha256",
+        "source_refs"
+      ],
+      "properties": {
+        "transcript_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "artifact_kind": {
+          "type": "string",
+          "const": "audio_transcript"
+        },
+        "transcript_status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "no_speech"
+          ]
+        },
+        "text": {
+          "type": "string"
+        },
+        "text_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "language": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "provider_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "provider_kind": {
+          "$ref": "#/$defs/provider_kind"
+        },
+        "model": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "chunk_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "confidence": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "segments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/transcript_segment"
+          }
+        },
+        "realtime_preview_used": {
+          "type": "boolean"
+        },
+        "fallback_used": {
+          "type": "boolean"
+        },
+        "source_attachment_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "source_refs": {
+          "$ref": "#/$defs/source_refs"
+        }
+      }
+    },
+    "transcript_failed_payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_id",
+        "capture_id",
+        "attachment_id",
+        "transcript_status",
+        "provider_kind",
+        "error_code",
+        "error_message_safe",
+        "retry_available",
+        "manual_retry_available"
+      ],
+      "properties": {
+        "request_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "capture_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "attachment_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "transcript_status": {
+          "type": "string",
+          "enum": [
+            "failed",
+            "invalidated"
+          ]
+        },
+        "provider_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "provider_kind": {
+          "$ref": "#/$defs/provider_kind"
+        },
+        "error_code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "error_message_safe": {
+          "type": "string"
+        },
+        "retry_available": {
+          "type": "boolean"
+        },
+        "manual_retry_available": {
+          "type": "boolean"
+        },
+        "fallback_attempted": {
+          "type": "boolean"
+        },
+        "source_attachment_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "transcript_corrected_payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "correction_id",
+        "source_transcript_id",
+        "output_transcript_id",
+        "correction_status",
+        "auto_applied",
+        "confidence",
+        "patches",
+        "source_refs"
+      ],
+      "properties": {
+        "correction_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_transcript_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "output_transcript_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "correction_status": {
+          "type": "string",
+          "enum": [
+            "auto_applied",
+            "review_required",
+            "rejected"
+          ]
+        },
+        "auto_applied": {
+          "type": "boolean"
+        },
+        "confidence": {
+          "type": "string",
+          "enum": [
+            "high",
+            "medium",
+            "low"
+          ]
+        },
+        "patches": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/correction_patch"
+          }
+        },
+        "source_refs": {
+          "$ref": "#/$defs/source_refs"
+        }
+      }
+    },
+    "fallback_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "automatic_remote_asr_after_local_failure",
+        "manual_retry_enabled"
+      ],
+      "properties": {
+        "automatic_remote_asr_after_local_failure": {
+          "type": "boolean"
+        },
+        "manual_retry_enabled": {
+          "type": "boolean"
+        },
+        "remote_permission_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "transcript_segment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "start_ms",
+        "end_ms",
+        "text"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "start_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "text": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "correction_patch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "from",
+        "to",
+        "span",
+        "confidence",
+        "reason",
+        "requires_review"
+      ],
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        },
+        "span": {
+          "$ref": "#/$defs/text_span"
+        },
+        "confidence": {
+          "type": "string",
+          "enum": [
+            "high",
+            "medium",
+            "low"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "term_memory",
+            "user_glossary",
+            "context_consistency",
+            "model_guess"
+          ]
+        },
+        "requires_review": {
+          "type": "boolean"
+        }
+      }
+    },
+    "text_span": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start",
+        "end"
+      ],
+      "properties": {
+        "start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "source_refs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source_ref"
+      }
+    },
+    "source_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "uri": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        }
+      }
+    },
+    "provider_kind": {
+      "type": "string",
+      "enum": [
+        "local_asr",
+        "remote_asr",
+        "manual",
+        "user_edit"
+      ]
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{64}$"
+    },
+    "retention": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "policy": {
+          "type": "string",
+          "enum": [
+            "inherit",
+            "keep",
+            "expire",
+            "delete_with_subject"
+          ]
+        },
+        "expires_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        }
+      }
+    },
+    "redaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "policy": {
+          "type": "string",
+          "enum": [
+            "none",
+            "redact_payload",
+            "redact_subject",
+            "redact_all"
+          ]
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  }
+}

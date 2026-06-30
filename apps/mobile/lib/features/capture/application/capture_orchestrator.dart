@@ -187,6 +187,8 @@ final class CaptureOrchestrator {
   static const _todoAgentId = 'agent.todo_loop';
   static const _pkmPackId = 'pack.pkm_library';
   static const _pkmAgentId = 'agent.pkm_profile_builder';
+  static const _transcriptCorrectionPackId = 'pack.transcript_correction';
+  static const _transcriptCorrectionAgentId = 'agent.transcript_correction';
   static const _officialNativeHandlersByPackId =
       <String, Map<String, runtime.AgentHandler>>{
         _defaultPackId: <String, runtime.AgentHandler>{
@@ -195,6 +197,9 @@ final class CaptureOrchestrator {
         _todoPackId: <String, runtime.AgentHandler>{_todoAgentId: _TodoAgent()},
         _pkmPackId: <String, runtime.AgentHandler>{
           _pkmAgentId: _PkmProfileAgent(),
+        },
+        _transcriptCorrectionPackId: <String, runtime.AgentHandler>{
+          _transcriptCorrectionAgentId: _TranscriptCorrectionAgent(),
         },
       };
 
@@ -875,7 +880,7 @@ final class _CaptureAgent implements runtime.AgentHandler {
       text: text,
       sourceEventId: event.id,
     );
-    final candidate = _memoryCandidate(summary);
+    final candidate = _applyLocalCaptureRisk(_memoryCandidate(summary), text);
 
     return runtime.AgentHandlerResult(
       events: <runtime.WnEventDraft>[
@@ -995,6 +1000,21 @@ final class _MemoryCandidateEnvelope {
   final String? sensitivity;
   final String? durability;
   final List<String> policyReasons;
+
+  _MemoryCandidateEnvelope copyWith({
+    String? memoryType,
+    String? sensitivity,
+    List<String>? policyReasons,
+  }) {
+    return _MemoryCandidateEnvelope(
+      text: text,
+      memoryType: memoryType ?? this.memoryType,
+      confidence: confidence,
+      sensitivity: sensitivity ?? this.sensitivity,
+      durability: durability,
+      policyReasons: policyReasons ?? this.policyReasons,
+    );
+  }
 }
 
 _MemoryCandidateEnvelope _memoryCandidate(runtime.ModelResponse response) {
@@ -1033,6 +1053,95 @@ _MemoryCandidateEnvelope _memoryCandidate(runtime.ModelResponse response) {
     policyReasons: reasons,
   );
 }
+
+_MemoryCandidateEnvelope _applyLocalCaptureRisk(
+  _MemoryCandidateEnvelope candidate,
+  String sourceText,
+) {
+  final risk = _localCaptureRisk(sourceText);
+  if (risk == null) {
+    return candidate;
+  }
+  final reasons = <String>{
+    ...candidate.policyReasons,
+    'local_sensitive_detector',
+    risk.reason,
+  }.toList(growable: false);
+  return candidate.copyWith(
+    memoryType: risk.memoryType,
+    sensitivity: risk.sensitivity == null
+        ? null
+        : _strongerSensitivity(candidate.sensitivity, risk.sensitivity!),
+    policyReasons: reasons,
+  );
+}
+
+_LocalCaptureRisk? _localCaptureRisk(String sourceText) {
+  final text = sourceText.toLowerCase();
+  if (_credentialRisk.hasMatch(text)) {
+    return const _LocalCaptureRisk(
+      reason: 'credential_like_source',
+    );
+  }
+  if (_healthRisk.hasMatch(text)) {
+    return const _LocalCaptureRisk(
+      memoryType: 'health',
+      sensitivity: 'medium',
+      reason: 'health_source',
+    );
+  }
+  if (_financeRisk.hasMatch(text)) {
+    return const _LocalCaptureRisk(
+      memoryType: 'finance',
+      sensitivity: 'medium',
+      reason: 'finance_source',
+    );
+  }
+  return null;
+}
+
+String _strongerSensitivity(String? current, String fallback) {
+  final currentRank = _sensitivityRank(current);
+  final fallbackRank = _sensitivityRank(fallback);
+  final normalized = current?.trim().toLowerCase();
+  return currentRank >= fallbackRank && normalized != null
+      ? normalized
+      : fallback;
+}
+
+int _sensitivityRank(String? value) {
+  return switch (value?.trim().toLowerCase()) {
+    'high' => 3,
+    'medium' => 2,
+    'low' => 1,
+    _ => 0,
+  };
+}
+
+final class _LocalCaptureRisk {
+  const _LocalCaptureRisk({
+    required this.reason,
+    this.memoryType,
+    this.sensitivity,
+  });
+
+  final String? memoryType;
+  final String? sensitivity;
+  final String reason;
+}
+
+final RegExp _credentialRisk = RegExp(
+  r'(sk-|akia|token|secret|password|credential|api[_ -]?key|口令|密码|凭据|门禁|证件号|护照)',
+  caseSensitive: false,
+);
+final RegExp _healthRisk = RegExp(
+  r'(health|medical|migraine|doctor|pain|knee|sleep|anxiety|medication|医生|医疗|偏头痛|头痛|焦虑|膝盖|不适|疼|痛|睡|口干|配速|跑步|长跑|公里)',
+  caseSensitive: false,
+);
+final RegExp _financeRisk = RegExp(
+  r'(finance|invoice|tax|receipt|reimburse|amount|财务|税务|报销|收据|金额|账本|发票)',
+  caseSensitive: false,
+);
 
 final class _PkmProfileAgent implements runtime.AgentHandler {
   const _PkmProfileAgent();
@@ -1315,6 +1424,64 @@ final class _TodoAgent implements runtime.AgentHandler {
           payload: <String, Object?>{
             'text': 'Follow up: ${previewText(text)}',
             'source_event_id': event.id,
+          },
+        ),
+      ],
+    );
+  }
+}
+
+final class _TranscriptCorrectionAgent implements runtime.AgentHandler {
+  const _TranscriptCorrectionAgent();
+
+  @override
+  Future<runtime.AgentHandlerResult> handle(
+    runtime.AgentContext context,
+    runtime.WnEvent event,
+  ) async {
+    final transcriptId = _string(
+      event.payload['transcript_id'],
+      fallback: event.subjectRef?.id ?? event.id,
+    );
+    final sourceCaptureId = _string(
+      event.payload['source_capture_id'],
+      fallback: '',
+    );
+    final sourceAttachmentId = _string(
+      event.payload['source_attachment_id'],
+      fallback: '',
+    );
+    final correctionPatches = event.payload['correction_patches'] is List
+        ? event.payload['correction_patches']! as List<Object?>
+        : const <Object?>[];
+
+    return runtime.AgentHandlerResult(
+      events: <runtime.WnEventDraft>[
+        context.emit(
+          type: runtime.WnEventTypes.transcriptCorrected,
+          subjectRef: runtime.SubjectRef(kind: 'transcript', id: transcriptId),
+          payload: <String, Object?>{
+            'source_transcript_id': transcriptId,
+            if (sourceCaptureId.isNotEmpty)
+              'source_capture_id': sourceCaptureId,
+            if (sourceAttachmentId.isNotEmpty)
+              'source_attachment_id': sourceAttachmentId,
+            'status': _string(
+              event.payload['correction_status'],
+              fallback: 'recorded',
+            ),
+            'patches': correctionPatches,
+            'auto_apply': event.payload['auto_apply'] == true,
+            'source_refs': <Object?>[
+              <String, Object?>{'kind': 'transcript', 'id': transcriptId},
+              if (sourceAttachmentId.isNotEmpty)
+                <String, Object?>{
+                  'kind': 'attachment',
+                  'id': sourceAttachmentId,
+                },
+              if (sourceCaptureId.isNotEmpty)
+                <String, Object?>{'kind': 'capture', 'id': sourceCaptureId},
+            ],
           },
         ),
       ],

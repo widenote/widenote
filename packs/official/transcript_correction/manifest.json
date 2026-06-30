@@ -1,0 +1,173 @@
+{
+  "$schema": "../../../packages/schemas/src/agent_pack/agent_pack_manifest.schema.json",
+  "id": "pack.transcript_correction",
+  "name": "Transcript Correction",
+  "version": "0.1.0",
+  "schema_version": 1,
+  "publisher": "widenote",
+  "edition": "official",
+  "description": "Official pack that corrects source-linked audio transcripts without replacing raw audio or writing Memory directly.",
+  "compatibility": {
+    "widenote_min": "0.1.0",
+    "widenote_max": null,
+    "schema_version": 1
+  },
+  "marketplace": {
+    "source": "bundled",
+    "trust_level": "official",
+    "install_mode": "bundled",
+    "repository_url": "https://github.com/widenote/widenote",
+    "docs_path": "packs/official/transcript_correction/README.md",
+    "icon_path": null,
+    "categories": [
+      "transcription",
+      "memory"
+    ],
+    "capabilities": [
+      "transcript.correct",
+      "memory.read"
+    ],
+    "status": "available"
+  },
+  "additive_slots": [
+    {
+      "id": "transcript.correction",
+      "mode": "additive",
+      "description": "Create source-linked transcript correction revisions and evidence events."
+    }
+  ],
+  "entrypoint_kind": "native",
+  "permissions": [
+    "model.complete",
+    "source.read.transcript",
+    "memory.read",
+    "source.write.transcript_correction"
+  ],
+  "subscriptions": [
+    {
+      "id": "sub.transcript_created",
+      "event_types": [
+        "wn.transcript.created"
+      ],
+      "agent_id": "agent.transcript_correction",
+      "delivery": "async",
+      "enabled_by_default": true,
+      "depends_on": []
+    }
+  ],
+  "agents": [
+    {
+      "id": "agent.transcript_correction",
+      "runtime": "native",
+      "name": "Transcript Correction Agent",
+      "prompt_ref": "transcript.correction.v1",
+      "model_profile_ref": "local_or_user_selected_text_model",
+      "permissions": [
+        "model.complete",
+        "source.read.transcript",
+        "memory.read",
+        "source.write.transcript_correction"
+      ],
+      "tools": [
+        "tool.transcript.read",
+        "tool.memory.read",
+        "tool.transcript_correction.write"
+      ],
+      "output_events": [
+        "wn.transcript.corrected"
+      ],
+      "retry_policy": {
+        "max_attempts": 2
+      }
+    }
+  ],
+  "model_profiles": [
+    {
+      "id": "local_or_user_selected_text_model",
+      "purpose": "Correct names, glossary terms, and near-homophones in transcript text using source-linked context.",
+      "required": false,
+      "routing_policy": "app_default",
+      "required_capabilities": [
+        "chat",
+        "completion"
+      ],
+      "allow_fallback": false
+    }
+  ],
+  "tools": [
+    {
+      "id": "tool.transcript.read",
+      "permissions": [
+        "source.read.transcript"
+      ],
+      "required_permissions": [
+        "source.read.transcript"
+      ],
+      "access": "read",
+      "risk": "low",
+      "locality": "local",
+      "approval_requirement": "none",
+      "execution": "local",
+      "side_effect": "none",
+      "compatible_run_modes": [
+        "read_only",
+        "confirm",
+        "auto"
+      ]
+    },
+    {
+      "id": "tool.memory.read",
+      "permissions": [
+        "memory.read"
+      ],
+      "required_permissions": [
+        "memory.read"
+      ],
+      "access": "read",
+      "risk": "low",
+      "locality": "local",
+      "approval_requirement": "none",
+      "execution": "local",
+      "side_effect": "none",
+      "compatible_run_modes": [
+        "read_only",
+        "confirm",
+        "auto"
+      ]
+    },
+    {
+      "id": "tool.transcript_correction.write",
+      "permissions": [
+        "source.write.transcript_correction"
+      ],
+      "required_permissions": [
+        "source.write.transcript_correction"
+      ],
+      "access": "write",
+      "risk": "low",
+      "locality": "local",
+      "approval_requirement": "none",
+      "execution": "local",
+      "side_effect": "local_write",
+      "compatible_run_modes": [
+        "confirm",
+        "auto"
+      ]
+    }
+  ],
+  "ui_blocks": [],
+  "storage_quota": {
+    "local_bytes": 0
+  },
+  "integrity": {
+    "checksum_sha256": null,
+    "signature": null
+  },
+  "metadata": {
+    "status": "draft",
+    "source": "packs/official/transcript_correction/manifest.json",
+    "derived_output": true,
+    "source_truth": "raw_audio_and_original_transcript_remain_source_linked",
+    "auto_apply_policy": "high_confidence_exact_term_or_name_corrections_only"
+  }
+}

@@ -7,6 +7,8 @@ import '../../backup/application/backup_controller.dart';
 import '../../model_providers/application/model_provider_settings_controller.dart';
 import '../../plugins/application/pack_catalog.dart';
 import '../../traces/application/trace_console_controller.dart';
+import '../../transcription/transcription_service.dart';
+import '../../transcription/transcription_settings.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -74,6 +76,9 @@ class _ControlSurface extends ConsumerWidget {
     final providerState = ref
         .watch(modelProviderSettingsControllerProvider)
         .valueOrNull;
+    final voiceSettings = ref
+        .watch(voiceTranscriptionSettingsControllerProvider)
+        .valueOrNull;
     final backupState = ref.watch(backupControllerProvider);
     final traceSnapshot = ref.watch(traceConsoleControllerProvider);
     return _Surface(
@@ -100,6 +105,15 @@ class _ControlSurface extends ConsumerWidget {
             subtitle: l10n.settingsModelProvidersSubtitle,
             status: _providerStatus(l10n, providerState),
             onTap: () => context.go('/settings/model-providers'),
+          ),
+          const Divider(height: 20),
+          _ControlRow(
+            key: const Key('settings-transcription-entry'),
+            icon: Icons.graphic_eq_outlined,
+            title: l10n.settingsTranscriptionTitle,
+            subtitle: l10n.settingsTranscriptionSubtitle,
+            status: _transcriptionStatus(l10n, voiceSettings),
+            onTap: () => context.go('/settings/transcription'),
           ),
           const Divider(height: 20),
           _ControlRow(
@@ -151,6 +165,22 @@ class _ControlSurface extends ConsumerWidget {
       return l10n.providerConnectionConnected;
     }
     return l10n.pluginsModelProviderConfigured(state.providers.length);
+  }
+
+  String _transcriptionStatus(
+    AppLocalizations l10n,
+    VoiceTranscriptionSettings? settings,
+  ) {
+    if (settings == null) {
+      return l10n.settingsTranscriptionStatusLoading;
+    }
+    if (settings.remoteAsrEnabled) {
+      return l10n.settingsTranscriptionStatusRemote;
+    }
+    if (settings.localModelState == LocalTranscriptionModelState.ready) {
+      return l10n.settingsTranscriptionStatusLocal;
+    }
+    return l10n.settingsTranscriptionStatusNeedsSetup;
   }
 }
 

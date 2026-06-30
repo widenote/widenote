@@ -1,0 +1,18 @@
+{
+  "id": "source.read.transcript",
+  "title": "Read transcript text",
+  "description": "Allows a pack to read source-linked transcript artifacts within the granted run scope.",
+  "risk": "medium",
+  "grant_behavior": "grant_on_enable",
+  "scope": {
+    "source_kind": "audio_transcript",
+    "raw_audio_access": false
+  },
+  "side_effects": [
+    "none"
+  ],
+  "requires_trace": true,
+  "metadata": {
+    "fixture": true
+  }
+}

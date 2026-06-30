@@ -6,6 +6,7 @@ const officialPackManifestIds = <String>[
   'pack.default',
   'pack.todo',
   'pack.pkm_library',
+  'pack.transcript_correction',
 ];
 
 const officialPackManifestMaps = <String, Map<String, Object?>>{
@@ -347,6 +348,141 @@ const officialPackManifestMaps = <String, Map<String, Object?>>{
       'source': 'packs/official/pkm_library/manifest.json',
       'derived_output': true,
       'source_truth': 'raw_capture_and_memory_remain_canonical',
+    },
+  },
+  'pack.transcript_correction': <String, Object?>{
+    r'$schema':
+        '../../../packages/schemas/src/agent_pack/agent_pack_manifest.schema.json',
+    'id': 'pack.transcript_correction',
+    'name': 'Transcript Correction',
+    'version': '0.1.0',
+    'schema_version': 1,
+    'publisher': 'widenote',
+    'edition': 'official',
+    'description':
+        'Official pack that corrects source-linked audio transcripts without replacing raw audio or writing Memory directly.',
+    'compatibility': <String, Object?>{
+      'widenote_min': '0.1.0',
+      'widenote_max': null,
+      'schema_version': 1,
+    },
+    'marketplace': <String, Object?>{
+      'source': 'bundled',
+      'trust_level': 'official',
+      'install_mode': 'bundled',
+      'repository_url': 'https://github.com/widenote/widenote',
+      'docs_path': 'packs/official/transcript_correction/README.md',
+      'icon_path': null,
+      'categories': <String>['transcription', 'memory'],
+      'capabilities': <String>['transcript.correct', 'memory.read'],
+      'status': 'available',
+    },
+    'additive_slots': <Map<String, Object?>>[
+      <String, Object?>{
+        'id': 'transcript.correction',
+        'mode': 'additive',
+        'description':
+            'Create source-linked transcript correction revisions and evidence events.',
+      },
+    ],
+    'entrypoint_kind': 'native',
+    'permissions': <String>[
+      'model.complete',
+      'source.read.transcript',
+      'memory.read',
+      'source.write.transcript_correction',
+    ],
+    'subscriptions': <Map<String, Object?>>[
+      <String, Object?>{
+        'id': 'sub.transcript_created',
+        'event_types': <String>['wn.transcript.created'],
+        'agent_id': 'agent.transcript_correction',
+        'delivery': 'async',
+        'enabled_by_default': true,
+        'depends_on': <String>[],
+      },
+    ],
+    'agents': <Map<String, Object?>>[
+      <String, Object?>{
+        'id': 'agent.transcript_correction',
+        'runtime': 'native',
+        'name': 'Transcript Correction Agent',
+        'prompt_ref': 'transcript.correction.v1',
+        'model_profile_ref': 'local_or_user_selected_text_model',
+        'permissions': <String>[
+          'model.complete',
+          'source.read.transcript',
+          'memory.read',
+          'source.write.transcript_correction',
+        ],
+        'tools': <String>[
+          'tool.transcript.read',
+          'tool.memory.read',
+          'tool.transcript_correction.write',
+        ],
+        'output_events': <String>['wn.transcript.corrected'],
+        'retry_policy': <String, Object?>{'max_attempts': 2},
+      },
+    ],
+    'model_profiles': <Map<String, Object?>>[
+      <String, Object?>{
+        'id': 'local_or_user_selected_text_model',
+        'purpose':
+            'Correct names, glossary terms, and near-homophones in transcript text using source-linked context.',
+        'required': false,
+        'routing_policy': 'app_default',
+        'required_capabilities': <String>['chat', 'completion'],
+        'allow_fallback': false,
+      },
+    ],
+    'tools': <Map<String, Object?>>[
+      <String, Object?>{
+        'id': 'tool.transcript.read',
+        'permissions': <String>['source.read.transcript'],
+        'required_permissions': <String>['source.read.transcript'],
+        'access': 'read',
+        'risk': 'low',
+        'locality': 'local',
+        'approval_requirement': 'none',
+        'execution': 'local',
+        'side_effect': 'none',
+        'compatible_run_modes': <String>['read_only', 'confirm', 'auto'],
+      },
+      <String, Object?>{
+        'id': 'tool.memory.read',
+        'permissions': <String>['memory.read'],
+        'required_permissions': <String>['memory.read'],
+        'access': 'read',
+        'risk': 'low',
+        'locality': 'local',
+        'approval_requirement': 'none',
+        'execution': 'local',
+        'side_effect': 'none',
+        'compatible_run_modes': <String>['read_only', 'confirm', 'auto'],
+      },
+      <String, Object?>{
+        'id': 'tool.transcript_correction.write',
+        'permissions': <String>['source.write.transcript_correction'],
+        'required_permissions': <String>['source.write.transcript_correction'],
+        'access': 'write',
+        'risk': 'low',
+        'locality': 'local',
+        'approval_requirement': 'none',
+        'execution': 'local',
+        'side_effect': 'local_write',
+        'compatible_run_modes': <String>['confirm', 'auto'],
+      },
+    ],
+    'ui_blocks': <Map<String, Object?>>[],
+    'storage_quota': <String, Object?>{'local_bytes': 0},
+    'integrity': <String, Object?>{'checksum_sha256': null, 'signature': null},
+    'metadata': <String, Object?>{
+      'status': 'draft',
+      'source': 'packs/official/transcript_correction/manifest.json',
+      'derived_output': true,
+      'source_truth': 'raw_audio_and_original_transcript_remain_source_linked',
+      'auto_apply_policy':
+          'high_confidence_exact_term_or_name_corrections_only',
     },
   },
 };

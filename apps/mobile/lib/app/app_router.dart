@@ -19,6 +19,7 @@ import '../features/timeline/presentation/timeline_page.dart';
 import '../features/timeline/presentation/timeline_search_page.dart';
 import '../features/todos/presentation/todos_page.dart';
 import '../features/traces/presentation/trace_console_page.dart';
+import '../features/transcription/presentation/voice_transcription_settings_page.dart';
 import '../l10n/l10n.dart';
 
 GoRouter createAppRouter() {
@@ -101,6 +102,14 @@ GoRouter createAppRouter() {
             name: 'settings-model-providers',
             pageBuilder: (context, state) =>
                 _noTransitionPage(state, const ModelProviderSettingsPage()),
+          ),
+          GoRoute(
+            path: '/settings/transcription',
+            name: 'settings-transcription',
+            pageBuilder: (context, state) => _noTransitionPage(
+              state,
+              const VoiceTranscriptionSettingsPage(),
+            ),
           ),
           GoRoute(
             path: '/settings/backup',

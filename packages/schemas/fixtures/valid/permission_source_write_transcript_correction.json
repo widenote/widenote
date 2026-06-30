@@ -1,0 +1,20 @@
+{
+  "id": "source.write.transcript_correction",
+  "title": "Write transcript correction",
+  "description": "Allows a correction pack to create source-linked transcript correction revisions without mutating raw audio or writing Memory directly.",
+  "risk": "medium",
+  "grant_behavior": "grant_on_enable",
+  "scope": {
+    "artifact_kind": "audio_transcript",
+    "auto_apply_high_confidence_only": true,
+    "may_write_memory": false,
+    "raw_audio_access": false
+  },
+  "side_effects": [
+    "local_write"
+  ],
+  "requires_trace": true,
+  "metadata": {
+    "fixture": true
+  }
+}

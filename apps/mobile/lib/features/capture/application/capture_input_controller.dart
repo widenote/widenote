@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../transcription/transcription_service.dart';
+import '../../transcription/transcription_types.dart';
 import '../media/capture_media.dart';
 import '../media/platform_capture_media.dart';
 
@@ -35,6 +39,7 @@ final class CaptureInputState {
     required this.attachments,
     this.mode = CaptureMode.text,
     this.voiceSession,
+    this.voicePreview = const TranscriptionPreview(),
     this.errorMessage,
     this.isBusy = false,
   });
@@ -46,6 +51,7 @@ final class CaptureInputState {
   final List<CaptureAttachment> attachments;
   final CaptureMode mode;
   final VoiceRecordingSession? voiceSession;
+  final TranscriptionPreview voicePreview;
   final String? errorMessage;
   final bool isBusy;
 
@@ -68,10 +74,12 @@ final class CaptureInputState {
     List<CaptureAttachment>? attachments,
     CaptureMode? mode,
     VoiceRecordingSession? voiceSession,
+    TranscriptionPreview? voicePreview,
     String? errorMessage,
     bool? isBusy,
     bool clearError = false,
     bool clearVoiceSession = false,
+    bool clearVoicePreview = false,
   }) {
     return CaptureInputState(
       attachments: attachments ?? this.attachments,
@@ -79,6 +87,9 @@ final class CaptureInputState {
       voiceSession: clearVoiceSession
           ? null
           : voiceSession ?? this.voiceSession,
+      voicePreview: clearVoicePreview
+          ? const TranscriptionPreview()
+          : voicePreview ?? this.voicePreview,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
       isBusy: isBusy ?? this.isBusy,
     );
@@ -86,8 +97,15 @@ final class CaptureInputState {
 }
 
 class CaptureInputController extends Notifier<CaptureInputState> {
+  StreamSubscription<TranscriptionPreview>? _voicePreviewSubscription;
+
   @override
-  CaptureInputState build() => CaptureInputState.initial();
+  CaptureInputState build() {
+    ref.onDispose(() {
+      unawaited(_voicePreviewSubscription?.cancel());
+    });
+    return CaptureInputState.initial();
+  }
 
   void setMode(CaptureMode mode) {
     if (state.mode == mode || state.isBusy) {
@@ -123,9 +141,13 @@ class CaptureInputController extends Notifier<CaptureInputState> {
           .startRecording();
       state = state.copyWith(
         voiceSession: session,
+        voicePreview: const TranscriptionPreview(
+          status: TranscriptStatus.transcribing,
+        ),
         isBusy: false,
         clearError: true,
       );
+      _startVoicePreview(session);
     } on CaptureMediaException catch (error) {
       state = state.copyWith(isBusy: false, errorMessage: error.userMessage);
     } catch (error) {
@@ -143,28 +165,37 @@ class CaptureInputController extends Notifier<CaptureInputState> {
     }
     state = state.copyWith(isBusy: true, clearError: true);
     try {
+      final draftPreview = state.voicePreview;
       final rawAsset = await ref
           .read(voiceCaptureAdapterProvider)
           .stopRecording(session);
-      final attachment = ref
+      await _voicePreviewSubscription?.cancel();
+      final builtAttachment = ref
           .read(assetSafetyGuardProvider)
           .buildAttachment(rawAsset);
+      final attachment = _attachmentWithDraftPreview(
+        builtAttachment,
+        draftPreview,
+      );
       state = state.copyWith(
         attachments: [attachment, ...state.attachments],
         isBusy: false,
         clearVoiceSession: true,
+        clearVoicePreview: true,
         clearError: true,
       );
     } on CaptureMediaException catch (error) {
       state = state.copyWith(
         isBusy: false,
         clearVoiceSession: true,
+        clearVoicePreview: true,
         errorMessage: error.userMessage,
       );
     } catch (error) {
       state = state.copyWith(
         isBusy: false,
         clearVoiceSession: true,
+        clearVoicePreview: true,
         errorMessage: 'Voice recording failed: $error',
       );
     }
@@ -178,21 +209,25 @@ class CaptureInputController extends Notifier<CaptureInputState> {
     state = state.copyWith(isBusy: true, clearError: true);
     try {
       await ref.read(voiceCaptureAdapterProvider).cancelRecording(session);
+      await _voicePreviewSubscription?.cancel();
       state = state.copyWith(
         isBusy: false,
         clearVoiceSession: true,
+        clearVoicePreview: true,
         errorMessage: 'Voice recording cancelled.',
       );
     } on CaptureMediaException catch (error) {
       state = state.copyWith(
         isBusy: false,
         clearVoiceSession: true,
+        clearVoicePreview: true,
         errorMessage: error.userMessage,
       );
     } catch (error) {
       state = state.copyWith(
         isBusy: false,
         clearVoiceSession: true,
+        clearVoicePreview: true,
         errorMessage: 'Voice recording cancel failed: $error',
       );
     }
@@ -245,6 +280,7 @@ class CaptureInputController extends Notifier<CaptureInputState> {
   }
 
   void clear() {
+    unawaited(_voicePreviewSubscription?.cancel());
     state = CaptureInputState.initial();
   }
 
@@ -289,5 +325,61 @@ class CaptureInputController extends Notifier<CaptureInputState> {
         errorMessage: 'Attachment failed: $error',
       );
     }
+  }
+
+  void _startVoicePreview(VoiceRecordingSession session) {
+    unawaited(_voicePreviewSubscription?.cancel());
+    final pcmStream = session.pcmStream;
+    if (pcmStream == null) {
+      state = state.copyWith(
+        voicePreview: const TranscriptionPreview(
+          status: TranscriptStatus.pending,
+          errorCode: TranscriptionFailureCode.streamUnavailable,
+        ),
+      );
+      return;
+    }
+    _voicePreviewSubscription = ref
+        .read(transcriptionServiceProvider)
+        .preview(
+          pcmStream.map(
+            (bytes) => AudioPcmChunk(
+              bytes: bytes,
+              sampleRate: session.sampleRate,
+              channels: session.numChannels,
+            ),
+          ),
+        )
+        .listen(
+          (preview) {
+            state = state.copyWith(voicePreview: preview);
+          },
+          onError: (_) {
+            state = state.copyWith(
+              voicePreview: const TranscriptionPreview(
+                status: TranscriptStatus.pending,
+                errorCode: TranscriptionFailureCode.streamUnavailable,
+              ),
+            );
+          },
+        );
+  }
+
+  CaptureAttachment _attachmentWithDraftPreview(
+    CaptureAttachment attachment,
+    TranscriptionPreview preview,
+  ) {
+    if (!preview.hasText) {
+      return attachment;
+    }
+    final draft = preview.displayText;
+    return attachment.copyWith(
+      previewText: 'Draft transcript: $draft. Final transcript pending.',
+      rawMetadata: <String, Object?>{
+        ...attachment.rawMetadata,
+        'draft_transcript': draft,
+        'transcript_status': 'pending',
+      },
+    );
   }
 }

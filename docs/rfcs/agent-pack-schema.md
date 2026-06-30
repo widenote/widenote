@@ -103,7 +103,7 @@ The bundled GitHub-first catalog lives at `packs/marketplace/index.json`.
 Phase-one official manifests are checked with the lightweight validator:
 
 ```sh
-node tools/pack_validator/validate.mjs packs/official/default/manifest.json packs/official/todo/manifest.json packs/official/pkm_library/manifest.json packs/marketplace/index.json
+node tools/pack_validator/validate.mjs packs/official/default/manifest.json packs/official/todo/manifest.json packs/official/pkm_library/manifest.json packs/official/transcript_correction/manifest.json packs/marketplace/index.json
 ```
 
 This is a lightweight validator, not a complete JSON Schema validator. It currently checks JSON parse, required manifest shape, intra-manifest references, subscription dependency references and cycles, agent permission subsets, non-empty output events, retry policy bounds, script-execution rejection, and the `pack.default` / `pack.todo` phase-one guardrails.
@@ -234,6 +234,7 @@ Pack prompts should follow progressive context disclosure:
 | `pack.default` | Yes | Capture to Memory/card/insight |
 | `pack.todo` | Yes | Source-linked todos and lightweight action review |
 | `pack.pkm_library` | Yes | Official PKM example that writes source-linked derived artifacts through `knowledge.organization` |
+| `pack.transcript_correction` | Yes | Source-linked transcript correction revisions through `transcript.correction` |
 
 ## Pack Developer Flow
 

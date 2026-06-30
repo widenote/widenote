@@ -51,6 +51,9 @@ final class LocalCaptureReadModelStore {
     for (final attachment in attachments) {
       _database.attachments.save(_attachmentRecord(record, attachment));
       for (final artifact in _attachmentArtifacts(record, attachment)) {
+        if (_shouldPreserveExistingArtifact(artifact)) {
+          continue;
+        }
         _database.derivedArtifacts.save(artifact);
       }
     }
@@ -75,6 +78,19 @@ final class LocalCaptureReadModelStore {
         updatedAt: DateTime.now().toUtc(),
       ),
     );
+  }
+
+  bool _shouldPreserveExistingArtifact(
+    localdb.DerivedArtifactRecord artifact,
+  ) {
+    if (artifact.artifactKind != 'audio_transcript') {
+      return false;
+    }
+    final existing = _database.derivedArtifacts.readById(artifact.id);
+    if (existing == null || existing.status != 'active') {
+      return false;
+    }
+    return existing.payload['provider_id'] is String;
   }
 }
 
