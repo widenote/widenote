@@ -73,7 +73,21 @@ void main() {
     final attachment = _readCaptureInputState(tester).attachments.single;
     expect(attachment.kind, CaptureAssetKind.photo);
     expect(find.text('Camera photo sample.jpg'), findsOneWidget);
-    expect(find.textContaining('Camera photo saved locally'), findsOneWidget);
+    expect(
+      find.text('Camera photo saved locally: whiteboard snapshot'),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(Key('attachment-${attachment.id}-artifact-vision_summary')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(Key('attachment-${attachment.id}-artifact-ocr_text')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('status: ready'), findsOneWidget);
+    expect(find.textContaining('status: pending'), findsOneWidget);
+    expect(find.textContaining(attachment.id), findsWidgets);
 
     final semantics = tester.ensureSemantics();
     try {
@@ -170,7 +184,10 @@ void main() {
     final inputState = _readCaptureInputState(tester);
     expect(inputState.attachments.single.kind, CaptureAssetKind.photo);
     expect(find.text('Gallery photo sample.jpg'), findsOneWidget);
-    expect(find.textContaining('Gallery photo saved locally'), findsOneWidget);
+    expect(
+      find.text('Gallery photo saved locally: reference image'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('permission denied and cancelled states are visible', (
@@ -199,6 +216,47 @@ void main() {
 
     final state = _readCaptureState(tester);
     expect(state.records, isEmpty);
+  });
+
+  testWidgets('failed attachment artifact redacts raw storage path', (
+    tester,
+  ) async {
+    await _pumpApp(tester, photoAdapter: const _FailedArtifactPhotoAdapter());
+    await _openNewRecordSheet(tester);
+
+    await tester.tap(find.byKey(const Key('add-camera-attachment-button')));
+    await tester.pumpAndSettle();
+
+    final attachment = _readCaptureInputState(tester).attachments.single;
+    expect(
+      find.byKey(Key('attachment-${attachment.id}-artifact-vision_summary')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('status: Failed'), findsWidgets);
+    expect(find.textContaining('/Users/guangmo/private'), findsNothing);
+  });
+
+  testWidgets('blocked attachment artifact hides dangerous preview', (
+    tester,
+  ) async {
+    await _pumpApp(
+      tester,
+      photoAdapter: const FakePhotoCaptureAdapter(
+        mode: FakePhotoMode.dangerous,
+      ),
+    );
+    await _openNewRecordSheet(tester);
+
+    await tester.tap(find.byKey(const Key('add-gallery-attachment-button')));
+    await tester.pumpAndSettle();
+
+    final attachment = _readCaptureInputState(tester).attachments.single;
+    expect(
+      find.byKey(Key('attachment-${attachment.id}-artifact-image_derivatives')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('status: Blocked'), findsWidgets);
+    expect(find.textContaining('DANGEROUS RAW PREVIEW'), findsNothing);
   });
 
   testWidgets('gallery cancel is visible without phantom capture', (
@@ -235,6 +293,11 @@ void main() {
     expect(attachment.state, CaptureAttachmentState.needsReview);
     expect(find.byKey(const Key('capture-sheet')), findsOneWidget);
     expect(find.textContaining('Transcript needs review'), findsOneWidget);
+    expect(
+      find.byKey(Key('attachment-${attachment.id}-artifact-audio_transcript')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('status: needs review'), findsOneWidget);
 
     final recordButton = find.byKey(const Key('record-capture-button'));
     await _scrollHomeActionIntoView(tester, recordButton);
@@ -247,6 +310,7 @@ void main() {
     await tester.pumpAndSettle();
     inputState = _readCaptureInputState(tester);
     expect(inputState.attachments.single.state, CaptureAttachmentState.ready);
+    expect(find.textContaining('status: ready'), findsOneWidget);
 
     await _scrollHomeActionIntoView(tester, recordButton);
     await tester.tap(recordButton);
@@ -353,6 +417,37 @@ void main() {
     final state = _readCaptureState(tester);
     expect(state.records.single.body, longText.trim());
     expect(state.records.single.status, 'Processed locally');
+  });
+
+  testWidgets('long text and multiple attachment artifacts stay bounded', (
+    tester,
+  ) async {
+    await _pumpApp(tester, photoAdapter: const _LongArtifactPhotoAdapter());
+    await _openNewRecordSheet(tester);
+    await tester.binding.setSurfaceSize(const Size(320, 720));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('add-camera-attachment-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('add-gallery-attachment-button')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('quick-capture-field')),
+      'A long capture accompanies several attachments. ${'detail ' * 120}',
+    );
+    await tester.pumpAndSettle();
+
+    expect(_readCaptureInputState(tester).attachments, hasLength(2));
+    expect(
+      find.byKey(const Key('attachment-row-long-camera-photo')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('attachment-row-long-gallery-photo')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('text draft restores across rebuild and clears after submit', (
@@ -557,4 +652,80 @@ final class _ReviewVoiceAdapter implements VoiceCaptureAdapter {
 
   @override
   Future<void> cancelRecording(VoiceRecordingSession session) async {}
+}
+
+final class _FailedArtifactPhotoAdapter implements PhotoCaptureAdapter {
+  const _FailedArtifactPhotoAdapter();
+
+  @override
+  Future<RawCaptureAsset> captureFromCamera() async {
+    return RawCaptureAsset(
+      id: 'failed-artifact-photo',
+      kind: CaptureAssetKind.photo,
+      displayName: 'Failed artifact photo.jpg',
+      mimeType: 'image/jpeg',
+      sourceUri: '/Users/guangmo/private/raw/failed-artifact-photo.jpg',
+      createdAt: DateTime.utc(2026, 6, 29, 8),
+      previewText: 'Safe photo summary returned by the adapter.',
+      rawMetadata: const <String, Object?>{
+        'source': 'camera',
+        'sha256': 'failed-artifact-sha256',
+        'vision_status': 'failed',
+        'ocr_status': 'failed',
+        'local_path': '/Users/guangmo/private/raw/failed-artifact-photo.jpg',
+      },
+    );
+  }
+
+  @override
+  Future<RawCaptureAsset> pickFromGallery() => captureFromCamera();
+}
+
+final class _LongArtifactPhotoAdapter implements PhotoCaptureAdapter {
+  const _LongArtifactPhotoAdapter();
+
+  @override
+  Future<RawCaptureAsset> captureFromCamera() async {
+    return _asset(
+      id: 'long-camera-photo',
+      displayName:
+          'A very long camera attachment name that should never widen rows.jpg',
+      source: 'camera',
+    );
+  }
+
+  @override
+  Future<RawCaptureAsset> pickFromGallery() async {
+    return _asset(
+      id: 'long-gallery-photo',
+      displayName:
+          'A very long gallery attachment name that should wrap safely.jpg',
+      source: 'gallery',
+    );
+  }
+
+  RawCaptureAsset _asset({
+    required String id,
+    required String displayName,
+    required String source,
+  }) {
+    return RawCaptureAsset(
+      id: id,
+      kind: CaptureAssetKind.photo,
+      displayName: displayName,
+      mimeType: 'image/jpeg',
+      sourceUri: '/Users/guangmo/private/raw/$id.jpg',
+      createdAt: DateTime.utc(2026, 6, 29, 9),
+      previewText:
+          'A safe adapter preview with many words that should ellipsize '
+          'inside the attachment artifact list instead of overflowing.',
+      rawMetadata: <String, Object?>{
+        'source': source,
+        'sha256': '$id-sha256',
+        'vision_status': 'ready',
+        'ocr_status': 'pending',
+        'local_path': '/Users/guangmo/private/raw/$id.jpg',
+      },
+    );
+  }
 }

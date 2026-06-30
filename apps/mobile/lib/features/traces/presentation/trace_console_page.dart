@@ -543,11 +543,55 @@ class _TraceDetails extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
+          if (item.delegation != null) ...[
+            _DelegationDetails(traceId: item.id, link: item.delegation!),
+            const SizedBox(height: 8),
+          ],
           _SourceAction(item: item),
           const SizedBox(height: 8),
           _PayloadView(item: item),
         ],
       ),
+    );
+  }
+}
+
+class _DelegationDetails extends StatelessWidget {
+  const _DelegationDetails({required this.traceId, required this.link});
+
+  final String traceId;
+  final AgentDelegationLink link;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        if (link.delegationId.isNotEmpty)
+          _Tag(
+            key: Key('agent-console-child-delegation-$traceId'),
+            label: l10n.agentConsoleChildDelegation(link.delegationId),
+          ),
+        if (link.childRunId != null && link.childRunId!.isNotEmpty)
+          _Tag(
+            key: Key('agent-console-child-run-$traceId'),
+            label: l10n.agentConsoleChildRun(link.childRunId!),
+          ),
+        if (link.status.isNotEmpty)
+          _Tag(
+            key: Key('agent-console-child-status-$traceId'),
+            label: l10n.agentConsoleChildStatus(link.status),
+          ),
+        if (link.violationCodes.isNotEmpty)
+          _Tag(
+            key: Key('agent-console-delegation-violations-$traceId'),
+            label: l10n.agentConsoleDelegationViolations(
+              link.violationCodes.join(', '),
+            ),
+          ),
+      ],
     );
   }
 }

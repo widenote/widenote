@@ -1,12 +1,18 @@
 import 'package:widenote_core/widenote_core.dart';
 
+import 'run_mode.dart';
+
 typedef ToolHandler = Future<JsonMap> Function(ToolInvocation invocation);
 
-enum ToolAccess { read, write }
+enum ToolAccess { read, write, readWrite }
 
-enum ToolRisk { low, high }
+enum ToolRisk { low, medium, high }
 
-enum ToolApprovalRequirement { automatic, always }
+enum ToolLocality { local, external }
+
+enum ToolApprovalRequirement { automatic, always, perCall, deferred }
+
+enum ToolExecution { local, fake, deferred, disabled }
 
 final class ToolDefinition {
   const ToolDefinition({
@@ -15,28 +21,49 @@ final class ToolDefinition {
     required this.handler,
     this.requiredPermissions = const <String>{},
     this.access = ToolAccess.read,
-    this.external = false,
+    bool external = false,
+    ToolLocality? locality,
     this.risk = ToolRisk.low,
     this.approvalRequirement = ToolApprovalRequirement.automatic,
-  });
+    this.execution = ToolExecution.local,
+    this.compatibleRunModes = const <RunMode>{
+      RunMode.readOnly,
+      RunMode.confirm,
+      RunMode.auto,
+    },
+  }) : locality =
+           locality ?? (external ? ToolLocality.external : ToolLocality.local);
 
   final String name;
   final String description;
   final Set<String> requiredPermissions;
   final ToolAccess access;
-  final bool external;
+  final ToolLocality locality;
   final ToolRisk risk;
   final ToolApprovalRequirement approvalRequirement;
+  final ToolExecution execution;
+  final Set<RunMode> compatibleRunModes;
   final ToolHandler handler;
 
-  bool get mutates => access == ToolAccess.write;
+  bool get mutates =>
+      access == ToolAccess.write || access == ToolAccess.readWrite;
+  bool get external => locality == ToolLocality.external;
   bool get isHighRisk => risk == ToolRisk.high;
-  bool get isReadOnlySafe => !mutates && !external && !isHighRisk;
+  bool get isExecutableLocally {
+    return execution == ToolExecution.local || execution == ToolExecution.fake;
+  }
+
+  bool get isReadOnlySafe {
+    return !mutates && !external && !isHighRisk && isExecutableLocally;
+  }
 
   bool get requiresExplicitApproval {
     return approvalRequirement == ToolApprovalRequirement.always ||
+        approvalRequirement == ToolApprovalRequirement.perCall ||
+        approvalRequirement == ToolApprovalRequirement.deferred ||
         external ||
-        isHighRisk;
+        isHighRisk ||
+        !isExecutableLocally;
   }
 
   bool get requiresApproval {
@@ -44,7 +71,7 @@ final class ToolDefinition {
   }
 
   bool get canAutoExecute {
-    return !requiresExplicitApproval;
+    return !requiresExplicitApproval && risk == ToolRisk.low && !external;
   }
 }
 

@@ -182,6 +182,7 @@ enum RuntimePackStatusKind {
   denied,
   canceled,
   blocked,
+  disabled,
 }
 
 final class RuntimePackStatus {
@@ -212,4 +213,24 @@ final class RuntimePackStatus {
   final int deniedCount;
   final int canceledCount;
   final int blockedCount;
+}
+
+enum PackInstallationStatus { enabled, disabled }
+
+extension PackInstallationStatusState on PackInstallationStatus {
+  bool get isEnabled => this == PackInstallationStatus.enabled;
+}
+
+final class RuntimePackInstallation {
+  const RuntimePackInstallation({
+    required this.packId,
+    required this.status,
+    required this.updatedAt,
+    this.reason,
+  });
+
+  final String packId;
+  final PackInstallationStatus status;
+  final DateTime updatedAt;
+  final String? reason;
 }

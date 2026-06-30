@@ -38,6 +38,8 @@ final class ChatMessage {
     required this.createdAt,
     this.status = ChatMessageStatus.sent,
     this.sourceRefs = const <ChatSourceRef>[],
+    this.runId,
+    this.toolSummaries = const <ChatToolSummary>[],
   });
 
   final String id;
@@ -47,11 +49,15 @@ final class ChatMessage {
   final DateTime createdAt;
   final ChatMessageStatus status;
   final List<ChatSourceRef> sourceRefs;
+  final String? runId;
+  final List<ChatToolSummary> toolSummaries;
 
   ChatMessage copyWith({
     String? body,
     ChatMessageStatus? status,
     List<ChatSourceRef>? sourceRefs,
+    String? runId,
+    List<ChatToolSummary>? toolSummaries,
   }) {
     return ChatMessage(
       id: id,
@@ -61,6 +67,8 @@ final class ChatMessage {
       createdAt: createdAt,
       status: status ?? this.status,
       sourceRefs: sourceRefs ?? this.sourceRefs,
+      runId: runId ?? this.runId,
+      toolSummaries: toolSummaries ?? this.toolSummaries,
     );
   }
 }
@@ -112,18 +120,46 @@ final class ChatSourceRef {
 }
 
 @immutable
+final class ChatToolSummary {
+  const ChatToolSummary({
+    required this.name,
+    required this.status,
+    required this.sourceRefCount,
+    this.errorCode,
+  });
+
+  final String name;
+  final String status;
+  final int sourceRefCount;
+  final String? errorCode;
+}
+
+@immutable
 final class ChatAssistantPrompt {
-  const ChatAssistantPrompt({required this.question, required this.sources});
+  const ChatAssistantPrompt({
+    required this.question,
+    required this.sources,
+    this.runId = 'chat-run-local',
+    this.runMode = 'read_only',
+  });
 
   final String question;
   final List<ChatSource> sources;
+  final String runId;
+  final String runMode;
 }
 
 @immutable
 final class ChatAssistantReply {
-  const ChatAssistantReply({required this.body});
+  const ChatAssistantReply({
+    required this.body,
+    this.sourceRefs = const <ChatSourceRef>[],
+    this.toolSummaries = const <ChatToolSummary>[],
+  });
 
   final String body;
+  final List<ChatSourceRef> sourceRefs;
+  final List<ChatToolSummary> toolSummaries;
 }
 
 @immutable

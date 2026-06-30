@@ -733,6 +733,39 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sourceKindFile => '文件';
 
   @override
+  String get attachmentArtifactStatusPending => '待处理';
+
+  @override
+  String get attachmentArtifactStatusReady => '就绪';
+
+  @override
+  String get attachmentArtifactStatusFailed => '失败';
+
+  @override
+  String get attachmentArtifactStatusBlocked => '阻塞';
+
+  @override
+  String get attachmentArtifactStatusNeedsReview => '需要复核';
+
+  @override
+  String get attachmentArtifactKindAudioTranscript => '音频转写';
+
+  @override
+  String get attachmentArtifactKindImageDerivatives => '图片产物';
+
+  @override
+  String get attachmentArtifactKindOcrText => 'OCR 文本';
+
+  @override
+  String get attachmentArtifactKindVisionSummary => '图片摘要';
+
+  @override
+  String get attachmentArtifactKindSharedText => '分享文本';
+
+  @override
+  String get timelineAttachmentArtifactsTitle => '附件产物';
+
+  @override
   String sourceLinkCount(int count) {
     return '$count 个来源链接';
   }
@@ -1724,6 +1757,26 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get agentConsoleRunModeUnknown => '运行模式：未知';
+
+  @override
+  String agentConsoleChildDelegation(String delegationId) {
+    return '委派：$delegationId';
+  }
+
+  @override
+  String agentConsoleChildRun(String runId) {
+    return '子运行：$runId';
+  }
+
+  @override
+  String agentConsoleChildStatus(String status) {
+    return '子状态：$status';
+  }
+
+  @override
+  String agentConsoleDelegationViolations(String codes) {
+    return '违规：$codes';
+  }
 
   @override
   String get traceConsoleOpenSourceButton => '打开来源';

@@ -51,8 +51,20 @@ void main() {
 
     expect(attachment.state, CaptureAttachmentState.ready);
     expect(attachment.previewText, contains('Camera photo'));
+    expect(
+      attachment.derivedArtifacts.map((artifact) => artifact.status),
+      <AttachmentDerivedArtifactStatus>[
+        AttachmentDerivedArtifactStatus.ready,
+        AttachmentDerivedArtifactStatus.pending,
+      ],
+    );
+    expect(
+      attachment.derivedArtifacts.map((artifact) => artifact.sourceLabel),
+      everyElement(startsWith('source: capture_attachment:')),
+    );
     expect(payload['kind'], 'photo');
     expect(payload['source_ref'], isA<Map<String, Object?>>());
+    expect(payload['derived_artifacts'], isA<List<Object?>>());
     expect(metadata['mime_type'], 'image/jpeg');
     expect(adapterMetadata['source'], 'camera');
     expect(adapterMetadata['sha256'], 'fake-camera-photo-sha256');
@@ -84,6 +96,14 @@ void main() {
     expect(attachment.state, CaptureAttachmentState.blocked);
     expect(attachment.canRenderPreview, isFalse);
     expect(attachment.previewText, isNot(contains('DANGEROUS')));
+    expect(
+      attachment.derivedArtifacts.single.status,
+      AttachmentDerivedArtifactStatus.blocked,
+    );
+    expect(
+      attachment.derivedArtifacts.single.excerpt,
+      isNot(contains('DANGEROUS')),
+    );
     expect(payload['preview_text'], 'preview_hidden');
     expect(
       ((payload['raw_metadata']! as Map)['adapter_metadata']!
@@ -91,6 +111,41 @@ void main() {
       contains('DANGEROUS'),
     );
   });
+
+  test(
+    'derived artifact states come from adapter metadata, not preview words',
+    () {
+      final raw = RawCaptureAsset(
+        id: 'metadata-status-photo',
+        kind: CaptureAssetKind.photo,
+        displayName: 'metadata-status.jpg',
+        mimeType: 'image/jpeg',
+        sourceUri: '/Users/private/raw/metadata-status.jpg',
+        createdAt: DateTime.utc(2026, 6, 29, 1),
+        previewText:
+            'This safe preview says blocked and review as plain words.',
+        rawMetadata: const <String, Object?>{
+          'vision_status': 'failed',
+          'ocr_status': 'needs_review',
+        },
+      );
+
+      final attachment = const AssetSafetyGuard().buildAttachment(raw);
+
+      expect(attachment.state, CaptureAttachmentState.ready);
+      expect(
+        attachment.derivedArtifacts.map((artifact) => artifact.status),
+        <AttachmentDerivedArtifactStatus>[
+          AttachmentDerivedArtifactStatus.failed,
+          AttachmentDerivedArtifactStatus.needsReview,
+        ],
+      );
+      expect(
+        attachment.derivedArtifacts.map((artifact) => artifact.excerpt),
+        everyElement(isNot(contains('/Users/private/raw'))),
+      );
+    },
+  );
 
   test('unsupported media is blocked by MIME type', () async {
     final raw = await FakePhotoCaptureAdapter(

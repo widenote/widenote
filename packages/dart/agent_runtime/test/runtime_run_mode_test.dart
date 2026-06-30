@@ -472,6 +472,89 @@ void main() {
       'tool.secret.write',
     ]);
   });
+
+  test(
+    'undeclared tool is denied without executing registered handler',
+    () async {
+      var toolCalls = 0;
+      final traceSink = InMemoryTraceSink();
+      final tools = InMemoryToolRegistry()
+        ..register(
+          ToolDefinition(
+            name: 'memory.read',
+            description: 'Reads memory.',
+            handler: (invocation) async {
+              toolCalls += 1;
+              return const <String, Object?>{'ok': true};
+            },
+          ),
+        );
+      final kernel = _kernel(
+        traceSink: traceSink,
+        tools: tools,
+        declaredTools: const <String>{},
+        handler: const _ToolCallingHandler('memory.read'),
+      );
+
+      await _publishCapture(kernel);
+
+      final output = (await kernel.eventStore.readByType(
+        WnEventTypes.insightCreated,
+      )).single;
+      final traces = await traceSink.readAll();
+
+      expect(toolCalls, 0);
+      expect(output.payload['tool_error'], 'tool_undeclared');
+      expect(
+        traces.map((trace) => trace.name),
+        contains('runtime.tool.undeclared'),
+      );
+      expect(
+        traces.map((trace) => trace.name),
+        isNot(contains('runtime.tool.completed')),
+      );
+    },
+  );
+
+  test('deferred tool returns unsupported trace without executing', () async {
+    var toolCalls = 0;
+    final traceSink = InMemoryTraceSink();
+    final tools = InMemoryToolRegistry()
+      ..register(
+        ToolDefinition(
+          name: 'http.fetch',
+          description: 'Deferred HTTP fetch.',
+          locality: ToolLocality.external,
+          execution: ToolExecution.deferred,
+          compatibleRunModes: const <RunMode>{RunMode.confirm},
+          handler: (invocation) async {
+            toolCalls += 1;
+            return const <String, Object?>{'ok': true};
+          },
+        ),
+      );
+    final kernel = _kernel(
+      traceSink: traceSink,
+      tools: tools,
+      runMode: RunMode.confirm,
+      handler: const _ToolCallingHandler('http.fetch'),
+    );
+
+    await _publishCapture(kernel);
+
+    final output = (await kernel.eventStore.readByType(
+      WnEventTypes.insightCreated,
+    )).single;
+    final traces = await traceSink.readAll();
+
+    expect(toolCalls, 0);
+    expect(output.payload['tool_error'], 'unsupported_tool');
+    final unsupported = traces.singleWhere(
+      (trace) => trace.name == 'runtime.tool.unsupported',
+    );
+    expect(unsupported.details['tool_execution'], 'deferred');
+    expect(unsupported.details['tool_locality'], 'external');
+  });
 }
 
 RuntimeKernel _kernel({
@@ -480,8 +563,14 @@ RuntimeKernel _kernel({
   RunMode runMode = RunMode.auto,
   ApprovalBroker? approvalBroker,
   PermissionBroker? permissions,
+  Set<String>? declaredTools,
   required AgentHandler handler,
 }) {
+  final effectiveDeclaredTools =
+      declaredTools ??
+      (handler is _ToolCallingHandler
+          ? <String>{handler.toolName}
+          : const <String>{});
   final kernel = RuntimeKernel(
     eventStore: InMemoryEventStore(),
     traceSink: traceSink ?? InMemoryTraceSink(),
@@ -506,9 +595,10 @@ RuntimeKernel _kernel({
           eventTypes: <String>{WnEventTypes.captureCreated},
         ),
       ],
-      agentDefinitions: const <String, AgentDefinition>{
+      agentDefinitions: <String, AgentDefinition>{
         'agent.runtime': AgentDefinition(
           id: 'agent.runtime',
+          tools: effectiveDeclaredTools,
           outputEvents: <String>{WnEventTypes.insightCreated},
         ),
       },

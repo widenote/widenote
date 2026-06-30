@@ -42,6 +42,15 @@ void main() {
       final todoSuggest = registry.lookup(
         LocalDbCoreToolCatalog.todoSuggestTool,
       )!;
+      final fakeAsr = registry.lookup(
+        LocalDbCoreToolCatalog.audioTranscribeLocalFakeTool,
+      )!;
+      final fakeOcr = registry.lookup(
+        LocalDbCoreToolCatalog.imageOcrLocalFakeTool,
+      )!;
+      final fakeDescribe = registry.lookup(
+        LocalDbCoreToolCatalog.imageDescribeLocalFakeTool,
+      )!;
       final traceRead = registry.lookup(LocalDbCoreToolCatalog.traceReadTool)!;
 
       expect(context.requiredPermissions, <String>{'context_packet.build'});
@@ -53,6 +62,13 @@ void main() {
       });
       expect(memoryPropose.requiredPermissions, <String>{'memory.propose'});
       expect(todoSuggest.requiredPermissions, <String>{'todo.suggest'});
+      expect(fakeAsr.requiredPermissions, <String>{
+        'audio.transcribe.local_fake',
+      });
+      expect(fakeOcr.requiredPermissions, <String>{'image.ocr.local_fake'});
+      expect(fakeDescribe.requiredPermissions, <String>{
+        'image.describe.local_fake',
+      });
       expect(traceRead.requiredPermissions, <String>{'trace.read'});
       expect(
         <runtime.ToolDefinition>[
@@ -63,6 +79,9 @@ void main() {
           semanticSearch,
           memoryPropose,
           todoSuggest,
+          fakeAsr,
+          fakeOcr,
+          fakeDescribe,
           traceRead,
         ].every((definition) => definition.external == false),
         isTrue,
@@ -74,8 +93,14 @@ void main() {
       expect(traceRead.access, runtime.ToolAccess.read);
       expect(memoryPropose.access, runtime.ToolAccess.write);
       expect(todoSuggest.access, runtime.ToolAccess.write);
+      expect(fakeAsr.access, runtime.ToolAccess.write);
+      expect(fakeOcr.access, runtime.ToolAccess.write);
+      expect(fakeDescribe.access, runtime.ToolAccess.write);
       expect(memoryPropose.requiresApproval, isTrue);
       expect(todoSuggest.requiresApproval, isTrue);
+      expect(fakeAsr.requiresApproval, isTrue);
+      expect(fakeOcr.requiresApproval, isTrue);
+      expect(fakeDescribe.requiresApproval, isTrue);
     });
 
     test(
@@ -230,10 +255,20 @@ void main() {
           },
         );
         expect(semantic['success'], isTrue);
-        expect(semantic['selection_strategy'], 'context_packet_model_ready');
+        expect(
+          semantic['selection_strategy'],
+          'local_candidate_retrieval_nonsemantic',
+        );
+        expect(semantic['query_used_for_candidate_selection'], isFalse);
         expect(
           jsonEncode(semantic['sources']),
           contains('Whiteboard says ship local read tools.'),
+        );
+        expect(
+          (semantic['candidates']! as List).map(
+            (candidate) => (candidate as Map)['kind'],
+          ),
+          containsAll(<String>['capture', 'card', 'derived_artifact']),
         );
       },
     );
@@ -317,6 +352,210 @@ void main() {
           (item['source_refs']! as List).map((ref) => (ref as Map)['kind']),
           containsAll(<String>['capture', 'event']),
         );
+      },
+    );
+
+    test(
+      'semantic query candidate collection ignores query content heuristics',
+      () async {
+        final now = DateTime.utc(2026, 6, 28, 9);
+        _seedRetrievalFixture(database, now);
+        LocalDbCoreToolCatalog(database).registerInto(registry);
+
+        Future<List<String>> candidateIds(String query) async {
+          final output = await _invoke(
+            registry,
+            LocalDbCoreToolCatalog.semanticSearchQueryTool,
+            <String, Object?>{'query': query, 'limit': 20},
+          );
+          expect(output['query_used_for_candidate_selection'], isFalse);
+          return _candidateIds(output);
+        }
+
+        final english = await candidateIds('alpha project launch');
+        final chinese = await candidateIds('阿尔法项目发布');
+        final upper = await candidateIds('ALPHA PROJECT LAUNCH');
+
+        expect(chinese, english);
+        expect(upper, english);
+        expect(
+          english.toSet(),
+          containsAll(<String>{
+            'memory/memory-alpha',
+            'capture/capture-alpha',
+            'card/card-alpha',
+            'insight/insight-alpha',
+            'todo/todo-alpha',
+            'derived_artifact/artifact-alpha-ocr',
+          }),
+        );
+
+        final filtered = await _invoke(
+          registry,
+          LocalDbCoreToolCatalog.semanticSearchQueryTool,
+          const <String, Object?>{
+            'query': 'alpha project launch',
+            'object_kinds': <Object?>['memory'],
+            'limit': 20,
+          },
+        );
+        expect(_candidateIds(filtered), <String>['memory/memory-alpha']);
+      },
+    );
+
+    test(
+      'semantic query excludes tombstone deletion and high sensitivity by default',
+      () async {
+        final now = DateTime.utc(2026, 6, 28, 10);
+        _seedRetrievalFixture(database, now);
+        LocalDbCoreToolCatalog(database).registerInto(registry);
+
+        final output = await _invoke(
+          registry,
+          LocalDbCoreToolCatalog.semanticSearchQueryTool,
+          const <String, Object?>{'query': 'anything', 'limit': 20},
+        );
+        final ids = _candidateIds(output);
+        expect(ids, isNot(contains('memory/memory-high')));
+        expect(ids, isNot(contains('memory/memory-tombstone')));
+        expect(ids, isNot(contains('capture/capture-deleted')));
+        expect(ids, isNot(contains('derived_artifact/artifact-high')));
+
+        final traceReview = await _invoke(
+          registry,
+          LocalDbCoreToolCatalog.semanticSearchQueryTool,
+          const <String, Object?>{
+            'query': 'anything',
+            'permission_mode': 'trace_review',
+            'limit': 20,
+          },
+        );
+        final high = (traceReview['candidates']! as List).cast<Map>().where(
+          (candidate) => candidate['id'] == 'memory-high',
+        );
+        expect(high, hasLength(1));
+        expect(high.single['snippet'], isNull);
+        expect(
+          jsonEncode(traceReview),
+          isNot(contains('High sensitivity body')),
+        );
+      },
+    );
+
+    test(
+      'semantic query returns derived artifact candidates by source refs without raw paths',
+      () async {
+        final now = DateTime.utc(2026, 6, 28, 11);
+        _seedRetrievalFixture(database, now);
+        LocalDbCoreToolCatalog(database).registerInto(registry);
+
+        final output = await _invoke(
+          registry,
+          LocalDbCoreToolCatalog.semanticSearchQueryTool,
+          const <String, Object?>{
+            'query': 'unrelated query text',
+            'source_refs': <Object?>[
+              <String, Object?>{'kind': 'file', 'id': 'attachment-alpha'},
+            ],
+            'limit': 20,
+          },
+        );
+
+        final candidates = (output['candidates']! as List).cast<Map>();
+        expect(
+          candidates.map((candidate) => candidate['id']),
+          contains('artifact-alpha-ocr'),
+        );
+        final artifact = candidates.singleWhere(
+          (candidate) => candidate['id'] == 'artifact-alpha-ocr',
+        );
+        expect(artifact['kind'], 'derived_artifact');
+        expect(
+          artifact['snippet'],
+          contains('Alpha OCR says derived evidence'),
+        );
+        expect(
+          (artifact['source_refs']! as List).map((ref) => (ref as Map)['kind']),
+          containsAll(<String>['artifact', 'capture', 'file']),
+        );
+        final encoded = jsonEncode(output);
+        expect(encoded, isNot(contains('/Users/guangmo/private')));
+        expect(encoded, isNot(contains('/private/generated')));
+        expect(encoded, isNot(contains('RAW_MEDIA_BYTES')));
+      },
+    );
+
+    test(
+      'redacts raw paths and media across context retrieval and trace outputs',
+      () async {
+        final now = DateTime.utc(2026, 6, 28, 12);
+        _seedRetrievalFixture(database, now);
+        _seedRuntimePrerequisites(
+          database,
+          now,
+          packId: 'pack.paths',
+          taskId: 'task-paths',
+          eventId: 'event-paths',
+        );
+        database.traceEvents.insert(
+          TraceEventRecord(
+            id: 'trace-paths',
+            name: 'tool.media.completed',
+            level: 'info',
+            sourceRunId: 'run-paths',
+            packId: 'pack.paths',
+            message:
+                'stored at /Users/guangmo/private/raw/alpha.png with token=safe-to-redact',
+            payload: const <String, Object?>{
+              'storage_path': '/Users/guangmo/private/raw/alpha.png',
+              'media_bytes': 'RAW_MEDIA_BYTES',
+              'nested': <String, Object?>{
+                'absolute_path': '/private/generated/alpha.txt',
+              },
+            },
+            createdAt: now,
+          ),
+        );
+        LocalDbCoreToolCatalog(database).registerInto(registry);
+
+        final context = ContextPacketBuilder(database, clock: () => now).build(
+          const ContextPacketBuildRequest(
+            surface: 'chat',
+            sourceRefs: <JsonMap>[
+              <String, Object?>{'kind': 'capture', 'id': 'capture-alpha'},
+            ],
+            disclosureLevel: 'attachment_expansion',
+            includeAttachmentMetadata: true,
+            allowAttachmentExpansion: false,
+          ),
+        );
+        final retrieval = await _invoke(
+          registry,
+          LocalDbCoreToolCatalog.semanticSearchQueryTool,
+          const <String, Object?>{
+            'query': 'paths should not matter',
+            'source_refs': <Object?>[
+              <String, Object?>{'kind': 'capture', 'id': 'capture-alpha'},
+            ],
+            'limit': 20,
+          },
+        );
+        final trace = await _invoke(
+          registry,
+          LocalDbCoreToolCatalog.traceReadTool,
+          const <String, Object?>{'pack_id': 'pack.paths', 'limit': 5},
+        );
+
+        final encoded = jsonEncode(<String, Object?>{
+          'context': context.packet,
+          'retrieval': retrieval,
+          'trace': trace,
+        });
+        expect(encoded, isNot(contains('/Users/guangmo/private')));
+        expect(encoded, isNot(contains('/private/generated')));
+        expect(encoded, isNot(contains('RAW_MEDIA_BYTES')));
+        expect(encoded, contains('[redacted:local_path]'));
+        expect(encoded, contains('[redacted:raw_media]'));
       },
     );
 
@@ -488,6 +727,98 @@ void main() {
       expect(database.todos.readAll(), hasLength(countBeforeMissing));
     });
 
+    test(
+      'local fake ASR OCR and image description tools create source-linked artifacts',
+      () async {
+        final now = DateTime.utc(2026, 6, 28, 13);
+        _seedMediaSources(database, now);
+        LocalDbCoreToolCatalog(
+          database,
+          clock: () => now,
+        ).registerInto(registry);
+
+        final asr = await _invoke(
+          registry,
+          LocalDbCoreToolCatalog.audioTranscribeLocalFakeTool,
+          const <String, Object?>{
+            'artifact_id': 'artifact-fake-asr',
+            'source_capture_id': 'capture-media',
+            'source_attachment_id': 'attachment-audio',
+            'source_event_id': 'event-media',
+          },
+          runId: 'run-media',
+        );
+        final ocr = await _invoke(
+          registry,
+          LocalDbCoreToolCatalog.imageOcrLocalFakeTool,
+          const <String, Object?>{
+            'artifact_id': 'artifact-fake-ocr',
+            'source_refs': <Object?>[
+              <String, Object?>{'kind': 'attachment', 'id': 'attachment-image'},
+            ],
+          },
+        );
+        final describe = await _invoke(
+          registry,
+          LocalDbCoreToolCatalog.imageDescribeLocalFakeTool,
+          const <String, Object?>{
+            'artifact_id': 'artifact-fake-describe',
+            'source_refs': <Object?>[
+              <String, Object?>{'kind': 'capture', 'id': 'capture-media'},
+              <String, Object?>{'kind': 'file', 'id': 'attachment-image'},
+            ],
+          },
+        );
+
+        for (final output in <JsonMap>[asr, ocr, describe]) {
+          expect(output['success'], isTrue);
+          expect(output['raw_media_included'], isFalse);
+          expect(jsonEncode(output), isNot(contains('/Users/guangmo/media')));
+          expect(jsonEncode(output), isNot(contains('RAW_MEDIA_BYTES')));
+        }
+        expect(
+          database.captures.readById('capture-media')!.payload['text'],
+          'Media source capture',
+        );
+        expect(
+          database.derivedArtifacts
+              .readByAttachment('attachment-audio', status: 'ready')
+              .single
+              .artifactKind,
+          'transcript',
+        );
+        expect(
+          database.derivedArtifacts
+              .readByAttachment('attachment-image', status: 'ready')
+              .map((artifact) => artifact.artifactKind)
+              .toSet(),
+          <String>{'ocr_text', 'image_description'},
+        );
+        final asrArtifact = database.derivedArtifacts.readById(
+          'artifact-fake-asr',
+        )!;
+        expect(asrArtifact.generatorId, 'audio.transcribe.local_fake');
+        expect(asrArtifact.status, 'ready');
+        expect(
+          asrArtifact.sourceRefs.map((ref) => (ref as Map)['kind']),
+          containsAll(<String>['capture', 'file', 'event']),
+        );
+
+        final beforeBlocked = database.derivedArtifacts.readAll().length;
+        final blocked = await _invoke(
+          registry,
+          LocalDbCoreToolCatalog.imageOcrLocalFakeTool,
+          const <String, Object?>{
+            'artifact_id': 'artifact-blocked',
+            'source_attachment_id': 'attachment-blocked',
+          },
+        );
+        expect(blocked['success'], isFalse);
+        expect((blocked['error']! as Map)['code'], 'source_not_ready');
+        expect(database.derivedArtifacts.readAll(), hasLength(beforeBlocked));
+      },
+    );
+
     test('reads run traces with pack filters, limits, and redaction', () async {
       final now = DateTime.utc(2026, 6, 27, 12);
       _seedRuntimePrerequisites(
@@ -617,6 +948,15 @@ Future<JsonMap> _invoke(
   return result.value;
 }
 
+List<String> _candidateIds(JsonMap output) {
+  return (output['candidates']! as List)
+      .cast<Map>()
+      .map((candidate) {
+        return '${candidate['kind']}/${candidate['id']}';
+      })
+      .toList(growable: false);
+}
+
 void _seedCapture(WideNoteLocalDatabase database, DateTime now) {
   database.captures.insert(
     CaptureRecord(
@@ -627,6 +967,231 @@ void _seedCapture(WideNoteLocalDatabase database, DateTime now) {
       updatedAt: now,
     ),
   );
+}
+
+void _seedRetrievalFixture(WideNoteLocalDatabase database, DateTime now) {
+  database.captures
+    ..insert(
+      CaptureRecord(
+        id: 'capture-alpha',
+        sourceType: 'manual',
+        sourceId: 'event-alpha',
+        payload: const <String, Object?>{'text': 'Alpha launch capture text.'},
+        createdAt: now,
+        updatedAt: now.add(const Duration(minutes: 1)),
+      ),
+    )
+    ..insert(
+      CaptureRecord(
+        id: 'capture-deleted',
+        sourceType: 'manual',
+        status: 'deleted',
+        payload: const <String, Object?>{'text': 'Deleted capture text.'},
+        createdAt: now,
+        updatedAt: now.add(const Duration(minutes: 20)),
+      ),
+    );
+  _seedMemory(
+    database,
+    id: 'memory-alpha',
+    key: 'project.alpha',
+    body: 'Alpha Memory says the local candidate collector is source-linked.',
+    sourceCaptureId: 'capture-alpha',
+    sourceEventId: 'event-alpha',
+    updatedAt: now.add(const Duration(minutes: 10)),
+  );
+  _seedMemory(
+    database,
+    id: 'memory-high',
+    key: 'private.high',
+    body: 'High sensitivity body must not be exposed by default.',
+    sourceCaptureId: 'capture-alpha',
+    sourceEventId: 'event-alpha',
+    sensitivity: 'high',
+    updatedAt: now.add(const Duration(minutes: 11)),
+  );
+  _seedMemory(
+    database,
+    id: 'memory-tombstone',
+    key: 'project.tombstone',
+    body: 'Tombstoned Memory must not be returned by default.',
+    sourceCaptureId: 'capture-alpha',
+    sourceEventId: 'event-alpha',
+    tombstone: true,
+    updatedAt: now.add(const Duration(minutes: 12)),
+  );
+  _seedMemory(
+    database,
+    id: 'memory-deleted',
+    key: 'project.deleted',
+    body: 'Deleted Memory must not be returned by default.',
+    sourceCaptureId: 'capture-alpha',
+    sourceEventId: 'event-alpha',
+    status: 'deleted',
+    updatedAt: now.add(const Duration(minutes: 13)),
+  );
+  database.attachments.insert(
+    AttachmentRecord(
+      id: 'attachment-alpha',
+      captureId: 'capture-alpha',
+      sourceEventId: 'event-alpha',
+      assetKind: 'photo',
+      mimeType: 'image/png',
+      storagePath: '/Users/guangmo/private/raw/alpha.png',
+      originalFileName: '/Users/guangmo/private/raw/alpha.png',
+      sha256: 'sha-alpha',
+      payload: const <String, Object?>{
+        'storage_path': '/Users/guangmo/private/raw/alpha.png',
+        'media_bytes': 'RAW_MEDIA_BYTES',
+      },
+      createdAt: now,
+      updatedAt: now.add(const Duration(minutes: 2)),
+    ),
+  );
+  database.derivedArtifacts
+    ..insert(
+      DerivedArtifactRecord(
+        id: 'artifact-alpha-ocr',
+        sourceCaptureId: 'capture-alpha',
+        sourceAttachmentId: 'attachment-alpha',
+        sourceEventId: 'event-alpha',
+        artifactKind: 'ocr_text',
+        status: 'ready',
+        title: 'Alpha OCR',
+        body: 'Alpha OCR says derived evidence stays source-linked.',
+        storagePath: '/private/generated/alpha-ocr.txt',
+        contentHash: 'hash-alpha-ocr',
+        sourceRefs: const <Object?>[
+          <String, Object?>{'kind': 'capture', 'id': 'capture-alpha'},
+          <String, Object?>{'kind': 'file', 'id': 'attachment-alpha'},
+          <String, Object?>{'kind': 'event', 'id': 'event-alpha'},
+        ],
+        confidence: 'high',
+        generatorId: 'image.ocr.local_fake',
+        generatorVersion: 'local-fake-v1',
+        payload: const <String, Object?>{
+          'storage_path': '/private/generated/alpha-ocr.txt',
+          'media_bytes': 'RAW_MEDIA_BYTES',
+        },
+        createdAt: now,
+        updatedAt: now.add(const Duration(minutes: 9)),
+      ),
+    )
+    ..insert(
+      DerivedArtifactRecord(
+        id: 'artifact-high',
+        sourceCaptureId: 'capture-alpha',
+        sourceAttachmentId: 'attachment-alpha',
+        artifactKind: 'vision_summary',
+        status: 'ready',
+        title: 'High artifact',
+        body: 'High sensitivity artifact body must be gated.',
+        sourceRefs: const <Object?>[
+          <String, Object?>{'kind': 'capture', 'id': 'capture-alpha'},
+        ],
+        sensitivity: 'high',
+        generatorId: 'image.describe.local_fake',
+        generatorVersion: 'local-fake-v1',
+        createdAt: now,
+        updatedAt: now.add(const Duration(minutes: 8)),
+      ),
+    );
+  database.cards.insert(
+    CardRecord(
+      id: 'card-alpha',
+      cardKind: 'summary',
+      title: 'Alpha card',
+      body: 'Card derived from Alpha capture.',
+      sourceRefs: const <Object?>[
+        <String, Object?>{'kind': 'capture', 'id': 'capture-alpha'},
+      ],
+      createdAt: now,
+      updatedAt: now.add(const Duration(minutes: 7)),
+    ),
+  );
+  database.insights.insert(
+    InsightRecord(
+      id: 'insight-alpha',
+      insightKind: 'daily_summary',
+      title: 'Alpha insight',
+      summary: 'Insight derived from Alpha capture.',
+      sourceRefs: const <Object?>[
+        <String, Object?>{'kind': 'capture', 'id': 'capture-alpha'},
+      ],
+      createdAt: now,
+      updatedAt: now.add(const Duration(minutes: 6)),
+    ),
+  );
+  database.todos.insert(
+    TodoRecord(
+      id: 'todo-alpha',
+      sourceCaptureId: 'capture-alpha',
+      sourceEventId: 'event-alpha',
+      status: 'open',
+      payload: const <String, Object?>{
+        'title': 'Review Alpha candidate retrieval',
+        'body': 'Keep it source-linked.',
+        'source_refs': <Object?>[
+          <String, Object?>{'kind': 'capture', 'id': 'capture-alpha'},
+          <String, Object?>{'kind': 'event', 'id': 'event-alpha'},
+        ],
+      },
+      createdAt: now,
+      updatedAt: now.add(const Duration(minutes: 5)),
+    ),
+  );
+}
+
+void _seedMediaSources(WideNoteLocalDatabase database, DateTime now) {
+  database.captures.insert(
+    CaptureRecord(
+      id: 'capture-media',
+      sourceType: 'manual',
+      payload: const <String, Object?>{'text': 'Media source capture'},
+      createdAt: now,
+      updatedAt: now,
+    ),
+  );
+  database.attachments
+    ..insert(
+      AttachmentRecord(
+        id: 'attachment-audio',
+        captureId: 'capture-media',
+        sourceEventId: 'event-media',
+        assetKind: 'audio',
+        mimeType: 'audio/m4a',
+        storagePath: '/Users/guangmo/media/audio.m4a',
+        sha256: 'sha-audio',
+        payload: const <String, Object?>{'media_bytes': 'RAW_MEDIA_BYTES'},
+        createdAt: now,
+        updatedAt: now,
+      ),
+    )
+    ..insert(
+      AttachmentRecord(
+        id: 'attachment-image',
+        captureId: 'capture-media',
+        sourceEventId: 'event-media',
+        assetKind: 'image',
+        mimeType: 'image/jpeg',
+        storagePath: '/Users/guangmo/media/image.jpg',
+        sha256: 'sha-image',
+        createdAt: now,
+        updatedAt: now,
+      ),
+    )
+    ..insert(
+      AttachmentRecord(
+        id: 'attachment-blocked',
+        captureId: 'capture-media',
+        assetKind: 'image',
+        mimeType: 'image/jpeg',
+        storagePath: '/Users/guangmo/media/blocked.jpg',
+        status: 'blocked',
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
 }
 
 void _seedMemory(

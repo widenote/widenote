@@ -559,7 +559,12 @@
       "properties": {
         "type": {
           "type": "string",
-          "minLength": 1
+          "enum": [
+            "claim_list",
+            "metric_row",
+            "source_refs",
+            "note"
+          ]
         },
         "events": {
           "type": "array",

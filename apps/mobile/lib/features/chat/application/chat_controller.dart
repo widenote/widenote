@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
+import 'package:widenote_local_db/widenote_local_db.dart';
 
 import '../../../app/local_database.dart';
 import '../../../app/model_client.dart';
@@ -30,12 +31,24 @@ final chatContextSelectorProvider = Provider<ChatContextSelector>((ref) {
   return const ChatContextSelector();
 });
 
+final chatReadOnlyToolRegistryProvider = Provider<runtime.ToolRegistry>((ref) {
+  final registry = runtime.InMemoryToolRegistry();
+  LocalDbCoreToolCatalog(
+    ref.watch(localDatabaseProvider),
+  ).registerInto(registry);
+  return registry;
+});
+
 final chatAssistantProvider = Provider<ChatAssistant>((ref) {
   final model = ref.watch(chatModelClientProvider);
   if (model == null) {
     return const ChatModelRequiredAssistant();
   }
-  return ModelBackedChatAssistant(model: model);
+  return ModelBackedChatAssistant(
+    model: model,
+    toolRegistry: ref.watch(chatReadOnlyToolRegistryProvider),
+    labels: ref.watch(chatContextLabelsProvider),
+  );
 });
 
 final chatClockProvider = Provider<DateTime Function()>((ref) {
@@ -162,14 +175,19 @@ final class ChatController extends AsyncNotifier<ChatState> {
   }
 
   Future<void> _answerFor(ChatMessage userMessage) async {
+    final runId = ref.read(chatIdGeneratorProvider).nextId('chat-run');
     try {
       final sources = await _selectedSources(userMessage.body);
       final reply = await ref
           .read(chatAssistantProvider)
           .answer(
-            ChatAssistantPrompt(question: userMessage.body, sources: sources),
+            ChatAssistantPrompt(
+              question: userMessage.body,
+              sources: sources,
+              runId: runId,
+            ),
           );
-      await _persistAssistantReply(userMessage, reply, sources);
+      await _persistAssistantReply(userMessage, reply, sources, runId);
     } catch (error) {
       await _markFailed(userMessage, error);
     }
@@ -186,12 +204,17 @@ final class ChatController extends AsyncNotifier<ChatState> {
     ChatMessage userMessage,
     ChatAssistantReply reply,
     List<ChatSource> sources,
+    String runId,
   ) async {
     final assistantMessage = _newMessage(
       sessionId: userMessage.sessionId,
       role: ChatRole.assistant,
       body: reply.body,
-      sourceRefs: sources.map((source) => source.toRef()).toList(),
+      sourceRefs: reply.sourceRefs.isEmpty
+          ? sources.map((source) => source.toRef()).toList()
+          : reply.sourceRefs,
+      runId: runId,
+      toolSummaries: reply.toolSummaries,
     );
     final repository = ref.read(chatRepositoryProvider);
     await repository.saveMessage(assistantMessage);
@@ -287,6 +310,8 @@ final class ChatController extends AsyncNotifier<ChatState> {
     required ChatRole role,
     required String body,
     List<ChatSourceRef> sourceRefs = const <ChatSourceRef>[],
+    String? runId,
+    List<ChatToolSummary> toolSummaries = const <ChatToolSummary>[],
   }) {
     return ChatMessage(
       id: ref.read(chatIdGeneratorProvider).nextId('chat-message'),
@@ -294,6 +319,8 @@ final class ChatController extends AsyncNotifier<ChatState> {
       role: role,
       body: body,
       sourceRefs: sourceRefs,
+      runId: runId,
+      toolSummaries: toolSummaries,
       createdAt: ref.read(chatClockProvider)(),
     );
   }

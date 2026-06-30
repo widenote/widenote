@@ -433,6 +433,199 @@ void main() {
   );
 
   test(
+    'read-only tool loop calls semantic search and persists cited answer',
+    () async {
+      final database = WideNoteLocalDatabase.inMemory();
+      addTearDown(database.close);
+      final now = DateTime.utc(2026, 6, 29, 9);
+      _seedChatPacketContext(database, now);
+      final beforeTruth = _canonicalTruthSnapshot(database);
+      final model = _ScriptedModelClient(
+        responses: <String>[
+          jsonEncode(<String, Object?>{
+            'tool_calls': <Object?>[
+              <String, Object?>{
+                'name': LocalDbCoreToolCatalog.semanticSearchQueryTool,
+                'input': <String, Object?>{
+                  'query': 'Lin launch source todo?',
+                  'limit': 6,
+                },
+              },
+            ],
+          }),
+          jsonEncode(<String, Object?>{
+            'answer':
+                'Lin wants packet-derived citations for launch chat '
+                '(memory/memory-1).',
+          }),
+        ],
+      );
+      final registry = runtime.InMemoryToolRegistry();
+      LocalDbCoreToolCatalog(database).registerInto(registry);
+      final repository = LocalChatRepository(database);
+      final container = ProviderContainer(
+        overrides: <Override>[
+          chatRepositoryProvider.overrideWithValue(repository),
+          chatContextSourceProvider.overrideWithValue(
+            const _StaticContextSource(<ChatSource>[]),
+          ),
+          chatAssistantProvider.overrideWithValue(
+            ModelBackedChatAssistant(
+              model: model,
+              toolRegistry: registry,
+              labels: const ChatContextLabels.english(),
+            ),
+          ),
+          chatClockProvider.overrideWithValue(_FixedClock(now).call),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(chatControllerProvider.future);
+      await container
+          .read(chatControllerProvider.notifier)
+          .sendMessage('Lin launch source todo?');
+
+      expect(_canonicalTruthSnapshot(database), beforeTruth);
+      final state = container.read(chatControllerProvider).requireValue;
+      final assistant = state.messages.singleWhere(
+        (message) => message.role == ChatRole.assistant,
+      );
+      expect(assistant.body, contains('memory/memory-1'));
+      expect(assistant.runId, startsWith('chat-run-'));
+      expect(assistant.toolSummaries.single.name, 'semantic_search.query');
+      expect(assistant.toolSummaries.single.status, 'completed');
+      expect(assistant.toolSummaries.single.sourceRefCount, greaterThan(0));
+      expect(
+        assistant.sourceRefs.map((ref) => ref.kind),
+        containsAll(<String>['memory', 'capture', 'todo']),
+      );
+
+      final persisted = await repository.listMessages(state.activeSessionId!);
+      expect(persisted.last.runId, assistant.runId);
+      expect(persisted.last.toolSummaries.single.name, 'semantic_search.query');
+      expect(model.requests, hasLength(2));
+      expect(model.requests.first.context['run_mode'], 'read_only');
+      expect(model.requests.first.context['run_id'], assistant.runId);
+      expect(model.requests.last.prompt, contains('"success": true'));
+      expect(model.requests.last.prompt, contains('memory-1'));
+    },
+  );
+
+  test('read-only tool loop denies write tools without mutation', () async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    final now = DateTime.utc(2026, 6, 29, 10);
+    _seedChatPacketContext(database, now);
+    final beforeTruth = _canonicalTruthSnapshot(database);
+    final beforeCandidates = database.memoryCandidates.readAll().length;
+    final registry = runtime.InMemoryToolRegistry();
+    LocalDbCoreToolCatalog(database).registerInto(registry);
+    final model = _ScriptedModelClient(
+      responses: <String>[
+        jsonEncode(<String, Object?>{
+          'tool_calls': <Object?>[
+            <String, Object?>{
+              'name': LocalDbCoreToolCatalog.memoryProposeTool,
+              'input': <String, Object?>{
+                'key': 'should.not.write',
+                'body': 'This write request must be denied.',
+                'source_refs': <Object?>[
+                  <String, Object?>{'kind': 'capture', 'id': 'capture-1'},
+                ],
+              },
+            },
+          ],
+        }),
+        'I cannot save that from a read-only chat run.',
+      ],
+    );
+
+    final reply =
+        await ModelBackedChatAssistant(
+          model: model,
+          toolRegistry: registry,
+        ).answer(
+          const ChatAssistantPrompt(
+            question: 'Save a memory from this chat.',
+            sources: <ChatSource>[],
+            runId: 'chat-run-read-only',
+          ),
+        );
+
+    expect(_canonicalTruthSnapshot(database), beforeTruth);
+    expect(database.memoryCandidates.readAll(), hasLength(beforeCandidates));
+    expect(reply.toolSummaries.single.name, 'memory.propose');
+    expect(reply.toolSummaries.single.status, 'denied');
+    expect(reply.toolSummaries.single.errorCode, 'run_mode_denied');
+    expect(model.requests.last.prompt, contains('run_mode_denied'));
+  });
+
+  test('malformed tool names are returned as model-visible denials', () async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    final registry = runtime.InMemoryToolRegistry();
+    LocalDbCoreToolCatalog(database).registerInto(registry);
+    final model = _ScriptedModelClient(
+      responses: <String>[
+        jsonEncode(<String, Object?>{
+          'tool_calls': <Object?>[
+            <String, Object?>{
+              'name': '../memory.read',
+              'input': const <String, Object?>{},
+            },
+          ],
+        }),
+        'The malformed tool request was denied.',
+      ],
+    );
+
+    final reply =
+        await ModelBackedChatAssistant(
+          model: model,
+          toolRegistry: registry,
+        ).answer(
+          const ChatAssistantPrompt(
+            question: 'Use a malformed tool.',
+            sources: <ChatSource>[],
+            runId: 'chat-run-malformed',
+          ),
+        );
+
+    expect(reply.body, contains('denied'));
+    expect(reply.toolSummaries.single.status, 'denied');
+    expect(reply.toolSummaries.single.errorCode, 'malformed_tool_name');
+    expect(model.requests.last.prompt, contains('malformed_tool_name'));
+  });
+
+  test('empty tool-loop model response is a retryable model error', () async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    final registry = runtime.InMemoryToolRegistry();
+    LocalDbCoreToolCatalog(database).registerInto(registry);
+
+    await expectLater(
+      ModelBackedChatAssistant(
+        model: _ScriptedModelClient(responses: const <String>['   ']),
+        toolRegistry: registry,
+      ).answer(
+        const ChatAssistantPrompt(
+          question: 'Return nothing.',
+          sources: <ChatSource>[],
+          runId: 'chat-run-empty',
+        ),
+      ),
+      throwsA(
+        isA<ChatAssistantException>().having(
+          (error) => error.message,
+          'message',
+          'The model returned no answer. Retry or choose another provider.',
+        ),
+      ),
+    );
+  });
+
+  test(
     'controller persists packet-derived compact source refs on assistant messages',
     () async {
       final database = WideNoteLocalDatabase.inMemory();
@@ -900,10 +1093,31 @@ final class _RecordingModelClient implements runtime.ModelClient {
 
   final String response;
   String lastPrompt = '';
+  final List<runtime.ModelRequest> requests = <runtime.ModelRequest>[];
 
   @override
   Future<runtime.ModelResponse> complete(runtime.ModelRequest request) async {
+    requests.add(request);
     lastPrompt = request.prompt;
+    return runtime.ModelResponse(text: response);
+  }
+}
+
+final class _ScriptedModelClient implements runtime.ModelClient {
+  _ScriptedModelClient({required List<String> responses})
+    : _responses = List<String>.of(responses);
+
+  final List<String> _responses;
+  final List<runtime.ModelRequest> requests = <runtime.ModelRequest>[];
+  int _index = 0;
+
+  @override
+  Future<runtime.ModelResponse> complete(runtime.ModelRequest request) async {
+    requests.add(request);
+    final response = _index < _responses.length
+        ? _responses[_index]
+        : _responses.last;
+    _index += 1;
     return runtime.ModelResponse(text: response);
   }
 }

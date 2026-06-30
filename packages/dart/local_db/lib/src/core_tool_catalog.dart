@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
 import 'package:widenote_memory/memory.dart' as memory;
 
@@ -33,6 +35,9 @@ final class LocalDbCoreToolCatalog {
   static const memoryProposeTool = 'memory.propose';
   static const todoSuggestTool = 'todo.suggest';
   static const traceReadTool = 'trace.read';
+  static const audioTranscribeLocalFakeTool = 'audio.transcribe.local_fake';
+  static const imageOcrLocalFakeTool = 'image.ocr.local_fake';
+  static const imageDescribeLocalFakeTool = 'image.describe.local_fake';
 
   final WideNoteLocalDatabase _database;
   final ContextPacketBuilder _contextPacketBuilder;
@@ -93,6 +98,30 @@ final class LocalDbCoreToolCatalog {
         requiredPermissions: const <String>{todoSuggestTool},
         access: runtime.ToolAccess.write,
         handler: _handleTodoSuggest,
+      ),
+      runtime.ToolDefinition(
+        name: audioTranscribeLocalFakeTool,
+        description:
+            'Creates a source-linked local fake transcript derived artifact from capture or attachment refs.',
+        requiredPermissions: const <String>{audioTranscribeLocalFakeTool},
+        access: runtime.ToolAccess.write,
+        handler: _handleAudioTranscribeLocalFake,
+      ),
+      runtime.ToolDefinition(
+        name: imageOcrLocalFakeTool,
+        description:
+            'Creates a source-linked local fake OCR derived artifact from capture or attachment refs.',
+        requiredPermissions: const <String>{imageOcrLocalFakeTool},
+        access: runtime.ToolAccess.write,
+        handler: _handleImageOcrLocalFake,
+      ),
+      runtime.ToolDefinition(
+        name: imageDescribeLocalFakeTool,
+        description:
+            'Creates a source-linked local fake image description derived artifact from capture or attachment refs.',
+        requiredPermissions: const <String>{imageDescribeLocalFakeTool},
+        access: runtime.ToolAccess.write,
+        handler: _handleImageDescribeLocalFake,
       ),
       runtime.ToolDefinition(
         name: traceReadTool,
@@ -462,7 +491,8 @@ final class LocalDbCoreToolCatalog {
                   ),
             if (kind == null || kind == 'artifact')
               ..._database.derivedArtifacts
-                  .readAll(status: 'active')
+                  .readAll()
+                  .where(_isReadableArtifact)
                   .where(
                     (artifact) => _matchesSourceFilters(
                       artifact.sourceRefs,
@@ -515,53 +545,44 @@ final class LocalDbCoreToolCatalog {
       _ensureAllowedKeys(semanticSearchQueryTool, input, const <String>{
         'query',
         'limit',
+        'kind',
+        'kinds',
+        'object_kinds',
+        'status',
+        'statuses',
+        'since',
+        'until',
         'source_refs',
+        'source_capture_id',
+        'source_attachment_id',
+        'source_event_id',
         'include_attachment_metadata',
+        'include_deleted',
+        'include_tombstones',
+        'include_high_sensitivity',
+        'permission_mode',
+        'sensitivity_scope',
+        'privacy_profile',
       });
-      final query = _requiredString(input, 'query');
-      final limit = _limitInput(
-        input['limit'],
-        field: 'limit',
-        defaultValue: 12,
-        maxValue: 50,
-      );
-      final includeAttachmentMetadata = _optionalBool(
-        input['include_attachment_metadata'],
-        'include_attachment_metadata',
-        defaultValue: true,
-      );
-      final result = _contextPacketBuilder.build(
-        ContextPacketBuildRequest(
-          surface: 'chat',
-          intent: query,
-          sourceRefs: _sourceRefsInput(input),
-          cacheKey: 'semantic_search:${_safeId(query)}:$limit',
-          maxItems: limit,
-          permissionMode: 'local_only',
-          permissions: const <String>[
-            timelineReadTool,
-            knowledgeReadTool,
-            memoryReadTool,
-            'record.read',
-            'card.read',
-            'insight.read',
-            'todo.read',
-            'artifact.read',
-          ],
-          redactionPolicy: 'redact_sensitive',
-          disclosureLevel: 'targeted_excerpt',
-          privacyProfile: 'chat_local',
-          includeAttachmentMetadata: includeAttachmentMetadata,
-          allowAttachmentExpansion: false,
-        ),
-      );
+      final request = _candidateRetrievalRequest(input);
+      final candidates = _collectLocalCandidates(_database, request);
       return _success(semanticSearchQueryTool, <String, Object?>{
-        'query': query,
-        'packet_summary': _packetSummary(result),
-        'sources': _packetSourceSummaries(result.packet),
-        'source_refs': result.packet['source_refs'] ?? const <Object?>[],
-        'selection_strategy': 'context_packet_model_ready',
-        'reused_cache': result.reusedCache,
+        'query': request.query,
+        'query_used_for_candidate_selection': false,
+        'selection_strategy': 'local_candidate_retrieval_nonsemantic',
+        'candidates': candidates
+            .map((candidate) => candidate.output)
+            .toList(growable: false),
+        'sources': candidates
+            .map((candidate) => candidate.sourceSummary)
+            .toList(growable: false),
+        'source_refs': _dedupeSourceRefs(
+          candidates.expand((candidate) => candidate.sourceRefs),
+        ),
+        'count': candidates.length,
+        'limit': request.limit,
+        'filters': request.filters,
+        'raw_media_included': false,
       });
     });
   }
@@ -685,6 +706,110 @@ final class LocalDbCoreToolCatalog {
       return _success(todoSuggestTool, <String, Object?>{
         'todo': _todoOutput(record),
         'review_required': true,
+      });
+    });
+  }
+
+  Future<JsonMap> _handleAudioTranscribeLocalFake(
+    runtime.ToolInvocation invocation,
+  ) async {
+    return _handleLocalFakeDerivedArtifact(
+      invocation,
+      toolName: audioTranscribeLocalFakeTool,
+      artifactKind: 'transcript',
+      title: 'Local fake transcript',
+      bodyPrefix: 'Local fake transcript generated for',
+    );
+  }
+
+  Future<JsonMap> _handleImageOcrLocalFake(
+    runtime.ToolInvocation invocation,
+  ) async {
+    return _handleLocalFakeDerivedArtifact(
+      invocation,
+      toolName: imageOcrLocalFakeTool,
+      artifactKind: 'ocr_text',
+      title: 'Local fake OCR text',
+      bodyPrefix: 'Local fake OCR text generated for',
+    );
+  }
+
+  Future<JsonMap> _handleImageDescribeLocalFake(
+    runtime.ToolInvocation invocation,
+  ) async {
+    return _handleLocalFakeDerivedArtifact(
+      invocation,
+      toolName: imageDescribeLocalFakeTool,
+      artifactKind: 'image_description',
+      title: 'Local fake image description',
+      bodyPrefix: 'Local fake image description generated for',
+    );
+  }
+
+  Future<JsonMap> _handleLocalFakeDerivedArtifact(
+    runtime.ToolInvocation invocation, {
+    required String toolName,
+    required String artifactKind,
+    required String title,
+    required String bodyPrefix,
+  }) async {
+    return _guard(toolName, () async {
+      final input = invocation.input;
+      _ensureAllowedKeys(toolName, input, const <String>{
+        'artifact_id',
+        'source_refs',
+        'source_capture_id',
+        'source_attachment_id',
+        'source_event_id',
+        'confidence',
+        'sensitivity',
+      });
+      final source = _resolveDerivedArtifactSource(input, _database);
+      final now = _clock().toUtc();
+      final body = '$bodyPrefix ${source.description}.';
+      final artifact = DerivedArtifactRecord(
+        id:
+            _optionalString(input['artifact_id'], 'artifact_id') ??
+            _nextId(artifactKind),
+        sourceCaptureId: source.capture.id,
+        sourceAttachmentId: source.attachment?.id,
+        sourceEventId: source.eventId,
+        artifactKind: artifactKind,
+        status: 'ready',
+        title: title,
+        body: body,
+        contentHash: _localContentHash(<String, Object?>{
+          'tool': toolName,
+          'artifact_kind': artifactKind,
+          'body': body,
+          'source_refs': source.sourceRefs,
+        }),
+        sourceRefs: source.sourceRefs,
+        sensitivity:
+            _optionalSensitivityName(input['sensitivity'], 'sensitivity') ??
+            'low',
+        confidence:
+            _optionalConfidenceName(input['confidence'], 'confidence') ??
+            'medium',
+        generatorId: toolName,
+        generatorVersion: 'local-fake-v1',
+        payload: <String, Object?>{
+          'local_fake': true,
+          'raw_media_included': false,
+          'source_input_kind': source.attachment == null
+              ? 'capture_ref'
+              : 'attachment_ref',
+          if (invocation.runId != null) 'source_run_id': invocation.runId,
+        },
+        createdAt: now,
+        updatedAt: now,
+      );
+      _database.derivedArtifacts.save(artifact);
+
+      return _success(toolName, <String, Object?>{
+        'artifact': _artifactOutput(artifact),
+        'source_refs': _safeSourceRefs(artifact.sourceRefs),
+        'raw_media_included': false,
       });
     });
   }
@@ -972,10 +1097,10 @@ JsonMap _attachmentOutput(AttachmentRecord attachment) {
     'source_event_id': attachment.sourceEventId,
     'asset_kind': attachment.assetKind,
     'mime_type': attachment.mimeType,
-    'storage_path': _redactString(attachment.storagePath),
+    'storage_path': _redactedLocalPath,
     'original_file_name': attachment.originalFileName == null
         ? null
-        : _redactString(attachment.originalFileName!),
+        : _safeFileName(attachment.originalFileName!),
     'sha256': attachment.sha256,
     'byte_length': attachment.byteLength,
     'status': attachment.status,
@@ -1026,9 +1151,7 @@ JsonMap _artifactOutput(DerivedArtifactRecord artifact) {
     'title': artifact.title,
     'body': artifact.body,
     'mime_type': artifact.mimeType,
-    'storage_path': artifact.storagePath == null
-        ? null
-        : _redactString(artifact.storagePath!),
+    'storage_path': artifact.storagePath == null ? null : _redactedLocalPath,
     'content_hash': artifact.contentHash,
     'source_refs': _sourceRefsFromRecord(artifact.sourceRefs),
     'sensitivity': artifact.sensitivity,
@@ -1053,6 +1176,10 @@ bool _isReadableTodo(TodoRecord todo) {
   return todo.status != 'completed' && todo.status != 'deleted';
 }
 
+bool _isReadableArtifact(DerivedArtifactRecord artifact) {
+  return artifact.status == 'active' || artifact.status == 'ready';
+}
+
 bool _matchesSourceFilters(
   JsonList sourceRefs, {
   String? sourceCaptureId,
@@ -1071,30 +1198,1059 @@ bool _matchesSourceFilters(
   return captureMatches && eventMatches;
 }
 
-List<JsonMap> _packetSourceSummaries(JsonMap packet) {
-  final summaries = <JsonMap>[];
-  final sections = _mapList(packet['sections']);
-  for (final section in sections) {
-    final citations = _mapList(section['citations']);
-    for (final citation in citations) {
-      final sourceRef = citation['source_ref'];
-      if (sourceRef is! Map) {
-        continue;
-      }
-      final normalizedRef = _storedSourceRef(sourceRef);
-      if (normalizedRef == null) {
-        continue;
-      }
-      summaries.add(<String, Object?>{
-        'section_kind': section['kind'],
-        'title': section['title'],
-        'source_ref': normalizedRef,
-        'excerpt': citation['excerpt'] ?? _excerpt(section['content']),
-      });
+_CandidateRetrievalRequest _candidateRetrievalRequest(JsonMap input) {
+  final permissionMode =
+      _optionalString(input['permission_mode'], 'permission_mode') ??
+      'local_only';
+  if (!_candidatePermissionModes.contains(permissionMode)) {
+    throw _ToolInputException(
+      'invalid_input',
+      'permission_mode is not supported for local candidate retrieval.',
+      details: const <String, Object?>{'field': 'permission_mode'},
+    );
+  }
+  final sensitivityScope =
+      _optionalString(input['sensitivity_scope'], 'sensitivity_scope') ??
+      'default';
+  return _CandidateRetrievalRequest(
+    query: _requiredString(input, 'query'),
+    limit: _limitInput(
+      input['limit'],
+      field: 'limit',
+      defaultValue: 12,
+      maxValue: 50,
+    ),
+    kinds: _candidateKindSet(input),
+    statuses: _optionalStringSet(
+      input['statuses'] ?? input['status'],
+      'statuses',
+    ),
+    sourceRefs: _candidateSourceRefsInput(input),
+    since: _optionalDateTime(input['since'], 'since'),
+    until: _optionalDateTime(input['until'], 'until'),
+    includeDeleted: _optionalBool(
+      input['include_deleted'],
+      'include_deleted',
+      defaultValue: false,
+    ),
+    includeTombstones: _optionalBool(
+      input['include_tombstones'],
+      'include_tombstones',
+      defaultValue: false,
+    ),
+    includeHighSensitivity:
+        _optionalBool(
+          input['include_high_sensitivity'],
+          'include_high_sensitivity',
+          defaultValue: false,
+        ) ||
+        permissionMode == 'trace_review' ||
+        sensitivityScope == 'include_high',
+    permissionMode: permissionMode,
+    sensitivityScope: sensitivityScope,
+    privacyProfile:
+        _optionalString(input['privacy_profile'], 'privacy_profile') ??
+        'chat_local',
+    includeAttachmentMetadata: _optionalBool(
+      input['include_attachment_metadata'],
+      'include_attachment_metadata',
+      defaultValue: false,
+    ),
+  );
+}
+
+List<_LocalCandidate> _collectLocalCandidates(
+  WideNoteLocalDatabase database,
+  _CandidateRetrievalRequest request,
+) {
+  final filter = _CandidateSourceFilter(request.sourceRefs);
+  final candidates = <_LocalCandidate>[
+    if (request.allowsKind('memory'))
+      ...database.memoryItems
+          .readAll()
+          .where((item) => request.allowsMemory(item))
+          .where(
+            (item) => filter.matches(
+              'memory',
+              item.id,
+              item.sourceRefs,
+              sourceCaptureId: item.sourceCaptureId,
+              sourceEventId: item.sourceEventId,
+            ),
+          )
+          .map((item) => _memoryCandidate(item, request)),
+    if (request.allowsKind('capture'))
+      ...database.captures
+          .readAll()
+          .where(request.allowsCapture)
+          .where(
+            (capture) => filter.matches(
+              'capture',
+              capture.id,
+              _captureCandidateRefs(capture),
+            ),
+          )
+          .map((capture) => _captureCandidate(capture, request)),
+    if (request.allowsKind('card'))
+      ...database.cards
+          .readAll()
+          .where(
+            (card) => request.allowsSimpleStatus(card.status, card.updatedAt),
+          )
+          .where((card) => filter.matches('card', card.id, card.sourceRefs))
+          .map((card) => _cardCandidate(card, request)),
+    if (request.allowsKind('insight'))
+      ...database.insights
+          .readAll()
+          .where(
+            (insight) =>
+                request.allowsSimpleStatus(insight.status, insight.updatedAt),
+          )
+          .where(
+            (insight) =>
+                filter.matches('insight', insight.id, insight.sourceRefs),
+          )
+          .map((insight) => _insightCandidate(insight, request)),
+    if (request.allowsKind('todo'))
+      ...database.todos
+          .readAll()
+          .where(request.allowsTodo)
+          .where(
+            (todo) => filter.matches(
+              'todo',
+              todo.id,
+              _listValue(todo.payload['source_refs']),
+              sourceCaptureId: todo.sourceCaptureId,
+              sourceEventId: todo.sourceEventId,
+            ),
+          )
+          .map((todo) => _todoCandidate(todo, request)),
+    if (request.allowsKind('derived_artifact'))
+      ...database.derivedArtifacts
+          .readAll()
+          .where(request.allowsArtifact)
+          .where(
+            (artifact) => filter.matches(
+              'derived_artifact',
+              artifact.id,
+              artifact.sourceRefs,
+              sourceCaptureId: artifact.sourceCaptureId,
+              sourceEventId: artifact.sourceEventId,
+              sourceAttachmentId: artifact.sourceAttachmentId,
+            ),
+          )
+          .map((artifact) => _artifactCandidate(artifact, request)),
+  ]..sort(_compareCandidates);
+  return candidates.take(request.limit).toList(growable: false);
+}
+
+_LocalCandidate _memoryCandidate(
+  MemoryItemRecord item,
+  _CandidateRetrievalRequest request,
+) {
+  final sourceRefs = _candidateSourceRefs(
+    kind: 'memory',
+    id: item.id,
+    sourceVersion: item.revision,
+    contentHash: _localContentHash(<String, Object?>{
+      'body': item.body,
+      'source_refs': item.sourceRefs,
+      'payload': item.payload,
+    }),
+    sensitivity: item.sensitivity,
+    linkedRefs: item.sourceRefs,
+    sourceCaptureId: item.sourceCaptureId,
+    sourceEventId: item.sourceEventId,
+  );
+  return _candidate(
+    kind: 'memory',
+    id: item.id,
+    title: item.key,
+    status: item.status,
+    sensitivity: item.sensitivity,
+    snippetText: item.body,
+    sourceRefs: sourceRefs,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+    request: request,
+    provenance: <String, Object?>{
+      'memory_type': item.memoryType,
+      'confidence': item.confidence,
+      'revision': item.revision,
+      'source_capture_id': item.sourceCaptureId,
+      'source_event_id': item.sourceEventId,
+      'tombstone': item.tombstone,
+    },
+  );
+}
+
+_LocalCandidate _captureCandidate(
+  CaptureRecord capture,
+  _CandidateRetrievalRequest request,
+) {
+  final sourceRefs = _candidateSourceRefs(
+    kind: 'capture',
+    id: capture.id,
+    sourceVersion: capture.updatedAt.toUtc().toIso8601String(),
+    contentHash: _localContentHash(capture.payload),
+    sensitivity: _captureSensitivity(capture),
+    linkedRefs: _captureCandidateRefs(capture),
+  );
+  return _candidate(
+    kind: 'capture',
+    id: capture.id,
+    title: 'Capture ${capture.id}',
+    status: capture.status,
+    sensitivity: _captureSensitivity(capture),
+    snippetText: _captureSnippetText(capture),
+    sourceRefs: sourceRefs,
+    createdAt: capture.createdAt,
+    updatedAt: capture.updatedAt,
+    request: request,
+    provenance: <String, Object?>{
+      'source_type': capture.sourceType,
+      if (capture.sourceId != null) 'source_id': capture.sourceId,
+    },
+  );
+}
+
+_LocalCandidate _cardCandidate(
+  CardRecord card,
+  _CandidateRetrievalRequest request,
+) {
+  final sourceRefs = _candidateSourceRefs(
+    kind: 'card',
+    id: card.id,
+    sourceVersion: card.updatedAt.toUtc().toIso8601String(),
+    contentHash: _localContentHash(<String, Object?>{
+      'title': card.title,
+      'body': card.body,
+      'source_refs': card.sourceRefs,
+      'payload': card.payload,
+    }),
+    sensitivity: 'low',
+    linkedRefs: card.sourceRefs,
+  );
+  return _candidate(
+    kind: 'card',
+    id: card.id,
+    title: card.title,
+    status: card.status,
+    sensitivity: 'low',
+    snippetText: _lines(<String>[card.title, card.body]),
+    sourceRefs: sourceRefs,
+    createdAt: card.createdAt,
+    updatedAt: card.updatedAt,
+    request: request,
+    provenance: <String, Object?>{'card_kind': card.cardKind},
+  );
+}
+
+_LocalCandidate _insightCandidate(
+  InsightRecord insight,
+  _CandidateRetrievalRequest request,
+) {
+  final sourceRefs = _candidateSourceRefs(
+    kind: 'insight',
+    id: insight.id,
+    sourceVersion: insight.updatedAt.toUtc().toIso8601String(),
+    contentHash: _localContentHash(<String, Object?>{
+      'title': insight.title,
+      'summary': insight.summary,
+      'source_refs': insight.sourceRefs,
+      'payload': insight.payload,
+    }),
+    sensitivity: 'low',
+    linkedRefs: insight.sourceRefs,
+  );
+  return _candidate(
+    kind: 'insight',
+    id: insight.id,
+    title: insight.title,
+    status: insight.status,
+    sensitivity: 'low',
+    snippetText: _lines(<String>[insight.title, insight.summary]),
+    sourceRefs: sourceRefs,
+    createdAt: insight.createdAt,
+    updatedAt: insight.updatedAt,
+    request: request,
+    provenance: <String, Object?>{
+      'insight_kind': insight.insightKind,
+      if (insight.metricLabel != null) 'metric_label': insight.metricLabel,
+      if (insight.metricValue != null) 'metric_value': insight.metricValue,
+    },
+  );
+}
+
+_LocalCandidate _todoCandidate(
+  TodoRecord todo,
+  _CandidateRetrievalRequest request,
+) {
+  final sourceRefs = _candidateSourceRefs(
+    kind: 'todo',
+    id: todo.id,
+    sourceVersion: todo.updatedAt.toUtc().toIso8601String(),
+    contentHash: _localContentHash(todo.payload),
+    sensitivity: 'low',
+    linkedRefs: _listValue(todo.payload['source_refs']),
+    sourceCaptureId: todo.sourceCaptureId,
+    sourceEventId: todo.sourceEventId,
+  );
+  return _candidate(
+    kind: 'todo',
+    id: todo.id,
+    title: _optionalString(todo.payload['title'], 'todo.title') ?? todo.id,
+    status: todo.status,
+    sensitivity: 'low',
+    snippetText: _lines(<String>[
+      _optionalString(todo.payload['title'], 'todo.title') ?? '',
+      _optionalString(todo.payload['body'], 'todo.body') ?? '',
+    ]),
+    sourceRefs: sourceRefs,
+    createdAt: todo.createdAt,
+    updatedAt: todo.updatedAt,
+    request: request,
+    provenance: <String, Object?>{
+      'source_capture_id': todo.sourceCaptureId,
+      'source_event_id': todo.sourceEventId,
+      if (todo.payload['review_state'] != null)
+        'review_state': todo.payload['review_state'],
+    },
+  );
+}
+
+_LocalCandidate _artifactCandidate(
+  DerivedArtifactRecord artifact,
+  _CandidateRetrievalRequest request,
+) {
+  final sourceRefs = _candidateSourceRefs(
+    kind: 'artifact',
+    id: artifact.id,
+    sourceVersion: artifact.updatedAt.toUtc().toIso8601String(),
+    contentHash:
+        artifact.contentHash ??
+        _localContentHash(<String, Object?>{
+          'title': artifact.title,
+          'body': artifact.body,
+          'source_refs': artifact.sourceRefs,
+          'payload': artifact.payload,
+        }),
+    sensitivity: artifact.sensitivity,
+    linkedRefs: artifact.sourceRefs,
+    sourceCaptureId: artifact.sourceCaptureId,
+    sourceEventId: artifact.sourceEventId,
+    sourceAttachmentId: artifact.sourceAttachmentId,
+  );
+  return _candidate(
+    kind: 'derived_artifact',
+    id: artifact.id,
+    title: artifact.title,
+    status: artifact.status,
+    sensitivity: artifact.sensitivity,
+    snippetText: _lines(<String>[artifact.title, artifact.body]),
+    sourceRefs: sourceRefs,
+    createdAt: artifact.createdAt,
+    updatedAt: artifact.updatedAt,
+    request: request,
+    provenance: <String, Object?>{
+      'artifact_kind': artifact.artifactKind,
+      'confidence': artifact.confidence,
+      'source_capture_id': artifact.sourceCaptureId,
+      'source_attachment_id': artifact.sourceAttachmentId,
+      'source_event_id': artifact.sourceEventId,
+      'generator_id': artifact.generatorId,
+      'generator_version': artifact.generatorVersion,
+      if (artifact.invalidatedAt != null)
+        'invalidated_at': artifact.invalidatedAt!.toUtc().toIso8601String(),
+    },
+  );
+}
+
+_LocalCandidate _candidate({
+  required String kind,
+  required String id,
+  required String title,
+  required String status,
+  required String sensitivity,
+  required String snippetText,
+  required List<JsonMap> sourceRefs,
+  required DateTime createdAt,
+  required DateTime updatedAt,
+  required _CandidateRetrievalRequest request,
+  required JsonMap provenance,
+}) {
+  final redactedBySensitivity =
+      _schemaSensitivityName(sensitivity) == 'high' &&
+      request.includeHighSensitivity;
+  final snippet = redactedBySensitivity
+      ? null
+      : _excerpt(_redactString(snippetText));
+  final safeSourceRefs = _safeSourceRefs(sourceRefs);
+  final output = <String, Object?>{
+    'kind': kind,
+    'id': id,
+    'title': title,
+    'status': status,
+    'sensitivity': _schemaSensitivityName(sensitivity),
+    'snippet': snippet,
+    'source_refs': safeSourceRefs,
+    'created_at': createdAt.toUtc().toIso8601String(),
+    'updated_at': updatedAt.toUtc().toIso8601String(),
+    'provenance': <String, Object?>{
+      ...provenance,
+      'candidate_collector': 'local_db_candidate_retrieval.v1',
+      'selection_dimensions': _candidateSelectionDimensions,
+      'query_used_for_candidate_selection': false,
+      'privacy_profile': request.privacyProfile,
+      'permission_mode': request.permissionMode,
+      'invalidation_reason': 'source_version_or_permission_scope_change',
+    },
+    'redactions': <Object?>[
+      if (redactedBySensitivity)
+        <String, Object?>{
+          'reason': 'sensitivity_high',
+          'source_ref': safeSourceRefs.isEmpty ? null : safeSourceRefs.first,
+        },
+    ],
+  };
+  return _LocalCandidate(output: output, sourceRefs: safeSourceRefs);
+}
+
+int _compareCandidates(_LocalCandidate a, _LocalCandidate b) {
+  final updated = (b.output['updated_at']! as String).compareTo(
+    a.output['updated_at']! as String,
+  );
+  if (updated != 0) {
+    return updated;
+  }
+  final kind = _candidateKindRank(a.kind).compareTo(_candidateKindRank(b.kind));
+  if (kind != 0) {
+    return kind;
+  }
+  return a.id.compareTo(b.id);
+}
+
+int _candidateKindRank(String kind) {
+  return _candidateKindOrder[kind] ?? _candidateKindOrder.length;
+}
+
+Set<String>? _candidateKindSet(JsonMap input) {
+  final rawKinds = input['object_kinds'] ?? input['kinds'] ?? input['kind'];
+  final values = _optionalStringSet(rawKinds, 'object_kinds');
+  if (values == null) {
+    return null;
+  }
+  final normalized = <String>{};
+  for (final value in values) {
+    final kind = _normalizeCandidateKind(value);
+    if (kind == null) {
+      throw _ToolInputException(
+        'invalid_input',
+        'object_kinds contains an unsupported candidate kind.',
+        details: <String, Object?>{'kind': value},
+      );
+    }
+    normalized.add(kind);
+  }
+  return Set<String>.unmodifiable(normalized);
+}
+
+String? _normalizeCandidateKind(String value) {
+  return switch (value) {
+    'memory' => 'memory',
+    'capture' || 'record' => 'capture',
+    'card' => 'card',
+    'insight' => 'insight',
+    'todo' => 'todo',
+    'artifact' ||
+    'derived_artifact' ||
+    'derived_artifacts' => 'derived_artifact',
+    _ => null,
+  };
+}
+
+Set<String>? _optionalStringSet(Object? value, String field) {
+  if (value == null) {
+    return null;
+  }
+  if (value is String) {
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : <String>{trimmed};
+  }
+  if (value is! List) {
+    throw _ToolInputException(
+      'invalid_input',
+      '$field must be a string or list of strings.',
+      details: <String, Object?>{'field': field},
+    );
+  }
+  final strings = <String>{};
+  for (final item in value) {
+    if (item is! String) {
+      throw _ToolInputException(
+        'invalid_input',
+        '$field must contain only strings.',
+        details: <String, Object?>{'field': field},
+      );
+    }
+    final trimmed = item.trim();
+    if (trimmed.isNotEmpty) {
+      strings.add(trimmed);
     }
   }
-  return summaries.take(20).toList(growable: false);
+  return strings.isEmpty ? null : Set<String>.unmodifiable(strings);
 }
+
+DateTime? _optionalDateTime(Object? value, String field) {
+  if (value == null) {
+    return null;
+  }
+  if (value is! String) {
+    throw _ToolInputException(
+      'invalid_input',
+      '$field must be an ISO-8601 timestamp string.',
+      details: <String, Object?>{'field': field},
+    );
+  }
+  final parsed = DateTime.tryParse(value.trim());
+  if (parsed == null) {
+    throw _ToolInputException(
+      'invalid_input',
+      '$field must be an ISO-8601 timestamp string.',
+      details: <String, Object?>{'field': field},
+    );
+  }
+  return parsed.toUtc();
+}
+
+List<JsonMap> _candidateSourceRefsInput(JsonMap input) {
+  final refs = <JsonMap>[..._sourceRefsInput(input)];
+  final attachmentId = _optionalString(
+    input['source_attachment_id'],
+    'source_attachment_id',
+  );
+  if (attachmentId != null) {
+    refs.add(<String, Object?>{
+      'kind': 'file',
+      'id': attachmentId,
+      'source_type': 'file',
+      'source_id': attachmentId,
+    });
+  }
+  return _dedupeSourceRefs(refs.map(_safeSourceRef).whereType<JsonMap>());
+}
+
+List<JsonMap> _candidateSourceRefs({
+  required String kind,
+  required String id,
+  required Object? sourceVersion,
+  required String contentHash,
+  required String sensitivity,
+  JsonList linkedRefs = const <Object?>[],
+  String? sourceCaptureId,
+  String? sourceEventId,
+  String? sourceAttachmentId,
+}) {
+  return _safeSourceRefs(<JsonMap>[
+    <String, Object?>{
+      'kind': kind,
+      'id': id,
+      'source_type': kind,
+      'source_id': id,
+      if (sourceVersion != null) 'source_version': sourceVersion,
+      'content_hash': contentHash,
+      'sensitivity': _schemaSensitivityName(sensitivity),
+    },
+    ...linkedRefs
+        .whereType<Map>()
+        .map(_safeStoredSourceRef)
+        .whereType<JsonMap>(),
+    if (sourceCaptureId != null) _sourceRefForKind('capture', sourceCaptureId),
+    if (sourceEventId != null) _sourceRefForKind('event', sourceEventId),
+    if (sourceAttachmentId != null)
+      _sourceRefForKind('file', sourceAttachmentId),
+  ]);
+}
+
+JsonMap _sourceRefForKind(String kind, String id) {
+  return <String, Object?>{
+    'kind': kind,
+    'id': id,
+    'source_type': kind,
+    'source_id': id,
+  };
+}
+
+JsonMap? _safeStoredSourceRef(Map<dynamic, dynamic> value) {
+  final normalized = _storedSourceRef(value);
+  return normalized == null ? null : _safeSourceRef(normalized);
+}
+
+JsonMap? _safeSourceRef(JsonMap value) {
+  final kind = _normalizedSourceKind(value['kind'] ?? value['source_type']);
+  final id = value['id'] ?? value['source_id'];
+  if (kind == null || id is! String || id.trim().isEmpty) {
+    return null;
+  }
+  return <String, Object?>{
+    'kind': kind,
+    'id': id,
+    'source_type': kind,
+    'source_id': id,
+    if (value['event_id'] is String) 'event_id': value['event_id'],
+    if (value['source_version'] != null)
+      'source_version': value['source_version'],
+    if (value['content_hash'] is String) 'content_hash': value['content_hash'],
+    if (value['sensitivity'] is String)
+      'sensitivity': _schemaSensitivityName(value['sensitivity']! as String),
+  };
+}
+
+List<JsonMap> _safeSourceRefs(Iterable<Object?> refs) {
+  return _dedupeSourceRefs(
+    refs.whereType<Map>().map(_safeStoredSourceRef).whereType<JsonMap>(),
+  );
+}
+
+String? _normalizedSourceKind(Object? value) {
+  if (value is! String || value.trim().isEmpty) {
+    return null;
+  }
+  return value.trim() == 'attachment' ? 'file' : value.trim();
+}
+
+JsonList _captureCandidateRefs(CaptureRecord capture) {
+  return <Object?>[
+    <String, Object?>{'kind': 'capture', 'id': capture.id},
+    if (capture.sourceId != null)
+      <String, Object?>{'kind': capture.sourceType, 'id': capture.sourceId},
+  ];
+}
+
+String _captureSnippetText(CaptureRecord capture) {
+  return _firstPayloadText(capture.payload, const <String>[
+    'text',
+    'raw_text',
+    'body',
+    'summary',
+    'title',
+    'preview_text',
+    'excerpt',
+  ]);
+}
+
+String _firstPayloadText(JsonMap payload, List<String> keys) {
+  for (final key in keys) {
+    final value = payload[key];
+    if (value is String && value.trim().isNotEmpty) {
+      return value.trim();
+    }
+  }
+  return '';
+}
+
+String _captureSensitivity(CaptureRecord capture) {
+  final sensitivity = capture.payload['sensitivity'];
+  return sensitivity is String ? _schemaSensitivityName(sensitivity) : 'low';
+}
+
+String _lines(Iterable<String> lines) {
+  return lines
+      .map((line) => line.trim())
+      .where((line) => line.isNotEmpty)
+      .join('\n');
+}
+
+String _schemaSensitivityName(String sensitivity) {
+  return sensitivity == 'high'
+      ? 'high'
+      : sensitivity == 'medium'
+      ? 'medium'
+      : 'low';
+}
+
+String _localContentHash(Object? value) {
+  final canonical = jsonEncode(_stableJson(value));
+  var hash = 0xcbf29ce484222325;
+  for (final unit in canonical.codeUnits) {
+    hash ^= unit;
+    hash = (hash * 0x100000001b3) & 0x7fffffffffffffff;
+  }
+  return 'local-${hash.toRadixString(16).padLeft(16, '0')}';
+}
+
+Object? _stableJson(Object? value) {
+  if (value is Map) {
+    final result = <String, Object?>{};
+    final keys = value.keys.map((key) => key.toString()).toList()..sort();
+    for (final key in keys) {
+      result[key] = _stableJson(value[key]);
+    }
+    return result;
+  }
+  if (value is Iterable) {
+    return value.map(_stableJson).toList(growable: false);
+  }
+  return value;
+}
+
+_DerivedArtifactSource _resolveDerivedArtifactSource(
+  JsonMap input,
+  WideNoteLocalDatabase database,
+) {
+  final refs = _candidateSourceRefsInput(input);
+  final attachmentId = _firstSourceId(refs, 'file');
+  final explicitCaptureId = _firstSourceId(refs, 'capture');
+  final explicitEventId = _firstSourceId(refs, 'event');
+  final attachment = attachmentId == null
+      ? null
+      : database.attachments.readById(attachmentId);
+  if (attachmentId != null && attachment == null) {
+    throw _ToolInputException(
+      'invalid_input',
+      'source_attachment_id must refer to an existing local attachment.',
+      details: const <String, Object?>{'field': 'source_attachment_id'},
+    );
+  }
+  if (attachment != null && attachment.status != 'available') {
+    throw _ToolInputException(
+      'source_not_ready',
+      'The referenced attachment is not available for local fake derivation.',
+      details: <String, Object?>{'attachment_status': attachment.status},
+    );
+  }
+  final captureId = attachment?.captureId ?? explicitCaptureId;
+  if (captureId == null) {
+    throw _ToolInputException(
+      'missing_source_refs',
+      'Local fake derived artifact tools require a capture or attachment source ref.',
+      details: const <String, Object?>{'field': 'source_refs'},
+    );
+  }
+  final capture = database.captures.readById(captureId);
+  if (capture == null) {
+    throw _ToolInputException(
+      'invalid_input',
+      'source_capture_id must refer to an existing local capture.',
+      details: const <String, Object?>{'field': 'source_capture_id'},
+    );
+  }
+  if (_terminalStatuses.contains(capture.status)) {
+    throw _ToolInputException(
+      'source_not_ready',
+      'The referenced capture is not active for local fake derivation.',
+      details: <String, Object?>{'capture_status': capture.status},
+    );
+  }
+  final eventId = explicitEventId ?? attachment?.sourceEventId;
+  final sourceRefs = _safeSourceRefs(<Object?>[
+    ...refs,
+    _sourceRefForKind('capture', capture.id),
+    if (attachment != null) _sourceRefForKind('file', attachment.id),
+    if (eventId != null) _sourceRefForKind('event', eventId),
+  ]);
+  return _DerivedArtifactSource(
+    capture: capture,
+    attachment: attachment,
+    eventId: eventId,
+    sourceRefs: sourceRefs,
+  );
+}
+
+final class _DerivedArtifactSource {
+  const _DerivedArtifactSource({
+    required this.capture,
+    required this.attachment,
+    required this.eventId,
+    required this.sourceRefs,
+  });
+
+  final CaptureRecord capture;
+  final AttachmentRecord? attachment;
+  final String? eventId;
+  final List<JsonMap> sourceRefs;
+
+  String get description {
+    final source = attachment;
+    if (source == null) {
+      return 'capture ${capture.id}';
+    }
+    return '${source.assetKind} attachment ${source.id} on capture ${capture.id}';
+  }
+}
+
+final class _CandidateRetrievalRequest {
+  const _CandidateRetrievalRequest({
+    required this.query,
+    required this.limit,
+    required this.kinds,
+    required this.statuses,
+    required this.sourceRefs,
+    required this.since,
+    required this.until,
+    required this.includeDeleted,
+    required this.includeTombstones,
+    required this.includeHighSensitivity,
+    required this.permissionMode,
+    required this.sensitivityScope,
+    required this.privacyProfile,
+    required this.includeAttachmentMetadata,
+  });
+
+  final String query;
+  final int limit;
+  final Set<String>? kinds;
+  final Set<String>? statuses;
+  final List<JsonMap> sourceRefs;
+  final DateTime? since;
+  final DateTime? until;
+  final bool includeDeleted;
+  final bool includeTombstones;
+  final bool includeHighSensitivity;
+  final String permissionMode;
+  final String sensitivityScope;
+  final String privacyProfile;
+  final bool includeAttachmentMetadata;
+
+  JsonMap get filters {
+    return <String, Object?>{
+      if (kinds != null) 'object_kinds': _sorted(kinds!),
+      if (statuses != null) 'statuses': _sorted(statuses!),
+      if (sourceRefs.isNotEmpty) 'source_refs': sourceRefs,
+      if (since != null) 'since': since!.toIso8601String(),
+      if (until != null) 'until': until!.toIso8601String(),
+      'include_deleted': includeDeleted,
+      'include_tombstones': includeTombstones,
+      'include_high_sensitivity': includeHighSensitivity,
+      'permission_mode': permissionMode,
+      'sensitivity_scope': sensitivityScope,
+      'privacy_profile': privacyProfile,
+      'include_attachment_metadata': includeAttachmentMetadata,
+    };
+  }
+
+  bool allowsKind(String kind) {
+    return kinds == null || kinds!.contains(kind);
+  }
+
+  bool allowsMemory(MemoryItemRecord item) {
+    if (!allowsUpdatedAt(item.updatedAt) ||
+        !allowsSensitivity(item.sensitivity)) {
+      return false;
+    }
+    if (item.tombstone && !includeTombstones) {
+      return false;
+    }
+    return allowsStatus(
+      item.status,
+      defaultAllowedStatuses: const <String>{'active'},
+    );
+  }
+
+  bool allowsCapture(CaptureRecord capture) {
+    if (!allowsUpdatedAt(capture.updatedAt)) {
+      return false;
+    }
+    if (!allowsSensitivity(_captureSensitivity(capture))) {
+      return false;
+    }
+    return allowsStatus(
+      capture.status,
+      defaultBlockedStatuses: _terminalStatuses,
+    );
+  }
+
+  bool allowsTodo(TodoRecord todo) {
+    if (!allowsUpdatedAt(todo.updatedAt)) {
+      return false;
+    }
+    return allowsStatus(
+      todo.status,
+      defaultBlockedStatuses: const <String>{
+        'completed',
+        'deleted',
+        'tombstoned',
+        'archived',
+        'inactive',
+      },
+    );
+  }
+
+  bool allowsArtifact(DerivedArtifactRecord artifact) {
+    if (!allowsUpdatedAt(artifact.updatedAt)) {
+      return false;
+    }
+    if (!allowsSensitivity(artifact.sensitivity)) {
+      return false;
+    }
+    return allowsStatus(
+      artifact.status,
+      defaultAllowedStatuses: const <String>{'active', 'ready'},
+    );
+  }
+
+  bool allowsSimpleStatus(String status, DateTime updatedAt) {
+    if (!allowsUpdatedAt(updatedAt)) {
+      return false;
+    }
+    return allowsStatus(
+      status,
+      defaultAllowedStatuses: const <String>{'active'},
+    );
+  }
+
+  bool allowsStatus(
+    String status, {
+    Set<String>? defaultAllowedStatuses,
+    Set<String>? defaultBlockedStatuses,
+  }) {
+    if (statuses != null) {
+      return statuses!.contains(status);
+    }
+    if (includeDeleted) {
+      return true;
+    }
+    if (defaultAllowedStatuses != null) {
+      return defaultAllowedStatuses.contains(status);
+    }
+    return !(defaultBlockedStatuses ?? _terminalStatuses).contains(status);
+  }
+
+  bool allowsUpdatedAt(DateTime updatedAt) {
+    final value = updatedAt.toUtc();
+    if (since != null && value.isBefore(since!)) {
+      return false;
+    }
+    if (until != null && value.isAfter(until!)) {
+      return false;
+    }
+    return true;
+  }
+
+  bool allowsSensitivity(String sensitivity) {
+    return _schemaSensitivityName(sensitivity) != 'high' ||
+        includeHighSensitivity;
+  }
+}
+
+final class _CandidateSourceFilter {
+  _CandidateSourceFilter(List<JsonMap> refs)
+    : _keys = refs.expand(_sourceRefIdentityKeys).toSet();
+
+  final Set<String> _keys;
+
+  bool get isEmpty => _keys.isEmpty;
+
+  bool matches(
+    String kind,
+    String id,
+    JsonList linkedRefs, {
+    String? sourceCaptureId,
+    String? sourceEventId,
+    String? sourceAttachmentId,
+  }) {
+    if (isEmpty || _contains(kind, id)) {
+      return true;
+    }
+    if (sourceCaptureId != null && _contains('capture', sourceCaptureId)) {
+      return true;
+    }
+    if (sourceEventId != null && _contains('event', sourceEventId)) {
+      return true;
+    }
+    if (sourceAttachmentId != null && _contains('file', sourceAttachmentId)) {
+      return true;
+    }
+    return linkedRefs.whereType<Map>().any((ref) {
+      final normalized = _safeStoredSourceRef(ref);
+      return normalized != null &&
+          _sourceRefIdentityKeys(normalized).any(_keys.contains);
+    });
+  }
+
+  bool _contains(String kind, String id) {
+    return _sourceRefIdentityKeys(<String, Object?>{
+      'kind': kind,
+      'id': id,
+    }).any(_keys.contains);
+  }
+}
+
+final class _LocalCandidate {
+  const _LocalCandidate({required this.output, required this.sourceRefs});
+
+  final JsonMap output;
+  final List<JsonMap> sourceRefs;
+
+  String get kind => output['kind']! as String;
+  String get id => output['id']! as String;
+
+  JsonMap get sourceSummary {
+    return <String, Object?>{
+      'kind': kind,
+      'id': id,
+      'title': output['title'],
+      'status': output['status'],
+      'sensitivity': output['sensitivity'],
+      'source_ref': sourceRefs.isEmpty ? null : sourceRefs.first,
+      'excerpt': output['snippet'],
+    };
+  }
+}
+
+Iterable<String> _sourceRefIdentityKeys(JsonMap ref) sync* {
+  final kind = _normalizedSourceKind(ref['kind'] ?? ref['source_type']);
+  final id = ref['id'] ?? ref['source_id'];
+  if (kind is! String || id is! String || id.isEmpty) {
+    return;
+  }
+  yield '$kind/$id';
+  if (kind == 'file') {
+    yield 'attachment/$id';
+  } else if (kind == 'artifact') {
+    yield 'derived_artifact/$id';
+  } else if (kind == 'derived_artifact') {
+    yield 'artifact/$id';
+  }
+}
+
+List<String> _sorted(Set<String> values) {
+  return values.toList(growable: false)..sort();
+}
+
+const _candidatePermissionModes = <String>{
+  'local_only',
+  'user_granted',
+  'trace_review',
+};
+
+const _candidateKindOrder = <String, int>{
+  'memory': 0,
+  'capture': 1,
+  'card': 2,
+  'insight': 3,
+  'todo': 4,
+  'derived_artifact': 5,
+};
+
+const _candidateSelectionDimensions = <Object?>[
+  'object_kind',
+  'recency',
+  'time_window',
+  'source_refs',
+  'explicit_filters',
+  'source_link_adjacency',
+  'status',
+  'tombstone_deletion_state',
+  'permission_sensitivity_scope',
+];
+
+const _terminalStatuses = <String>{
+  'deleted',
+  'tombstoned',
+  'archived',
+  'inactive',
+};
 
 JsonMap _runOutput(RuntimeRunRecord run) {
   return <String, Object?>{
@@ -1348,9 +2504,10 @@ JsonMap? _sourceRefInput(Object? value, String field) {
     );
   }
   final normalized = _normalizeMap(value);
-  final kind =
+  final rawKind =
       _optionalString(normalized['kind'], '$field.kind') ??
       _optionalString(normalized['source_type'], '$field.source_type');
+  final kind = rawKind == 'attachment' ? 'file' : rawKind;
   final id =
       _optionalString(normalized['id'], '$field.id') ??
       _optionalString(normalized['source_id'], '$field.source_id');
@@ -1557,6 +2714,21 @@ memory.MemoryConfidence _confidence(Object? value) {
   };
 }
 
+String? _optionalConfidenceName(Object? value, String field) {
+  if (value == null) {
+    return null;
+  }
+  final normalized = _optionalString(value, field);
+  return switch (normalized) {
+    'low' || 'medium' || 'high' => normalized,
+    _ => throw _ToolInputException(
+      'invalid_input',
+      '$field must be low, medium, or high.',
+      details: <String, Object?>{'field': field},
+    ),
+  };
+}
+
 String? _optionalSensitivityName(Object? value, String field) {
   if (value == null) {
     return null;
@@ -1607,6 +2779,12 @@ JsonMap _redactJsonMap(JsonMap value) {
 }
 
 Object? _redactJson(Object? value, {String? key}) {
+  if (key != null && _isRawMediaKey(key)) {
+    return '[redacted:raw_media]';
+  }
+  if (key != null && _isPathKey(key)) {
+    return value == null ? null : _redactedLocalPath;
+  }
   if (key != null && _isSecretKey(key)) {
     return '[redacted]';
   }
@@ -1642,6 +2820,24 @@ bool _isSecretKey(String key) {
       normalized == 'authorization';
 }
 
+bool _isPathKey(String key) {
+  final normalized = key.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '_');
+  return normalized == 'storage_path' ||
+      normalized == 'absolute_path' ||
+      normalized == 'raw_path' ||
+      normalized == 'file_path' ||
+      normalized == 'local_path';
+}
+
+bool _isRawMediaKey(String key) {
+  final normalized = key.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '_');
+  return normalized == 'raw_media' ||
+      normalized == 'media_bytes' ||
+      normalized == 'raw_bytes' ||
+      normalized == 'audio_bytes' ||
+      normalized == 'image_bytes';
+}
+
 String _redactString(String value) {
   var redacted = value.replaceAllMapped(
     RegExp(r'sk-[A-Za-z0-9_-]{6,}'),
@@ -1658,7 +2854,29 @@ String _redactString(String value) {
     ),
     (match) => '${match.group(1)}[redacted]',
   );
+  redacted = redacted.replaceAll(
+    RegExp(r'file://[^\s,;)]+', caseSensitive: false),
+    _redactedLocalPath,
+  );
+  redacted = redacted.replaceAll(
+    RegExp(r'(/Users|/private|/var|/tmp|/Volumes)/[^\s,;)]+'),
+    _redactedLocalPath,
+  );
+  redacted = redacted.replaceAll(
+    RegExp(r'[A-Za-z]:\\[^\s,;)]+'),
+    _redactedLocalPath,
+  );
   return redacted;
+}
+
+String? _safeFileName(String path) {
+  final normalized = path.trim().replaceAll('\\', '/');
+  if (normalized.isEmpty) {
+    return null;
+  }
+  final segments = normalized.split('/').where((part) => part.isNotEmpty);
+  final name = segments.isEmpty ? normalized : segments.last;
+  return _redactString(name);
 }
 
 String? _excerpt(Object? value) {
@@ -1739,6 +2957,8 @@ const _allowedSourceRefKinds = <String>{
   'uri',
   'manual',
 };
+
+const _redactedLocalPath = '[redacted:local_path]';
 
 final class _ToolInputException implements Exception {
   const _ToolInputException(this.code, this.message, {this.details = const {}});

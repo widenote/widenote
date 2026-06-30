@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../l10n/l10n.dart';
 import '../application/capture_input_controller.dart';
 import '../media/capture_media.dart';
+import 'attachment_artifact_widgets.dart';
 
 class CaptureConsole extends StatelessWidget {
   const CaptureConsole({
@@ -283,11 +284,20 @@ class _AttachmentPreviewRow extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final l10n = context.l10n;
     final stateLine = _attachmentStateLine(l10n, attachment);
+    final artifactLabel = attachment.derivedArtifacts
+        .map(
+          (artifact) =>
+              '${localizedAttachmentArtifactKind(l10n, artifact.artifactKind)} '
+              '${localizedAttachmentArtifactStatus(l10n, artifact.status)}',
+        )
+        .join('. ');
     return Semantics(
       key: Key('attachment-row-${attachment.id}'),
       container: true,
       explicitChildNodes: true,
-      label: '${attachment.displayName}. $stateLine',
+      label: artifactLabel.isEmpty
+          ? '${attachment.displayName}. $stateLine'
+          : '${attachment.displayName}. $stateLine. $artifactLabel',
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -315,6 +325,13 @@ class _AttachmentPreviewRow extends StatelessWidget {
                     color: colorScheme.onSurfaceVariant,
                   ),
                 ),
+                if (attachment.derivedArtifacts.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  AttachmentDerivedArtifactList(
+                    keyPrefix: 'attachment-${attachment.id}',
+                    artifacts: attachment.derivedArtifacts,
+                  ),
+                ],
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,

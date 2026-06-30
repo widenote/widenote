@@ -18,6 +18,14 @@ surface supports local type filtering and shows a retriever-required state for
 text queries. Full embedding/vector or model-backed retrieval remains a later
 persistence/search concern.
 
+Capture items can include attachment derived-artifact status metadata from the
+mobile read model. Timeline rows and detail pages may render pending, ready,
+failed, blocked, and needs-review artifact states, safe excerpts, and source
+labels. Timeline must not render raw attachment storage paths, raw media bytes,
+unsafe preview text, or private adapter metadata. It also must not infer
+blocked/review states with local keyword scans; those states are accepted only
+from persisted adapter/tool/platform/user status.
+
 ## Dependencies
 
 - Flutter Material

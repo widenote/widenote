@@ -991,6 +991,197 @@ void main() {
     expect(await store.readByType(WnEventTypes.insightCreated), hasLength(1));
   });
 
+  test('disabled pack does not enqueue new matching tasks', () async {
+    final store = InMemoryEventStore();
+    final traceSink = InMemoryTraceSink();
+    final runtimeStore = InMemoryRuntimeStore();
+    await runtimeStore.upsertPackInstallation(
+      RuntimePackInstallation(
+        packId: 'pack.disabled',
+        status: PackInstallationStatus.disabled,
+        updatedAt: DateTime.utc(2026, 6, 23, 1),
+        reason: 'user_disabled',
+      ),
+    );
+    final kernel =
+        _blankKernel(
+          store: store,
+          traceSink: traceSink,
+          runtimeStore: runtimeStore,
+          autoDrain: false,
+        )..registerPack(
+          const AgentPack(
+            id: 'pack.disabled',
+            name: 'Disabled pack',
+            version: '0.1.0',
+            subscriptions: <Subscription>[
+              Subscription(
+                id: 'sub.disabled',
+                agentId: 'agent.disabled',
+                eventTypes: <String>{WnEventTypes.captureCreated},
+              ),
+            ],
+            agentDefinitions: <String, AgentDefinition>{
+              'agent.disabled': AgentDefinition(
+                id: 'agent.disabled',
+                outputEvents: <String>{WnEventTypes.insightCreated},
+              ),
+            },
+            agents: <String, AgentHandler>{
+              'agent.disabled': _NamedInsightHandler('disabled'),
+            },
+          ),
+        );
+
+    await kernel.publish(
+      const WnEventDraft(
+        type: WnEventTypes.captureCreated,
+        actor: WnActor.user,
+      ),
+    );
+
+    expect(kernel.tasks, isEmpty);
+    expect(kernel.runs, isEmpty);
+    expect(await store.readAll(), hasLength(1));
+    final trace = (await traceSink.readAll()).singleWhere(
+      (candidate) => candidate.name == 'runtime.pack.disabled_at_enqueue',
+    );
+    expect(trace.details['error_code'], 'pack_disabled');
+    expect(trace.details['reason'], 'user_disabled');
+  });
+
+  test(
+    'pending task is denied when pack is disabled before execution',
+    () async {
+      final store = InMemoryEventStore();
+      final traceSink = InMemoryTraceSink();
+      final runtimeStore = InMemoryRuntimeStore();
+      final kernel =
+          _blankKernel(
+            store: store,
+            traceSink: traceSink,
+            runtimeStore: runtimeStore,
+            autoDrain: false,
+          )..registerPack(
+            const AgentPack(
+              id: 'pack.disable_pending',
+              name: 'Disable pending pack',
+              version: '0.1.0',
+              subscriptions: <Subscription>[
+                Subscription(
+                  id: 'sub.disable_pending',
+                  agentId: 'agent.disable_pending',
+                  eventTypes: <String>{WnEventTypes.captureCreated},
+                ),
+              ],
+              agentDefinitions: <String, AgentDefinition>{
+                'agent.disable_pending': AgentDefinition(
+                  id: 'agent.disable_pending',
+                  outputEvents: <String>{WnEventTypes.insightCreated},
+                ),
+              },
+              agents: <String, AgentHandler>{
+                'agent.disable_pending': _NamedInsightHandler(
+                  'disable-pending',
+                ),
+              },
+            ),
+          );
+
+      await kernel.publish(
+        const WnEventDraft(
+          type: WnEventTypes.captureCreated,
+          actor: WnActor.user,
+        ),
+      );
+      expect(kernel.tasks.single.status, RuntimeTaskStatus.queued);
+
+      await runtimeStore.upsertPackInstallation(
+        RuntimePackInstallation(
+          packId: 'pack.disable_pending',
+          status: PackInstallationStatus.disabled,
+          updatedAt: DateTime.utc(2026, 6, 23, 1, 1),
+          reason: 'disabled_between_enqueue_and_execution',
+        ),
+      );
+
+      expect(await kernel.drainQueue(), 1);
+      expect(kernel.tasks.single.status, RuntimeTaskStatus.denied);
+      expect(kernel.runs.single.status, RuntimeRunStatus.denied);
+      expect(await store.readByType(WnEventTypes.insightCreated), isEmpty);
+      final trace = (await traceSink.readAll()).singleWhere(
+        (candidate) => candidate.name == 'runtime.pack.disabled_at_execution',
+      );
+      expect(trace.details['error_code'], 'pack_disabled');
+      expect(trace.details['reason'], 'disabled_between_enqueue_and_execution');
+    },
+  );
+
+  test(
+    'pending task is denied when permission is revoked before execution',
+    () async {
+      final store = InMemoryEventStore();
+      final traceSink = InMemoryTraceSink();
+      final permissions = InMemoryPermissionBroker()
+        ..grant('pack.revoke_pending', 'memory.propose');
+      final kernel =
+          _blankKernel(
+            store: store,
+            traceSink: traceSink,
+            permissions: permissions,
+            autoDrain: false,
+          )..registerPack(
+            const AgentPack(
+              id: 'pack.revoke_pending',
+              name: 'Revoke pending pack',
+              version: '0.1.0',
+              requiredPermissions: <String>{'memory.propose'},
+              subscriptions: <Subscription>[
+                Subscription(
+                  id: 'sub.revoke_pending',
+                  agentId: 'agent.revoke_pending',
+                  eventTypes: <String>{WnEventTypes.captureCreated},
+                ),
+              ],
+              agentDefinitions: <String, AgentDefinition>{
+                'agent.revoke_pending': AgentDefinition(
+                  id: 'agent.revoke_pending',
+                  requiredPermissions: <String>{'memory.propose'},
+                  outputEvents: <String>{WnEventTypes.memoryProposed},
+                ),
+              },
+              agents: <String, AgentHandler>{
+                'agent.revoke_pending': _EmptyHandler(),
+              },
+            ),
+          );
+
+      await kernel.publish(
+        const WnEventDraft(
+          type: WnEventTypes.captureCreated,
+          actor: WnActor.user,
+        ),
+      );
+      expect(kernel.tasks.single.status, RuntimeTaskStatus.queued);
+
+      permissions.revoke(
+        'pack.revoke_pending',
+        'memory.propose',
+        reason: 'user_revoked_after_enqueue',
+      );
+
+      expect(await kernel.drainQueue(), 1);
+      expect(kernel.tasks.single.status, RuntimeTaskStatus.denied);
+      expect(kernel.runs.single.status, RuntimeRunStatus.denied);
+      final deniedTrace = (await traceSink.readAll()).singleWhere(
+        (trace) => trace.name == 'runtime.permission.denied',
+      );
+      expect(deniedTrace.details['missing_permissions'], <String>[
+        'memory.propose',
+      ]);
+    },
+  );
+
   test(
     'dependencies run after prerequisite subscriptions even when listed first',
     () async {
@@ -1805,22 +1996,23 @@ RuntimeKernel _kernel({
           eventTypes: <String>{WnEventTypes.captureCreated},
         ),
       ],
-      agentDefinitions: const <String, AgentDefinition>{
+      agentDefinitions: <String, AgentDefinition>{
         'agent.capture': AgentDefinition(
           id: 'agent.capture',
-          requiredPermissions: <String>{
+          requiredPermissions: const <String>{
             ModelPermissions.complete,
             'memory.propose',
             'card.write',
             'insight.write',
             'todo.suggest',
           },
-          outputEvents: <String>{
+          outputEvents: const <String>{
             WnEventTypes.memoryProposed,
             WnEventTypes.cardCreated,
             WnEventTypes.insightCreated,
             WnEventTypes.todoSuggested,
           },
+          tools: _declaredToolsFor(handler),
         ),
       },
       agents: <String, AgentHandler>{'agent.capture': handler},
@@ -1851,6 +2043,19 @@ RuntimeKernel _blankKernel({
     runtimeStore: runtimeStore,
     autoDrain: autoDrain,
   );
+}
+
+Set<String> _declaredToolsFor(AgentHandler handler) {
+  if (handler is _ToolUsingHandler) {
+    return const <String>{'echo'};
+  }
+  if (handler is _ToolMissingHandler) {
+    return const <String>{'missing'};
+  }
+  if (handler is _ToolDeniedHandler) {
+    return const <String>{'secret'};
+  }
+  return const <String>{};
 }
 
 final class _CaptureProjectionHandler implements AgentHandler {

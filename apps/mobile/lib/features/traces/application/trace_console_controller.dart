@@ -248,6 +248,7 @@ final class TraceConsoleItem {
     this.taskId,
     this.parentTraceId,
     this.durationMs,
+    this.delegation,
   });
 
   final String id;
@@ -263,6 +264,7 @@ final class TraceConsoleItem {
   final String? taskId;
   final String? parentTraceId;
   final num? durationMs;
+  final AgentDelegationLink? delegation;
   final List<TracePayloadEntry> payloadEntries;
   final int redactedPayloadFieldCount;
 
@@ -273,6 +275,21 @@ final class TraceConsoleItem {
         normalized == 'error' ||
         status.toLowerCase() != 'ok';
   }
+}
+
+@immutable
+final class AgentDelegationLink {
+  const AgentDelegationLink({
+    required this.delegationId,
+    required this.status,
+    required this.violationCodes,
+    this.childRunId,
+  });
+
+  final String delegationId;
+  final String status;
+  final String? childRunId;
+  final List<String> violationCodes;
 }
 
 @immutable
@@ -343,7 +360,7 @@ TraceConsoleItem _traceItemFromRecord(TraceEventRecord trace) {
   final payload = _payloadEntries(trace.payload);
   return TraceConsoleItem(
     id: trace.id,
-    title: trace.traceType,
+    title: _traceTitle(trace),
     severity: trace.severity,
     status: trace.status,
     message: _redactText(trace.message),
@@ -355,9 +372,56 @@ TraceConsoleItem _traceItemFromRecord(TraceEventRecord trace) {
     taskId: trace.taskId,
     parentTraceId: trace.parentTraceId,
     durationMs: trace.durationMs,
+    delegation: _delegationFromPayload(trace.payload),
     payloadEntries: payload.entries,
     redactedPayloadFieldCount: payload.redactedCount,
   );
+}
+
+String _traceTitle(TraceEventRecord trace) {
+  final traceType = _payloadString(trace.payload['trace_type']);
+  if (traceType != null && traceType.isNotEmpty) {
+    return traceType;
+  }
+  return trace.traceType;
+}
+
+AgentDelegationLink? _delegationFromPayload(JsonMap payload) {
+  final delegationId = _payloadString(payload['child_delegation_id']);
+  final childRunId = _payloadString(payload['child_run_id']);
+  final status = _payloadString(payload['child_status']);
+  if ((delegationId == null || delegationId.isEmpty) &&
+      (childRunId == null || childRunId.isEmpty) &&
+      (status == null || status.isEmpty)) {
+    return null;
+  }
+  return AgentDelegationLink(
+    delegationId: delegationId ?? '',
+    childRunId: childRunId,
+    status: status ?? '',
+    violationCodes: _delegationViolationCodes(payload),
+  );
+}
+
+List<String> _delegationViolationCodes(JsonMap payload) {
+  final direct = _payloadStringList(payload['violation_codes']);
+  if (direct.isNotEmpty) {
+    return direct;
+  }
+  final violations = payload['violations'];
+  if (violations is! Iterable) {
+    return const <String>[];
+  }
+  final codes = <String>[];
+  for (final violation in violations) {
+    if (violation is Map) {
+      final code = _payloadString(violation['code']);
+      if (code != null && code.isNotEmpty) {
+        codes.add(code);
+      }
+    }
+  }
+  return List<String>.unmodifiable(codes);
 }
 
 AgentRunMode _runModeFromPayload(JsonMap payload) {
@@ -495,13 +559,46 @@ _RedactedPayloadValue _redactPayloadValue(Object? value) {
 }
 
 bool _isSensitiveText(String value) {
+  final normalized = value.trim().toLowerCase();
+  if (_sensitiveExactValues.contains(normalized)) {
+    return true;
+  }
   return _sensitivePattern.hasMatch(value);
 }
 
+const _sensitiveExactValues = <String>{
+  'input',
+  'instructions',
+  'prompt',
+  'raw_input',
+  'raw_prompt',
+  'capture_body',
+  'raw_capture_body',
+  'attachment_path',
+  'file_path',
+  'raw_media',
+  'media_bytes',
+  'oauth_token',
+};
+
 final _sensitivePattern = RegExp(
-  r'(api[_-]?key|authorization|bearer|token|secret|credential)',
+  r'(api[_-]?key|authorization|bearer|token|secret|credential|oauth|raw[_-]?prompt|raw[_-]?capture|attachment[_-]?path|file[_-]?path|raw[_-]?media|media[_-]?bytes)',
   caseSensitive: false,
 );
+
+String? _payloadString(Object? value) {
+  if (value is String) {
+    return value;
+  }
+  return null;
+}
+
+List<String> _payloadStringList(Object? value) {
+  if (value is! Iterable) {
+    return const <String>[];
+  }
+  return value.whereType<String>().toList(growable: false);
+}
 
 final class _PayloadEntries {
   const _PayloadEntries({required this.entries, required this.redactedCount});

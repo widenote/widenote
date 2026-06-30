@@ -21,7 +21,13 @@ void main() {
       'card.write',
       'memory.propose',
       'insight.write',
+      'context_packet.build',
+      'memory.read',
+      'timeline.read',
+      'knowledge.read',
+      'semantic_search.query',
     });
+    expect(defaultManifest.defaultRunMode, RunMode.auto);
     expect(defaultManifest.subscriptions.single.id, 'sub.capture_created');
     expect(defaultManifest.subscriptions.single.agentId, 'agent.capture_loop');
     expect(
@@ -37,6 +43,31 @@ void main() {
       'local_or_user_selected_model',
     );
     expect(
+      defaultManifest.agentDefinitions['agent.capture_loop']?.runMode,
+      RunMode.auto,
+    );
+    expect(defaultManifest.agentDefinitions['agent.capture_loop']?.tools, {
+      'context_packet.build',
+      'memory.read',
+      'timeline.read',
+      'knowledge.read',
+      'semantic_search.query',
+    });
+    expect(
+      defaultManifest.toolDefinitions['context_packet.build']?.access,
+      ToolAccess.read,
+    );
+    expect(
+      defaultManifest.toolDefinitions['context_packet.build']?.locality,
+      ToolLocality.local,
+    );
+    expect(
+      defaultManifest
+          .toolDefinitions['context_packet.build']
+          ?.compatibleRunModes,
+      {RunMode.readOnly, RunMode.confirm, RunMode.auto},
+    );
+    expect(
       defaultManifest
           .agentDefinitions['agent.capture_loop']
           ?.retryPolicy
@@ -50,6 +81,15 @@ void main() {
 
     expect(todoManifest.id, 'pack.todo');
     expect(todoManifest.requiredPermissions, <String>{'todo.suggest'});
+    expect(todoManifest.defaultRunMode, RunMode.auto);
+    expect(
+      todoManifest.toolDefinitions['todo.suggest']?.access,
+      ToolAccess.write,
+    );
+    expect(todoManifest.toolDefinitions['todo.suggest']?.compatibleRunModes, {
+      RunMode.confirm,
+      RunMode.auto,
+    });
     expect(_manifestOutputEvents(todoManifest), <String>{
       WnEventTypes.todoSuggested,
     });
@@ -298,6 +338,18 @@ void main() {
         ),
       ),
       (
+        expectedPath: 'agents.agent.capture_loop.run_mode',
+        snapshot: _copyManifest(
+          manifest,
+          agentDefinitions: <String, AgentDefinition>{
+            'agent.capture_loop': _copyAgent(
+              manifest.agentDefinitions['agent.capture_loop']!,
+              runMode: RunMode.readOnly,
+            ),
+          },
+        ),
+      ),
+      (
         expectedPath: 'agents.agent.capture_loop.retry_policy.max_attempts',
         snapshot: _copyManifest(
           manifest,
@@ -494,9 +546,33 @@ void main() {
           <String, Object?>{
             'id': 'tool.bad',
             'permissions': <Object?>['todo.suggest'],
+            'required_permissions': <Object?>['todo.suggest'],
+            'access': 'read',
+            'risk': 'low',
+            'locality': 'local',
+            'approval_requirement': 'none',
+            'execution': 'local',
+            'side_effect': 'none',
+            'compatible_run_modes': <Object?>['read_only', 'confirm', 'auto'],
           },
         ];
       }, 'not declared by the pack');
+      _expectManifestFails(
+        'tool required permission drift',
+        (json) =>
+            ((json['tools'] as List<Object?>).first
+                as JsonMap)['required_permissions'] = <Object?>[
+              'memory.read',
+            ],
+        'required_permissions must match',
+      );
+      _expectManifestFails(
+        'tool missing compatible run modes',
+        (json) => ((json['tools'] as List<Object?>).first as JsonMap).remove(
+          'compatible_run_modes',
+        ),
+        'compatible_run_modes',
+      );
       _expectManifestFails(
         'unknown model profile',
         (json) => _firstAgent(json)['model_profile_ref'] = 'missing_profile',
@@ -833,6 +909,8 @@ AgentPackManifestSnapshot _copyManifest(
   Set<String>? requiredPermissions,
   List<Subscription>? subscriptions,
   Map<String, AgentDefinition>? agentDefinitions,
+  RunMode? defaultRunMode,
+  Map<String, AgentPackToolDefinition>? toolDefinitions,
 }) {
   return AgentPackManifestSnapshot(
     id: id ?? manifest.id,
@@ -841,15 +919,18 @@ AgentPackManifestSnapshot _copyManifest(
     schemaVersion: manifest.schemaVersion,
     publisher: manifest.publisher,
     edition: manifest.edition,
+    defaultRunMode: defaultRunMode ?? manifest.defaultRunMode,
     requiredPermissions: requiredPermissions ?? manifest.requiredPermissions,
     subscriptions: subscriptions ?? manifest.subscriptions,
     agentDefinitions: agentDefinitions ?? manifest.agentDefinitions,
+    toolDefinitions: toolDefinitions ?? manifest.toolDefinitions,
   );
 }
 
 AgentDefinition _copyAgent(
   AgentDefinition definition, {
   AgentRuntimeKind? runtimeKind,
+  RunMode? runMode,
   Set<String>? requiredPermissions,
   Set<String>? outputEvents,
   Set<String>? tools,
@@ -859,6 +940,7 @@ AgentDefinition _copyAgent(
   return AgentDefinition(
     id: definition.id,
     runtimeKind: runtimeKind ?? definition.runtimeKind,
+    runMode: runMode ?? definition.runMode,
     requiredPermissions: requiredPermissions ?? definition.requiredPermissions,
     outputEvents: outputEvents ?? definition.outputEvents,
     tools: tools ?? definition.tools,

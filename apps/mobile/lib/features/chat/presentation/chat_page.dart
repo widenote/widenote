@@ -307,6 +307,10 @@ class _MessageBubble extends StatelessWidget {
                   const SizedBox(height: 8),
                   _FailedLine(onRetry: onRetry),
                 ],
+                if (message.toolSummaries.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  _ToolSummaries(summaries: message.toolSummaries),
+                ],
                 if (message.sourceRefs.isNotEmpty) ...[
                   const SizedBox(height: 10),
                   _SourceRefs(refs: message.sourceRefs),
@@ -344,6 +348,31 @@ class _FailedLine extends StatelessWidget {
           icon: const Icon(Icons.refresh),
           label: Text(l10n.retryButton),
         ),
+      ],
+    );
+  }
+}
+
+class _ToolSummaries extends StatelessWidget {
+  const _ToolSummaries({required this.summaries});
+
+  final List<ChatToolSummary> summaries;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: [
+        for (var index = 0; index < summaries.length; index += 1)
+          _StatusTag(
+            key: Key('chat-tool-summary-$index'),
+            icon: _iconForToolStatus(summaries[index].status),
+            label:
+                '${summaries[index].name} · '
+                '${l10n.sourceLinkCount(summaries[index].sourceRefCount)}',
+          ),
       ],
     );
   }
@@ -673,6 +702,14 @@ IconData _iconForKind(String kind) {
     'todo' => Icons.task_alt_outlined,
     'capture' => Icons.article_outlined,
     _ => Icons.link,
+  };
+}
+
+IconData _iconForToolStatus(String status) {
+  return switch (status) {
+    'denied' => Icons.block,
+    'failed' => Icons.error_outline,
+    _ => Icons.manage_search,
   };
 }
 

@@ -25,6 +25,10 @@ model-provider calls, prompts, PKM/PARA structures, or generated public schemas.
 - `MemoryCardSource`
 - `MemoryFirstCard`
 - `MemoryFirstInsight`
+- `MemoryFirstInsightClaim`
+- `MemoryFirstInsightMetric`
+- `MemoryFirstInsightPayload`
+- `MemoryFirstInsightUiBlock`
 - `MemoryFirstCardBundle`
 - `MemoryFirstCardInput`
 - `MemoryFirstCardService`
@@ -50,5 +54,6 @@ dart test
 ```
 
 Current tests cover empty input, capture and Memory card generation, insight
-generation, required source links, source-ref detail grouping, and browse
-filtering without local text matching.
+generation, required source links, claim-level source refs, structured insight
+payload round-trips, source-ref detail grouping, and browse filtering without
+local text matching.

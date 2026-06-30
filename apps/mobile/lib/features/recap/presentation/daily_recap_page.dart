@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:widenote_cards/widenote_cards.dart';
 
 import '../../../l10n/l10n.dart';
 import '../application/daily_recap_repository.dart';
@@ -296,6 +297,13 @@ class _EntryRow extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               _SourceTag(label: localizedSourceLabel(l10n, entry.sourceLabel)),
+              if (entry.insightPayload != null) ...[
+                const SizedBox(height: 8),
+                _RecapInsightPayload(
+                  entryId: entry.id,
+                  payload: entry.insightPayload!,
+                ),
+              ],
             ],
           ),
         ),
@@ -304,10 +312,134 @@ class _EntryRow extends StatelessWidget {
   }
 }
 
+class _RecapInsightPayload extends StatelessWidget {
+  const _RecapInsightPayload({required this.entryId, required this.payload});
+
+  final String entryId;
+  final MemoryFirstInsightPayload payload;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final sourceLinks = _insightPayloadSourceLinks(payload);
+    return Column(
+      key: Key('recap-$entryId-insight-payload'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var index = 0; index < payload.claims.length; index++) ...[
+          if (index > 0) const SizedBox(height: 6),
+          _RecapInsightClaim(
+            entryId: entryId,
+            index: index,
+            claim: payload.claims[index],
+          ),
+        ],
+        if (payload.metrics.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              for (final metric in payload.metrics)
+                _SourceTag(
+                  key: Key('recap-$entryId-insight-metric-${metric.label}'),
+                  icon: Icons.query_stats,
+                  label: _metricLabel(l10n, metric),
+                ),
+            ],
+          ),
+        ],
+        if (sourceLinks.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              for (final link in sourceLinks.take(3))
+                _SourceTag(
+                  key: Key(
+                    'recap-$entryId-insight-source-${link.kind}-${link.id}',
+                  ),
+                  label: _sourceRefLabel(l10n, link),
+                ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _RecapInsightClaim extends StatelessWidget {
+  const _RecapInsightClaim({
+    required this.entryId,
+    required this.index,
+    required this.claim,
+  });
+
+  final String entryId;
+  final int index;
+  final MemoryFirstInsightClaim claim;
+
+  @override
+  Widget build(BuildContext context) {
+    final claimId = claim.id ?? '$index';
+    return Row(
+      key: Key('recap-$entryId-insight-claim-$claimId'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Icon(Icons.check_circle_outline, size: 16),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            claim.text,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+List<SourceLink> _insightPayloadSourceLinks(MemoryFirstInsightPayload payload) {
+  return dedupeSourceLinks(<SourceLink>[
+    ...payload.sourceLinks,
+    for (final claim in payload.claims) ...claim.sourceLinks,
+    for (final metric in payload.metrics) ...metric.sourceLinks,
+  ]);
+}
+
+String _sourceRefLabel(AppLocalizations l10n, SourceLink link) {
+  final sourceId = _safeSourceId(link.id) ?? l10n.sourceUnknownLabel;
+  return '${localizedSourceKind(l10n, link.kind)}: $sourceId';
+}
+
+String _metricLabel(AppLocalizations l10n, MemoryFirstInsightMetric metric) {
+  final label = localizedMetricLabel(l10n, metric.label);
+  final unit = metric.unit == null ? '' : ' ${metric.unit}';
+  return '${metric.value}$unit $label';
+}
+
+String? _safeSourceId(String value) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty ||
+      trimmed.startsWith('/') ||
+      trimmed.startsWith('file:') ||
+      trimmed.contains('\\')) {
+    return null;
+  }
+  return trimmed;
+}
+
 class _SourceTag extends StatelessWidget {
-  const _SourceTag({required this.label});
+  const _SourceTag({required this.label, this.icon = Icons.link, super.key});
 
   final String label;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
@@ -321,7 +453,7 @@ class _SourceTag extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.link, size: 14),
+            Icon(icon, size: 14),
             const SizedBox(width: 4),
             Flexible(
               child: Text(

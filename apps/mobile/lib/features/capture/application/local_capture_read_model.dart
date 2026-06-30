@@ -138,6 +138,22 @@ List<localdb.DerivedArtifactRecord> _attachmentArtifacts(
   CaptureRecord record,
   CaptureAttachment attachment,
 ) {
+  if (attachment.derivedArtifacts.isNotEmpty) {
+    return attachment.derivedArtifacts
+        .where(
+          (artifact) =>
+              artifact.status != AttachmentDerivedArtifactStatus.blocked &&
+              artifact.status != AttachmentDerivedArtifactStatus.needsReview,
+        )
+        .map(
+          (artifact) => _artifactRecordFromView(
+            record: record,
+            attachment: attachment,
+            artifact: artifact,
+          ),
+        )
+        .toList(growable: false);
+  }
   if (!attachment.canRenderPreview) {
     return const <localdb.DerivedArtifactRecord>[];
   }
@@ -153,6 +169,35 @@ List<localdb.DerivedArtifactRecord> _attachmentArtifacts(
       _sharedTextArtifact(record, attachment),
     ],
   };
+}
+
+localdb.DerivedArtifactRecord _artifactRecordFromView({
+  required CaptureRecord record,
+  required CaptureAttachment attachment,
+  required AttachmentDerivedArtifact artifact,
+}) {
+  final body =
+      _nonEmpty(artifact.excerpt) ??
+      _nonEmpty(attachment.previewText) ??
+      '${artifact.artifactKind} pending for ${attachment.displayName}.';
+  return _artifactRecord(
+    record: record,
+    attachment: attachment,
+    artifactKind: artifact.artifactKind,
+    status: _artifactRecordStatus(artifact.status),
+    title: _artifactTitle(artifact),
+    body: body,
+    confidence: artifact.status == AttachmentDerivedArtifactStatus.ready
+        ? 'medium'
+        : 'low',
+    generatorId: 'capture.media.${artifact.artifactKind}',
+    generatorVersion: '1.0.0',
+    payload: <String, Object?>{
+      'artifact_status': artifact.status.wireName,
+      'source_label': artifact.sourceLabel,
+      if (artifact.reason != null) 'reason': artifact.reason,
+    },
+  );
 }
 
 localdb.DerivedArtifactRecord _transcriptArtifact(
@@ -340,6 +385,32 @@ localdb.DerivedArtifactRecord _artifactRecord({
     createdAt: attachment.createdAt.toUtc(),
     updatedAt: now,
   );
+}
+
+String _artifactRecordStatus(AttachmentDerivedArtifactStatus status) {
+  return switch (status) {
+    AttachmentDerivedArtifactStatus.ready => 'active',
+    AttachmentDerivedArtifactStatus.pending => 'pending',
+    AttachmentDerivedArtifactStatus.failed => 'failed',
+    AttachmentDerivedArtifactStatus.blocked => 'blocked',
+    AttachmentDerivedArtifactStatus.needsReview => 'needs_review',
+  };
+}
+
+String _artifactTitle(AttachmentDerivedArtifact artifact) {
+  return switch (artifact.artifactKind) {
+    'audio_transcript' =>
+      artifact.status == AttachmentDerivedArtifactStatus.ready
+          ? 'Audio transcript'
+          : 'Audio transcript pending',
+    'vision_summary' => 'Image attachment summary',
+    'ocr_text' =>
+      artifact.status == AttachmentDerivedArtifactStatus.ready
+          ? 'Image OCR text'
+          : 'Image OCR pending',
+    'shared_text' => 'Shared attachment text',
+    _ => artifact.artifactKind,
+  };
 }
 
 String _transcriptStatus(String? transcript) {

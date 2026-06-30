@@ -30,12 +30,18 @@
     ],
     "status": "available"
   },
+  "default_run_mode": "auto",
   "entrypoint_kind": "native",
   "permissions": [
     "model.complete",
     "card.write",
     "memory.propose",
-    "insight.write"
+    "insight.write",
+    "context_packet.build",
+    "memory.read",
+    "timeline.read",
+    "knowledge.read",
+    "semantic_search.query"
   ],
   "subscriptions": [
     {
@@ -52,6 +58,7 @@
     {
       "id": "agent.capture_loop",
       "runtime": "native",
+      "run_mode": "auto",
       "name": "Capture Loop Agent",
       "prompt_ref": "capture.memory_candidate.v2",
       "model_profile_ref": "local_or_user_selected_model",
@@ -59,9 +66,20 @@
         "model.complete",
         "card.write",
         "memory.propose",
-        "insight.write"
+        "insight.write",
+        "context_packet.build",
+        "memory.read",
+        "timeline.read",
+        "knowledge.read",
+        "semantic_search.query"
       ],
-      "tools": [],
+      "tools": [
+        "context_packet.build",
+        "memory.read",
+        "timeline.read",
+        "knowledge.read",
+        "semantic_search.query"
+      ],
       "output_events": [
         "wn.card.created",
         "wn.memory.proposed",
@@ -79,8 +97,139 @@
       "required": false
     }
   ],
-  "tools": [],
-  "ui_blocks": [],
+  "tools": [
+    {
+      "id": "context_packet.build",
+      "capability_kind": "context_packet",
+      "permissions": [
+        "context_packet.build"
+      ],
+      "required_permissions": [
+        "context_packet.build"
+      ],
+      "access": "read",
+      "risk": "low",
+      "locality": "local",
+      "approval_requirement": "none",
+      "execution": "local",
+      "side_effect": "none",
+      "compatible_run_modes": [
+        "read_only",
+        "confirm",
+        "auto"
+      ]
+    },
+    {
+      "id": "memory.read",
+      "capability_kind": "memory",
+      "permissions": [
+        "memory.read"
+      ],
+      "required_permissions": [
+        "memory.read"
+      ],
+      "access": "read",
+      "risk": "low",
+      "locality": "local",
+      "approval_requirement": "none",
+      "execution": "local",
+      "side_effect": "none",
+      "compatible_run_modes": [
+        "read_only",
+        "confirm",
+        "auto"
+      ]
+    },
+    {
+      "id": "timeline.read",
+      "capability_kind": "local_core",
+      "permissions": [
+        "timeline.read"
+      ],
+      "required_permissions": [
+        "timeline.read"
+      ],
+      "access": "read",
+      "risk": "low",
+      "locality": "local",
+      "approval_requirement": "none",
+      "execution": "local",
+      "side_effect": "none",
+      "compatible_run_modes": [
+        "read_only",
+        "confirm",
+        "auto"
+      ]
+    },
+    {
+      "id": "knowledge.read",
+      "capability_kind": "local_core",
+      "permissions": [
+        "knowledge.read"
+      ],
+      "required_permissions": [
+        "knowledge.read"
+      ],
+      "access": "read",
+      "risk": "low",
+      "locality": "local",
+      "approval_requirement": "none",
+      "execution": "local",
+      "side_effect": "none",
+      "compatible_run_modes": [
+        "read_only",
+        "confirm",
+        "auto"
+      ]
+    },
+    {
+      "id": "semantic_search.query",
+      "capability_kind": "local_core",
+      "permissions": [
+        "semantic_search.query"
+      ],
+      "required_permissions": [
+        "semantic_search.query"
+      ],
+      "access": "read",
+      "risk": "low",
+      "locality": "local",
+      "approval_requirement": "none",
+      "execution": "local",
+      "side_effect": "none",
+      "compatible_run_modes": [
+        "read_only",
+        "confirm",
+        "auto"
+      ]
+    }
+  ],
+  "ui_blocks": [
+    {
+      "type": "claim_list",
+      "events": [
+        "wn.insight.created"
+      ]
+    },
+    {
+      "type": "metric_row",
+      "events": [
+        "wn.insight.created"
+      ]
+    },
+    {
+      "type": "source_refs",
+      "events": [
+        "wn.insight.created"
+      ]
+    },
+    {
+      "type": "note",
+      "events": [
+        "wn.insight.created"
+      ]
+    }
+  ],
   "storage_quota": {
     "local_bytes": 0
   },

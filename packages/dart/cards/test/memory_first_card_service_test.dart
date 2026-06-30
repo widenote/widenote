@@ -106,6 +106,9 @@ void main() {
       );
       expect(bundle.insights[1].metricValue, 3);
       expect(bundle.insights[1].summary, contains('2 captures and 1 Memory'));
+      expect(bundle.insights[1].claims.single.sourceLinks, isNotEmpty);
+      expect(bundle.insights[1].metrics.single.label, 'source-linked cards');
+      expect(bundle.insights[1].metadata['ui_blocks'], isA<List>());
       expect(bundle.insights[2].metadata['day'], '2026-06-24');
       expect(bundle.insights[2].metricValue, 2);
       expect(bundle.insights[3].summary, contains('3 card(s)'));
@@ -156,6 +159,94 @@ void main() {
       );
     });
 
+    test(
+      'structured insight payload round-trips claims metrics and UI blocks',
+      () {
+        const source = SourceLink(
+          kind: 'capture',
+          id: 'capture-1',
+          excerpt: 'WideNote source',
+        );
+        final payload = MemoryFirstInsightPayload(
+          claims: <MemoryFirstInsightClaim>[
+            MemoryFirstInsightClaim(
+              id: 'claim-1',
+              text: 'WideNote keeps insight claims source-linked.',
+              sourceLinks: const <SourceLink>[source],
+              confidence: 0.9,
+            ),
+          ],
+          metrics: <MemoryFirstInsightMetric>[
+            MemoryFirstInsightMetric(
+              label: 'source-linked',
+              value: 1,
+              sourceLinks: const <SourceLink>[source],
+            ),
+          ],
+          sourceLinks: const <SourceLink>[source],
+          uiBlocks: <MemoryFirstInsightUiBlock>[
+            MemoryFirstInsightUiBlock(kind: InsightUiBlockKinds.claimList),
+            MemoryFirstInsightUiBlock(kind: InsightUiBlockKinds.metricRow),
+            MemoryFirstInsightUiBlock(kind: InsightUiBlockKinds.sourceRefs),
+            MemoryFirstInsightUiBlock(kind: InsightUiBlockKinds.note),
+          ],
+          note: 'Structured output is renderer-safe.',
+        );
+
+        final roundTripped = MemoryFirstInsightPayload.fromJson(
+          Map<Object?, Object?>.from(payload.toJson()),
+        );
+
+        expect(roundTripped.claims.single.text, contains('source-linked'));
+        expect(roundTripped.claims.single.sourceLinks.single.id, 'capture-1');
+        expect(roundTripped.metrics.single.value, 1);
+        expect(roundTripped.uiBlocks.map((block) => block.kind), [
+          InsightUiBlockKinds.claimList,
+          InsightUiBlockKinds.metricRow,
+          InsightUiBlockKinds.sourceRefs,
+          InsightUiBlockKinds.note,
+        ]);
+      },
+    );
+
+    test('dedupes duplicate cards before ranking insight source refs', () {
+      final bundle = service.generate(
+        MemoryFirstCardInput(
+          now: DateTime.utc(2026, 6, 24, 12),
+          captures: <CaptureCardSource>[
+            CaptureCardSource(
+              id: 'capture-1',
+              text: 'Original source-linked capture.',
+              createdAt: DateTime.utc(2026, 6, 24, 8),
+            ),
+            CaptureCardSource(
+              id: 'capture-1',
+              text: 'Duplicate source-linked capture should not double count.',
+              createdAt: DateTime.utc(2026, 6, 24, 9),
+            ),
+            CaptureCardSource(
+              id: 'capture-2',
+              text: 'Latest ranked source-linked capture.',
+              createdAt: DateTime.utc(2026, 6, 24, 10),
+            ),
+          ],
+        ),
+      );
+
+      expect(bundle.cards.map((card) => card.id), [
+        'card.capture.capture-1',
+        'card.capture.capture-2',
+      ]);
+      final count = bundle.insights.singleWhere(
+        (insight) => insight.kind == MemoryFirstInsightKind.count,
+      );
+      expect(count.metricValue, 2);
+      expect(count.sourceLinks.map((link) => '${link.kind}:${link.id}'), [
+        'capture:capture-2',
+        'capture:capture-1',
+      ]);
+    });
+
     test('card and insight models reject missing source links', () {
       expect(
         () => MemoryFirstCard(
@@ -178,6 +269,31 @@ void main() {
           sourceLinks: const <SourceLink>[],
           createdAt: DateTime.utc(2026, 6, 24),
         ),
+        throwsArgumentError,
+      );
+
+      expect(
+        () => MemoryFirstInsightClaim(
+          text: 'A claim without sources must fail.',
+          sourceLinks: const <SourceLink>[],
+        ),
+        throwsArgumentError,
+      );
+
+      expect(
+        () => MemoryFirstInsightPayload.fromJson(<Object?, Object?>{
+          'claims': <Object?>[
+            <Object?, Object?>{
+              'text': 'A parsed claim without refs must fail.',
+              'source_refs': <Object?>[],
+            },
+          ],
+        }),
+        throwsArgumentError,
+      );
+
+      expect(
+        () => MemoryFirstInsightUiBlock(kind: 'webview'),
         throwsArgumentError,
       );
     });

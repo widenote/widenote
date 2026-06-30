@@ -54,6 +54,11 @@ void main() {
       'card.write',
       'memory.propose',
       'insight.write',
+      'context_packet.build',
+      'memory.read',
+      'timeline.read',
+      'knowledge.read',
+      'semantic_search.query',
     ]);
     expect(defaultPack.outputEvents, <String>[
       'wn.card.created',
@@ -80,6 +85,11 @@ void main() {
         'pack.default:card.write',
         'pack.default:memory.propose',
         'pack.default:insight.write',
+        'pack.default:context_packet.build',
+        'pack.default:memory.read',
+        'pack.default:timeline.read',
+        'pack.default:knowledge.read',
+        'pack.default:semantic_search.query',
         'pack.todo:todo.suggest',
         'pack.pkm_library:model.complete',
         'pack.pkm_library:artifact.write',
@@ -330,7 +340,7 @@ void main() {
     expect(find.text('Todo Extraction Loop'), findsOneWidget);
     expect(find.text('PKM Personal Library'), findsOneWidget);
     expect(find.text('v0.1.0'), findsNWidgets(3));
-    expect(find.text('4 permissions'), findsOneWidget);
+    expect(find.text('9 permissions'), findsOneWidget);
     expect(find.text('3 outputs'), findsOneWidget);
     expect(find.text('1 permission'), findsOneWidget);
     expect(find.text('2 permissions'), findsOneWidget);

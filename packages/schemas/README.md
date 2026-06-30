@@ -95,6 +95,11 @@ validation allows them only as fake, deferred, or disabled. Script runtime and
 script side effects are described only as deferred contract values; phase-one
 validation rejects them until a sandbox RFC is accepted.
 
+Agent Pack `ui_blocks[]` is currently a store-safe whitelist for structured
+insight rendering: `claim_list`, `metric_row`, `source_refs`, and `note`.
+Unknown block kinds are rejected by both the schema and the lightweight pack
+validator.
+
 Approval request and decision fixtures intentionally store action summaries,
 reasons, expiry, pack/agent/task/run/tool/source refs, and
 `redacted_input_keys` only. Do not add raw tool input, credentials, provider

@@ -56,6 +56,8 @@ void main() {
 
     await _scrollUntilText(tester, 'Insight says recap kept sources');
     expect(find.text('Insight says recap kept sources'), findsOneWidget);
+    expect(find.text('Recap insight claim keeps source refs.'), findsOneWidget);
+    expect(find.text('1 source-linked'), findsOneWidget);
     expect(find.text('Capture: capture-today'), findsWidgets);
 
     await _scrollUntilText(tester, '2 events · 1 trace');
@@ -111,6 +113,8 @@ void main() {
     expect(find.text('记忆'), findsWidgets);
     await _scrollUntilText(tester, '记录：capture-today');
     expect(find.text('记录：capture-today'), findsWidgets);
+    await _scrollUntilText(tester, '1 可溯源');
+    expect(find.text('1 可溯源'), findsOneWidget);
     expect(find.text('source: capture:capture-today'), findsNothing);
   });
 }
@@ -247,6 +251,41 @@ void _seedRecapData(WideNoteLocalDatabase database) {
           'excerpt': 'WideNote phase-one recap planning',
         },
       ],
+      metricLabel: 'source-linked',
+      metricValue: 1,
+      payload: const <String, Object?>{
+        'claims': <Object?>[
+          <String, Object?>{
+            'id': 'claim.recap.sources',
+            'text': 'Recap insight claim keeps source refs.',
+            'source_refs': <Object?>[
+              <String, Object?>{
+                'kind': 'capture',
+                'id': 'capture-today',
+                'excerpt': 'WideNote phase-one recap planning',
+              },
+            ],
+          },
+        ],
+        'metrics': <Object?>[
+          <String, Object?>{
+            'label': 'source-linked',
+            'value': 1,
+            'source_refs': <Object?>[
+              <String, Object?>{'kind': 'capture', 'id': 'capture-today'},
+            ],
+          },
+        ],
+        'source_refs': <Object?>[
+          <String, Object?>{'kind': 'capture', 'id': 'capture-today'},
+        ],
+        'ui_blocks': <Object?>[
+          <String, Object?>{'kind': 'claim_list'},
+          <String, Object?>{'kind': 'metric_row'},
+          <String, Object?>{'kind': 'source_refs'},
+          <String, Object?>{'kind': 'note'},
+        ],
+      },
       createdAt: todayMidday,
       updatedAt: todayMidday,
     ),
