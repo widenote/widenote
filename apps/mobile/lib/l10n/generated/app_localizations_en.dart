@@ -18,6 +18,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tabChat => 'Chat';
 
   @override
+  String get tabRecord => 'Record';
+
+  @override
   String get tabTodos => 'Todos';
 
   @override
@@ -25,6 +28,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeSubtitle => 'new records -> timeline -> memory -> insight';
+
+  @override
+  String homeTodaySubtitle(String date) {
+    return '$date · local-first';
+  }
 
   @override
   String get homeOpenTimelineTooltip => 'Open Timeline';
@@ -37,6 +45,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeOpenDailyRecapTooltip => 'Open Daily Recap';
+
+  @override
+  String get homeOpenInsightsTooltip => 'Open Insights';
 
   @override
   String get homeOpenSettingsTooltip => 'Open Settings';
@@ -59,6 +70,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeBackgroundVoiceActiveBody => 'Recording is already running.';
 
   @override
+  String get homeBackgroundVoiceActiveAction => 'Recording';
+
+  @override
   String get homeSummaryRecords => 'Records';
 
   @override
@@ -66,6 +80,67 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeSummaryInsights => 'Insights';
+
+  @override
+  String get homeTodayRecapTitle => 'Today recap';
+
+  @override
+  String get homeOpenRecapAction => 'Open';
+
+  @override
+  String homeTodayRecapBody(int recordCount, int memoryCount, int todoCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      recordCount,
+      locale: localeName,
+      other: '$recordCount records',
+      one: '1 record',
+      zero: 'No records yet',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      memoryCount,
+      locale: localeName,
+      other: '$memoryCount Memory items',
+      one: '1 Memory item',
+      zero: 'Memory ready',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
+      todoCount,
+      locale: localeName,
+      other: '$todoCount todos',
+      one: '1 todo',
+      zero: 'no open todos',
+    );
+    return '$_temp0 · $_temp1 · $_temp2';
+  }
+
+  @override
+  String get homeRecentRecordsTitle => 'Recent records';
+
+  @override
+  String get homeOpenAllRecordsAction => 'All';
+
+  @override
+  String get homeInsightTeaserTitle => 'Insight teaser';
+
+  @override
+  String get homeOpenInsightsAction => 'Insights';
+
+  @override
+  String get homeInsightTeaserEmpty =>
+      'Insights will appear after a few source-linked records.';
+
+  @override
+  String get homeInsightAskHint => 'Ask in Chat';
+
+  @override
+  String get homeContinueRecordingTitle => 'Continue recording';
+
+  @override
+  String get homeContinueRecordingBody =>
+      'Use the same local compose sheet from Home or the center Record action.';
+
+  @override
+  String get homeContinueRecordingAction => 'New record';
 
   @override
   String get newRecordTitle => 'New record';

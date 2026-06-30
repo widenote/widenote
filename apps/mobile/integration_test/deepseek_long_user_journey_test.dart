@@ -207,9 +207,9 @@ void main() {
 
       await tester.tap(find.byKey(const Key('tab-home')));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('open-memory-button')));
+      await tester.tap(find.byKey(const Key('open-daily-recap-button')));
       await tester.pumpAndSettle();
-      expect(find.byKey(const Key('memory-page')), findsOneWidget);
+      expect(find.byKey(const Key('recap-page')), findsOneWidget);
       expect(database.memoryItems.readAll(status: 'active'), isNotEmpty);
 
       final backupJson = LocalBackupService(database).exportJson();
@@ -307,9 +307,7 @@ Future<void> _submitCapture(WidgetTester tester, String text) async {
   await _openHome(tester);
   final field = find.byKey(const Key('quick-capture-field'));
   if (field.evaluate().isEmpty) {
-    final openButton = find.byKey(const Key('open-new-record-button'));
-    await tester.ensureVisible(openButton);
-    await tester.tap(openButton);
+    await tester.tap(find.byKey(const Key('tab-record-action')));
     await tester.pumpAndSettle();
   }
   await tester.ensureVisible(field);

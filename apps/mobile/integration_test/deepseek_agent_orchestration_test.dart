@@ -114,8 +114,7 @@ void main() {
 }
 
 Future<void> _submitCapture(WidgetTester tester, String text) async {
-  await tester.ensureVisible(find.byKey(const Key('open-new-record-button')));
-  await tester.tap(find.byKey(const Key('open-new-record-button')));
+  await tester.tap(find.byKey(const Key('tab-record-action')));
   await tester.pumpAndSettle();
 
   final field = find.byKey(const Key('quick-capture-field'));

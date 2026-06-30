@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/backup/presentation/backup_page.dart';
+import '../features/capture/application/capture_sheet_request.dart';
 import '../features/capture/presentation/home_page.dart';
 import '../features/chat/presentation/chat_page.dart';
 import '../features/memory/presentation/memory_page.dart';
@@ -166,23 +168,23 @@ NoTransitionPage<void> _noTransitionPage(GoRouterState state, Widget child) {
 
 final appRouter = createAppRouter();
 
-class WideNoteShell extends StatelessWidget {
+class WideNoteShell extends ConsumerWidget {
   const WideNoteShell({required this.location, required this.child, super.key});
 
   final String location;
   final Widget child;
 
-  static const _paths = ['/', '/chat', '/todos', '/plugins'];
+  static const _paths = ['/', '/chat', '/record', '/todos', '/plugins'];
 
   int get _selectedIndex {
     if (location.startsWith('/chat')) {
       return 1;
     }
     if (location.startsWith('/todos')) {
-      return 2;
+      return 3;
     }
     if (location.startsWith('/plugins')) {
-      return 3;
+      return 4;
     }
     return 0;
   }
@@ -196,7 +198,7 @@ class WideNoteShell extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     return PopScope<Object?>(
       canPop: !_isPluginsChildRoute && !_isSettingsChildRoute,
@@ -213,7 +215,7 @@ class WideNoteShell extends StatelessWidget {
         body: SafeArea(child: child),
         bottomNavigationBar: NavigationBar(
           selectedIndex: _selectedIndex,
-          onDestinationSelected: (index) => _openTab(context, index),
+          onDestinationSelected: (index) => _openTab(context, ref, index),
           destinations: [
             NavigationDestination(
               key: const Key('tab-home'),
@@ -226,6 +228,12 @@ class WideNoteShell extends StatelessWidget {
               icon: const Icon(Icons.forum_outlined),
               selectedIcon: const Icon(Icons.forum),
               label: l10n.tabChat,
+            ),
+            NavigationDestination(
+              key: const Key('tab-record-action'),
+              icon: const Icon(Icons.add_circle_outline),
+              selectedIcon: const Icon(Icons.add_circle),
+              label: l10n.tabRecord,
             ),
             NavigationDestination(
               key: const Key('tab-todos'),
@@ -245,7 +253,14 @@ class WideNoteShell extends StatelessWidget {
     );
   }
 
-  void _openTab(BuildContext context, int index) {
+  void _openTab(BuildContext context, WidgetRef ref, int index) {
+    if (index == 2) {
+      ref.read(captureSheetRequestProvider.notifier).request();
+      if (location != '/') {
+        context.go('/');
+      }
+      return;
+    }
     final nextPath = _paths[index];
     if (location != nextPath) {
       context.go(nextPath);

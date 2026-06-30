@@ -115,13 +115,15 @@ void main() {
   ) async {
     await _pumpApp(tester);
 
-    await tester.tap(
-      find.byKey(const Key('start-background-recording-button')),
-    );
-    await tester.pumpAndSettle();
+    await _startBackgroundRecording(tester);
 
     var inputState = _readCaptureInputState(tester);
     expect(inputState.isRecordingVoice, isTrue);
+    await _scrollHomeActionIntoView(
+      tester,
+      find.byKey(const Key('background-voice-card')),
+      scrollAmount: -120,
+    );
     expect(find.byKey(const Key('background-voice-card')), findsOneWidget);
     expect(find.text('Recording in background'), findsOneWidget);
 
@@ -139,6 +141,11 @@ void main() {
     await tester.tap(find.byKey(const Key('capture-sheet-close-button')));
     await tester.pumpAndSettle();
 
+    await _scrollHomeActionIntoView(
+      tester,
+      find.byKey(const Key('background-voice-stop-button')),
+      scrollAmount: -120,
+    );
     await tester.tap(find.byKey(const Key('background-voice-stop-button')));
     await tester.pumpAndSettle();
 
@@ -207,10 +214,12 @@ void main() {
     await tester.tap(find.byKey(const Key('capture-sheet-close-button')));
     await tester.pumpAndSettle();
 
-    await tester.tap(
-      find.byKey(const Key('start-background-recording-button')),
+    await _startBackgroundRecording(tester);
+    await _scrollHomeActionIntoView(
+      tester,
+      find.text('Microphone permission denied.'),
+      scrollAmount: -120,
     );
-    await tester.pumpAndSettle();
     expect(find.text('Microphone permission denied.'), findsOneWidget);
     expect(_readCaptureInputState(tester).attachments, isEmpty);
 
@@ -281,10 +290,12 @@ void main() {
   testWidgets('review attachment blocks submit until accepted', (tester) async {
     await _pumpApp(tester, voiceAdapter: const _ReviewVoiceAdapter());
 
-    await tester.tap(
-      find.byKey(const Key('start-background-recording-button')),
+    await _startBackgroundRecording(tester);
+    await _scrollHomeActionIntoView(
+      tester,
+      find.byKey(const Key('background-voice-stop-button')),
+      scrollAmount: -120,
     );
-    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('background-voice-stop-button')));
     await tester.pumpAndSettle();
 
@@ -375,13 +386,20 @@ void main() {
   ) async {
     await _pumpApp(tester);
 
-    await tester.tap(
-      find.byKey(const Key('start-background-recording-button')),
+    await _startBackgroundRecording(tester);
+    await _scrollHomeActionIntoView(
+      tester,
+      find.byKey(const Key('background-voice-cancel-button')),
+      scrollAmount: -120,
     );
-    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('background-voice-cancel-button')));
     await tester.pumpAndSettle();
 
+    await _scrollHomeActionIntoView(
+      tester,
+      find.text('Voice recording cancelled.'),
+      scrollAmount: -120,
+    );
     expect(find.text('Voice recording cancelled.'), findsOneWidget);
     expect(_readCaptureInputState(tester).attachments, isEmpty);
 
@@ -496,6 +514,12 @@ void main() {
   ) async {
     await _pumpApp(tester, locale: const Locale('zh'));
 
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('open-new-record-button')),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
     expect(find.text('新记录'), findsOneWidget);
     expect(find.text('后台录音'), findsOneWidget);
 
@@ -514,10 +538,12 @@ void main() {
       voiceAdapter: const _ReviewVoiceAdapter(),
     );
 
-    await tester.tap(
-      find.byKey(const Key('start-background-recording-button')),
+    await _startBackgroundRecording(tester);
+    await _scrollHomeActionIntoView(
+      tester,
+      find.byKey(const Key('background-voice-stop-button')),
+      scrollAmount: -120,
     );
-    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('background-voice-stop-button')));
     await tester.pumpAndSettle();
 
@@ -560,16 +586,32 @@ Future<void> _pumpApp(
 }
 
 Future<void> _openNewRecordSheet(WidgetTester tester) async {
-  await tester.tap(find.byKey(const Key('open-new-record-button')));
+  await tester.tap(find.byKey(const Key('tab-record-action')));
   await tester.pumpAndSettle();
   expect(find.byKey(const Key('capture-sheet')), findsOneWidget);
 }
 
+Future<void> _startBackgroundRecording(WidgetTester tester) async {
+  final button = find.byKey(const Key('start-background-recording-button'));
+  await _scrollHomeActionIntoView(tester, button);
+  await tester.tap(button);
+  await tester.pumpAndSettle();
+}
+
 Future<void> _scrollHomeActionIntoView(
   WidgetTester tester,
-  Finder finder,
-) async {
-  await tester.ensureVisible(finder);
+  Finder finder, {
+  double scrollAmount = 120,
+}) async {
+  if (finder.evaluate().isEmpty) {
+    await tester.scrollUntilVisible(
+      finder,
+      scrollAmount,
+      scrollable: find.byType(Scrollable).first,
+    );
+  } else {
+    await tester.ensureVisible(finder);
+  }
   await tester.pumpAndSettle();
 }
 

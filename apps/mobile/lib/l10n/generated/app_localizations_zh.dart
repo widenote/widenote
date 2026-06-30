@@ -12,10 +12,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get appTitle => '广记';
 
   @override
-  String get tabHome => '首页/记录';
+  String get tabHome => '首页';
 
   @override
   String get tabChat => '对话';
+
+  @override
+  String get tabRecord => '记录';
 
   @override
   String get tabTodos => '待办';
@@ -25,6 +28,11 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get homeSubtitle => '新记录 -> 时间线 -> 记忆 -> 洞察';
+
+  @override
+  String homeTodaySubtitle(String date) {
+    return '$date · 本地优先';
+  }
 
   @override
   String get homeOpenTimelineTooltip => '打开时间线';
@@ -37,6 +45,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get homeOpenDailyRecapTooltip => '打开每日回顾';
+
+  @override
+  String get homeOpenInsightsTooltip => '打开洞察';
 
   @override
   String get homeOpenSettingsTooltip => '打开设置';
@@ -57,6 +68,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeBackgroundVoiceActiveBody => '录音已经在后台进行中。';
 
   @override
+  String get homeBackgroundVoiceActiveAction => '录音中';
+
+  @override
   String get homeSummaryRecords => '记录';
 
   @override
@@ -64,6 +78,44 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get homeSummaryInsights => '洞察';
+
+  @override
+  String get homeTodayRecapTitle => '今日回顾';
+
+  @override
+  String get homeOpenRecapAction => '打开';
+
+  @override
+  String homeTodayRecapBody(int recordCount, int memoryCount, int todoCount) {
+    return '$recordCount 条记录 · $memoryCount 条记忆 · $todoCount 个待办';
+  }
+
+  @override
+  String get homeRecentRecordsTitle => '最近记录';
+
+  @override
+  String get homeOpenAllRecordsAction => '全部';
+
+  @override
+  String get homeInsightTeaserTitle => '洞察提示';
+
+  @override
+  String get homeOpenInsightsAction => '洞察';
+
+  @override
+  String get homeInsightTeaserEmpty => '有几条可溯源记录后，洞察会出现在这里。';
+
+  @override
+  String get homeInsightAskHint => '去对话追问';
+
+  @override
+  String get homeContinueRecordingTitle => '继续记录';
+
+  @override
+  String get homeContinueRecordingBody => '首页入口和底部记录按钮都会打开同一个本地记录面板。';
+
+  @override
+  String get homeContinueRecordingAction => '新记录';
 
   @override
   String get newRecordTitle => '新记录';

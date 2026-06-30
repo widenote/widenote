@@ -116,6 +116,12 @@ abstract class AppLocalizations {
   /// **'Chat'**
   String get tabChat;
 
+  /// No description provided for @tabRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Record'**
+  String get tabRecord;
+
   /// No description provided for @tabTodos.
   ///
   /// In en, this message translates to:
@@ -133,6 +139,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'new records -> timeline -> memory -> insight'**
   String get homeSubtitle;
+
+  /// No description provided for @homeTodaySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{date} · local-first'**
+  String homeTodaySubtitle(String date);
 
   /// No description provided for @homeOpenTimelineTooltip.
   ///
@@ -157,6 +169,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open Daily Recap'**
   String get homeOpenDailyRecapTooltip;
+
+  /// No description provided for @homeOpenInsightsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Insights'**
+  String get homeOpenInsightsTooltip;
 
   /// No description provided for @homeOpenSettingsTooltip.
   ///
@@ -194,6 +212,12 @@ abstract class AppLocalizations {
   /// **'Recording is already running.'**
   String get homeBackgroundVoiceActiveBody;
 
+  /// No description provided for @homeBackgroundVoiceActiveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording'**
+  String get homeBackgroundVoiceActiveAction;
+
   /// No description provided for @homeSummaryRecords.
   ///
   /// In en, this message translates to:
@@ -211,6 +235,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Insights'**
   String get homeSummaryInsights;
+
+  /// No description provided for @homeTodayRecapTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Today recap'**
+  String get homeTodayRecapTitle;
+
+  /// No description provided for @homeOpenRecapAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get homeOpenRecapAction;
+
+  /// No description provided for @homeTodayRecapBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{recordCount, plural, =0{No records yet} =1{1 record} other{{recordCount} records}} · {memoryCount, plural, =0{Memory ready} =1{1 Memory item} other{{memoryCount} Memory items}} · {todoCount, plural, =0{no open todos} =1{1 todo} other{{todoCount} todos}}'**
+  String homeTodayRecapBody(int recordCount, int memoryCount, int todoCount);
+
+  /// No description provided for @homeRecentRecordsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent records'**
+  String get homeRecentRecordsTitle;
+
+  /// No description provided for @homeOpenAllRecordsAction.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get homeOpenAllRecordsAction;
+
+  /// No description provided for @homeInsightTeaserTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Insight teaser'**
+  String get homeInsightTeaserTitle;
+
+  /// No description provided for @homeOpenInsightsAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Insights'**
+  String get homeOpenInsightsAction;
+
+  /// No description provided for @homeInsightTeaserEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Insights will appear after a few source-linked records.'**
+  String get homeInsightTeaserEmpty;
+
+  /// No description provided for @homeInsightAskHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask in Chat'**
+  String get homeInsightAskHint;
+
+  /// No description provided for @homeContinueRecordingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue recording'**
+  String get homeContinueRecordingTitle;
+
+  /// No description provided for @homeContinueRecordingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the same local compose sheet from Home or the center Record action.'**
+  String get homeContinueRecordingBody;
+
+  /// No description provided for @homeContinueRecordingAction.
+  ///
+  /// In en, this message translates to:
+  /// **'New record'**
+  String get homeContinueRecordingAction;
 
   /// No description provided for @newRecordTitle.
   ///

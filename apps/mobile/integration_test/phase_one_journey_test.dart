@@ -205,9 +205,9 @@ void main() {
         restoredCaptureText,
       );
 
-      await tester.tap(find.byKey(const Key('open-memory-button')));
+      await tester.tap(find.byKey(const Key('open-daily-recap-button')));
       await tester.pumpAndSettle();
-      expect(find.byKey(const Key('memory-page')), findsOneWidget);
+      expect(find.byKey(const Key('recap-page')), findsOneWidget);
       expect(
         target.memoryItems.readAll(status: 'active').single.body,
         isNotEmpty,
@@ -288,9 +288,7 @@ String? _captureText(String prompt) {
 Future<void> _submitCapture(WidgetTester tester, String text) async {
   final field = find.byKey(const Key('quick-capture-field'));
   if (field.evaluate().isEmpty) {
-    final openButton = find.byKey(const Key('open-new-record-button'));
-    await tester.ensureVisible(openButton);
-    await tester.tap(openButton);
+    await tester.tap(find.byKey(const Key('tab-record-action')));
     await tester.pumpAndSettle();
   }
   await tester.tap(field);

@@ -3,22 +3,58 @@
   "appTitle": "WideNote",
   "tabHome": "Home",
   "tabChat": "Chat",
+  "tabRecord": "Record",
   "tabTodos": "Todos",
   "tabPlugins": "Packs",
   "homeSubtitle": "new records -> timeline -> memory -> insight",
+  "homeTodaySubtitle": "{date} · local-first",
+  "@homeTodaySubtitle": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "homeOpenTimelineTooltip": "Open Timeline",
   "homeSearchTooltip": "Search",
   "homeOpenMemoryTooltip": "Open Memory",
   "homeOpenDailyRecapTooltip": "Open Daily Recap",
+  "homeOpenInsightsTooltip": "Open Insights",
   "homeOpenSettingsTooltip": "Open Settings",
   "homeNewRecordTitle": "New record",
   "homeNewRecordBody": "Write a focused note, then attach photos or local source files.",
   "homeBackgroundVoiceTitle": "Background voice",
   "homeBackgroundVoiceBody": "Record audio in the background, then add context before saving.",
   "homeBackgroundVoiceActiveBody": "Recording is already running.",
+  "homeBackgroundVoiceActiveAction": "Recording",
   "homeSummaryRecords": "Records",
   "homeSummaryMemory": "Memory",
   "homeSummaryInsights": "Insights",
+  "homeTodayRecapTitle": "Today recap",
+  "homeOpenRecapAction": "Open",
+  "homeTodayRecapBody": "{recordCount, plural, =0{No records yet} =1{1 record} other{{recordCount} records}} · {memoryCount, plural, =0{Memory ready} =1{1 Memory item} other{{memoryCount} Memory items}} · {todoCount, plural, =0{no open todos} =1{1 todo} other{{todoCount} todos}}",
+  "@homeTodayRecapBody": {
+    "placeholders": {
+      "recordCount": {
+        "type": "int"
+      },
+      "memoryCount": {
+        "type": "int"
+      },
+      "todoCount": {
+        "type": "int"
+      }
+    }
+  },
+  "homeRecentRecordsTitle": "Recent records",
+  "homeOpenAllRecordsAction": "All",
+  "homeInsightTeaserTitle": "Insight teaser",
+  "homeOpenInsightsAction": "Insights",
+  "homeInsightTeaserEmpty": "Insights will appear after a few source-linked records.",
+  "homeInsightAskHint": "Ask in Chat",
+  "homeContinueRecordingTitle": "Continue recording",
+  "homeContinueRecordingBody": "Use the same local compose sheet from Home or the center Record action.",
+  "homeContinueRecordingAction": "New record",
   "newRecordTitle": "New record",
   "newRecordSubtitle": "Original input stays local and is never overwritten by AI.",
   "newRecordHint": "Write a thought, feeling, project context, meeting fragment, or life event...",
