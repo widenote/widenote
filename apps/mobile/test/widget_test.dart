@@ -17,7 +17,7 @@ import 'package:widenote_mobile/features/capture/media/capture_media.dart';
 
 void main() {
   testWidgets(
-    'switches between the four WideNote tabs without page transition',
+    'switches between WideNote tabs and opens capture from center action',
     (tester) async {
       await _pumpApp(tester);
 
@@ -26,6 +26,14 @@ void main() {
       await tester.tap(find.byKey(const Key('tab-chat')));
       await _pumpRouteChange(tester);
       expect(find.byKey(const Key('chat-page')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('tab-record-action')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('home-page')), findsOneWidget);
+      expect(find.byKey(const Key('capture-sheet')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('capture-sheet-close-button')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('capture-sheet')), findsNothing);
 
       await tester.tap(find.byKey(const Key('tab-todos')));
       await _pumpRouteChange(tester);
@@ -66,8 +74,12 @@ void main() {
       120,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.byKey(Key('record-row-${record.id}')), findsOneWidget);
-    expect(find.text(captureText), findsOneWidget);
+    final recordRow = find.byKey(Key('record-row-${record.id}'));
+    expect(recordRow, findsOneWidget);
+    expect(
+      find.descendant(of: recordRow, matching: find.text(captureText)),
+      findsOneWidget,
+    );
     expect(_readCaptureState(tester).cards, hasLength(2));
     expect(
       _readCaptureState(tester).insights,
@@ -140,23 +152,27 @@ void main() {
 
     await _submitQuickCapture(tester, captureText);
 
+    final state = _readCaptureState(tester);
+    final record = state.records.single;
     await tester.scrollUntilVisible(
-      find.text(captureText),
+      find.byKey(Key('record-row-${record.id}')),
       120,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.text(captureText), findsOneWidget);
-    final state = _readCaptureState(tester);
+    expect(
+      find.descendant(
+        of: find.byKey(Key('record-row-${record.id}')),
+        matching: find.text(captureText),
+      ),
+      findsOneWidget,
+    );
     expect(state.cards, hasLength(2));
     expect(state.insights, hasLength(greaterThanOrEqualTo(5)));
 
-    await tester.scrollUntilVisible(
-      find.text('Memory saved automatically'),
-      120,
-      scrollable: find.byType(Scrollable).first,
-    );
-    expect(find.text('Memory saved automatically'), findsOneWidget);
-    expect(find.textContaining('auto-accepted'), findsWidgets);
+    await _scrollHomeTextIntoView(tester, '1 accepted');
+    expect(find.text('1 accepted'), findsOneWidget);
+    expect(find.text('Memory saved automatically'), findsNothing);
+    expect(find.textContaining('auto-accepted'), findsNothing);
     expect(find.byKey(Key('card-row-${state.cards.first.id}')), findsNothing);
     expect(
       find.byKey(Key('insight-row-${state.insights.first.id}')),
@@ -288,6 +304,12 @@ void main() {
     (tester) async {
       await _pumpApp(tester);
 
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('open-new-record-button')),
+        120,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
       expect(find.byKey(const Key('open-new-record-button')), findsOneWidget);
       expect(
         find.byKey(const Key('start-background-recording-button')),
@@ -655,13 +677,15 @@ Future<void> _submitQuickCapture(WidgetTester tester, String text) async {
   await tester.pumpAndSettle();
   await tester.tap(recordButton);
   await tester.pumpAndSettle();
+  if (text.trim().isEmpty &&
+      find.byKey(const Key('capture-sheet')).evaluate().isNotEmpty) {
+    await tester.tap(find.byKey(const Key('capture-sheet-close-button')));
+    await tester.pumpAndSettle();
+  }
 }
 
 Future<void> _openNewRecordSheet(WidgetTester tester) async {
-  final button = find.byKey(const Key('open-new-record-button'));
-  await tester.ensureVisible(button);
-  await tester.pumpAndSettle();
-  await tester.tap(button);
+  await tester.tap(find.byKey(const Key('tab-record-action')));
   await tester.pumpAndSettle();
   expect(find.byKey(const Key('capture-sheet')), findsOneWidget);
 }

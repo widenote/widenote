@@ -9,6 +9,10 @@ class HomeHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final date = DateTime.now();
+    final dateLabel =
+        '${date.year}-${date.month.toString().padLeft(2, '0')}-'
+        '${date.day.toString().padLeft(2, '0')}';
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -24,7 +28,7 @@ class HomeHeader extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                l10n.homeSubtitle,
+                l10n.homeTodaySubtitle(dateLabel),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -40,27 +44,15 @@ class HomeHeader extends StatelessWidget {
           children: [
             IconButton.filledTonal(
               key: const Key('open-daily-recap-button'),
-              tooltip: l10n.homeOpenDailyRecapTooltip,
+              tooltip: l10n.homeOpenInsightsTooltip,
               onPressed: () => context.push('/recap'),
-              icon: const Icon(Icons.today_outlined),
-            ),
-            IconButton.outlined(
-              key: const Key('open-timeline-button'),
-              tooltip: l10n.homeOpenTimelineTooltip,
-              onPressed: () => context.go('/timeline'),
-              icon: const Icon(Icons.view_timeline_outlined),
+              icon: const Icon(Icons.lightbulb_outline),
             ),
             IconButton.outlined(
               key: const Key('open-timeline-search-button'),
               tooltip: l10n.homeSearchTooltip,
               onPressed: () => context.go('/timeline/search'),
               icon: const Icon(Icons.search),
-            ),
-            IconButton.outlined(
-              key: const Key('open-memory-button'),
-              tooltip: l10n.homeOpenMemoryTooltip,
-              onPressed: () => context.go('/memory'),
-              icon: const Icon(Icons.psychology_alt_outlined),
             ),
             IconButton.outlined(
               key: const Key('open-settings-button'),

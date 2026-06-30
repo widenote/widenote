@@ -8,6 +8,7 @@ import '../../../l10n/l10n.dart';
 import '../application/capture_controller.dart';
 import '../application/capture_draft_repository.dart';
 import '../application/capture_input_controller.dart';
+import '../application/capture_sheet_request.dart';
 import '../domain/capture_models.dart';
 import '../media/capture_media.dart';
 import 'capture_console.dart';
@@ -30,6 +31,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   late final CaptureDraftRepository _draftRepository;
   bool _suppressDraftSaves = false;
   bool _isCaptureSheetOpen = false;
+  int? _scheduledSheetRequestId;
 
   @override
   void initState() {
@@ -100,6 +102,9 @@ class _HomePageState extends ConsumerState<HomePage> {
     final l10n = context.l10n;
     final captureState = ref.watch(captureControllerProvider);
     final inputState = ref.watch(captureInputControllerProvider);
+    final sheetRequest = ref.watch(captureSheetRequestProvider);
+
+    _handlePendingSheetRequest(sheetRequest);
 
     return ListView(
       key: const Key('home-page'),
@@ -121,14 +126,8 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
           const SizedBox(height: 12),
         ],
-        _HomeCaptureActions(
-          inputBusy: inputState.isBusy || captureState.isProcessing,
-          isRecordingVoice: inputState.isRecordingVoice,
-          onNewRecord: _openCaptureSheet,
-          onStartVoice: _startVoice,
-        ),
         if (inputState.isRecordingVoice) ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           _BackgroundVoiceCard(
             onStop: () => _stopVoice(openComposerAfterStop: true),
             onCancel: _cancelVoice,
@@ -141,14 +140,46 @@ class _HomePageState extends ConsumerState<HomePage> {
             text: localizedCaptureError(l10n, inputState.errorMessage!),
           ),
         ],
-        const SizedBox(height: 16),
-        _HomeSummaryStrip(state: captureState),
+        const SizedBox(height: 12),
+        _TodayRecapCard(
+          state: captureState,
+          onOpen: () => context.push('/recap'),
+        ),
         const SizedBox(height: 16),
         _RecordsSection(records: captureState.records),
         const SizedBox(height: 16),
-        _MemorySection(memories: captureState.memories),
+        _InsightTeaser(insights: captureState.insights),
+        const SizedBox(height: 16),
+        _HomeCaptureActions(
+          inputBusy: inputState.isBusy || captureState.isProcessing,
+          isRecordingVoice: inputState.isRecordingVoice,
+          onNewRecord: _openCaptureSheet,
+          onStartVoice: _startVoice,
+        ),
       ],
     );
+  }
+
+  void _handlePendingSheetRequest(CaptureSheetRequest sheetRequest) {
+    if (!sheetRequest.hasPending ||
+        _isCaptureSheetOpen ||
+        _scheduledSheetRequestId == sheetRequest.requestId) {
+      return;
+    }
+    _scheduledSheetRequestId = sheetRequest.requestId;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final latest = ref.read(captureSheetRequestProvider);
+      if (!latest.hasPending || _isCaptureSheetOpen) {
+        return;
+      }
+      ref
+          .read(captureSheetRequestProvider.notifier)
+          .markHandled(latest.requestId);
+      unawaited(_openCaptureSheet());
+    });
   }
 
   Future<void> _openCaptureSheet() async {
@@ -358,106 +389,229 @@ class _HomeCaptureActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return Column(
-      children: [
-        _HomeActionTile(
-          key: const Key('open-new-record-button'),
-          icon: Icons.edit_note_outlined,
-          title: l10n.homeNewRecordTitle,
-          body: l10n.homeNewRecordBody,
-          primary: true,
-          onTap: inputBusy ? null : onNewRecord,
-        ),
-        const SizedBox(height: 10),
-        _HomeActionTile(
-          key: const Key('start-background-recording-button'),
-          icon: Icons.mic_none_outlined,
-          title: l10n.homeBackgroundVoiceTitle,
-          body: isRecordingVoice
-              ? l10n.homeBackgroundVoiceActiveBody
-              : l10n.homeBackgroundVoiceBody,
-          onTap: inputBusy || isRecordingVoice ? null : onStartVoice,
-        ),
-      ],
+    return HomeSurface(
+      icon: Icons.add_circle_outline,
+      title: l10n.homeContinueRecordingTitle,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.homeContinueRecordingBody,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              FilledButton.icon(
+                key: const Key('open-new-record-button'),
+                onPressed: inputBusy ? null : onNewRecord,
+                icon: const Icon(Icons.edit_note_outlined),
+                label: Text(l10n.homeContinueRecordingAction),
+              ),
+              OutlinedButton.icon(
+                key: const Key('start-background-recording-button'),
+                onPressed: inputBusy || isRecordingVoice ? null : onStartVoice,
+                icon: const Icon(Icons.mic_none_outlined),
+                label: Text(
+                  isRecordingVoice
+                      ? l10n.homeBackgroundVoiceActiveAction
+                      : l10n.homeBackgroundVoiceTitle,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
 
-class _HomeActionTile extends StatelessWidget {
-  const _HomeActionTile({
-    required this.icon,
-    required this.title,
-    required this.body,
-    required this.onTap,
-    this.primary = false,
-    super.key,
-  });
+class _TodayRecapCard extends StatelessWidget {
+  const _TodayRecapCard({required this.state, required this.onOpen});
 
-  final IconData icon;
-  final String title;
-  final String body;
-  final VoidCallback? onTap;
-  final bool primary;
+  final CaptureState state;
+  final VoidCallback onOpen;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final accent = primary ? colorScheme.primary : colorScheme.secondary;
+    final l10n = context.l10n;
+    final recordDetail = state.isProcessing
+        ? l10n.stageProcessingRunning
+        : state.records.isEmpty
+        ? l10n.stageProcessingIdle
+        : l10n.stageProcessingProcessed(state.records.length);
+    final memoryDetail = state.memories.isEmpty
+        ? l10n.stageMemoryReady
+        : l10n.stageMemoryAccepted(state.memories.length);
+    final insightDetail = state.insights.isEmpty
+        ? l10n.stageInsightWaiting
+        : l10n.stageInsightSourceLinked(state.insights.length);
     return Semantics(
       button: true,
-      enabled: onTap != null,
       child: InkWell(
+        key: const Key('home-today-recap-card'),
         borderRadius: BorderRadius.circular(8),
-        onTap: onTap,
+        onTap: onOpen,
         child: Ink(
           decoration: BoxDecoration(
-            color: primary ? colorScheme.primaryContainer : Colors.white,
+            color: Theme.of(
+              context,
+            ).colorScheme.primaryContainer.withValues(alpha: 0.42),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: primary
-                  ? colorScheme.primary.withValues(alpha: 0.28)
-                  : const Color(0xFFD8DDE6),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.22),
             ),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: primary ? 0.74 : 1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: accent.withValues(alpha: 0.2)),
-                  ),
-                  child: Icon(icon, color: accent),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
+                Row(
+                  children: [
+                    Icon(
+                      Icons.today_outlined,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        l10n.homeTodayRecapTitle,
                         style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(fontWeight: FontWeight.w800),
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        body,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                    TextButton(
+                      key: const Key('home-today-recap-open-button'),
+                      onPressed: onOpen,
+                      child: Text(l10n.homeOpenRecapAction),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Icon(Icons.arrow_forward, color: accent),
+                const SizedBox(height: 10),
+                Text(
+                  l10n.homeTodayRecapBody(
+                    state.records.length,
+                    state.memories.length,
+                    state.todos.length,
+                  ),
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    _HomeStatusChip(
+                      icon: Icons.notes_outlined,
+                      label: recordDetail,
+                    ),
+                    _HomeStatusChip(
+                      icon: Icons.psychology_alt_outlined,
+                      label: memoryDetail,
+                    ),
+                    _HomeStatusChip(
+                      icon: Icons.lightbulb_outline,
+                      label: insightDetail,
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _InsightTeaser extends StatelessWidget {
+  const _InsightTeaser({required this.insights});
+
+  final List<SourceInsight> insights;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final insight = insights.isEmpty ? null : insights.first;
+    return HomeSurface(
+      icon: Icons.lightbulb_outline,
+      title: l10n.homeInsightTeaserTitle,
+      trailing: TextButton(
+        key: const Key('home-open-insights-button'),
+        onPressed: () => context.push('/recap'),
+        child: Text(l10n.homeOpenInsightsAction),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            insight == null ? l10n.homeInsightTeaserEmpty : insight.summary,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              _HomeStatusChip(
+                icon: Icons.question_answer_outlined,
+                label: l10n.homeInsightAskHint,
+              ),
+              if (insight != null)
+                _HomeStatusChip(
+                  icon: Icons.link,
+                  label: localizedSourceLabel(l10n, insight.sourceLabel),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HomeStatusChip extends StatelessWidget {
+  const _HomeStatusChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14),
+            const SizedBox(width: 4),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 220),
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelSmall,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -545,127 +699,6 @@ class _BackgroundVoiceCard extends StatelessWidget {
   }
 }
 
-class _HomeSummaryStrip extends StatelessWidget {
-  const _HomeSummaryStrip({required this.state});
-
-  final CaptureState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final metrics = [
-      _SummaryMetric(
-        title: l10n.homeSummaryRecords,
-        detail: state.isProcessing
-            ? l10n.stageProcessingRunning
-            : state.records.isEmpty
-            ? l10n.stageProcessingIdle
-            : l10n.stageProcessingProcessed(state.records.length),
-        icon: Icons.notes_outlined,
-        color: const Color(0xFF2367C9),
-      ),
-      _SummaryMetric(
-        title: l10n.homeSummaryMemory,
-        detail: state.memories.isEmpty
-            ? l10n.stageMemoryReady
-            : l10n.stageMemoryAccepted(state.memories.length),
-        icon: Icons.psychology_alt_outlined,
-        color: const Color(0xFF178D66),
-      ),
-      _SummaryMetric(
-        title: l10n.homeSummaryInsights,
-        detail: state.insights.isEmpty
-            ? l10n.stageInsightWaiting
-            : l10n.stageInsightSourceLinked(state.insights.length),
-        icon: Icons.lightbulb_outline,
-        color: const Color(0xFFB7791F),
-      ),
-    ];
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWide = constraints.maxWidth >= 560;
-        return GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: isWide ? 3 : 1,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: isWide ? 2.3 : 4.4,
-          children: [
-            for (final metric in metrics) _SummaryCard(metric: metric),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({required this.metric});
-
-  final _SummaryMetric metric;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFD8DDE6)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            Icon(metric.icon, color: metric.color),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    metric.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    metric.detail,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SummaryMetric {
-  const _SummaryMetric({
-    required this.title,
-    required this.detail,
-    required this.icon,
-    required this.color,
-  });
-
-  final String title;
-  final String detail;
-  final IconData icon;
-  final Color color;
-}
-
 class _RecordsSection extends StatelessWidget {
   const _RecordsSection({required this.records});
 
@@ -676,12 +709,17 @@ class _RecordsSection extends StatelessWidget {
     final l10n = context.l10n;
     return HomeSurface(
       icon: Icons.article_outlined,
-      title: l10n.recordsTitle,
+      title: l10n.homeRecentRecordsTitle,
+      trailing: TextButton(
+        key: const Key('open-timeline-button'),
+        onPressed: () => context.go('/timeline'),
+        child: Text(l10n.homeOpenAllRecordsAction),
+      ),
       child: records.isEmpty
           ? HomeEmptyLine(text: l10n.recordsEmpty)
           : HomeRows(
               children: [
-                for (final record in records)
+                for (final record in records.take(3))
                   HomeRecordRow(
                     key: Key('record-row-${record.id}'),
                     title: record.body,
@@ -698,39 +736,6 @@ class _RecordsSection extends StatelessWidget {
   }
 }
 
-class _MemorySection extends StatelessWidget {
-  const _MemorySection({required this.memories});
-
-  final List<CaptureMemoryItem> memories;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return HomeSurface(
-      icon: Icons.psychology_alt_outlined,
-      title: l10n.memoryTitle,
-      child: memories.isEmpty
-          ? HomeEmptyLine(text: l10n.memoryEmpty)
-          : HomeRows(
-              children: [
-                for (final memory in memories)
-                  HomeRecordRow(
-                    key: Key('memory-row-${memory.id}'),
-                    title: _localizedMemoryTitle(l10n, memory.title),
-                    subtitle:
-                        '${memory.summary} · '
-                        '${localizedSourceLabel(l10n, memory.sourceRecordId)} · '
-                        '${_localizedConfidenceLabel(l10n, memory.confidenceLabel)} · '
-                        '${_localizedStatusLabel(l10n, memory.statusLabel)}',
-                    icon: Icons.auto_awesome_outlined,
-                    onTap: () => context.go('/timeline/items/${memory.id}'),
-                  ),
-              ],
-            ),
-    );
-  }
-}
-
 String _localizedRecordStatus(AppLocalizations l10n, String status) {
   return switch (status) {
     'Saved locally, processing' => l10n.recordStatusSavedProcessing,
@@ -738,32 +743,4 @@ String _localizedRecordStatus(AppLocalizations l10n, String status) {
     'Saved locally, agent failed' => l10n.recordStatusAgentFailed,
     _ => status,
   };
-}
-
-String _localizedMemoryTitle(AppLocalizations l10n, String title) {
-  return switch (title) {
-    'memory.auto_saved' => l10n.memoryAutoSavedTitle,
-    'memory.needs_review' => l10n.memoryNeedsReviewTitle,
-    'memory.accepted' => l10n.memorySavedTitle,
-    _ => title,
-  };
-}
-
-String _localizedStatusLabel(AppLocalizations l10n, String status) {
-  return switch (status) {
-    'auto-accepted' => l10n.statusAutoAccepted,
-    'needs review' => l10n.statusNeedsReview,
-    'accepted' => l10n.statusAccepted,
-    _ => status,
-  };
-}
-
-String _localizedConfidenceLabel(AppLocalizations l10n, String label) {
-  final confidence = switch (label) {
-    'high confidence' => l10n.confidenceHigh,
-    'medium confidence' => l10n.confidenceMedium,
-    'low confidence' => l10n.confidenceLow,
-    _ => null,
-  };
-  return confidence == null ? label : l10n.confidenceLabel(confidence);
 }

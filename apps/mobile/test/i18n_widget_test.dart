@@ -11,10 +11,12 @@ void main() {
 
     expect(find.text('Home'), findsOneWidget);
     expect(find.text('Chat'), findsOneWidget);
+    expect(find.text('Record'), findsOneWidget);
     expect(find.text('Todos'), findsOneWidget);
     expect(find.text('Packs'), findsOneWidget);
     expect(find.text('WideNote'), findsOneWidget);
     expect(find.text('WideNote / 广记'), findsNothing);
+    await _scrollHomeActionIntoView(tester);
     expect(find.text('New record'), findsOneWidget);
     expect(find.text('Background voice'), findsOneWidget);
 
@@ -34,15 +36,16 @@ void main() {
   testWidgets('renders core shell strings in Chinese', (tester) async {
     await _pumpLocalizedApp(tester, const Locale('zh'));
 
-    expect(find.text('首页/记录'), findsOneWidget);
+    expect(find.text('首页'), findsOneWidget);
     expect(find.text('对话'), findsOneWidget);
     expect(find.text('待办'), findsWidgets);
     expect(find.text('插件'), findsOneWidget);
     expect(find.text('广记'), findsOneWidget);
     expect(find.text('WideNote / 广记'), findsNothing);
+    expect(find.text('记录'), findsWidgets);
+    await _scrollHomeActionIntoView(tester);
     expect(find.text('新记录'), findsOneWidget);
     expect(find.text('后台录音'), findsOneWidget);
-    expect(find.text('记录'), findsWidgets);
 
     await _openTab(tester, const Key('tab-chat'));
     expect(find.text('历史会话'), findsOneWidget);
@@ -89,5 +92,14 @@ Future<void> _pumpLocalizedApp(WidgetTester tester, Locale locale) async {
 
 Future<void> _openTab(WidgetTester tester, Key tabKey) async {
   await tester.tap(find.byKey(tabKey));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _scrollHomeActionIntoView(WidgetTester tester) async {
+  await tester.scrollUntilVisible(
+    find.byKey(const Key('open-new-record-button')),
+    120,
+    scrollable: find.byType(Scrollable).first,
+  );
   await tester.pumpAndSettle();
 }
