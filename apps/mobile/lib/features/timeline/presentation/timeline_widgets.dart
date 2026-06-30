@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:widenote_cards/widenote_cards.dart';
 
 import '../../../l10n/l10n.dart';
+import '../../capture/media/capture_media.dart';
+import '../../capture/presentation/attachment_artifact_widgets.dart';
 
 class TimelinePageHeader extends StatelessWidget {
   const TimelinePageHeader({
@@ -209,59 +211,262 @@ class TimelineSourceRefList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
     return Column(
       children: [
         for (var index = 0; index < links.length; index++) ...[
           if (index > 0) const Divider(height: 16),
-          Row(
-            key: Key('source-ref-${links[index].kind}-${links[index].id}'),
+          _SourceRefRow(link: links[index], onOpenLink: onOpenLink),
+        ],
+      ],
+    );
+  }
+}
+
+class _SourceRefRow extends StatelessWidget {
+  const _SourceRefRow({required this.link, required this.onOpenLink});
+
+  final SourceLink link;
+  final ValueChanged<SourceLink>? onOpenLink;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final sourceId = safeSourceIdOrNull(link.id) ?? l10n.sourceUnknownLabel;
+    return Row(
+      key: Key('source-ref-${link.kind}-${link.id}'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Icon(Icons.link, size: 18),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.link, size: 18),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${sourceKindLabel(l10n, links[index].kind)}: '
-                      '${links[index].id}',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    if (links[index].excerpt != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        links[index].excerpt!,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
+              Text(
+                '${sourceKindLabel(l10n, link.kind)}: $sourceId',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
-              if (onOpenLink != null) ...[
-                const SizedBox(width: 8),
-                IconButton(
-                  key: Key(
-                    'open-source-ref-${links[index].kind}-${links[index].id}',
+              if (link.excerpt != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  link.excerpt!,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
-                  tooltip: l10n.timelineOpenSourceTooltip,
-                  onPressed: () => onOpenLink!(links[index]),
-                  icon: const Icon(Icons.open_in_new),
                 ),
               ],
             ],
+          ),
+        ),
+        if (onOpenLink != null) ...[
+          const SizedBox(width: 8),
+          IconButton(
+            key: Key('open-source-ref-${link.kind}-${link.id}'),
+            tooltip: l10n.timelineOpenSourceTooltip,
+            onPressed: () => onOpenLink!(link),
+            icon: const Icon(Icons.open_in_new),
           ),
         ],
       ],
     );
   }
+}
+
+class TimelineInsightPayloadView extends StatelessWidget {
+  const TimelineInsightPayloadView({
+    required this.payload,
+    required this.keyPrefix,
+    this.compact = false,
+    this.showSourceRefs = true,
+    this.onOpenLink,
+    super.key,
+  });
+
+  final MemoryFirstInsightPayload payload;
+  final String keyPrefix;
+  final bool compact;
+  final bool showSourceRefs;
+  final ValueChanged<SourceLink>? onOpenLink;
+
+  @override
+  Widget build(BuildContext context) {
+    final claims = compact
+        ? payload.claims.take(1).toList(growable: false)
+        : payload.claims;
+    final metrics = compact
+        ? payload.metrics.take(2).toList(growable: false)
+        : payload.metrics;
+    final sourceLinks = compact
+        ? insightPayloadSourceLinks(payload).take(2).toList(growable: false)
+        : insightPayloadSourceLinks(payload);
+
+    return Column(
+      key: Key('$keyPrefix-insight-payload'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var index = 0; index < claims.length; index++) ...[
+          if (index > 0) const SizedBox(height: 8),
+          _InsightClaimRow(
+            keyPrefix: keyPrefix,
+            index: index,
+            claim: claims[index],
+            compact: compact,
+          ),
+        ],
+        if (metrics.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              for (final metric in metrics)
+                TimelineTag(
+                  key: Key('$keyPrefix-insight-metric-${metric.label}'),
+                  icon: Icons.query_stats,
+                  label: _metricLabel(context.l10n, metric),
+                ),
+            ],
+          ),
+        ],
+        if (showSourceRefs && sourceLinks.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          compact
+              ? Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    for (final link in sourceLinks)
+                      TimelineTag(
+                        key: Key(
+                          '$keyPrefix-insight-source-${link.kind}-${link.id}',
+                        ),
+                        icon: Icons.link,
+                        label: _sourceRefLabel(context.l10n, link),
+                      ),
+                  ],
+                )
+              : TimelineSourceRefList(
+                  links: sourceLinks,
+                  onOpenLink: onOpenLink,
+                ),
+        ],
+      ],
+    );
+  }
+}
+
+class _InsightClaimRow extends StatelessWidget {
+  const _InsightClaimRow({
+    required this.keyPrefix,
+    required this.index,
+    required this.claim,
+    required this.compact,
+  });
+
+  final String keyPrefix;
+  final int index;
+  final MemoryFirstInsightClaim claim;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final claimId = claim.id ?? '$index';
+    return Row(
+      key: Key('$keyPrefix-insight-claim-$claimId'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Icon(Icons.check_circle_outline, size: 18),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                claim.text,
+                maxLines: compact ? 2 : 4,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              if (!compact && claim.sourceLinks.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    for (final link in claim.sourceLinks)
+                      TimelineTag(
+                        key: Key(
+                          '$keyPrefix-insight-claim-source-${link.kind}-${link.id}',
+                        ),
+                        icon: Icons.link,
+                        label: _sourceRefLabel(context.l10n, link),
+                      ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+MemoryFirstInsightPayload? timelineInsightPayload(
+  MemoryFirstTimelineItem item,
+) {
+  if (item.kind != MemoryFirstTimelineItemKind.insight) {
+    return null;
+  }
+  final payload = item.metadata['insight_payload'];
+  if (payload is! Map) {
+    return null;
+  }
+  final parsed = MemoryFirstInsightPayload.fromJson(
+    Map<Object?, Object?>.from(payload),
+  );
+  return parsed.isEmpty ? null : parsed;
+}
+
+List<SourceLink> insightPayloadSourceLinks(MemoryFirstInsightPayload payload) {
+  return dedupeSourceLinks(<SourceLink>[
+    ...payload.sourceLinks,
+    for (final claim in payload.claims) ...claim.sourceLinks,
+    for (final metric in payload.metrics) ...metric.sourceLinks,
+  ]);
+}
+
+String safeSourceId(String value) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty ||
+      trimmed.startsWith('/') ||
+      trimmed.startsWith('file:') ||
+      trimmed.contains('\\')) {
+    return '';
+  }
+  return trimmed;
+}
+
+String? safeSourceIdOrNull(String value) {
+  final safe = safeSourceId(value);
+  return safe.isEmpty ? null : safe;
+}
+
+String _sourceRefLabel(AppLocalizations l10n, SourceLink link) {
+  final sourceId = safeSourceIdOrNull(link.id) ?? l10n.sourceUnknownLabel;
+  return '${sourceKindLabel(l10n, link.kind)}: $sourceId';
+}
+
+String _metricLabel(AppLocalizations l10n, MemoryFirstInsightMetric metric) {
+  final label = localizedMetricLabel(l10n, metric.label);
+  final unit = metric.unit == null ? '' : ' ${metric.unit}';
+  return '${metric.value}$unit $label';
 }
 
 class _TimelineItemText extends StatelessWidget {
@@ -273,6 +478,8 @@ class _TimelineItemText extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final title = localizedTimelineItemTitle(l10n, item.title);
+    final artifacts = timelineAttachmentArtifacts(item);
+    final insightPayload = timelineInsightPayload(item);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -291,6 +498,14 @@ class _TimelineItemText extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.bodyMedium,
         ),
+        if (insightPayload != null) ...[
+          const SizedBox(height: 8),
+          TimelineInsightPayloadView(
+            payload: insightPayload,
+            keyPrefix: 'timeline-${item.id}',
+            compact: true,
+          ),
+        ],
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
@@ -309,6 +524,13 @@ class _TimelineItemText extends StatelessWidget {
             TimelineTag(icon: Icons.schedule, label: timeLabel(item.createdAt)),
           ],
         ),
+        if (artifacts.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          AttachmentDerivedArtifactChips(
+            keyPrefix: 'timeline-${item.id}',
+            artifacts: artifacts,
+          ),
+        ],
       ],
     );
   }
@@ -406,6 +628,7 @@ String sourceKindLabel(AppLocalizations l10n, String kind) {
     'memory' => l10n.timelineKindMemory,
     'todo' => l10n.timelineKindTodo,
     'event' => l10n.timelineKindEvent,
+    'artifact' || 'capture_attachment' => l10n.sourceKindAttachment,
     _ => kind,
   };
 }
@@ -415,4 +638,29 @@ String timeLabel(DateTime value) {
   final hour = local.hour.toString().padLeft(2, '0');
   final minute = local.minute.toString().padLeft(2, '0');
   return '$hour:$minute';
+}
+
+List<AttachmentDerivedArtifact> timelineAttachmentArtifacts(
+  MemoryFirstTimelineItem item,
+) {
+  final values = item.metadata['attachment_artifacts'];
+  if (values is! List) {
+    return const <AttachmentDerivedArtifact>[];
+  }
+  final artifacts = <AttachmentDerivedArtifact>[];
+  for (final value in values) {
+    if (value is! Map) {
+      continue;
+    }
+    try {
+      artifacts.add(
+        AttachmentDerivedArtifact.fromPayload(
+          Map<Object?, Object?>.from(value),
+        ),
+      );
+    } on ArgumentError {
+      continue;
+    }
+  }
+  return artifacts;
 }

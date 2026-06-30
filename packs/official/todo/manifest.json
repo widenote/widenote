@@ -28,6 +28,7 @@
     ],
     "status": "available"
   },
+  "default_run_mode": "auto",
   "entrypoint_kind": "native",
   "permissions": [
     "todo.suggest"
@@ -47,13 +48,16 @@
     {
       "id": "agent.todo_loop",
       "runtime": "native",
+      "run_mode": "auto",
       "name": "Todo Loop Agent",
       "prompt_ref": null,
       "model_profile_ref": null,
       "permissions": [
         "todo.suggest"
       ],
-      "tools": [],
+      "tools": [
+        "todo.suggest"
+      ],
       "output_events": [
         "wn.todo.suggested"
       ],
@@ -63,7 +67,28 @@
     }
   ],
   "model_profiles": [],
-  "tools": [],
+  "tools": [
+    {
+      "id": "todo.suggest",
+      "capability_kind": "todo",
+      "permissions": [
+        "todo.suggest"
+      ],
+      "required_permissions": [
+        "todo.suggest"
+      ],
+      "access": "write",
+      "risk": "low",
+      "locality": "local",
+      "approval_requirement": "none",
+      "execution": "local",
+      "side_effect": "local_write",
+      "compatible_run_modes": [
+        "confirm",
+        "auto"
+      ]
+    }
+  ],
   "ui_blocks": [],
   "storage_quota": {
     "local_bytes": 0

@@ -206,6 +206,19 @@ class CaptureInputController extends Notifier<CaptureInputState> {
             attachment.copyWith(
               state: CaptureAttachmentState.ready,
               reviewReason: null,
+              derivedArtifacts: [
+                for (final artifact in attachment.derivedArtifacts)
+                  artifact.status == AttachmentDerivedArtifactStatus.needsReview
+                      ? AttachmentDerivedArtifact(
+                          id: artifact.id,
+                          artifactKind: artifact.artifactKind,
+                          status: AttachmentDerivedArtifactStatus.ready,
+                          sourceLabel: artifact.sourceLabel,
+                          excerpt: artifact.excerpt,
+                          reason: artifact.reason,
+                        )
+                      : artifact,
+              ],
               rawMetadata: <String, Object?>{
                 ...attachment.rawMetadata,
                 'review': <String, Object?>{

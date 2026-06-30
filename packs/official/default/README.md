@@ -30,11 +30,16 @@ The manifest declares:
 - Prompt reference: `capture.memory_candidate.v2`
 - Retry policy: `max_attempts = 2`
 - Output events: `wn.card.created`, `wn.memory.proposed`, `wn.insight.created`
+- Insight UI blocks: `claim_list`, `metric_row`, `source_refs`, `note`
 
 The current native prompt contract is implemented by
 `apps/mobile/lib/features/capture/application/capture_agent_prompts.dart`.
 
-Future public surfaces include richer permission requests and UI/output declarations.
+Insight payloads emitted by this pack must keep claims, metrics, source refs,
+and UI block declarations in `InsightRecord.payload`. Every claim must carry at
+least one source ref; no-source claims are invalid pack output.
+
+Future public surfaces include richer permission requests.
 
 ## Dependencies
 

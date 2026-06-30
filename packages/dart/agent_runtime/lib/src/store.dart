@@ -68,7 +68,13 @@ abstract interface class RuntimeStore {
   Future<List<RuntimePackStatus>> readPackStatuses();
 }
 
-final class InMemoryRuntimeStore implements RuntimeStore {
+abstract interface class RuntimePackInstallationStore {
+  Future<void> upsertPackInstallation(RuntimePackInstallation installation);
+  Future<RuntimePackInstallation?> readPackInstallation(String packId);
+}
+
+final class InMemoryRuntimeStore
+    implements RuntimeStore, RuntimePackInstallationStore {
   final Map<String, RuntimeTask> _tasksById = <String, RuntimeTask>{};
   final List<String> _taskOrder = <String>[];
   final Map<String, RuntimeRun> _runsById = <String, RuntimeRun>{};
@@ -76,6 +82,8 @@ final class InMemoryRuntimeStore implements RuntimeStore {
   final Map<String, RuntimePackStatus> _packStatusesById =
       <String, RuntimePackStatus>{};
   final List<String> _packStatusOrder = <String>[];
+  final Map<String, RuntimePackInstallation> _packInstallationsById =
+      <String, RuntimePackInstallation>{};
 
   @override
   Future<void> upsertTask(RuntimeTask task) async {
@@ -140,5 +148,17 @@ final class InMemoryRuntimeStore implements RuntimeStore {
           .map((id) => _packStatusesById[id])
           .whereType<RuntimePackStatus>(),
     );
+  }
+
+  @override
+  Future<void> upsertPackInstallation(
+    RuntimePackInstallation installation,
+  ) async {
+    _packInstallationsById[installation.packId] = installation;
+  }
+
+  @override
+  Future<RuntimePackInstallation?> readPackInstallation(String packId) async {
+    return _packInstallationsById[packId];
   }
 }

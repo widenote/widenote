@@ -254,6 +254,11 @@ final class RuntimeKernel {
   Future<void> _enqueueMatching(WnEvent event) async {
     final requests = <_TaskRequest>[];
     for (final pack in _packs.values) {
+      final disabledReason = await _packDisabledReason(pack.id);
+      if (disabledReason != null) {
+        await _tracePackDisabledAtEnqueue(pack, event, disabledReason);
+        continue;
+      }
       for (final subscription in pack.subscriptions) {
         if (!subscription.matches(event)) {
           continue;
@@ -380,6 +385,26 @@ final class RuntimeKernel {
     _runs.add(run);
     await runtimeStore.upsertRun(run);
 
+    final disabledReason = await _packDisabledReason(pack.id);
+    if (disabledReason != null) {
+      final deniedTask = await _replaceTask(
+        task,
+        RuntimeTaskStatus.denied,
+        error: disabledReason,
+      );
+      final deniedRun = await _replaceRun(
+        run,
+        RuntimeRunStatus.denied,
+        error: disabledReason,
+      );
+      await _tracePackDisabledAtExecution(
+        deniedTask,
+        deniedRun,
+        disabledReason,
+      );
+      return;
+    }
+
     final unsupportedRuntime = _unsupportedRuntimeReason(definition);
     if (unsupportedRuntime != null) {
       final deniedTask = await _replaceTask(
@@ -411,7 +436,7 @@ final class RuntimeKernel {
     await _traceRunStarted(task, run);
 
     try {
-      final context = _contextFor(task, run);
+      final context = _contextFor(task, run, definition);
       final handler = pack.handlerFor(task.agentId);
       if (handler == null) {
         throw StateError('Agent handler missing: ${task.agentId}');
@@ -607,6 +632,24 @@ final class RuntimeKernel {
         definition.requiredPermissions.contains(permission);
   }
 
+  Future<String?> _packDisabledReason(String packId) async {
+    final installationStore = runtimeStore is RuntimePackInstallationStore
+        ? runtimeStore as RuntimePackInstallationStore
+        : null;
+    if (installationStore != null) {
+      final installation = await installationStore.readPackInstallation(packId);
+      if (installation != null && !installation.status.isEnabled) {
+        return installation.reason ?? 'Pack disabled at execution: $packId';
+      }
+    }
+
+    final status = await runtimeStore.readPackStatus(packId);
+    if (status?.status == RuntimePackStatusKind.disabled) {
+      return 'Pack disabled at execution: $packId';
+    }
+    return null;
+  }
+
   String? _blockedPermissionFor(AgentPack pack, AgentDefinition definition) {
     for (final permission in <String>{
       ...pack.requiredPermissions,
@@ -773,6 +816,7 @@ final class RuntimeKernel {
   }
 
   RuntimeRun _createRun(RuntimeTask task) {
+    final definition = _packs[task.packId]?.definitionFor(task.agentId);
     final startedAt = clock.now();
     return RuntimeRun(
       id: idGenerator.nextId('run'),
@@ -783,12 +827,16 @@ final class RuntimeKernel {
       status: RuntimeRunStatus.running,
       startedAt: startedAt,
       attempt: task.attempts,
-      runMode: runMode,
+      runMode: definition?.runMode ?? runMode,
       leaseExpiresAt: startedAt.add(runLeaseDuration),
     );
   }
 
-  AgentContext _contextFor(RuntimeTask task, RuntimeRun run) {
+  AgentContext _contextFor(
+    RuntimeTask task,
+    RuntimeRun run,
+    AgentDefinition definition,
+  ) {
     return AgentContext(
       packId: task.packId,
       agentId: task.agentId,
@@ -812,6 +860,7 @@ final class RuntimeKernel {
         permissionBroker: permissionBroker,
         toolRegistry: toolRegistry,
         runMode: run.runMode,
+        declaredTools: definition.tools,
         approvalBroker: approvalBroker,
         idGenerator: idGenerator,
         clock: clock,
@@ -1180,6 +1229,47 @@ final class RuntimeKernel {
         'dependency_task_ids': task.dependencyTaskIds,
         'missing_dependency_ids': task.missingDependencyIds,
         'error': task.error,
+      },
+    );
+  }
+
+  Future<void> _tracePackDisabledAtEnqueue(
+    AgentPack pack,
+    WnEvent event,
+    String reason,
+  ) {
+    return _trace(
+      name: 'runtime.pack.disabled_at_enqueue',
+      message: 'Pack is disabled; subscription dispatch skipped.',
+      level: TraceLevel.warning,
+      eventId: event.id,
+      packId: pack.id,
+      details: <String, Object?>{
+        'trace_type': 'permission_checked',
+        'error_code': 'pack_disabled',
+        'reason': reason,
+      },
+    );
+  }
+
+  Future<void> _tracePackDisabledAtExecution(
+    RuntimeTask task,
+    RuntimeRun run,
+    String reason,
+  ) {
+    return _trace(
+      name: 'runtime.pack.disabled_at_execution',
+      message: 'Queued task denied because the pack is disabled.',
+      level: TraceLevel.warning,
+      taskId: task.id,
+      runId: run.id,
+      packId: task.packId,
+      agentId: task.agentId,
+      details: <String, Object?>{
+        'trace_type': 'permission_checked',
+        'error_code': 'pack_disabled',
+        'reason': reason,
+        'attempt': run.attempt,
       },
     );
   }
@@ -1708,6 +1798,7 @@ final class _RuntimeToolInvoker implements ToolInvoker {
     required this.permissionBroker,
     required this.toolRegistry,
     required this.runMode,
+    required this.declaredTools,
     required this.approvalBroker,
     required this.idGenerator,
     required this.clock,
@@ -1721,6 +1812,7 @@ final class _RuntimeToolInvoker implements ToolInvoker {
   final PermissionBroker permissionBroker;
   final ToolRegistry toolRegistry;
   final RunMode runMode;
+  final Set<String> declaredTools;
   final ApprovalBroker? approvalBroker;
   final WnIdGenerator idGenerator;
   final WnClock clock;
@@ -1732,6 +1824,28 @@ final class _RuntimeToolInvoker implements ToolInvoker {
     JsonMap input = const <String, Object?>{},
   }) async {
     final inputKeys = _sorted(input.keys);
+    if (!declaredTools.contains(name)) {
+      await trace(
+        name: 'runtime.tool.undeclared',
+        message: 'Tool invocation denied because the agent did not declare it.',
+        level: TraceLevel.warning,
+        taskId: taskId,
+        runId: runId,
+        packId: packId,
+        agentId: agentId,
+        details: <String, Object?>{
+          ..._toolTraceDetails(name, null, inputKeys),
+          'error_code': 'tool_undeclared',
+          'declared_tools': _sorted(declaredTools),
+        },
+      );
+      return WnResult<JsonMap>.err(
+        WnFailure(
+          code: 'tool_undeclared',
+          message: 'Tool is not declared by the current agent: $name',
+        ),
+      );
+    }
     final definition = toolRegistry.lookup(name);
     await trace(
       name: 'runtime.tool.requested',
@@ -1827,6 +1941,51 @@ final class _RuntimeToolInvoker implements ToolInvoker {
     required JsonMap input,
     required List<String> inputKeys,
   }) async {
+    if (!definition.isExecutableLocally) {
+      await trace(
+        name: 'runtime.tool.unsupported',
+        message: 'Tool execution mode is not supported by the local runtime.',
+        level: TraceLevel.warning,
+        taskId: taskId,
+        runId: runId,
+        packId: packId,
+        agentId: agentId,
+        details: <String, Object?>{
+          ..._toolTraceDetails(definition.name, definition, inputKeys),
+          'error_code': 'unsupported_tool',
+        },
+      );
+      return WnFailure(
+        code: 'unsupported_tool',
+        message:
+            'This tool is declared for a deferred or disabled runtime and '
+            'cannot execute locally.',
+        details: _toolFailureDetails(definition, inputKeys),
+      );
+    }
+
+    if (!definition.compatibleRunModes.contains(runMode)) {
+      await trace(
+        name: 'runtime.tool.run_mode_denied',
+        message: 'Run mode is not compatible with the requested tool.',
+        level: TraceLevel.warning,
+        taskId: taskId,
+        runId: runId,
+        packId: packId,
+        agentId: agentId,
+        details: <String, Object?>{
+          ..._toolTraceDetails(definition.name, definition, inputKeys),
+          'error_code': 'run_mode_denied',
+          'denial_reason': 'incompatible_run_mode',
+        },
+      );
+      return WnFailure(
+        code: 'run_mode_denied',
+        message: 'Current run mode cannot use this tool.',
+        details: _toolFailureDetails(definition, inputKeys),
+      );
+    }
+
     if (runMode == RunMode.readOnly && !definition.isReadOnlySafe) {
       await trace(
         name: 'runtime.tool.run_mode_denied',
@@ -2004,10 +2163,16 @@ final class _RuntimeToolInvoker implements ToolInvoker {
       if (definition != null) ...<String, Object?>{
         'tool_access': definition.access.name,
         'tool_risk': definition.risk.name,
+        'tool_locality': definition.locality.name,
+        'tool_execution': definition.execution.name,
+        'tool_approval_requirement': definition.approvalRequirement.name,
         'tool_external': definition.external,
         'tool_high_risk': definition.isHighRisk,
         'approval_required': _requiresApprovalForRunMode(definition),
         'required_permissions': _sorted(definition.requiredPermissions),
+        'compatible_run_modes': _sorted(
+          definition.compatibleRunModes.map((mode) => mode.name),
+        ),
       },
     };
   }
@@ -2040,10 +2205,16 @@ final class _RuntimeToolInvoker implements ToolInvoker {
       'input_keys': inputKeys,
       'tool_access': definition.access.name,
       'tool_risk': definition.risk.name,
+      'tool_locality': definition.locality.name,
+      'tool_execution': definition.execution.name,
+      'tool_approval_requirement': definition.approvalRequirement.name,
       'tool_external': definition.external,
       'tool_high_risk': definition.isHighRisk,
       'approval_required': _requiresApprovalForRunMode(definition),
       'required_permissions': _sorted(definition.requiredPermissions),
+      'compatible_run_modes': _sorted(
+        definition.compatibleRunModes.map((mode) => mode.name),
+      ),
     };
   }
 

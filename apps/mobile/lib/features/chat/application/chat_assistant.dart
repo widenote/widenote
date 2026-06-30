@@ -1,5 +1,7 @@
 import '../../../shared/text_preview.dart';
 import '../domain/chat_models.dart';
+import 'chat_read_only_tool_loop.dart';
+import 'local_chat_context_source.dart';
 import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
 
 abstract interface class ChatAssistant {
@@ -18,13 +20,38 @@ final class ChatModelRequiredAssistant implements ChatAssistant {
 }
 
 final class ModelBackedChatAssistant implements ChatAssistant {
-  const ModelBackedChatAssistant({required this.model, this.maxSources = 6});
+  const ModelBackedChatAssistant({
+    required this.model,
+    this.toolRegistry,
+    this.labels = const ChatContextLabels.english(),
+    this.maxSources = 6,
+  });
 
   final runtime.ModelClient model;
+  final runtime.ToolRegistry? toolRegistry;
+  final ChatContextLabels labels;
   final int maxSources;
 
   @override
   Future<ChatAssistantReply> answer(ChatAssistantPrompt prompt) async {
+    final registry = toolRegistry;
+    if (registry != null) {
+      try {
+        return await ChatReadOnlyToolLoop(
+          model: model,
+          toolRegistry: registry,
+          labels: labels,
+          maxSources: maxSources,
+        ).answer(prompt);
+      } on ChatToolLoopException catch (error) {
+        throw ChatAssistantException(
+          error.message,
+          diagnosticType: error.diagnosticType,
+          diagnosticMessage: error.diagnosticMessage,
+        );
+      }
+    }
+
     try {
       final response = await model.complete(
         runtime.ModelRequest(
@@ -32,6 +59,8 @@ final class ModelBackedChatAssistant implements ChatAssistant {
           context: <String, Object?>{
             'source_count': prompt.sources.length,
             'chat_mode': 'source_cited_local_context',
+            'run_id': prompt.runId,
+            'run_mode': prompt.runMode,
           },
         ),
       );

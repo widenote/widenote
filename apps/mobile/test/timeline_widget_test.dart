@@ -69,6 +69,11 @@ void main() {
     expect(find.byKey(const Key('timeline-item-memory-1')), findsOneWidget);
     expect(find.byKey(const Key('timeline-item-todo-1')), findsOneWidget);
     expect(find.byKey(const Key('timeline-item-evt-todo-1')), findsNothing);
+    expect(
+      find.text('Project Alpha insight keeps one cited claim.'),
+      findsOneWidget,
+    );
+    expect(find.text('1 source-linked'), findsOneWidget);
 
     final semantics = tester.ensureSemantics();
     try {
@@ -122,6 +127,38 @@ void main() {
     await tester.tap(find.byKey(const Key('timeline-item-detail-back')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('timeline-page')), findsOneWidget);
+  });
+
+  testWidgets('timeline opens structured insight detail with claim sources', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    _seedTimeline(database);
+
+    await _pumpApp(tester, database: database);
+
+    await tester.tap(find.byKey(const Key('open-timeline-button')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('timeline-item-insight-1')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('timeline-item-detail-page')), findsOneWidget);
+    expect(find.text('Insight Detail'), findsOneWidget);
+    expect(find.text('summary insight'), findsOneWidget);
+    expect(
+      find.byKey(
+        const Key('timeline-detail-insight-1-insight-claim-claim.alpha'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Project Alpha insight keeps one cited claim.'),
+      findsWidgets,
+    );
+    expect(find.text('1 source-linked'), findsOneWidget);
+    expect(find.text('Capture: capture-1'), findsWidgets);
+    expect(find.textContaining('/Users/guangmo/private'), findsNothing);
   });
 
   testWidgets(
@@ -201,6 +238,7 @@ void main() {
     expect(find.text('时间线'), findsOneWidget);
     expect(find.text('浏览记录、卡片、记忆、洞察和待办。'), findsOneWidget);
     expect(find.text('1 个来源引用'), findsWidgets);
+    expect(find.text('1 可溯源'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('timeline-search-button')));
     await tester.pumpAndSettle();
@@ -224,6 +262,64 @@ void main() {
     expect(find.textContaining('待办 · 智能体建议'), findsOneWidget);
     expect(find.byKey(const Key('timeline-item-card-1')), findsNothing);
   });
+
+  testWidgets(
+    'timeline renders attachment artifact states and redacts raw paths',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(360, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final database = WideNoteLocalDatabase.inMemory();
+      _seedArtifactTimeline(database);
+
+      await _pumpApp(tester, database: database);
+
+      await tester.tap(find.byKey(const Key('open-timeline-button')));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('timeline-item-capture-artifacts')),
+        findsOneWidget,
+      );
+      expect(find.textContaining('status: ready'), findsOneWidget);
+      expect(find.textContaining('status: pending'), findsOneWidget);
+      expect(find.textContaining('status: Failed'), findsOneWidget);
+      expect(find.textContaining('status: Blocked'), findsOneWidget);
+      expect(find.textContaining('status: needs review'), findsOneWidget);
+      expect(find.textContaining('/Users/guangmo/private'), findsNothing);
+      expect(find.textContaining('DANGEROUS RAW PREVIEW'), findsNothing);
+
+      await tester.tap(
+        find.byKey(const Key('timeline-item-capture-artifacts')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('timeline-item-detail-page')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(
+          const Key(
+            'timeline-detail-capture-artifacts-artifact-artifact-ready',
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('attachment: artifact-photo-ready'),
+        findsWidgets,
+      );
+      expect(find.textContaining('Whiteboard summary excerpt.'), findsWidgets);
+      expect(find.textContaining('OCR pending for whiteboard.'), findsWidgets);
+      expect(
+        find.textContaining('OCR failed after platform error.'),
+        findsWidgets,
+      );
+      expect(find.textContaining('/Users/guangmo/private'), findsNothing);
+      expect(find.textContaining('DANGEROUS RAW PREVIEW'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
 
 Future<void> _pumpTimelinePage(
@@ -347,6 +443,41 @@ void _seedTimeline(WideNoteLocalDatabase database) {
       sourceRefs: const <Object?>[
         <String, Object?>{'kind': 'capture', 'id': 'capture-1'},
       ],
+      metricLabel: 'source-linked',
+      metricValue: 1,
+      payload: const <String, Object?>{
+        'claims': <Object?>[
+          <String, Object?>{
+            'id': 'claim.alpha',
+            'text': 'Project Alpha insight keeps one cited claim.',
+            'source_refs': <Object?>[
+              <String, Object?>{
+                'kind': 'capture',
+                'id': 'capture-1',
+                'excerpt': 'Project Alpha kickoff notes.',
+              },
+            ],
+          },
+        ],
+        'metrics': <Object?>[
+          <String, Object?>{
+            'label': 'source-linked',
+            'value': 1,
+            'source_refs': <Object?>[
+              <String, Object?>{'kind': 'capture', 'id': 'capture-1'},
+            ],
+          },
+        ],
+        'source_refs': <Object?>[
+          <String, Object?>{'kind': 'capture', 'id': 'capture-1'},
+        ],
+        'ui_blocks': <Object?>[
+          <String, Object?>{'kind': 'claim_list'},
+          <String, Object?>{'kind': 'metric_row'},
+          <String, Object?>{'kind': 'source_refs'},
+          <String, Object?>{'kind': 'note'},
+        ],
+      },
       createdAt: cardAt,
       updatedAt: cardAt,
     ),
@@ -376,6 +507,176 @@ void _seedTimeline(WideNoteLocalDatabase database) {
       },
       createdAt: todoAt,
       updatedAt: todoAt,
+    ),
+  );
+}
+
+void _seedArtifactTimeline(WideNoteLocalDatabase database) {
+  final createdAt = DateTime.utc(2026, 6, 29, 3);
+  database.eventLog.append(
+    EventLogEntry(
+      id: 'evt-capture-artifacts',
+      type: runtime.WnEventTypes.captureCreated,
+      actor: 'user',
+      subjectRef: const <String, Object?>{
+        'kind': 'capture',
+        'id': 'capture-artifacts',
+      },
+      payload: const <String, Object?>{
+        'text': 'Photo and voice attachments are saved as source material.',
+      },
+      createdAt: createdAt,
+    ),
+  );
+  database.captures.insert(
+    CaptureRecord(
+      id: 'capture-artifacts',
+      sourceType: 'manual',
+      sourceId: 'evt-capture-artifacts',
+      status: 'processed',
+      payload: const <String, Object?>{
+        'text': 'Photo and voice attachments are saved as source material.',
+      },
+      createdAt: createdAt,
+      updatedAt: createdAt,
+    ),
+  );
+  _insertAttachment(
+    database,
+    id: 'artifact-photo-ready',
+    captureId: 'capture-artifacts',
+    status: 'ready',
+    previewText: 'Whiteboard image saved locally.',
+    createdAt: createdAt,
+  );
+  _insertAttachment(
+    database,
+    id: 'artifact-photo-failed',
+    captureId: 'capture-artifacts',
+    status: 'ready',
+    previewText: 'Second whiteboard image saved locally.',
+    createdAt: createdAt.add(const Duration(minutes: 1)),
+  );
+  _insertAttachment(
+    database,
+    id: 'artifact-photo-blocked',
+    captureId: 'capture-artifacts',
+    status: 'blocked',
+    previewText: 'preview_hidden',
+    reviewReason: 'blocked_by_asset_safety',
+    rawPreviewText: 'DANGEROUS RAW PREVIEW SHOULD NOT RENDER',
+    createdAt: createdAt.add(const Duration(minutes: 2)),
+  );
+  _insertAttachment(
+    database,
+    id: 'artifact-voice-review',
+    captureId: 'capture-artifacts',
+    assetKind: 'voice',
+    mimeType: 'audio/m4a',
+    status: 'needs_review',
+    previewText: 'Voice transcript waiting for user confirmation.',
+    reviewReason: 'voice_transcript_requires_review',
+    createdAt: createdAt.add(const Duration(minutes: 3)),
+  );
+  _insertArtifact(
+    database,
+    id: 'artifact-ready',
+    captureId: 'capture-artifacts',
+    attachmentId: 'artifact-photo-ready',
+    artifactKind: 'vision_summary',
+    status: 'active',
+    body: 'Whiteboard summary excerpt.',
+    createdAt: createdAt,
+  );
+  _insertArtifact(
+    database,
+    id: 'artifact-pending',
+    captureId: 'capture-artifacts',
+    attachmentId: 'artifact-photo-ready',
+    artifactKind: 'ocr_text',
+    status: 'pending',
+    body: 'OCR pending for whiteboard.',
+    createdAt: createdAt,
+  );
+  _insertArtifact(
+    database,
+    id: 'artifact-failed',
+    captureId: 'capture-artifacts',
+    attachmentId: 'artifact-photo-failed',
+    artifactKind: 'ocr_text',
+    status: 'failed',
+    body: 'OCR failed after platform error.',
+    createdAt: createdAt.add(const Duration(minutes: 1)),
+  );
+}
+
+void _insertAttachment(
+  WideNoteLocalDatabase database, {
+  required String id,
+  required String captureId,
+  required String status,
+  required String previewText,
+  required DateTime createdAt,
+  String assetKind = 'photo',
+  String mimeType = 'image/jpeg',
+  String? reviewReason,
+  String? rawPreviewText,
+}) {
+  database.attachments.insert(
+    AttachmentRecord(
+      id: id,
+      captureId: captureId,
+      sourceEventId: 'evt-$captureId',
+      assetKind: assetKind,
+      mimeType: mimeType,
+      storagePath: '/Users/guangmo/private/raw/$id',
+      originalFileName: '$id.raw',
+      sha256: '$id-sha256',
+      status: status,
+      payload: <String, Object?>{
+        'preview_text': previewText,
+        'review_reason': ?reviewReason,
+        'raw_metadata': <String, Object?>{
+          'local_path': '/Users/guangmo/private/raw/$id',
+          'raw_preview_text': ?rawPreviewText,
+        },
+      },
+      createdAt: createdAt,
+      updatedAt: createdAt,
+    ),
+  );
+}
+
+void _insertArtifact(
+  WideNoteLocalDatabase database, {
+  required String id,
+  required String captureId,
+  required String attachmentId,
+  required String artifactKind,
+  required String status,
+  required String body,
+  required DateTime createdAt,
+}) {
+  database.derivedArtifacts.insert(
+    DerivedArtifactRecord(
+      id: id,
+      sourceCaptureId: captureId,
+      sourceAttachmentId: attachmentId,
+      sourceEventId: 'evt-$captureId',
+      artifactKind: artifactKind,
+      status: status,
+      title: artifactKind,
+      body: body,
+      mimeType: 'text/plain',
+      storagePath: '/Users/guangmo/private/artifacts/$id.txt',
+      sourceRefs: <Object?>[
+        <String, Object?>{'kind': 'capture', 'id': captureId},
+        <String, Object?>{'kind': 'file', 'id': attachmentId},
+      ],
+      generatorId: 'test.$artifactKind',
+      generatorVersion: '1.0.0',
+      createdAt: createdAt,
+      updatedAt: createdAt,
     ),
   );
 }

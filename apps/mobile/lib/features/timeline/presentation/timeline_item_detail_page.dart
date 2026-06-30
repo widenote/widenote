@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:widenote_cards/widenote_cards.dart';
 
 import '../../../l10n/l10n.dart';
+import '../../capture/presentation/attachment_artifact_widgets.dart';
 import '../application/timeline_repository.dart';
 import 'timeline_widgets.dart';
 
@@ -59,6 +60,11 @@ class _TimelineItemDetailContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final artifacts = timelineAttachmentArtifacts(item);
+    final insightPayload = timelineInsightPayload(item);
+    final visibleMetadata = <String, Object?>{...item.metadata}
+      ..remove('attachment_artifacts')
+      ..remove('insight_payload');
     return _DetailShell(
       title: l10n.timelineKindDetailTitle(_kindTitle(l10n, item.kind)),
       child: Column(
@@ -73,26 +79,53 @@ class _TimelineItemDetailContent extends StatelessWidget {
               style: Theme.of(context).textTheme.bodyLarge,
             ),
           ),
+          if (insightPayload != null) ...[
+            const SizedBox(height: 12),
+            TimelineSurface(
+              icon: Icons.query_stats,
+              title: localizedInsightKindLabel(
+                l10n,
+                '${item.metadata['insight_kind'] ?? item.title}',
+              ),
+              child: TimelineInsightPayloadView(
+                payload: insightPayload,
+                keyPrefix: 'timeline-detail-${item.id}',
+                onOpenLink: (link) => _openSourceLink(context, link),
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           TimelineSurface(
             icon: Icons.info_outline,
             title: l10n.timelineStatusTitle,
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TimelineTag(
-                  icon: Icons.category_outlined,
-                  label: timelineKindSingularLabel(l10n, item.kind),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    TimelineTag(
+                      icon: Icons.category_outlined,
+                      label: timelineKindSingularLabel(l10n, item.kind),
+                    ),
+                    TimelineTag(
+                      icon: Icons.flag_outlined,
+                      label: timelineStatusLabel(l10n, item.status),
+                    ),
+                    TimelineTag(
+                      icon: Icons.schedule,
+                      label: timeLabel(item.createdAt),
+                    ),
+                  ],
                 ),
-                TimelineTag(
-                  icon: Icons.flag_outlined,
-                  label: timelineStatusLabel(l10n, item.status),
-                ),
-                TimelineTag(
-                  icon: Icons.schedule,
-                  label: timeLabel(item.createdAt),
-                ),
+                if (artifacts.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  AttachmentDerivedArtifactList(
+                    keyPrefix: 'timeline-detail-${item.id}',
+                    artifacts: artifacts,
+                  ),
+                ],
               ],
             ),
           ),
@@ -105,12 +138,12 @@ class _TimelineItemDetailContent extends StatelessWidget {
               onOpenLink: (link) => _openSourceLink(context, link),
             ),
           ),
-          if (item.metadata.isNotEmpty) ...[
+          if (visibleMetadata.isNotEmpty) ...[
             const SizedBox(height: 12),
             TimelineSurface(
               icon: Icons.data_object_outlined,
               title: l10n.timelineMetadataTitle,
-              child: _MetadataRows(metadata: item.metadata),
+              child: _MetadataRows(metadata: visibleMetadata),
             ),
           ],
         ],

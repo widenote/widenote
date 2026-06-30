@@ -1442,6 +1442,72 @@ abstract class AppLocalizations {
   /// **'file'**
   String get sourceKindFile;
 
+  /// No description provided for @attachmentArtifactStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'pending'**
+  String get attachmentArtifactStatusPending;
+
+  /// No description provided for @attachmentArtifactStatusReady.
+  ///
+  /// In en, this message translates to:
+  /// **'ready'**
+  String get attachmentArtifactStatusReady;
+
+  /// No description provided for @attachmentArtifactStatusFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'failed'**
+  String get attachmentArtifactStatusFailed;
+
+  /// No description provided for @attachmentArtifactStatusBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'blocked'**
+  String get attachmentArtifactStatusBlocked;
+
+  /// No description provided for @attachmentArtifactStatusNeedsReview.
+  ///
+  /// In en, this message translates to:
+  /// **'needs review'**
+  String get attachmentArtifactStatusNeedsReview;
+
+  /// No description provided for @attachmentArtifactKindAudioTranscript.
+  ///
+  /// In en, this message translates to:
+  /// **'audio transcript'**
+  String get attachmentArtifactKindAudioTranscript;
+
+  /// No description provided for @attachmentArtifactKindImageDerivatives.
+  ///
+  /// In en, this message translates to:
+  /// **'image artifact'**
+  String get attachmentArtifactKindImageDerivatives;
+
+  /// No description provided for @attachmentArtifactKindOcrText.
+  ///
+  /// In en, this message translates to:
+  /// **'OCR text'**
+  String get attachmentArtifactKindOcrText;
+
+  /// No description provided for @attachmentArtifactKindVisionSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'image summary'**
+  String get attachmentArtifactKindVisionSummary;
+
+  /// No description provided for @attachmentArtifactKindSharedText.
+  ///
+  /// In en, this message translates to:
+  /// **'shared text'**
+  String get attachmentArtifactKindSharedText;
+
+  /// No description provided for @timelineAttachmentArtifactsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachment artifacts'**
+  String get timelineAttachmentArtifactsTitle;
+
   /// No description provided for @sourceLinkCount.
   ///
   /// In en, this message translates to:
@@ -3170,6 +3236,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'run mode: unknown'**
   String get agentConsoleRunModeUnknown;
+
+  /// No description provided for @agentConsoleChildDelegation.
+  ///
+  /// In en, this message translates to:
+  /// **'delegation: {delegationId}'**
+  String agentConsoleChildDelegation(String delegationId);
+
+  /// No description provided for @agentConsoleChildRun.
+  ///
+  /// In en, this message translates to:
+  /// **'child run: {runId}'**
+  String agentConsoleChildRun(String runId);
+
+  /// No description provided for @agentConsoleChildStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'child status: {status}'**
+  String agentConsoleChildStatus(String status);
+
+  /// No description provided for @agentConsoleDelegationViolations.
+  ///
+  /// In en, this message translates to:
+  /// **'violations: {codes}'**
+  String agentConsoleDelegationViolations(String codes);
 
   /// No description provided for @traceConsoleOpenSourceButton.
   ///

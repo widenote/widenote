@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:widenote_cards/widenote_cards.dart';
 
 @immutable
 final class DailyRecapSnapshot {
@@ -52,6 +53,7 @@ final class DailyRecapEntry {
     required this.body,
     required this.sourceLabel,
     required this.timeLabel,
+    this.insightPayload,
   });
 
   final String id;
@@ -59,4 +61,5 @@ final class DailyRecapEntry {
   final String body;
   final String sourceLabel;
   final String timeLabel;
+  final MemoryFirstInsightPayload? insightPayload;
 }

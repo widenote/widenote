@@ -119,6 +119,78 @@ void main() {
     );
   });
 
+  testWidgets('agent console renders child delegation links and escalation', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    database.traceEvents
+      ..insert(
+        _trace(
+          'trace-delegate-success',
+          'runtime.delegation.succeeded',
+          runId: 'run-parent',
+          status: 'ok',
+          message: 'Child delegation succeeded.',
+          payload: const <String, Object?>{
+            'trace_type': 'delegation',
+            'child_delegation_id': 'delegate-1',
+            'child_run_id': 'run-child-1',
+            'child_status': 'succeeded',
+            'input': 'SHOULD_NOT_RENDER',
+            'instructions': 'SHOULD_NOT_RENDER',
+          },
+        ),
+      )
+      ..insert(
+        _trace(
+          'trace-delegate-rejected',
+          'runtime.delegation.rejected',
+          runId: 'run-parent',
+          severity: 'warning',
+          status: 'rejected',
+          message: 'Child delegation rejected.',
+          payload: const <String, Object?>{
+            'trace_type': 'delegation',
+            'child_delegation_id': 'delegate-2',
+            'child_status': 'rejected',
+            'violation_codes': <Object?>['run_mode_escalation'],
+            'api_key': 'SHOULD_NOT_RENDER',
+          },
+        ),
+      );
+
+    await _pumpTraceConsole(tester, database);
+
+    await _tap(tester, const Key('trace-console-row-trace-delegate-success'));
+    expect(
+      find.byKey(
+        const Key('agent-console-child-delegation-trace-delegate-success'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('agent-console-child-run-trace-delegate-success')),
+      findsOneWidget,
+    );
+    expect(find.text('child run: run-child-1'), findsOneWidget);
+    expect(find.text('child status: succeeded'), findsOneWidget);
+
+    await _tap(tester, const Key('trace-console-row-trace-delegate-rejected'));
+    expect(find.text('child status: rejected'), findsOneWidget);
+    expect(
+      find.byKey(
+        const Key(
+          'agent-console-delegation-violations-trace-delegate-rejected',
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('run_mode_escalation'), findsWidgets);
+    expect(find.textContaining('SHOULD_NOT_RENDER'), findsNothing);
+    expect(find.textContaining('api_key'), findsNothing);
+    expect(find.textContaining('instructions'), findsNothing);
+  });
+
   testWidgets('agent console redacts sensitive trace payload and errors', (
     tester,
   ) async {

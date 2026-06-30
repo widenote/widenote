@@ -116,68 +116,277 @@ void main() {
     });
   });
 
-  group('DelegationPlanner', () {
-    test('rejects wider child tools, run mode, and source refs', () {
+  group('DelegationExecutor', () {
+    test('executes an attenuated source-linked child run', () async {
+      const source = SubjectRef(kind: 'event', id: 'evt-parent');
+      final runtimeStore = InMemoryRuntimeStore();
+      final traceSink = InMemoryTraceSink();
+      final executor = DelegationExecutor(
+        presets: <ChildAgentPreset>[
+          _preset(
+            allowedTools: const <String>{'memory.read', 'context.build'},
+            defaultMaxToolCalls: 2,
+            defaultMaxTotalTokens: 500,
+            defaultMaxEstimatedCostUsd: 0.005,
+          ),
+        ],
+        runtimeStore: runtimeStore,
+        traceSink: traceSink,
+        idGenerator: SequenceWnIdGenerator(seed: 'delegate'),
+        clock: FixedWnClock(DateTime.utc(2026, 6, 27, 2)),
+      );
+
+      final result = await executor.execute(
+        DelegationExecutionRequest(
+          id: 'delegate-attenuated',
+          parentRunId: 'run-parent',
+          presetId: 'memory-review',
+          packId: 'pack.default',
+          packVersion: '0.1.0',
+          agentId: 'agent.capture_loop',
+          parentBudget: _budget(
+            allowedTools: const <String>{'memory.read', 'context.build'},
+            sourceRefs: const <SubjectRef>[source],
+            runMode: RunMode.auto,
+            maxToolCalls: 4,
+            maxTotalTokens: 1000,
+            maxEstimatedCostUsd: 0.01,
+          ),
+          requestedChildBudget: _budget(
+            allowedTools: const <String>{'memory.read'},
+            sourceRefs: const <SubjectRef>[source],
+            runMode: RunMode.readOnly,
+            maxToolCalls: 2,
+            maxTotalTokens: 400,
+            maxEstimatedCostUsd: 0.004,
+          ),
+        ),
+        (context) async {
+          expect(context.budget.allowedTools, <String>{'memory.read'});
+          expect(context.budget.runMode, RunMode.readOnly);
+          return DelegationChildOutput(
+            sourceRefs: context.budget.sourceRefs,
+            payload: const <String, Object?>{'accepted': true},
+          );
+        },
+      );
+
+      expect(result.state, DelegationExecutionState.succeeded);
+      expect(result.childRunId, isNotNull);
+      expect(result.effectiveChildBudget!.maxToolCalls, 2);
+      expect(result.effectiveChildBudget!.maxTotalTokens, 400);
+      expect(result.effectiveChildBudget!.maxEstimatedCostUsd, 0.004);
+      final childRun = await runtimeStore.readRunById(result.childRunId!);
+      expect(childRun?.status, RuntimeRunStatus.succeeded);
+      expect(childRun?.runMode, RunMode.readOnly);
+      final traces = await traceSink.readByRun('run-parent');
+      expect(traces.map((trace) => trace.name), <String>[
+        'runtime.delegation.running',
+        'runtime.delegation.succeeded',
+      ]);
+      expect(traces.last.details['child_run_id'], result.childRunId);
+      expect(traces.last.details['child_status'], 'succeeded');
+    });
+
+    test('rejects child run-mode escalation', () async {
+      const source = SubjectRef(kind: 'event', id: 'evt-parent');
+      final result = await _executeDelegation(
+        parentBudget: _budget(
+          allowedTools: const <String>{'memory.read'},
+          sourceRefs: const <SubjectRef>[source],
+          runMode: RunMode.confirm,
+        ),
+        childBudget: _budget(
+          allowedTools: const <String>{'memory.read'},
+          sourceRefs: const <SubjectRef>[source],
+          runMode: RunMode.auto,
+        ),
+      );
+
+      expect(result.state, DelegationExecutionState.rejected);
+      expect(_codes(result.violations), contains('run_mode_escalation'));
+      expect(result.childRunId, isNull);
+    });
+
+    test('rejects child source ref escalation', () async {
       const parentSource = SubjectRef(kind: 'event', id: 'evt-parent');
       const extraSource = SubjectRef(kind: 'event', id: 'evt-extra');
-      final request = DelegationRequest(
-        id: 'delegate-1',
-        parentRunId: 'run-parent',
-        preset: _preset(
-          allowedTools: const <String>{'memory.read', 'todo.write'},
-        ),
+      final result = await _executeDelegation(
         parentBudget: _budget(
           allowedTools: const <String>{'memory.read'},
           sourceRefs: const <SubjectRef>[parentSource],
           runMode: RunMode.confirm,
         ),
         childBudget: _budget(
-          allowedTools: const <String>{'memory.read', 'todo.write'},
+          allowedTools: const <String>{'memory.read'},
           sourceRefs: const <SubjectRef>[parentSource, extraSource],
-          runMode: RunMode.auto,
+          runMode: RunMode.readOnly,
         ),
       );
 
-      final result = const DelegationPlanner().plan(request);
-      final codes = result.violations.map((violation) => violation.code);
-
-      expect(result.state, DelegationResultState.rejected);
-      expect(
-        codes,
-        containsAll(<String>[
-          'tool_budget_escalation',
-          'run_mode_escalation',
-          'source_ref_escalation',
-        ]),
-      );
+      expect(result.state, DelegationExecutionState.rejected);
+      expect(_codes(result.violations), contains('source_ref_escalation'));
+      expect(result.effectiveChildBudget!.sourceRefs, const <SubjectRef>[
+        parentSource,
+      ]);
     });
 
-    test('plans a child when capabilities are attenuated', () {
+    test('rejects tool-call, token, and cost budget escalation', () async {
       const source = SubjectRef(kind: 'event', id: 'evt-parent');
-      final request = DelegationRequest(
-        id: 'delegate-2',
-        parentRunId: 'run-parent',
-        preset: _preset(
-          allowedTools: const <String>{'memory.read', 'context.build'},
-        ),
+      final result = await _executeDelegation(
         parentBudget: _budget(
-          allowedTools: const <String>{'memory.read', 'context.build'},
+          allowedTools: const <String>{'memory.read'},
           sourceRefs: const <SubjectRef>[source],
           runMode: RunMode.auto,
-          maxToolCalls: 4,
+          maxToolCalls: 2,
+          maxTotalTokens: 500,
+          maxEstimatedCostUsd: 0.005,
         ),
         childBudget: _budget(
           allowedTools: const <String>{'memory.read'},
           sourceRefs: const <SubjectRef>[source],
           runMode: RunMode.readOnly,
-          maxToolCalls: 2,
+          maxToolCalls: 3,
+          maxTotalTokens: 600,
+          maxEstimatedCostUsd: 0.006,
         ),
       );
 
-      final result = const DelegationPlanner().plan(request);
+      expect(
+        _codes(result.violations),
+        containsAll(<String>[
+          'tool_call_budget_escalation',
+          'total_token_budget_escalation',
+          'cost_budget_escalation',
+        ]),
+      );
+      expect(result.effectiveChildBudget!.maxToolCalls, 2);
+      expect(result.effectiveChildBudget!.maxTotalTokens, 500);
+      expect(result.effectiveChildBudget!.maxEstimatedCostUsd, 0.005);
+    });
 
-      expect(result.state, DelegationResultState.planned);
-      expect(result.violations, isEmpty);
+    test('rejects read-only parent write-tool delegation', () {
+      const source = SubjectRef(kind: 'event', id: 'evt-parent');
+      final request = DelegationRequest(
+        id: 'delegate-write-tool',
+        parentRunId: 'run-parent',
+        preset: _preset(allowedTools: const <String>{'todo.write'}),
+        parentBudget: _budget(
+          allowedTools: const <String>{'todo.write'},
+          sourceRefs: const <SubjectRef>[source],
+          runMode: RunMode.readOnly,
+        ),
+        childBudget: _budget(
+          allowedTools: const <String>{'todo.write'},
+          sourceRefs: const <SubjectRef>[source],
+          runMode: RunMode.readOnly,
+        ),
+      );
+      final registry = InMemoryToolRegistry()
+        ..register(
+          ToolDefinition(
+            name: 'todo.write',
+            description: 'Write todo',
+            access: ToolAccess.write,
+            handler: (_) async => const <String, Object?>{},
+          ),
+        );
+
+      final result = DelegationPlanner(toolRegistry: registry).plan(request);
+
+      expect(result.state, DelegationResultState.rejected);
+      expect(_codes(result.violations), contains('tool_access_escalation'));
+    });
+
+    test('rejects nested delegation', () async {
+      const source = SubjectRef(kind: 'event', id: 'evt-parent');
+      final result = await _executeDelegation(
+        parentBudget: _budget(
+          allowedTools: const <String>{'memory.read'},
+          sourceRefs: const <SubjectRef>[source],
+          runMode: RunMode.auto,
+        ),
+        childBudget: _budget(
+          allowedTools: const <String>{'memory.read'},
+          sourceRefs: const <SubjectRef>[source],
+          runMode: RunMode.readOnly,
+        ),
+        allowNestedDelegation: true,
+      );
+
+      expect(result.state, DelegationExecutionState.rejected);
+      expect(
+        _codes(result.violations),
+        contains('nested_delegation_not_supported'),
+      );
+    });
+
+    test('returns structured violation for unknown preset', () async {
+      const source = SubjectRef(kind: 'event', id: 'evt-parent');
+      final result = await _executeDelegation(
+        presetId: 'missing-preset',
+        parentBudget: _budget(
+          allowedTools: const <String>{'memory.read'},
+          sourceRefs: const <SubjectRef>[source],
+          runMode: RunMode.auto,
+        ),
+        childBudget: _budget(
+          allowedTools: const <String>{'memory.read'},
+          sourceRefs: const <SubjectRef>[source],
+          runMode: RunMode.readOnly,
+        ),
+      );
+
+      expect(result.state, DelegationExecutionState.rejected);
+      expect(_codes(result.violations), contains('preset_unknown'));
+    });
+
+    test('returns structured violation for malformed preset id', () async {
+      const source = SubjectRef(kind: 'event', id: 'evt-parent');
+      final result = await _executeDelegation(
+        presetId: ' ',
+        parentBudget: _budget(
+          allowedTools: const <String>{'memory.read'},
+          sourceRefs: const <SubjectRef>[source],
+          runMode: RunMode.auto,
+        ),
+        childBudget: _budget(
+          allowedTools: const <String>{'memory.read'},
+          sourceRefs: const <SubjectRef>[source],
+          runMode: RunMode.readOnly,
+        ),
+      );
+
+      expect(result.state, DelegationExecutionState.rejected);
+      expect(_codes(result.violations), contains('preset_malformed'));
+    });
+
+    test('rejects child output without source refs', () async {
+      const source = SubjectRef(kind: 'event', id: 'evt-parent');
+      final result = await _executeDelegation(
+        parentBudget: _budget(
+          allowedTools: const <String>{'memory.read'},
+          sourceRefs: const <SubjectRef>[source],
+          runMode: RunMode.auto,
+        ),
+        childBudget: _budget(
+          allowedTools: const <String>{'memory.read'},
+          sourceRefs: const <SubjectRef>[source],
+          runMode: RunMode.readOnly,
+        ),
+        childHandler: (_) async {
+          return DelegationChildOutput(
+            sourceRefs: const <SubjectRef>[],
+            payload: const <String, Object?>{'accepted': true},
+          );
+        },
+      );
+
+      expect(result.state, DelegationExecutionState.failed);
+      expect(
+        _codes(result.violations),
+        contains('child_output_source_refs_required'),
+      );
     });
   });
 
@@ -206,7 +415,51 @@ void main() {
   });
 }
 
-ChildAgentPreset _preset({required Iterable<String> allowedTools}) {
+Future<DelegationExecutionResult> _executeDelegation({
+  required CapabilityBudget parentBudget,
+  required CapabilityBudget childBudget,
+  String presetId = 'memory-review',
+  bool allowNestedDelegation = false,
+  DelegationChildHandler? childHandler,
+}) async {
+  final executor = DelegationExecutor(
+    presets: <ChildAgentPreset>[
+      _preset(allowedTools: const <String>{'memory.read', 'todo.write'}),
+    ],
+    runtimeStore: InMemoryRuntimeStore(),
+    traceSink: InMemoryTraceSink(),
+    idGenerator: SequenceWnIdGenerator(seed: 'delegate'),
+    clock: FixedWnClock(DateTime.utc(2026, 6, 27, 2)),
+  );
+  return executor.execute(
+    DelegationExecutionRequest(
+      id: 'delegate-test',
+      parentRunId: 'run-parent',
+      presetId: presetId,
+      packId: 'pack.default',
+      packVersion: '0.1.0',
+      agentId: 'agent.capture_loop',
+      parentBudget: parentBudget,
+      requestedChildBudget: childBudget,
+      allowNestedDelegation: allowNestedDelegation,
+    ),
+    childHandler ??
+        (context) async {
+          return DelegationChildOutput(sourceRefs: context.budget.sourceRefs);
+        },
+  );
+}
+
+List<String> _codes(Iterable<DelegationViolation> violations) {
+  return violations.map((violation) => violation.code).toList(growable: false);
+}
+
+ChildAgentPreset _preset({
+  required Iterable<String> allowedTools,
+  int defaultMaxToolCalls = 2,
+  int? defaultMaxTotalTokens = 1000,
+  double? defaultMaxEstimatedCostUsd = 0.01,
+}) {
   return ChildAgentPreset(
     id: 'memory-review',
     name: 'Memory review',
@@ -214,9 +467,11 @@ ChildAgentPreset _preset({required Iterable<String> allowedTools}) {
     allowedTools: allowedTools,
     defaultRunMode: RunMode.readOnly,
     defaultMaxDuration: const Duration(seconds: 30),
-    defaultMaxToolCalls: 2,
+    defaultMaxToolCalls: defaultMaxToolCalls,
     contextSurface: 'memory-review',
     outputSchemaRef: 'memory-review-result',
+    defaultMaxTotalTokens: defaultMaxTotalTokens,
+    defaultMaxEstimatedCostUsd: defaultMaxEstimatedCostUsd,
   );
 }
 
@@ -226,6 +481,8 @@ CapabilityBudget _budget({
   required RunMode runMode,
   Duration maxDuration = const Duration(seconds: 30),
   int maxToolCalls = 2,
+  int? maxTotalTokens = 1000,
+  double? maxEstimatedCostUsd = 0.01,
 }) {
   return CapabilityBudget(
     allowedTools: allowedTools,
@@ -233,8 +490,8 @@ CapabilityBudget _budget({
     runMode: runMode,
     maxDuration: maxDuration,
     maxToolCalls: maxToolCalls,
-    maxTotalTokens: 1000,
-    maxEstimatedCostUsd: 0.01,
+    maxTotalTokens: maxTotalTokens,
+    maxEstimatedCostUsd: maxEstimatedCostUsd,
   );
 }
 

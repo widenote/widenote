@@ -43,6 +43,7 @@ final class LocalChatRepository implements ChatRepository {
         body: message.body,
         status: message.status.name,
         sourceRefs: _sourceRefsToJson(message.sourceRefs),
+        payload: _payloadToJson(message),
         createdAt: message.createdAt,
       ),
     );
@@ -66,8 +67,26 @@ ChatMessage _messageFromRecord(ChatMessageRecord record) {
     body: record.body,
     status: _status(record.status),
     sourceRefs: _sourceRefsFromJson(record.sourceRefs),
+    runId: _stringOrNull(record.payload['run_id']),
+    toolSummaries: _toolSummariesFromJson(record.payload['tool_summary']),
     createdAt: record.createdAt,
   );
+}
+
+Map<String, Object?> _payloadToJson(ChatMessage message) {
+  return <String, Object?>{
+    if (message.runId != null) 'run_id': message.runId,
+    if (message.toolSummaries.isNotEmpty)
+      'tool_summary': <Object?>[
+        for (final summary in message.toolSummaries)
+          <String, Object?>{
+            'name': summary.name,
+            'status': summary.status,
+            'source_ref_count': summary.sourceRefCount,
+            if (summary.errorCode != null) 'error_code': summary.errorCode,
+          },
+      ],
+  };
 }
 
 List<Object?> _sourceRefsToJson(List<ChatSourceRef> refs) {
@@ -98,6 +117,24 @@ List<ChatSourceRef> _sourceRefsFromJson(List<Object?> value) {
       .toList(growable: false);
 }
 
+List<ChatToolSummary> _toolSummariesFromJson(Object? value) {
+  if (value is! List) {
+    return const <ChatToolSummary>[];
+  }
+  return value
+      .whereType<Map<String, Object?>>()
+      .map(
+        (item) => ChatToolSummary(
+          name: _string(item['name']),
+          status: _string(item['status']),
+          sourceRefCount: _int(item['source_ref_count']),
+          errorCode: _stringOrNull(item['error_code']),
+        ),
+      )
+      .where((summary) => summary.name.isNotEmpty)
+      .toList(growable: false);
+}
+
 ChatRole _role(String value) {
   return ChatRole.values.firstWhere(
     (role) => role.name == value,
@@ -113,3 +150,10 @@ ChatMessageStatus _status(String value) {
 }
 
 String _string(Object? value) => value is String ? value : '';
+
+String? _stringOrNull(Object? value) {
+  final string = _string(value);
+  return string.isEmpty ? null : string;
+}
+
+int _int(Object? value) => value is int ? value : 0;

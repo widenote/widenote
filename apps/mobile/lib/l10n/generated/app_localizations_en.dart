@@ -821,6 +821,39 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sourceKindFile => 'file';
 
   @override
+  String get attachmentArtifactStatusPending => 'pending';
+
+  @override
+  String get attachmentArtifactStatusReady => 'ready';
+
+  @override
+  String get attachmentArtifactStatusFailed => 'failed';
+
+  @override
+  String get attachmentArtifactStatusBlocked => 'blocked';
+
+  @override
+  String get attachmentArtifactStatusNeedsReview => 'needs review';
+
+  @override
+  String get attachmentArtifactKindAudioTranscript => 'audio transcript';
+
+  @override
+  String get attachmentArtifactKindImageDerivatives => 'image artifact';
+
+  @override
+  String get attachmentArtifactKindOcrText => 'OCR text';
+
+  @override
+  String get attachmentArtifactKindVisionSummary => 'image summary';
+
+  @override
+  String get attachmentArtifactKindSharedText => 'shared text';
+
+  @override
+  String get timelineAttachmentArtifactsTitle => 'Attachment artifacts';
+
+  @override
   String sourceLinkCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -1935,6 +1968,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentConsoleRunModeUnknown => 'run mode: unknown';
+
+  @override
+  String agentConsoleChildDelegation(String delegationId) {
+    return 'delegation: $delegationId';
+  }
+
+  @override
+  String agentConsoleChildRun(String runId) {
+    return 'child run: $runId';
+  }
+
+  @override
+  String agentConsoleChildStatus(String status) {
+    return 'child status: $status';
+  }
+
+  @override
+  String agentConsoleDelegationViolations(String codes) {
+    return 'violations: $codes';
+  }
 
   @override
   String get traceConsoleOpenSourceButton => 'Open source';

@@ -270,7 +270,7 @@ void main() {
 
     expect(find.text('Blocked photo sample.jpg'), findsOneWidget);
     expect(find.textContaining('Blocked attachment'), findsOneWidget);
-    expect(find.textContaining('Preview hidden'), findsOneWidget);
+    expect(find.textContaining('Preview hidden'), findsWidgets);
     expect(find.textContaining('DANGEROUS RAW PREVIEW'), findsNothing);
 
     await tester.tap(find.byKey(const Key('record-capture-button')));

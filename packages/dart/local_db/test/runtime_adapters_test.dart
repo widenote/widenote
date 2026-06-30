@@ -1473,7 +1473,10 @@ runtime.AgentPack _toolPack({required String id}) {
       ),
     ],
     agentDefinitions: const <String, runtime.AgentDefinition>{
-      'agent.adapter': runtime.AgentDefinition(id: 'agent.adapter'),
+      'agent.adapter': runtime.AgentDefinition(
+        id: 'agent.adapter',
+        tools: <String>{'todo.external_complete'},
+      ),
     },
     agents: const <String, runtime.AgentHandler>{
       'agent.adapter': _ToolCallingHandler(),

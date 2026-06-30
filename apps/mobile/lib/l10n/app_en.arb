@@ -417,6 +417,17 @@
   "sourceKindRawText": "raw text",
   "sourceKindAttachment": "attachment",
   "sourceKindFile": "file",
+  "attachmentArtifactStatusPending": "pending",
+  "attachmentArtifactStatusReady": "ready",
+  "attachmentArtifactStatusFailed": "failed",
+  "attachmentArtifactStatusBlocked": "blocked",
+  "attachmentArtifactStatusNeedsReview": "needs review",
+  "attachmentArtifactKindAudioTranscript": "audio transcript",
+  "attachmentArtifactKindImageDerivatives": "image artifact",
+  "attachmentArtifactKindOcrText": "OCR text",
+  "attachmentArtifactKindVisionSummary": "image summary",
+  "attachmentArtifactKindSharedText": "shared text",
+  "timelineAttachmentArtifactsTitle": "Attachment artifacts",
   "sourceLinkCount": "{count, plural, =1{1 source link} other{{count} source links}}",
   "@sourceLinkCount": {
     "placeholders": {
@@ -1132,6 +1143,38 @@
   "agentConsoleRunModeConfirm": "run mode: confirm",
   "agentConsoleRunModeAuto": "run mode: auto",
   "agentConsoleRunModeUnknown": "run mode: unknown",
+  "agentConsoleChildDelegation": "delegation: {delegationId}",
+  "@agentConsoleChildDelegation": {
+    "placeholders": {
+      "delegationId": {
+        "type": "String"
+      }
+    }
+  },
+  "agentConsoleChildRun": "child run: {runId}",
+  "@agentConsoleChildRun": {
+    "placeholders": {
+      "runId": {
+        "type": "String"
+      }
+    }
+  },
+  "agentConsoleChildStatus": "child status: {status}",
+  "@agentConsoleChildStatus": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "agentConsoleDelegationViolations": "violations: {codes}",
+  "@agentConsoleDelegationViolations": {
+    "placeholders": {
+      "codes": {
+        "type": "String"
+      }
+    }
+  },
   "traceConsoleOpenSourceButton": "Open source",
   "traceConsoleNoSource": "No source reference is available for this trace.",
   "traceConsolePayloadTitle": "Redacted payload",

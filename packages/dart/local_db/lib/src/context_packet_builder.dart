@@ -331,7 +331,8 @@ final class ContextPacketBuilder {
             .where((todo) => filter.matches('todo', todo.id, _todoRefs(todo)))
             .map(_DerivedSource.todo),
         ..._database.derivedArtifacts
-            .readAll(status: 'active')
+            .readAll()
+            .where(_isReadyArtifact)
             .where(
               (artifact) =>
                   filter.matches('artifact', artifact.id, artifact.sourceRefs),
@@ -1535,6 +1536,10 @@ bool _isLiveCapture(CaptureRecord capture) {
 
 bool _isLiveTodo(TodoRecord todo) {
   return !_terminalStatuses.contains(todo.status);
+}
+
+bool _isReadyArtifact(DerivedArtifactRecord artifact) {
+  return artifact.status == 'active' || artifact.status == 'ready';
 }
 
 const _terminalStatuses = <String>{

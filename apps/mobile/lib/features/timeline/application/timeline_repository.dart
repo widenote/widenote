@@ -4,6 +4,7 @@ import 'package:widenote_cards/widenote_cards.dart';
 import 'package:widenote_local_db/widenote_local_db.dart';
 
 import '../../../app/local_database.dart';
+import '../../capture/media/capture_media.dart';
 
 final timelineRepositoryProvider = Provider<TimelineRepository>((ref) {
   return LocalDbTimelineRepository(ref.watch(localDatabaseProvider));
@@ -98,6 +99,11 @@ final class LocalDbTimelineRepository implements TimelineRepository {
         .map((event) {
           final body = _string(event.payload['text']) ?? 'Untitled capture';
           final captureId = event.subjectRefId ?? event.id;
+          final attachments = _database.attachments.readByCapture(captureId);
+          final artifactPayloads = _attachmentArtifactPayloads(
+            captureId,
+            attachments,
+          );
           return MemoryFirstTimelineItem(
             id: captureId,
             kind: MemoryFirstTimelineItemKind.capture,
@@ -111,11 +117,29 @@ final class LocalDbTimelineRepository implements TimelineRepository {
               excerpt: body,
               links: <SourceLink>[
                 SourceLink(kind: 'event', id: event.id, excerpt: body),
+                for (final attachment in attachments)
+                  SourceLink(
+                    kind: 'capture_attachment',
+                    id: attachment.id,
+                    excerpt: _safeAttachmentExcerpt(attachment),
+                  ),
+                for (final artifact in _database.derivedArtifacts.readByCapture(
+                  captureId,
+                ))
+                  SourceLink(
+                    kind: 'artifact',
+                    id: artifact.id,
+                    excerpt: _excerpt(artifact.body),
+                  ),
               ],
             ),
             metadata: <String, Object?>{
               'event_type': event.type,
               'event_id': event.id,
+              if (attachments.isNotEmpty)
+                'attachment_count': attachments.length,
+              if (artifactPayloads.isNotEmpty)
+                'attachment_artifacts': artifactPayloads,
             },
           );
         })
@@ -148,8 +172,15 @@ final class LocalDbTimelineRepository implements TimelineRepository {
   List<MemoryFirstTimelineItem> _insightItems() {
     return _database.insights
         .readAll(status: 'active', limit: 200)
-        .map(
-          (insight) => MemoryFirstTimelineItem(
+        .map((insight) {
+          final payload = MemoryFirstInsightPayload.fromJson(
+            Map<Object?, Object?>.from(insight.payload),
+          );
+          final sourceLinks = dedupeSourceLinks(<SourceLink>[
+            ...sourceLinksFromJsonList(insight.sourceRefs),
+            ...payload.sourceLinks,
+          ]);
+          return MemoryFirstTimelineItem(
             id: insight.id,
             kind: MemoryFirstTimelineItemKind.insight,
             title: insight.title,
@@ -160,7 +191,7 @@ final class LocalDbTimelineRepository implements TimelineRepository {
               kind: 'insight',
               id: insight.id,
               excerpt: insight.summary,
-              links: sourceLinksFromJsonList(insight.sourceRefs),
+              links: sourceLinks,
             ),
             metadata: <String, Object?>{
               'insight_kind': insight.insightKind,
@@ -168,9 +199,10 @@ final class LocalDbTimelineRepository implements TimelineRepository {
                 'metric_label': insight.metricLabel,
               if (insight.metricValue != null)
                 'metric_value': insight.metricValue,
+              if (!payload.isEmpty) 'insight_payload': payload.toJson(),
             },
-          ),
-        )
+          );
+        })
         .toList(growable: false);
   }
 
@@ -240,6 +272,74 @@ final class LocalDbTimelineRepository implements TimelineRepository {
         })
         .toList(growable: false);
   }
+
+  List<Map<String, Object?>> _attachmentArtifactPayloads(
+    String captureId,
+    List<AttachmentRecord> attachments,
+  ) {
+    final payloads = <Map<String, Object?>>[];
+    for (final attachment in attachments) {
+      final artifacts = _database.derivedArtifacts.readByAttachment(
+        attachment.id,
+      );
+      if (artifacts.isEmpty) {
+        final status = AttachmentDerivedArtifactStatus.fromWire(
+          attachment.status,
+        );
+        if (status == AttachmentDerivedArtifactStatus.blocked ||
+            status == AttachmentDerivedArtifactStatus.needsReview) {
+          payloads.add(
+            AttachmentDerivedArtifact(
+              artifactKind: _fallbackArtifactKind(attachment.assetKind),
+              status: status,
+              sourceLabel: 'source: capture_attachment:${attachment.id}',
+              excerpt: _safeAttachmentExcerpt(attachment),
+              reason: _string(attachment.payload['review_reason']),
+            ).toPayload(),
+          );
+        }
+        continue;
+      }
+      for (final artifact in artifacts) {
+        payloads.add(_artifactPayload(captureId, attachment, artifact));
+      }
+    }
+    return payloads;
+  }
+}
+
+Map<String, Object?> _artifactPayload(
+  String captureId,
+  AttachmentRecord attachment,
+  DerivedArtifactRecord artifact,
+) {
+  return AttachmentDerivedArtifact(
+      id: artifact.id,
+      artifactKind: artifact.artifactKind,
+      status: AttachmentDerivedArtifactStatus.fromWire(artifact.status),
+      sourceLabel: 'source: capture_attachment:${attachment.id}',
+      excerpt: _excerpt(artifact.body),
+      reason: _string(artifact.payload['reason']),
+    ).toPayload()
+    ..['capture_id'] = captureId
+    ..['attachment_id'] = attachment.id;
+}
+
+String _fallbackArtifactKind(String assetKind) {
+  return switch (assetKind) {
+    'voice' => 'audio_transcript',
+    'photo' => 'image_derivatives',
+    'share' => 'shared_text',
+    _ => 'attachment_artifact',
+  };
+}
+
+String _safeAttachmentExcerpt(AttachmentRecord attachment) {
+  final preview = _string(attachment.payload['preview_text']);
+  if (preview == null || preview == 'preview_hidden') {
+    return '';
+  }
+  return _excerpt(preview);
 }
 
 List<SourceLink> _linksWithSelf({
@@ -259,4 +359,12 @@ String? _string(Object? value) {
     return value.trim();
   }
   return null;
+}
+
+String _excerpt(String value) {
+  final text = value.trim().replaceAll(RegExp(r'\s+'), ' ');
+  if (text.length <= 160) {
+    return text;
+  }
+  return '${text.substring(0, 157)}...';
 }

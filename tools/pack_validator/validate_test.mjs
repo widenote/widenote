@@ -63,6 +63,7 @@ const baseManifest = Object.freeze({
       approval_requirement: "none",
       execution: "local",
       side_effect: "none",
+      compatible_run_modes: ["read_only", "confirm", "auto"],
     },
   ],
   marketplace: {
@@ -82,6 +83,27 @@ const baseManifest = Object.freeze({
 });
 
 assert.deepEqual(validateManifest(clone(baseManifest)), []);
+
+assert.deepEqual(
+  validateManifest({
+    ...clone(baseManifest),
+    ui_blocks: [
+      { type: "claim_list", events: ["wn.insight.created"] },
+      { type: "metric_row", events: ["wn.insight.created"] },
+      { type: "source_refs", events: ["wn.insight.created"] },
+      { type: "note", events: ["wn.insight.created"] },
+    ],
+  }),
+  [],
+);
+
+expectError(
+  {
+    ...clone(baseManifest),
+    ui_blocks: [{ type: "webview", events: ["wn.insight.created"] }],
+  },
+  "ui_blocks[0].type must be one of",
+);
 
 expectError(
   {
@@ -176,6 +198,7 @@ expectError(
         approval_requirement: "deferred",
         execution: "disabled",
         side_effect: "script_execution",
+        compatible_run_modes: ["confirm"],
       },
     ],
   },
@@ -230,10 +253,20 @@ expectError(
         approval_requirement: "none",
         execution: "local",
         side_effect: "none",
+        compatible_run_modes: ["read_only", "confirm", "auto"],
       },
     ],
   },
   "tools[0].permissions contains permission not declared by pack: trace.read",
+);
+
+expectError(
+  (() => {
+    const manifest = clone(baseManifest);
+    delete manifest.tools[0].compatible_run_modes;
+    return manifest;
+  })(),
+  "tools[0].compatible_run_modes is required",
 );
 
 expectError(
@@ -261,6 +294,7 @@ expectError(
         approval_requirement: "deferred",
         execution: "deferred",
         side_effect: "network",
+        compatible_run_modes: ["confirm"],
       },
     ],
   },
@@ -290,6 +324,7 @@ expectError(
         approval_requirement: "per_call",
         execution: "local",
         side_effect: "network",
+        compatible_run_modes: ["confirm"],
       },
     ],
   },
@@ -318,6 +353,7 @@ expectError(
         approval_requirement: "per_call",
         execution: "local",
         side_effect: "local_write",
+        compatible_run_modes: ["confirm", "auto"],
       },
     ],
   },
@@ -359,6 +395,7 @@ assert.deepEqual(
         approval_requirement: "none",
         execution: "local",
         side_effect: "local_write",
+        compatible_run_modes: ["confirm", "auto"],
       },
     ],
   }),
@@ -386,6 +423,7 @@ expectError(
         approval_requirement: "none",
         execution: "local",
         side_effect: "local_write",
+        compatible_run_modes: ["confirm", "auto"],
       },
     ],
   },
@@ -428,6 +466,37 @@ expectError(
     ],
   },
   "replacement_slots are reserved",
+);
+
+expectError(
+  {
+    ...clone(baseManifest),
+    edition: "official",
+    permissions: ["model.complete", "insight.write", "mcp.call"],
+    agents: [
+      {
+        ...clone(baseManifest).agents[0],
+        permissions: ["model.complete", "insight.write", "mcp.call"],
+        tools: ["tool.mcp.call"],
+      },
+    ],
+    tools: [
+      {
+        id: "tool.mcp.call",
+        capability_kind: "mcp",
+        permissions: ["mcp.call"],
+        required_permissions: ["mcp.call"],
+        access: "read",
+        risk: "high",
+        locality: "external",
+        approval_requirement: "deferred",
+        execution: "deferred",
+        side_effect: "network",
+        compatible_run_modes: ["confirm"],
+      },
+    ],
+  },
+  "official tools[0] cannot declare deferred-only capability",
 );
 
 const officialManifestPaths = [

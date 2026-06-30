@@ -27,6 +27,14 @@ source material with metadata, hashes, and source refs before any AI processing.
 The quick-capture text field disables autocorrect, suggestions, smart dashes,
 and smart quotes so platform input helpers do not rewrite literal raw records.
 
+The capture sheet may show attachment derived-artifact status rows for pending,
+ready, failed, blocked, and needs-review states. These rows are presentation
+only: original raw attachments remain source truth, and the UI must render only
+safe previews, artifact excerpts, and source labels. It must not render raw file
+paths, raw media bytes, raw unsafe preview text, or infer blocked/review states
+from local content keyword scanning. Blocked and review states come from adapter,
+tool, platform permission, or explicit user-review state.
+
 Capture implements current contracts from
 `docs/architecture/current-contracts.md`: original records remain source truth,
 AI outputs are derived and source-linked, and low-risk source-linked

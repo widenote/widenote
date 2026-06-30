@@ -80,7 +80,7 @@ agents:
 | `subscriptions[]` | Yes | Event triggers |
 | `agents[]` | Yes | Agent handlers and prompts |
 | `tools[]` | No | Tool declarations used by agents |
-| `ui_blocks[]` | No | Structured UI blocks exposed by the pack |
+| `ui_blocks[]` | No | Store-safe structured UI blocks exposed by the pack. Phase-one block kinds are `claim_list`, `metric_row`, `source_refs`, and `note`. |
 
 ## Schema Source Paths
 

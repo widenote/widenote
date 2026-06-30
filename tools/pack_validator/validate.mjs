@@ -99,6 +99,12 @@ const DEFERRED_ONLY_SIDE_EFFECTS = new Set([
   "script_execution",
 ]);
 const NON_LIVE_EXECUTIONS = new Set(["fake", "deferred", "disabled"]);
+const INSIGHT_UI_BLOCK_KINDS = new Set([
+  "claim_list",
+  "metric_row",
+  "source_refs",
+  "note",
+]);
 
 const requiredManifestFields = [
   "id",
@@ -293,6 +299,12 @@ function validateBasicShape(manifest, errors) {
     });
   }
 
+  if ("ui_blocks" in manifest) {
+    validateObjectArrayField(manifest, "ui_blocks", errors, {
+      allowEmpty: true,
+    });
+  }
+
   if (Array.isArray(manifest.subscriptions)) {
     manifest.subscriptions.forEach((subscription, index) => {
       if (!isPlainObject(subscription)) {
@@ -472,6 +484,35 @@ function validateBasicShape(manifest, errors) {
           TOOL_SIDE_EFFECTS,
           errors,
         );
+      }
+      if ("compatible_run_modes" in tool) {
+        validateStringArrayEnumValue(
+          tool.compatible_run_modes,
+          `${path}.compatible_run_modes`,
+          RUN_MODES,
+          errors,
+        );
+      }
+    });
+  }
+
+  if (Array.isArray(manifest.ui_blocks)) {
+    manifest.ui_blocks.forEach((block, index) => {
+      if (!isPlainObject(block)) {
+        return;
+      }
+
+      const path = `ui_blocks[${index}]`;
+      validateStringEnumValue(
+        block.type,
+        `${path}.type`,
+        INSIGHT_UI_BLOCK_KINDS,
+        errors,
+      );
+      if ("events" in block) {
+        validateStringArrayValue(block.events, `${path}.events`, errors, {
+          allowEmpty: true,
+        });
       }
     });
   }
@@ -864,6 +905,15 @@ function validateRunModeToolBoundaries(manifest, agents, tools, errors) {
         return;
       }
 
+      if (
+        Array.isArray(tool.compatible_run_modes) &&
+        !tool.compatible_run_modes.includes(runMode)
+      ) {
+        errors.push(
+          `agents[${agentIndex}].run_mode ${runMode} is not compatible with tool: ${tool.id}`,
+        );
+      }
+
       if (runMode === "read_only") {
         validateReadOnlyTool(agentIndex, tool, errors);
         return;
@@ -981,6 +1031,31 @@ function validateExecutableSafety(agents, tools, errors) {
 }
 
 function validatePhaseOneGuardrails(manifest, agents, errors) {
+  if (manifest.edition === "official") {
+    agents.forEach((agent, index) => {
+      if (!isPlainObject(agent)) {
+        return;
+      }
+      if (agent.runtime !== "native") {
+        errors.push(
+          `official agents[${index}].runtime must be native in L1-L3`,
+        );
+      }
+    });
+
+    const tools = Array.isArray(manifest.tools) ? manifest.tools : [];
+    tools.forEach((tool, index) => {
+      if (!isPlainObject(tool)) {
+        return;
+      }
+      if (isDeferredOnlyTool(tool)) {
+        errors.push(
+          `official tools[${index}] cannot declare deferred-only capability in L1-L3: ${tool.id}`,
+        );
+      }
+    });
+  }
+
   if (manifest.id === "pack.default") {
     if (arrayIncludes(manifest.permissions, TODO_PERMISSION)) {
       errors.push(`pack.default must not request ${TODO_PERMISSION}`);
@@ -1206,6 +1281,8 @@ function validateRequiredToolFields(tool, path, errors) {
     "locality",
     "approval_requirement",
     "execution",
+    "side_effect",
+    "compatible_run_modes",
   ]) {
     if (!(field in tool)) {
       errors.push(`${path}.${field} is required for tool capability metadata`);

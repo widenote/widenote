@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -150,6 +152,56 @@ void main() {
     expect(find.byKey(const Key('timeline-item-detail-page')), findsOneWidget);
   });
 
+  testWidgets('chat page shows cited tool-loop answer and tool summary', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    final now = DateTime.utc(2026, 6, 29, 11);
+    _seedToolLoopContext(database, now);
+    await _pumpApp(
+      tester,
+      database: database,
+      modelClient: _ScriptedChatModel(
+        responses: <String>[
+          jsonEncode(<String, Object?>{
+            'tool_calls': <Object?>[
+              <String, Object?>{
+                'name': LocalDbCoreToolCatalog.semanticSearchQueryTool,
+                'input': <String, Object?>{
+                  'query': 'What did Lin say about launch?',
+                  'limit': 6,
+                },
+              },
+            ],
+          }),
+          jsonEncode(<String, Object?>{
+            'answer': 'Lin asked for launch citations (memory/memory-ui).',
+          }),
+        ],
+      ),
+    );
+    await _openTab(tester, const Key('tab-chat'));
+
+    await _sendChat(tester, 'What did Lin say about launch?');
+
+    expect(
+      find.text('Lin asked for launch citations (memory/memory-ui).'),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('chat-tool-summary-0')), findsOneWidget);
+    expect(find.textContaining('semantic_search.query'), findsOneWidget);
+    expect(find.text('Sources'), findsOneWidget);
+
+    final state = _readChatState(tester);
+    final assistant = state.messages.last;
+    expect(assistant.runId, startsWith('chat-run-'));
+    expect(assistant.toolSummaries.single.name, 'semantic_search.query');
+    expect(
+      assistant.sourceRefs.map((ref) => ref.kind),
+      containsAll(<String>['memory', 'capture']),
+    );
+  });
+
   testWidgets('composer stays visible after a long answer', (tester) async {
     await _pumpApp(
       tester,
@@ -269,8 +321,10 @@ Future<void> _pumpApp(
     ProviderScope(
       overrides: <Override>[
         localDatabaseProvider.overrideWithValue(localDatabase),
-        if (modelClient != null)
+        if (modelClient != null) ...[
           modelClientProvider.overrideWithValue(modelClient),
+          chatModelClientProvider.overrideWithValue(modelClient),
+        ],
         ...overrides,
       ],
       child: WideNoteApp(locale: locale),
@@ -299,6 +353,47 @@ Future<void> _submitQuickCapture(WidgetTester tester, String text) async {
   await tester.enterText(find.byKey(const Key('quick-capture-field')), text);
   await tester.tap(find.byKey(const Key('record-capture-button')));
   await tester.pumpAndSettle();
+}
+
+void _seedToolLoopContext(WideNoteLocalDatabase database, DateTime now) {
+  database.captures.insert(
+    CaptureRecord(
+      id: 'capture-ui',
+      sourceType: 'manual',
+      sourceId: 'event-ui',
+      payload: const <String, Object?>{
+        'text': 'Met Lin about launch citations in read-only chat.',
+      },
+      createdAt: now,
+      updatedAt: now,
+    ),
+  );
+  database.memoryItems.insert(
+    MemoryItemRecord(
+      id: 'memory-ui',
+      key: 'launch.citations',
+      body: 'Lin asked for launch citations in chat.',
+      sourceEventId: 'event-ui',
+      sourceRefs: const <Object?>[
+        <String, Object?>{'kind': 'capture', 'id': 'capture-ui'},
+      ],
+      createdAt: now,
+      updatedAt: now.add(const Duration(seconds: 1)),
+    ),
+  );
+  database.todos.insert(
+    TodoRecord(
+      id: 'todo-ui',
+      sourceCaptureId: 'capture-ui',
+      sourceEventId: 'event-ui',
+      status: 'open',
+      payload: const <String, Object?>{
+        'title': 'Prepare launch citation review.',
+      },
+      createdAt: now,
+      updatedAt: now.add(const Duration(seconds: 2)),
+    ),
+  );
 }
 
 ChatState _readChatState(WidgetTester tester) {
@@ -344,6 +439,23 @@ final class _FlakyAssistant implements ChatAssistant {
       throw StateError('first response failed');
     }
     return const ChatAssistantReply(body: 'Retry answer');
+  }
+}
+
+final class _ScriptedChatModel implements runtime.ModelClient {
+  _ScriptedChatModel({required List<String> responses})
+    : _responses = List<String>.of(responses);
+
+  final List<String> _responses;
+  int _index = 0;
+
+  @override
+  Future<runtime.ModelResponse> complete(runtime.ModelRequest request) async {
+    final response = _index < _responses.length
+        ? _responses[_index]
+        : _responses.last;
+    _index += 1;
+    return runtime.ModelResponse(text: response);
   }
 }
 

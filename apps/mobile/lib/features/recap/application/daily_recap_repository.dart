@@ -164,14 +164,23 @@ _TimedRecapEntry _cardEntry(CardRecord record) {
 }
 
 _TimedRecapEntry _insightEntry(InsightRecord record) {
+  final payload = MemoryFirstInsightPayload.fromJson(
+    Map<Object?, Object?>.from(record.payload),
+  );
+  final sourceLinks = dedupeSourceLinks(<SourceLink>[
+    ...sourceLinksFromJsonList(record.sourceRefs),
+    ...payload.sourceLinks,
+  ]);
+  final displayPayload = _withSourceLinks(payload, sourceLinks);
   return _TimedRecapEntry(
     createdAt: record.createdAt,
     entry: DailyRecapEntry(
       id: record.id,
       title: record.title,
       body: previewText(record.summary, maxLength: 140),
-      sourceLabel: _sourceRefsLabel(record.sourceRefs, 'insight:${record.id}'),
+      sourceLabel: _sourceLinksLabel(sourceLinks, 'insight:${record.id}'),
       timeLabel: _timeLabel(record.createdAt.toLocal()),
+      insightPayload: displayPayload.isEmpty ? null : displayPayload,
     ),
   );
 }
@@ -253,13 +262,32 @@ String _objectSourceLabel({
 }
 
 String _sourceRefsLabel(List<Object?> refs, String fallback) {
-  final links = sourceLinksFromJsonList(refs);
+  return _sourceLinksLabel(sourceLinksFromJsonList(refs), fallback);
+}
+
+String _sourceLinksLabel(List<SourceLink> links, String fallback) {
   if (links.isEmpty) {
     return 'source: $fallback';
   }
   final first = links.first;
   final extra = links.length == 1 ? '' : ' +${links.length - 1}';
   return 'source: ${first.kind}:${first.id}$extra';
+}
+
+MemoryFirstInsightPayload _withSourceLinks(
+  MemoryFirstInsightPayload payload,
+  List<SourceLink> sourceLinks,
+) {
+  if (payload.isEmpty) {
+    return payload;
+  }
+  return MemoryFirstInsightPayload(
+    claims: payload.claims,
+    metrics: payload.metrics,
+    sourceLinks: sourceLinks,
+    uiBlocks: payload.uiBlocks,
+    note: payload.note,
+  );
 }
 
 String _timeLabel(DateTime localTime) {

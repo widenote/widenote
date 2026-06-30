@@ -120,7 +120,32 @@
       }
     }
   ],
-  "ui_blocks": [],
+  "ui_blocks": [
+    {
+      "type": "claim_list",
+      "events": [
+        "wn.insight.created"
+      ]
+    },
+    {
+      "type": "metric_row",
+      "events": [
+        "wn.insight.created"
+      ]
+    },
+    {
+      "type": "source_refs",
+      "events": [
+        "wn.insight.created"
+      ]
+    },
+    {
+      "type": "note",
+      "events": [
+        "wn.insight.created"
+      ]
+    }
+  ],
   "storage_quota": {
     "local_bytes": 0
   },

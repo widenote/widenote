@@ -79,7 +79,8 @@ final class LocalDbTraceSink implements runtime.TraceSink {
   }
 }
 
-final class LocalDbRuntimeStore implements runtime.RuntimeStore {
+final class LocalDbRuntimeStore
+    implements runtime.RuntimeStore, runtime.RuntimePackInstallationStore {
   const LocalDbRuntimeStore(this._database);
 
   final WideNoteLocalDatabase _database;
@@ -192,6 +193,55 @@ final class LocalDbRuntimeStore implements runtime.RuntimeStore {
     );
   }
 
+  @override
+  Future<void> upsertPackInstallation(
+    runtime.RuntimePackInstallation installation,
+  ) {
+    final existing = _database.packInstallations.readById(installation.packId);
+    final now = installation.updatedAt.toUtc();
+    final payload = <String, Object?>{
+      ...?existing?.payload,
+      if (installation.reason != null) 'status_reason': installation.reason,
+    };
+    final record = existing == null
+        ? PackInstallationRecord(
+            packId: installation.packId,
+            name: installation.packId,
+            version: '0.0.0',
+            publisher: _runtimePackPublisher,
+            edition: _runtimePackEdition,
+            status: installation.status.name,
+            installedAt: now,
+            updatedAt: now,
+            payload: payload,
+          )
+        : existing.copyWith(
+            status: installation.status.name,
+            payload: payload,
+            updatedAt: now,
+          );
+    _database.packInstallations.save(record);
+    return Future<void>.value();
+  }
+
+  @override
+  Future<runtime.RuntimePackInstallation?> readPackInstallation(String packId) {
+    final record = _database.packInstallations.readById(packId);
+    if (record == null) {
+      return Future<runtime.RuntimePackInstallation?>.value(null);
+    }
+    return Future<runtime.RuntimePackInstallation?>.value(
+      runtime.RuntimePackInstallation(
+        packId: record.packId,
+        status: record.status == runtime.PackInstallationStatus.enabled.name
+            ? runtime.PackInstallationStatus.enabled
+            : runtime.PackInstallationStatus.disabled,
+        updatedAt: record.updatedAt,
+        reason: _optionalRuntimeString(record.payload['status_reason']),
+      ),
+    );
+  }
+
   runtime.RuntimePackStatus _packStatusFromRecord(
     PackInstallationRecord record,
   ) {
@@ -253,6 +303,13 @@ final class LocalDbRuntimeStore implements runtime.RuntimeStore {
       ),
     );
   }
+}
+
+String? _optionalRuntimeString(Object? value) {
+  if (value is String && value.trim().isNotEmpty) {
+    return value.trim();
+  }
+  return null;
 }
 
 final class LocalDbPermissionStore implements runtime.PermissionStore {

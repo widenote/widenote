@@ -2,7 +2,9 @@ import 'package:widenote_core/widenote_core.dart';
 
 import 'event.dart';
 import 'model.dart';
+import 'run_mode.dart';
 import 'task.dart';
+import 'tools.dart';
 
 enum AgentRuntimeKind { native, declarative, remote, script }
 
@@ -10,6 +12,7 @@ final class AgentDefinition {
   const AgentDefinition({
     required this.id,
     this.runtimeKind = AgentRuntimeKind.native,
+    this.runMode,
     this.requiredPermissions = const <String>{},
     this.outputEvents = const <String>{},
     this.tools = const <String>{},
@@ -19,11 +22,38 @@ final class AgentDefinition {
 
   final String id;
   final AgentRuntimeKind runtimeKind;
+  final RunMode? runMode;
   final Set<String> requiredPermissions;
   final Set<String> outputEvents;
   final Set<String> tools;
   final RetryPolicy retryPolicy;
   final String? modelProfileRef;
+}
+
+final class AgentPackToolDefinition {
+  const AgentPackToolDefinition({
+    required this.id,
+    required this.permissions,
+    required this.access,
+    required this.locality,
+    required this.risk,
+    required this.approvalRequirement,
+    required this.execution,
+    required this.sideEffect,
+    required this.compatibleRunModes,
+    this.capabilityKind,
+  });
+
+  final String id;
+  final Set<String> permissions;
+  final ToolAccess access;
+  final ToolLocality locality;
+  final ToolRisk risk;
+  final ToolApprovalRequirement approvalRequirement;
+  final ToolExecution execution;
+  final String sideEffect;
+  final Set<RunMode> compatibleRunModes;
+  final String? capabilityKind;
 }
 
 final class Subscription {
@@ -147,9 +177,11 @@ final class AgentPackManifestSnapshot {
     required this.schemaVersion,
     required this.publisher,
     required this.edition,
+    required this.defaultRunMode,
     required this.requiredPermissions,
     required this.subscriptions,
     required this.agentDefinitions,
+    required this.toolDefinitions,
   });
 
   factory AgentPackManifestSnapshot.fromJson(JsonMap json) {
@@ -169,6 +201,9 @@ final class AgentPackManifestSnapshot {
     final publisher = _requiredString(json, 'publisher');
     final edition = _requiredEnum(json, 'edition', _editionValues);
     _optionalString(json, 'description', 'description');
+    final defaultRunMode =
+        _optionalRunMode(json, 'default_run_mode', 'default_run_mode') ??
+        RunMode.confirm;
     _validateCompatibility(json['compatibility']);
     _validateMarketplace(json['marketplace']);
     _validateSlotDeclarations(
@@ -194,7 +229,7 @@ final class AgentPackManifestSnapshot {
     final subscriptions = _subscriptionList(json['subscriptions']);
     final agentDefinitions = _agentDefinitions(json['agents']);
     final modelProfileIds = _modelProfileIds(json['model_profiles']);
-    final toolIds = _validateToolDefinitions(
+    final toolDefinitions = _toolDefinitions(
       json['tools'],
       packPermissions: requiredPermissions,
     );
@@ -208,7 +243,7 @@ final class AgentPackManifestSnapshot {
       subscriptions: subscriptions,
       agentDefinitions: agentDefinitions,
       modelProfileIds: modelProfileIds,
-      toolIds: toolIds,
+      toolDefinitions: toolDefinitions,
       packPermissions: requiredPermissions,
     );
     return AgentPackManifestSnapshot(
@@ -218,9 +253,11 @@ final class AgentPackManifestSnapshot {
       schemaVersion: schemaVersion,
       publisher: publisher,
       edition: edition,
+      defaultRunMode: defaultRunMode,
       requiredPermissions: requiredPermissions,
       subscriptions: subscriptions,
       agentDefinitions: agentDefinitions,
+      toolDefinitions: toolDefinitions,
     );
   }
 
@@ -230,9 +267,11 @@ final class AgentPackManifestSnapshot {
   final int schemaVersion;
   final String publisher;
   final String edition;
+  final RunMode defaultRunMode;
   final Set<String> requiredPermissions;
   final List<Subscription> subscriptions;
   final Map<String, AgentDefinition> agentDefinitions;
+  final Map<String, AgentPackToolDefinition> toolDefinitions;
 }
 
 final class AgentPackAlignmentIssue {
@@ -326,6 +365,12 @@ void _compareAgents(
       '$path.runtime',
       native.runtimeKind.name,
       manifest.runtimeKind.name,
+    );
+    _expectEqual(
+      issues,
+      '$path.run_mode',
+      native.runMode?.name,
+      manifest.runMode?.name,
     );
     _expectSetEqual(
       issues,
@@ -509,6 +554,7 @@ const Set<String> _manifestKeys = <String>{
   'marketplace',
   'replacement_slots',
   'additive_slots',
+  'default_run_mode',
   'entrypoint_kind',
   'permissions',
   'subscriptions',
@@ -533,6 +579,7 @@ const Set<String> _subscriptionKeys = <String>{
 const Set<String> _agentKeys = <String>{
   'id',
   'runtime',
+  'run_mode',
   'name',
   'prompt_ref',
   'model_profile_ref',
@@ -542,7 +589,19 @@ const Set<String> _agentKeys = <String>{
   'retry_policy',
 };
 const Set<String> _retryPolicyKeys = <String>{'max_attempts'};
-const Set<String> _toolKeys = <String>{'id', 'permissions', 'side_effect'};
+const Set<String> _toolKeys = <String>{
+  'id',
+  'capability_kind',
+  'permissions',
+  'required_permissions',
+  'access',
+  'risk',
+  'locality',
+  'approval_requirement',
+  'execution',
+  'side_effect',
+  'compatible_run_modes',
+};
 const Set<String> _modelProfileKeys = <String>{
   'id',
   'purpose',
@@ -568,6 +627,24 @@ const Set<String> _sideEffectValues = <String>{
   'model_call',
   'file_access',
   'script_execution',
+};
+const Set<String> _toolCapabilityKindValues = <String>{
+  'local_core',
+  'context_packet',
+  'memory',
+  'todo',
+  'trace',
+  'settings',
+  'model',
+  'http',
+  'mcp',
+  'web',
+  'file',
+  'network',
+  'shell',
+  'script',
+  'runner',
+  'webhook',
 };
 const Set<String> _routingPolicyValues = <String>{
   'app_default',
@@ -849,6 +926,7 @@ AgentDefinition _agentDefinition(JsonMap json, int index) {
   return AgentDefinition(
     id: id,
     runtimeKind: _runtimeKindAt(json['runtime'], 'agents.$id.runtime'),
+    runMode: _optionalRunMode(json, 'run_mode', 'agents.$id.run_mode'),
     requiredPermissions: _optionalStringSet(
       json['permissions'],
       'agents.$id.permissions',
@@ -885,6 +963,105 @@ AgentRuntimeKind _runtimeKindAt(Object? value, String path) {
       'Manifest field $path has unsupported value: $value.',
     ),
   );
+}
+
+RunMode? _optionalRunMode(JsonMap json, String key, String path) {
+  if (!json.containsKey(key) || json[key] == null) {
+    return null;
+  }
+  final value = _optionalString(json, key, path);
+  return switch (value) {
+    null => null,
+    'read_only' || 'readOnly' => RunMode.readOnly,
+    'confirm' => RunMode.confirm,
+    'auto' => RunMode.auto,
+    _ => throw FormatException(
+      'Manifest field $path has unsupported value: $value.',
+    ),
+  };
+}
+
+Set<RunMode> _runModeSet(Object? value, String path) {
+  final names = _stringSet(value, path, minItems: 1);
+  final modes = <RunMode>{};
+  for (final name in names) {
+    modes.add(_runModeValue(name, path));
+  }
+  return Set<RunMode>.unmodifiable(modes);
+}
+
+RunMode _runModeValue(String value, String path) {
+  return switch (value) {
+    'read_only' || 'readOnly' => RunMode.readOnly,
+    'confirm' => RunMode.confirm,
+    'auto' => RunMode.auto,
+    _ => throw FormatException(
+      'Manifest field $path has unsupported value: $value.',
+    ),
+  };
+}
+
+ToolAccess _toolAccessAt(Object? value, String path) {
+  return switch (_requiredStringValue(value, path)) {
+    'read' => ToolAccess.read,
+    'write' => ToolAccess.write,
+    'read_write' || 'readWrite' => ToolAccess.readWrite,
+    final unsupported => throw FormatException(
+      'Manifest field $path has unsupported value: $unsupported.',
+    ),
+  };
+}
+
+ToolLocality _toolLocalityAt(Object? value, String path) {
+  return switch (_requiredStringValue(value, path)) {
+    'local' => ToolLocality.local,
+    'external' => ToolLocality.external,
+    final unsupported => throw FormatException(
+      'Manifest field $path has unsupported value: $unsupported.',
+    ),
+  };
+}
+
+ToolRisk _toolRiskAt(Object? value, String path) {
+  return switch (_requiredStringValue(value, path)) {
+    'low' => ToolRisk.low,
+    'medium' => ToolRisk.medium,
+    'high' => ToolRisk.high,
+    final unsupported => throw FormatException(
+      'Manifest field $path has unsupported value: $unsupported.',
+    ),
+  };
+}
+
+ToolApprovalRequirement _toolApprovalRequirementAt(Object? value, String path) {
+  return switch (_requiredStringValue(value, path)) {
+    'none' => ToolApprovalRequirement.automatic,
+    'per_call' || 'perCall' => ToolApprovalRequirement.perCall,
+    'deferred' => ToolApprovalRequirement.deferred,
+    'always' => ToolApprovalRequirement.always,
+    final unsupported => throw FormatException(
+      'Manifest field $path has unsupported value: $unsupported.',
+    ),
+  };
+}
+
+ToolExecution _toolExecutionAt(Object? value, String path) {
+  return switch (_requiredStringValue(value, path)) {
+    'local' => ToolExecution.local,
+    'fake' => ToolExecution.fake,
+    'deferred' => ToolExecution.deferred,
+    'disabled' => ToolExecution.disabled,
+    final unsupported => throw FormatException(
+      'Manifest field $path has unsupported value: $unsupported.',
+    ),
+  };
+}
+
+String _requiredStringValue(Object? value, String path) {
+  if (value is String && value.isNotEmpty) {
+    return value;
+  }
+  throw FormatException('Manifest field $path must be a non-empty string.');
 }
 
 int _maxAttempts(Object? value, String path) {
@@ -1151,19 +1328,19 @@ Set<String> _modelProfileIds(Object? value) {
   return Set<String>.unmodifiable(ids);
 }
 
-Set<String> _validateToolDefinitions(
+Map<String, AgentPackToolDefinition> _toolDefinitions(
   Object? value, {
   required Set<String> packPermissions,
 }) {
   if (value == null) {
-    return const <String>{};
+    return const <String, AgentPackToolDefinition>{};
   }
   if (value is! List<Object?>) {
     throw const FormatException(
       'Manifest field tools must be an object array.',
     );
   }
-  final ids = <String>{};
+  final definitions = <String, AgentPackToolDefinition>{};
   for (var index = 0; index < value.length; index += 1) {
     final json = _requiredJsonMap(
       value[index],
@@ -1171,7 +1348,7 @@ Set<String> _validateToolDefinitions(
     );
     _rejectUnknownFields(json, 'tools[$index]', _toolKeys);
     final id = _requiredString(json, 'id');
-    if (!ids.add(id)) {
+    if (definitions.containsKey(id)) {
       throw FormatException('Manifest field tools contains duplicate id: $id.');
     }
     final permissions = _requiredStringSet(
@@ -1179,6 +1356,17 @@ Set<String> _validateToolDefinitions(
       'permissions',
       pattern: _permissionIdPattern,
     );
+    final requiredPermissions = _requiredStringSet(
+      json,
+      'required_permissions',
+      pattern: _permissionIdPattern,
+    );
+    if (!_setEquals(permissions, requiredPermissions)) {
+      throw FormatException(
+        'Manifest field tools.$id.required_permissions must match '
+        'tools.$id.permissions.',
+      );
+    }
     final undeclaredPermissions = permissions.difference(packPermissions);
     if (undeclaredPermissions.isNotEmpty) {
       throw FormatException(
@@ -1186,21 +1374,40 @@ Set<String> _validateToolDefinitions(
         'declared by the pack: ${_formatSet(undeclaredPermissions)}.',
       );
     }
-    _optionalEnum(
+    final capabilityKind = _optionalEnum(
       json,
-      'side_effect',
-      'tools.$id.side_effect',
-      _sideEffectValues,
+      'capability_kind',
+      'tools.$id.capability_kind',
+      _toolCapabilityKindValues,
+    );
+    final sideEffect = _requiredEnum(json, 'side_effect', _sideEffectValues);
+    definitions[id] = AgentPackToolDefinition(
+      id: id,
+      permissions: permissions,
+      access: _toolAccessAt(json['access'], 'tools.$id.access'),
+      locality: _toolLocalityAt(json['locality'], 'tools.$id.locality'),
+      risk: _toolRiskAt(json['risk'], 'tools.$id.risk'),
+      approvalRequirement: _toolApprovalRequirementAt(
+        json['approval_requirement'],
+        'tools.$id.approval_requirement',
+      ),
+      execution: _toolExecutionAt(json['execution'], 'tools.$id.execution'),
+      sideEffect: sideEffect,
+      compatibleRunModes: _runModeSet(
+        json['compatible_run_modes'],
+        'tools.$id.compatible_run_modes',
+      ),
+      capabilityKind: capabilityKind,
     );
   }
-  return Set<String>.unmodifiable(ids);
+  return Map<String, AgentPackToolDefinition>.unmodifiable(definitions);
 }
 
 void _validateReferences({
   required List<Subscription> subscriptions,
   required Map<String, AgentDefinition> agentDefinitions,
   required Set<String> modelProfileIds,
-  required Set<String> toolIds,
+  required Map<String, AgentPackToolDefinition> toolDefinitions,
   required Set<String> packPermissions,
 }) {
   final subscriptionIds = subscriptions
@@ -1242,10 +1449,19 @@ void _validateReferences({
       );
     }
     for (final tool in definition.tools) {
-      if (!toolIds.contains(tool)) {
+      final toolDefinition = toolDefinitions[tool];
+      if (toolDefinition == null) {
         throw FormatException(
           'Manifest field agents.${definition.id}.tools references unknown '
           'tool: $tool.',
+        );
+      }
+      final runMode = definition.runMode;
+      if (runMode != null &&
+          !toolDefinition.compatibleRunModes.contains(runMode)) {
+        throw FormatException(
+          'Manifest field agents.${definition.id}.run_mode is not compatible '
+          'with tool: $tool.',
         );
       }
     }
