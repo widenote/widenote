@@ -4371,11 +4371,11 @@ abstract class AppLocalizations {
   /// **'Full backups include provider API keys. Keep .widenote files somewhere you trust.'**
   String get backupSecretWarning;
 
-  /// No description provided for @backupSafeRestoreBoundary.
+  /// No description provided for @backupRestoreBoundary.
   ///
   /// In en, this message translates to:
   /// **'The .widenote archive restores a SQLite snapshot, capture media files, and provider API keys.'**
-  String get backupSafeRestoreBoundary;
+  String get backupRestoreBoundary;
 
   /// No description provided for @backupOwnerExportBoundary.
   ///
@@ -4389,11 +4389,11 @@ abstract class AppLocalizations {
   /// **'Full .widenote backups include provider API keys so restore can use configured providers immediately.'**
   String get backupFullSecretBoundary;
 
-  /// No description provided for @backupSafeOmittedProviderKeys.
+  /// No description provided for @backupLegacyProviderCredentialReentryCount.
   ///
   /// In en, this message translates to:
   /// **'Provider keys requiring re-entry: {count}'**
-  String backupSafeOmittedProviderKeys(int count);
+  String backupLegacyProviderCredentialReentryCount(int count);
 
   /// No description provided for @backupManifestCountsTitle.
   ///

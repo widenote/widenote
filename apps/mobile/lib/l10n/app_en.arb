@@ -1511,11 +1511,11 @@
   "backupExportButton": "Create .widenote backup",
   "backupExportEmpty": "Export creates one compressed directory .widenote archive. You can open it with another app or save it to a location you choose.",
   "backupSecretWarning": "Full backups include provider API keys. Keep .widenote files somewhere you trust.",
-  "backupSafeRestoreBoundary": "The .widenote archive restores a SQLite snapshot, capture media files, and provider API keys.",
+  "backupRestoreBoundary": "The .widenote archive restores a SQLite snapshot, capture media files, and provider API keys.",
   "backupOwnerExportBoundary": "Backups are compressed directories, not JSON or Markdown restore documents.",
   "backupFullSecretBoundary": "Full .widenote backups include provider API keys so restore can use configured providers immediately.",
-  "backupSafeOmittedProviderKeys": "Provider keys requiring re-entry: {count}",
-  "@backupSafeOmittedProviderKeys": {
+  "backupLegacyProviderCredentialReentryCount": "Provider keys requiring re-entry: {count}",
+  "@backupLegacyProviderCredentialReentryCount": {
     "placeholders": {
       "count": {
         "type": "int"

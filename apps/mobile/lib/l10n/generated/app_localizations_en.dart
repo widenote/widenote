@@ -2669,7 +2669,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Full backups include provider API keys. Keep .widenote files somewhere you trust.';
 
   @override
-  String get backupSafeRestoreBoundary =>
+  String get backupRestoreBoundary =>
       'The .widenote archive restores a SQLite snapshot, capture media files, and provider API keys.';
 
   @override
@@ -2681,7 +2681,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Full .widenote backups include provider API keys so restore can use configured providers immediately.';
 
   @override
-  String backupSafeOmittedProviderKeys(int count) {
+  String backupLegacyProviderCredentialReentryCount(int count) {
     return 'Provider keys requiring re-entry: $count';
   }
 

@@ -21,8 +21,8 @@ capture payload as user record facts. The raw context lives in
 coordinate, while the AMap place entry is marked as a provider-derived place
 with source refs back to the capture. Runtime event payloads do not duplicate
 coordinates. AMap API keys are stored in Flutter secure storage and must not
-enter SQLite backups, logs, screenshots, fixtures, external review prompts, or
-PR text.
+enter `.widenote` backups, Owner Export, logs, screenshots, fixtures, external
+review prompts, or PR text.
 
 AMap reverse geocoding has a separate user-visible switch because it sends the
 record coordinate to a third-party Web Service. The local GPS switch can be used

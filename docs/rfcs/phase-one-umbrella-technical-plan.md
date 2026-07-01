@@ -588,7 +588,7 @@ Required coverage:
 - Memory candidate policy, auto-accept, review, merge, delete, and provenance
 - Context Packet generation, redaction, cache invalidation, and permission
   scoping
-- provider config safe metadata and future encrypted full-backup path
+- provider credential backup boundary and future encrypted envelope path
 - Agent Pack manifest validation and permission vocabulary
 
 ### Widget Tests
@@ -775,7 +775,8 @@ Validation: widget tests in zh/en and Android emulator journeys.
 ### 9. Provider Settings and Model Gateway
 
 Implement provider config, fake connection tests, safe metadata export,
-encrypted-full-backup guardrails, and deterministic local/fake gateway path.
+credential-preserving full-backup guardrails, future encrypted-envelope
+guardrails, and deterministic local/fake gateway path.
 
 Validation: provider unit tests, widget tests, backup secret-boundary tests.
 

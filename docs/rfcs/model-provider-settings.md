@@ -1,6 +1,6 @@
 # RFC: Model Provider Settings
 
-Status: Accepted phase-one slice; amended by W7 backup and QA-injection boundaries
+Status: Accepted phase-one slice; amended by ADR-0013 full-backup and QA-injection boundaries
 
 ## Summary
 

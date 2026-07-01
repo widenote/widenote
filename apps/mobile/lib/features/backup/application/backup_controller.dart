@@ -382,7 +382,7 @@ final class BackupState {
     this.preparedImport,
     this.importSourceLabel,
     this.lastImportReport,
-    this.safeProviderSecretOmissionCount = 0,
+    this.legacyProviderCredentialReentryCount = 0,
     this.outcome = BackupOutcome.idle,
     this.errorDetails,
   });
@@ -396,7 +396,7 @@ final class BackupState {
   final BackupImportPayload? preparedImport;
   final String? importSourceLabel;
   final LocalBackupImportReport? lastImportReport;
-  final int safeProviderSecretOmissionCount;
+  final int legacyProviderCredentialReentryCount;
   final BackupOutcome outcome;
   final String? errorDetails;
 
@@ -412,7 +412,7 @@ final class BackupState {
     BackupImportPayload? preparedImport,
     String? importSourceLabel,
     LocalBackupImportReport? lastImportReport,
-    int? safeProviderSecretOmissionCount,
+    int? legacyProviderCredentialReentryCount,
     BackupOutcome? outcome,
     String? errorDetails,
     bool clearError = false,
@@ -443,9 +443,9 @@ final class BackupState {
       lastImportReport: clearImportReport
           ? null
           : lastImportReport ?? this.lastImportReport,
-      safeProviderSecretOmissionCount:
-          safeProviderSecretOmissionCount ??
-          this.safeProviderSecretOmissionCount,
+      legacyProviderCredentialReentryCount:
+          legacyProviderCredentialReentryCount ??
+          this.legacyProviderCredentialReentryCount,
       outcome: outcome ?? this.outcome,
       errorDetails: clearError ? null : errorDetails ?? this.errorDetails,
     );
@@ -479,7 +479,7 @@ final class BackupController extends Notifier<BackupState> {
         exportedArchivePath: null,
         exportedArchiveSizeBytes: null,
         recordCounts: backup.manifest.recordCounts,
-        safeProviderSecretOmissionCount: 0,
+        legacyProviderCredentialReentryCount: 0,
         outcome: BackupOutcome.exported,
         clearError: true,
         clearFilePaths: true,
@@ -488,7 +488,7 @@ final class BackupController extends Notifier<BackupState> {
     } catch (error) {
       state = state.copyWith(
         outcome: BackupOutcome.failed,
-        errorDetails: _safeBackupError(error),
+        errorDetails: _backupErrorDetails(error),
       );
     }
   }
@@ -529,7 +529,7 @@ final class BackupController extends Notifier<BackupState> {
     } catch (error) {
       state = state.copyWith(
         outcome: BackupOutcome.failed,
-        errorDetails: _safeBackupError(error),
+        errorDetails: _backupErrorDetails(error),
       );
     }
   }
@@ -566,7 +566,7 @@ final class BackupController extends Notifier<BackupState> {
     } catch (error) {
       state = state.copyWith(
         outcome: BackupOutcome.failed,
-        errorDetails: _safeBackupError(error),
+        errorDetails: _backupErrorDetails(error),
       );
       return false;
     } finally {
@@ -593,7 +593,7 @@ final class BackupController extends Notifier<BackupState> {
     } catch (error) {
       state = state.copyWith(
         outcome: BackupOutcome.failed,
-        errorDetails: _safeBackupError(error),
+        errorDetails: _backupErrorDetails(error),
       );
       return false;
     }
@@ -614,7 +614,7 @@ final class BackupController extends Notifier<BackupState> {
     } catch (error) {
       state = state.copyWith(
         outcome: BackupOutcome.failed,
-        errorDetails: _safeBackupError(error),
+        errorDetails: _backupErrorDetails(error),
       );
       return false;
     }
@@ -637,7 +637,7 @@ final class BackupController extends Notifier<BackupState> {
     } catch (error) {
       state = state.copyWith(
         outcome: BackupOutcome.failed,
-        errorDetails: _safeBackupError(error),
+        errorDetails: _backupErrorDetails(error),
       );
       return false;
     }
@@ -655,7 +655,7 @@ final class BackupController extends Notifier<BackupState> {
   }
 }
 
-String _safeBackupError(Object error) {
+String _backupErrorDetails(Object error) {
   return switch (error) {
     FormatException() => 'Invalid backup format.',
     UnsupportedError() => 'Unsupported backup version.',

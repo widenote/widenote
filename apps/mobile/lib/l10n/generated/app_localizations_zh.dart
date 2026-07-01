@@ -2391,7 +2391,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get backupSecretWarning => '完整备份会包含模型提供商 API Key，请只保存到可信位置。';
 
   @override
-  String get backupSafeRestoreBoundary =>
+  String get backupRestoreBoundary =>
       '.widenote 归档会恢复 SQLite 快照、采集媒体文件和 Provider Key。';
 
   @override
@@ -2403,7 +2403,7 @@ class AppLocalizationsZh extends AppLocalizations {
       '完整 .widenote 备份会包含 Provider Key，恢复后可直接使用已配置的模型提供商。';
 
   @override
-  String backupSafeOmittedProviderKeys(int count) {
+  String backupLegacyProviderCredentialReentryCount(int count) {
     return '需要重新填写的 Provider Key 数：$count';
   }
 

@@ -1,6 +1,6 @@
 # RFC: Phase-One Product Scope
 
-Status: Accepted phase-one scope; amended by W7 full-backup boundary
+Status: Accepted phase-one scope; amended by ADR-0013 full-backup credential boundary
 
 Date: 2026-06-24
 

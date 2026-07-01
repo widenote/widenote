@@ -39,9 +39,11 @@ New first-slice voice recordings are saved as WAV source files. Existing `.m4a`
 recordings are not a compatibility target for first-slice local ASR; they
 remain source-truth attachments and can be handled by a later conversion slice.
 
-Safe `.widenote` backup includes original audio/media bytes for this slice,
-with per-entry checksums and without provider API keys or credentials.
-Encrypted full backup remains the future path for secret-bearing portability.
+Full `.widenote` backup includes original audio/media bytes for this slice,
+with per-entry checksums. Provider credential handling follows ADR-0013:
+the default local archive is secret-bearing, while legacy safe JSON and
+Markdown projections remain no-secret surfaces. The encrypted-full envelope
+remains a future path for stronger secret-bearing portability.
 
 Local/offline ASR is the default. Remote ASR, including MiMo or another
 declared-host provider, is available only after explicit opt-in. After opt-in,

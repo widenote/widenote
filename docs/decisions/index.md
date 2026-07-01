@@ -23,8 +23,8 @@
 | RFC | Status |
 | --- | --- |
 | [Phase-One Umbrella Technical Plan](../rfcs/phase-one-umbrella-technical-plan.md) | accepted implementation baseline |
-| [Phase-One Product Scope](../rfcs/phase-one-product-scope.md) | accepted phase-one scope; W7 full-backup amendment |
-| [Model Provider Settings](../rfcs/model-provider-settings.md) | accepted phase-one slice; W7 full-backup amendment |
+| [Phase-One Product Scope](../rfcs/phase-one-product-scope.md) | accepted phase-one scope; ADR-0013 full-backup amendment |
+| [Model Provider Settings](../rfcs/model-provider-settings.md) | accepted phase-one slice; ADR-0013 full-backup amendment |
 | [Memory Model](../rfcs/memory-model.md) | accepted phase-one contract; follow-ups open |
 | [Agent Pack Schema](../rfcs/agent-pack-schema.md) | accepted phase-one contract; scripted/community runtime deferred |
 | [Agent Runtime Capability Boundaries](../rfcs/agent-runtime-capability-boundaries.md) | proposed implementation guardrail under ADR-0011 |
