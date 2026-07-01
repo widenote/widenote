@@ -86,6 +86,16 @@ void main() {
 
     expect(find.byKey(const Key('recap-page')), findsOneWidget);
     expect(find.text('Daily Recap'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.byKey(const Key('recap-back-button'))).dx,
+      lessThan(tester.getTopLeft(find.text('Daily Recap')).dx),
+    );
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('home-page')), findsOneWidget);
+    expect(find.byKey(const Key('recap-page')), findsNothing);
   });
 
   testWidgets('daily recap exposes core Chinese copy', (tester) async {

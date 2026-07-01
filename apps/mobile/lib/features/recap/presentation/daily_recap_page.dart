@@ -42,7 +42,7 @@ class _RecapContent extends StatelessWidget {
         _PageHeader(
           title: l10n.recapTitle,
           subtitle: l10n.recapSubtitle(_dateLabel(snapshot.localDate)),
-          onBack: () => context.go('/'),
+          onBack: () => _goBack(context),
         ),
         const SizedBox(height: 16),
         _MetricGrid(snapshot: snapshot),
@@ -529,7 +529,7 @@ class _RecapError extends StatelessWidget {
         _PageHeader(
           title: l10n.recapTitle,
           subtitle: l10n.recapUnavailableTitle,
-          onBack: () => context.go('/'),
+          onBack: () => _goBack(context),
         ),
         const SizedBox(height: 16),
         _Surface(
@@ -575,6 +575,13 @@ class _PageHeader extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        IconButton.outlined(
+          key: const Key('recap-back-button'),
+          tooltip: context.l10n.recapBackTooltip,
+          onPressed: onBack,
+          icon: const Icon(Icons.arrow_back),
+        ),
+        const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -595,16 +602,17 @@ class _PageHeader extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(width: 12),
-        IconButton.outlined(
-          key: const Key('recap-back-button'),
-          tooltip: context.l10n.recapBackTooltip,
-          onPressed: onBack,
-          icon: const Icon(Icons.close),
-        ),
       ],
     );
   }
+}
+
+void _goBack(BuildContext context) {
+  if (context.canPop()) {
+    context.pop();
+    return;
+  }
+  context.go('/');
 }
 
 class _Surface extends StatelessWidget {

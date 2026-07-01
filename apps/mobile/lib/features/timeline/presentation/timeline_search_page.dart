@@ -94,10 +94,10 @@ class _SearchShell extends StatelessWidget {
         TimelinePageHeader(
           title: l10n.timelineSearchTitle,
           subtitle: l10n.timelineSearchSubtitle,
-          trailing: IconButton(
+          leading: IconButton(
             key: const Key('timeline-search-back'),
             tooltip: l10n.timelineBackTooltip,
-            onPressed: () => context.go('/timeline'),
+            onPressed: () => _goBack(context),
             icon: const Icon(Icons.arrow_back),
           ),
         ),
@@ -213,8 +213,16 @@ String _filterLabel(AppLocalizations l10n, MemoryFirstTimelineItemKind kind) {
 
 void _openTimelineItem(BuildContext context, MemoryFirstTimelineItem item) {
   if (item.kind == MemoryFirstTimelineItemKind.card) {
-    context.go('/timeline/cards/${item.id}');
+    context.push('/timeline/cards/${item.id}');
     return;
   }
-  context.go('/timeline/items/${Uri.encodeComponent(item.id)}');
+  context.push('/timeline/items/${Uri.encodeComponent(item.id)}');
+}
+
+void _goBack(BuildContext context) {
+  if (context.canPop()) {
+    context.pop();
+    return;
+  }
+  context.go('/timeline');
 }

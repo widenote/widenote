@@ -112,6 +112,12 @@ void main() {
 
     expect(find.byKey(const Key('memory-source-destination')), findsOneWidget);
     expect(find.text('capture-memory-page'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('memory-page')), findsOneWidget);
+    expect(find.byKey(const Key('memory-source-destination')), findsNothing);
   });
 
   testWidgets('memory page localizes derived tags and source labels', (

@@ -35,6 +35,12 @@ void main() {
 
     expect(find.byKey(const Key('todo-source-destination')), findsOneWidget);
     expect(find.text('capture-todo-page'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('todos-page')), findsOneWidget);
+    expect(find.byKey(const Key('todo-source-destination')), findsNothing);
   });
 
   testWidgets('todos page localizes derived status and source labels', (

@@ -1180,7 +1180,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsSubtitle => '隐私、权限、模型、备份和追踪。';
 
   @override
-  String get settingsBackTooltip => '关闭设置';
+  String get settingsBackTooltip => '从设置返回';
 
   @override
   String get settingsPrivacyTitle => '隐私';
@@ -2295,10 +2295,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get backupExportReadyStatus => 'WideNote 备份归档已准备好。';
 
   @override
-  String get backupSavedFileStatus => 'WideNote 备份归档已保存到本地。';
+  String get backupSavedFileStatus => 'WideNote 备份归档已交给你选择的位置。';
 
   @override
-  String get backupImportDoneStatus => '备份已导入本地存储。';
+  String get backupImportReadyStatus => '备份文件已载入。确认导入后会替换本地数据。';
+
+  @override
+  String get backupImportDoneStatus => '备份已替换本地存储。';
 
   @override
   String backupFailedStatus(String details) {
@@ -2328,7 +2331,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get backupExportEmpty =>
-      '导出会创建一个压缩的 .widenote 归档，里面包含安全恢复 JSON 和可读的 Owner Export Markdown。';
+      '导出会创建一个压缩的 .widenote 归档，可以交给其他 App 打开，也可以保存到你选择的位置。';
 
   @override
   String get backupSecretWarning => '安全导出不会包含模型提供商 API Key，恢复后需要重新填写。';
@@ -2359,28 +2362,22 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get backupCopyJsonButton => '复制 JSON';
-
-  @override
   String get backupCopyMarkdownButton => '复制 Markdown';
 
   @override
-  String get backupSaveFilesButton => '保存 .widenote 文件';
+  String get backupOpenShareFileButton => '打开或分享 .widenote';
 
   @override
-  String get backupSavedJsonPath => 'JSON 文件';
-
-  @override
-  String get backupSavedMarkdownPath => 'Markdown 文件';
+  String get backupSaveFilesButton => '保存到选择的位置';
 
   @override
   String get backupSavedArchivePath => 'WideNote 备份';
 
   @override
-  String get backupCopiedStatus => '导出内容已复制。';
+  String get backupExportDestination => '目标位置';
 
   @override
-  String get backupExportJsonTitle => '安全备份 JSON';
+  String get backupCopiedStatus => '导出内容已复制。';
 
   @override
   String get backupExportMarkdownTitle => 'Owner Export Markdown';
@@ -2389,13 +2386,32 @@ class AppLocalizationsZh extends AppLocalizations {
   String get backupImportSectionTitle => '导入';
 
   @override
-  String get backupImportHint => '粘贴旧版 WideNote 本地备份 JSON...';
+  String get backupImportHint => '粘贴旧版 WideNote 备份 JSON...';
 
   @override
-  String get backupImportButton => '导入备份';
+  String get backupImportButton => '导入并替换';
 
   @override
-  String get backupImportLatestFileButton => '导入最近的 .widenote 文件';
+  String get backupImportFileButton => '选择 .widenote 文件';
+
+  @override
+  String get backupImportReadyInline => '备份已载入，可以确认后替换本地数据。';
+
+  @override
+  String get backupImportSourcePath => '导入来源';
+
+  @override
+  String get backupConfirmReplaceTitle => '替换本地数据？';
+
+  @override
+  String get backupConfirmReplaceBody =>
+      '这次导入会用备份内容全量替换本地记录、记忆、待办、对话、模型提供商元数据、Pack、权限、运行时状态和追踪。确认这是你要恢复的文件后再继续。';
+
+  @override
+  String get backupConfirmReplaceCancel => '取消';
+
+  @override
+  String get backupConfirmReplaceAction => '替换并导入';
 
   @override
   String backupImportNeedsProviderKeys(int count) {

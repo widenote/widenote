@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:sqlite3/sqlite3.dart' show Database;
+
 import 'database.dart';
 import 'json.dart';
 import 'json_codec.dart';
@@ -63,6 +65,8 @@ enum LocalBackupMode {
     );
   }
 }
+
+enum LocalBackupImportStrategy { append, replaceAll }
 
 abstract final class LocalBackupCodec {
   static const formatId = 'widenote.local_data_backup';
@@ -543,11 +547,17 @@ final class LocalBackupService {
     return LocalBackupCodec.encode(exportBackup(mode: mode));
   }
 
-  LocalBackupImportReport importJson(String source) {
-    return importBackup(LocalBackupCodec.decode(source));
+  LocalBackupImportReport importJson(
+    String source, {
+    LocalBackupImportStrategy strategy = LocalBackupImportStrategy.append,
+  }) {
+    return importBackup(LocalBackupCodec.decode(source), strategy: strategy);
   }
 
-  LocalBackupImportReport importBackup(LocalDataBackup backup) {
+  LocalBackupImportReport importBackup(
+    LocalDataBackup backup, {
+    LocalBackupImportStrategy strategy = LocalBackupImportStrategy.append,
+  }) {
     if (backup.manifest.includesSecrets ||
         backup.manifest.backupMode == LocalBackupMode.encryptedFull) {
       throw UnsupportedError(
@@ -561,11 +571,17 @@ final class LocalBackupService {
         'than supported schema ${LocalDbSchema.currentVersion}.',
       );
     }
-    _rejectImportConflicts(backup);
+    _validateImportIds(
+      backup,
+      rejectExisting: strategy == LocalBackupImportStrategy.append,
+    );
 
     final rawDatabase = database.rawDatabase;
     rawDatabase.execute('BEGIN IMMEDIATE;');
     try {
+      if (strategy == LocalBackupImportStrategy.replaceAll) {
+        _clearRestorableTables(rawDatabase);
+      }
       for (final capture in backup.captures) {
         database.captures.insert(capture);
       }
@@ -635,96 +651,117 @@ final class LocalBackupService {
     }
   }
 
-  void _rejectImportConflicts(LocalDataBackup backup) {
+  void _validateImportIds(
+    LocalDataBackup backup, {
+    required bool rejectExisting,
+  }) {
     _rejectExistingOrDuplicateIds(
       _capturesSection,
       backup.captures.map((record) => record.id),
-      (id) => database.captures.readById(id) != null,
+      rejectExisting ? (id) => database.captures.readById(id) != null : null,
     );
     _rejectExistingOrDuplicateIds(
       _attachmentsSection,
       backup.attachments.map((record) => record.id),
-      (id) => database.attachments.readById(id) != null,
+      rejectExisting ? (id) => database.attachments.readById(id) != null : null,
     );
     _rejectExistingOrDuplicateIds(
       _derivedArtifactsSection,
       backup.derivedArtifacts.map((record) => record.id),
-      (id) => database.derivedArtifacts.readById(id) != null,
+      rejectExisting
+          ? (id) => database.derivedArtifacts.readById(id) != null
+          : null,
     );
     _rejectExistingOrDuplicateIds(
       _eventLogSection,
       backup.eventLog.map((record) => record.id),
-      (id) => database.eventLog.readById(id) != null,
+      rejectExisting ? (id) => database.eventLog.readById(id) != null : null,
     );
     _rejectExistingOrDuplicateIds(
       _memoryItemsSection,
       backup.memoryItems.map((record) => record.id),
-      (id) => database.memoryItems.readById(id) != null,
+      rejectExisting ? (id) => database.memoryItems.readById(id) != null : null,
     );
     _rejectExistingOrDuplicateIds(
       _memoryCandidatesSection,
       backup.memoryCandidates.map((record) => record.id),
-      (id) => database.memoryCandidates.readById(id) != null,
+      rejectExisting
+          ? (id) => database.memoryCandidates.readById(id) != null
+          : null,
     );
     _rejectExistingOrDuplicateIds(
       _cardsSection,
       backup.cards.map((record) => record.id),
-      (id) => database.cards.readById(id) != null,
+      rejectExisting ? (id) => database.cards.readById(id) != null : null,
     );
     _rejectExistingOrDuplicateIds(
       _insightsSection,
       backup.insights.map((record) => record.id),
-      (id) => database.insights.readById(id) != null,
+      rejectExisting ? (id) => database.insights.readById(id) != null : null,
     );
     _rejectExistingOrDuplicateIds(
       _chatSessionsSection,
       backup.chatSessions.map((record) => record.id),
-      (id) => database.chatSessions.readById(id) != null,
+      rejectExisting
+          ? (id) => database.chatSessions.readById(id) != null
+          : null,
     );
     _rejectExistingOrDuplicateIds(
       _chatMessagesSection,
       backup.chatMessages.map((record) => record.id),
-      (id) => database.chatMessages.readById(id) != null,
+      rejectExisting
+          ? (id) => database.chatMessages.readById(id) != null
+          : null,
     );
     _rejectExistingOrDuplicateIds(
       _modelProviderConfigsSection,
       backup.modelProviderConfigs.map((record) => record.id),
-      (id) => database.modelProviderConfigs.readById(id) != null,
+      rejectExisting
+          ? (id) => database.modelProviderConfigs.readById(id) != null
+          : null,
     );
     _rejectExistingOrDuplicateIds(
       _todosSection,
       backup.todos.map((record) => record.id),
-      (id) => database.todos.readById(id) != null,
+      rejectExisting ? (id) => database.todos.readById(id) != null : null,
     );
     _rejectExistingOrDuplicateIds(
       _runtimeTasksSection,
       backup.runtimeTasks.map((record) => record.id),
-      (id) => database.runtimeTasks.readById(id) != null,
+      rejectExisting
+          ? (id) => database.runtimeTasks.readById(id) != null
+          : null,
     );
     _rejectExistingOrDuplicateIds(
       _runtimeRunsSection,
       backup.runtimeRuns.map((record) => record.id),
-      (id) => database.runtimeRuns.readById(id) != null,
+      rejectExisting ? (id) => database.runtimeRuns.readById(id) != null : null,
     );
     _rejectExistingOrDuplicateIds(
       _packInstallationsSection,
       backup.packInstallations.map((record) => record.packId),
-      (id) => database.packInstallations.readById(id) != null,
+      rejectExisting
+          ? (id) => database.packInstallations.readById(id) != null
+          : null,
     );
     _rejectExistingOrDuplicateIds(
       _permissionGrantsSection,
       backup.permissionGrants.map((record) => record.id),
-      (id) => database.permissionGrants.readById(id) != null,
+      rejectExisting
+          ? (id) => database.permissionGrants.readById(id) != null
+          : null,
     );
     _rejectExistingOrDuplicateIds(
       _contextPacketCacheSection,
       backup.contextPacketCaches.map((record) => record.id),
-      (id) => database.contextPacketCaches.readById(id) != null,
+      rejectExisting
+          ? (id) => database.contextPacketCaches.readById(id) != null
+          : null,
     );
     _rejectExistingOrDuplicateIds(
       _traceEventsSection,
       backup.traceEvents.map((record) => record.id),
-      (id) => database.traceEvents.readById(id) != null,
+      rejectExisting ? (id) => database.traceEvents.readById(id) != null : null,
     );
   }
 }
@@ -732,7 +769,7 @@ final class LocalBackupService {
 void _rejectExistingOrDuplicateIds(
   String section,
   Iterable<String> ids,
-  bool Function(String id) exists,
+  bool Function(String id)? exists,
 ) {
   final seen = <String>{};
   for (final id in ids) {
@@ -741,11 +778,37 @@ void _rejectExistingOrDuplicateIds(
         'Backup section $section contains duplicate id $id.',
       );
     }
-    if (exists(id)) {
+    if (exists != null && exists(id)) {
       throw StateError(
         'Backup import would overwrite existing $section row $id.',
       );
     }
+  }
+}
+
+void _clearRestorableTables(Database rawDatabase) {
+  for (final table in const <String>[
+    'trace_events',
+    'context_packet_cache',
+    'runtime_approval_requests',
+    'permission_grants',
+    'runtime_runs',
+    'runtime_tasks',
+    'pack_installations',
+    'todos',
+    'model_provider_configs',
+    'chat_messages',
+    'chat_sessions',
+    'insights',
+    'cards',
+    'memory_candidates',
+    'memory_items',
+    'derived_artifacts',
+    'attachments',
+    'event_log',
+    'captures',
+  ]) {
+    rawDatabase.execute('DELETE FROM $table;');
   }
 }
 

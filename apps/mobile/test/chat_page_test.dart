@@ -150,6 +150,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('timeline-item-detail-page')), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('chat-page')), findsOneWidget);
+    expect(find.byKey(const Key('timeline-item-detail-page')), findsNothing);
   });
 
   testWidgets('chat page shows cited tool-loop answer and tool summary', (

@@ -8,6 +8,7 @@ import 'backup_export.dart';
 import 'json.dart';
 import 'json_codec.dart';
 import 'markdown_export.dart';
+import 'models.dart';
 
 const _archiveRoot = 'widenote-backup';
 const _archiveManifestPath = '$_archiveRoot/manifest.json';
@@ -16,7 +17,7 @@ const _ownerExportPath = '$_archiveRoot/owner-export/owner-export.md';
 
 abstract final class LocalBackupArchiveCodec {
   static const formatId = 'widenote.backup_archive';
-  static const currentFormatVersion = 1;
+  static const currentFormatVersion = 2;
   static const fileExtension = '.widenote';
   static const mimeType = 'application/x-widenote-backup';
   static const typeIdentifier = 'app.widenote.backup';
@@ -34,10 +35,13 @@ abstract final class LocalBackupArchiveCodec {
     required LocalDataBackup backup,
     required String outputPath,
     String? ownerMarkdown,
+    Iterable<LocalBackupArchiveMediaFile> mediaFiles = const [],
   }) async {
     if (!hasArchiveExtension(outputPath)) {
       throw const FormatException('WideNote backups must use .widenote files.');
     }
+    final mediaFileList = mediaFiles.toList(growable: false);
+    _validateMediaFiles(mediaFileList);
 
     final outputFile = File(outputPath);
     await outputFile.parent.create(recursive: true);
@@ -47,10 +51,21 @@ abstract final class LocalBackupArchiveCodec {
       await tempFile.delete();
     }
 
-    final restoreBytes = utf8.encode(LocalBackupCodec.encode(backup));
+    final restoreBackup = _backupWithArchiveMediaPaths(backup, mediaFileList);
+    final restoreBytes = utf8.encode(LocalBackupCodec.encode(restoreBackup));
     final ownerBytes = utf8.encode(
       ownerMarkdown ?? const LocalMarkdownExportService().exportBackup(backup),
     );
+    final mediaEntries = <LocalBackupArchiveEntry>[];
+    for (final mediaFile in mediaFileList) {
+      mediaEntries.add(
+        await _entryForFile(
+          path: mediaFile.archivePath,
+          role: mediaFile.role,
+          sourcePath: mediaFile.sourcePath,
+        ),
+      );
+    }
     final entries = <LocalBackupArchiveEntry>[
       _entryForBytes(
         path: _restoreJsonPath,
@@ -62,6 +77,7 @@ abstract final class LocalBackupArchiveCodec {
         role: 'owner_export_markdown',
         bytes: ownerBytes,
       ),
+      ...mediaEntries,
     ];
     final manifest = LocalBackupArchiveManifest(
       createdAt: backup.manifest.createdAt,
@@ -82,6 +98,9 @@ abstract final class LocalBackupArchiveCodec {
       encoder.create(tempPath, level: ZipFileEncoder.gzip);
       _addBytes(encoder, _restoreJsonPath, restoreBytes);
       _addBytes(encoder, _ownerExportPath, ownerBytes);
+      for (final mediaFile in mediaFileList) {
+        await _addFile(encoder, mediaFile.archivePath, mediaFile.sourcePath);
+      }
       _addBytes(encoder, _archiveManifestPath, manifestBytes);
       await encoder.close();
       if (await outputFile.exists()) {
@@ -127,6 +146,7 @@ abstract final class LocalBackupArchiveCodec {
       final verified = <String>{};
       var restoreJsonFilePath = '';
       var ownerExportFilePath = '';
+      final mediaFiles = <LocalBackupArchiveExtractedFile>[];
 
       final staging = Directory(stagingDirectory);
       await staging.create(recursive: true);
@@ -151,6 +171,14 @@ abstract final class LocalBackupArchiveCodec {
           restoreJsonFilePath = targetPath;
         } else if (entry.role == 'owner_export_markdown') {
           ownerExportFilePath = targetPath;
+        } else if (entry.role == LocalBackupArchiveMediaFile.attachmentRole) {
+          mediaFiles.add(
+            LocalBackupArchiveExtractedFile(
+              archivePath: entry.path,
+              path: targetPath,
+              role: entry.role,
+            ),
+          );
         }
       }
 
@@ -169,6 +197,7 @@ abstract final class LocalBackupArchiveCodec {
         ownerExportPath: ownerExportFilePath.isEmpty
             ? null
             : ownerExportFilePath,
+        mediaFiles: mediaFiles,
       );
     } finally {
       archive.clearSync();
@@ -208,11 +237,62 @@ final class LocalBackupArchiveExtractResult {
     required this.manifest,
     required this.restoreJsonPath,
     this.ownerExportPath,
+    this.mediaFiles = const <LocalBackupArchiveExtractedFile>[],
   });
 
   final LocalBackupArchiveManifest manifest;
   final String restoreJsonPath;
   final String? ownerExportPath;
+  final List<LocalBackupArchiveExtractedFile> mediaFiles;
+}
+
+final class LocalBackupArchiveExtractedFile {
+  const LocalBackupArchiveExtractedFile({
+    required this.archivePath,
+    required this.path,
+    required this.role,
+  });
+
+  final String archivePath;
+  final String path;
+  final String role;
+}
+
+final class LocalBackupArchiveMediaFile {
+  LocalBackupArchiveMediaFile({
+    required this.originalStoragePath,
+    required this.sourcePath,
+    required this.archivePath,
+    this.role = attachmentRole,
+  }) {
+    if (originalStoragePath.trim().isEmpty) {
+      throw const FormatException('Backup media storage path is required.');
+    }
+    if (sourcePath.trim().isEmpty) {
+      throw const FormatException('Backup media source path is required.');
+    }
+    _validateEntryPath(archivePath);
+    if (archivePath == LocalBackupArchiveCodec.manifestPath ||
+        archivePath == LocalBackupArchiveCodec.restoreJsonPath ||
+        archivePath == LocalBackupArchiveCodec.ownerExportPath) {
+      throw FormatException('Backup media path is reserved: $archivePath.');
+    }
+    if (!archivePath.startsWith('${LocalBackupArchiveCodec.rootDirectory}/')) {
+      throw FormatException(
+        'Backup media path is outside archive root: $archivePath.',
+      );
+    }
+    if (role != attachmentRole) {
+      throw FormatException('Unsupported backup media role: $role.');
+    }
+  }
+
+  static const attachmentRole = 'attachment_media';
+
+  final String originalStoragePath;
+  final String sourcePath;
+  final String archivePath;
+  final String role;
 }
 
 final class LocalBackupArchiveManifest {
@@ -365,6 +445,134 @@ LocalBackupArchiveEntry _entryForBytes({
 
 void _addBytes(ZipFileEncoder encoder, String path, List<int> bytes) {
   encoder.addArchiveFile(ArchiveFile(path, bytes.length, bytes));
+}
+
+Future<void> _addFile(
+  ZipFileEncoder encoder,
+  String archivePath,
+  String sourcePath,
+) {
+  return encoder.addFile(File(sourcePath), archivePath);
+}
+
+Future<LocalBackupArchiveEntry> _entryForFile({
+  required String path,
+  required String role,
+  required String sourcePath,
+}) async {
+  final file = File(sourcePath);
+  final sizeBytes = await file.length();
+  final digest = await _sha256File(sourcePath);
+  return LocalBackupArchiveEntry(
+    path: path,
+    role: role,
+    sizeBytes: sizeBytes,
+    sha256: digest,
+  );
+}
+
+void _validateMediaFiles(List<LocalBackupArchiveMediaFile> mediaFiles) {
+  final storagePaths = <String>{};
+  final archivePaths = <String>{};
+  for (final file in mediaFiles) {
+    if (!storagePaths.add(file.originalStoragePath)) {
+      throw FormatException(
+        'Duplicate backup media storage path: ${file.originalStoragePath}.',
+      );
+    }
+    if (!archivePaths.add(file.archivePath)) {
+      throw FormatException(
+        'Duplicate backup media archive path: ${file.archivePath}.',
+      );
+    }
+  }
+}
+
+LocalDataBackup _backupWithArchiveMediaPaths(
+  LocalDataBackup backup,
+  List<LocalBackupArchiveMediaFile> mediaFiles,
+) {
+  if (mediaFiles.isEmpty) {
+    return backup;
+  }
+  final archivePathsByStoragePath = <String, String>{
+    for (final file in mediaFiles) file.originalStoragePath: file.archivePath,
+  };
+  final matchedStoragePaths = <String>{};
+  final attachments = <AttachmentRecord>[
+    for (final attachment in backup.attachments)
+      if (archivePathsByStoragePath.containsKey(attachment.storagePath))
+        attachment.copyWith(
+          storagePath: archivePathsByStoragePath[attachment.storagePath],
+          payload: _payloadWithArchiveMediaPath(
+            attachment.payload,
+            archivePathsByStoragePath[attachment.storagePath]!,
+          ),
+        )
+      else
+        attachment,
+  ];
+  for (final attachment in backup.attachments) {
+    if (archivePathsByStoragePath.containsKey(attachment.storagePath)) {
+      matchedStoragePaths.add(attachment.storagePath);
+    }
+  }
+  for (final storagePath in archivePathsByStoragePath.keys) {
+    if (!matchedStoragePaths.contains(storagePath)) {
+      throw FormatException(
+        'Backup media file does not match an attachment: $storagePath.',
+      );
+    }
+  }
+
+  return LocalDataBackup(
+    manifest: backup.manifest,
+    eventLog: backup.eventLog,
+    captures: backup.captures,
+    attachments: attachments,
+    derivedArtifacts: backup.derivedArtifacts,
+    memoryItems: backup.memoryItems,
+    memoryCandidates: backup.memoryCandidates,
+    cards: backup.cards,
+    insights: backup.insights,
+    chatSessions: backup.chatSessions,
+    chatMessages: backup.chatMessages,
+    modelProviderConfigs: backup.modelProviderConfigs,
+    todos: backup.todos,
+    runtimeTasks: backup.runtimeTasks,
+    runtimeRuns: backup.runtimeRuns,
+    packInstallations: backup.packInstallations,
+    permissionGrants: backup.permissionGrants,
+    contextPacketCaches: backup.contextPacketCaches,
+    traceEvents: backup.traceEvents,
+  );
+}
+
+JsonMap _payloadWithArchiveMediaPath(JsonMap payload, String archivePath) {
+  final rawMetadata = payload['raw_metadata'];
+  if (rawMetadata is! Map) {
+    return <String, Object?>{...payload, 'archive_storage_path': archivePath};
+  }
+  final raw = rawMetadata.cast<String, Object?>();
+  final adapterMetadata = raw['adapter_metadata'];
+  final updatedRaw = <String, Object?>{
+    ...raw,
+    'archive_storage_path': archivePath,
+    'storage_ref': archivePath,
+  };
+  if (adapterMetadata is Map) {
+    updatedRaw['adapter_metadata'] = <String, Object?>{
+      ...adapterMetadata.cast<String, Object?>(),
+      'archive_storage_path': archivePath,
+      'storage_ref': archivePath,
+      'local_path': archivePath,
+    };
+  }
+  return <String, Object?>{
+    ...payload,
+    'archive_storage_path': archivePath,
+    'raw_metadata': updatedRaw,
+  };
 }
 
 Future<LocalBackupArchiveManifest> _readManifestFromArchive(

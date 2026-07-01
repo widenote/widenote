@@ -44,6 +44,10 @@ void main() {
     );
     final bridgeContents = bridge.readAsStringSync();
     expect(bridgeContents, contains('app.widenote/backup_import'));
+    expect(bridgeContents, contains('app.widenote/backup_export'));
     expect(bridgeContents, contains('bufferSize = 8 * 1024'));
+    expect(bridgeContents, contains('UIActivityViewController'));
+    expect(bridgeContents, contains('UIDocumentPickerViewController'));
+    expect(bridgeContents, contains('documentTypes:'));
   });
 }

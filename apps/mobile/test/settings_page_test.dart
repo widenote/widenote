@@ -26,6 +26,16 @@ void main() {
     expect(find.text('Backup & Restore'), findsOneWidget);
     expect(find.text('Log Center'), findsOneWidget);
 
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('settings-page')), findsNothing);
+    expect(find.byKey(const Key('open-settings-button')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('open-settings-button')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('settings-page')), findsOneWidget);
+
     await tester.tap(find.byKey(const Key('settings-close-button')));
     await tester.pumpAndSettle();
 
@@ -48,6 +58,11 @@ void main() {
       tester,
       entryKey: const Key('settings-model-providers-entry'),
       pageKey: const Key('model-provider-settings-page'),
+    );
+    await _openChildAndReturn(
+      tester,
+      entryKey: const Key('settings-transcription-entry'),
+      pageKey: const Key('voice-transcription-settings-page'),
     );
     await _openChildAndReturn(
       tester,

@@ -210,7 +210,7 @@ class _DetailShell extends StatelessWidget {
         TimelinePageHeader(
           title: title,
           subtitle: l10n.timelineItemDetailSubtitle,
-          trailing: IconButton(
+          leading: IconButton(
             key: const Key('timeline-item-detail-back'),
             tooltip: l10n.timelineBackTooltip,
             onPressed: () => _goBack(context),
@@ -235,7 +235,7 @@ String _kindTitle(AppLocalizations l10n, MemoryFirstTimelineItemKind kind) {
 }
 
 void _openSourceLink(BuildContext context, SourceLink link) {
-  context.go('/timeline/items/${Uri.encodeComponent(link.id)}');
+  context.push('/timeline/items/${Uri.encodeComponent(link.id)}');
 }
 
 void _goBack(BuildContext context) {

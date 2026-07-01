@@ -1335,7 +1335,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Privacy, permissions, models, backup, and logs.';
 
   @override
-  String get settingsBackTooltip => 'Close Settings';
+  String get settingsBackTooltip => 'Back from Settings';
 
   @override
   String get settingsPrivacyTitle => 'Privacy';
@@ -2569,10 +2569,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backupExportReadyStatus => 'WideNote backup archive is ready.';
 
   @override
-  String get backupSavedFileStatus => 'WideNote backup archive saved locally.';
+  String get backupSavedFileStatus =>
+      'WideNote backup archive is ready in the selected destination.';
 
   @override
-  String get backupImportDoneStatus => 'Backup imported into local storage.';
+  String get backupImportReadyStatus =>
+      'Backup file loaded. Confirm import to replace local data.';
+
+  @override
+  String get backupImportDoneStatus => 'Backup replaced local storage.';
 
   @override
   String backupFailedStatus(String details) {
@@ -2602,7 +2607,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backupExportEmpty =>
-      'Export creates one compressed .widenote archive with a safe restore JSON and readable Owner Export Markdown inside.';
+      'Export creates one compressed .widenote archive. You can open it with another app or save it to a location you choose.';
 
   @override
   String get backupSecretWarning =>
@@ -2634,28 +2639,22 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get backupCopyJsonButton => 'Copy JSON';
-
-  @override
   String get backupCopyMarkdownButton => 'Copy Markdown';
 
   @override
-  String get backupSaveFilesButton => 'Save .widenote file';
+  String get backupOpenShareFileButton => 'Open or share .widenote';
 
   @override
-  String get backupSavedJsonPath => 'JSON file';
-
-  @override
-  String get backupSavedMarkdownPath => 'Markdown file';
+  String get backupSaveFilesButton => 'Save to selected location';
 
   @override
   String get backupSavedArchivePath => 'WideNote backup';
 
   @override
-  String get backupCopiedStatus => 'Export copied.';
+  String get backupExportDestination => 'Destination';
 
   @override
-  String get backupExportJsonTitle => 'Safe backup JSON';
+  String get backupCopiedStatus => 'Export copied.';
 
   @override
   String get backupExportMarkdownTitle => 'Owner Export Markdown';
@@ -2664,13 +2663,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backupImportSectionTitle => 'Import';
 
   @override
-  String get backupImportHint => 'Paste a legacy WideNote local backup JSON...';
+  String get backupImportHint => 'Paste legacy WideNote backup JSON...';
 
   @override
-  String get backupImportButton => 'Import backup';
+  String get backupImportButton => 'Import and replace';
 
   @override
-  String get backupImportLatestFileButton => 'Import latest .widenote file';
+  String get backupImportFileButton => 'Choose .widenote file';
+
+  @override
+  String get backupImportReadyInline =>
+      'Backup is loaded and ready to replace local data.';
+
+  @override
+  String get backupImportSourcePath => 'Import source';
+
+  @override
+  String get backupConfirmReplaceTitle => 'Replace local data?';
+
+  @override
+  String get backupConfirmReplaceBody =>
+      'This import fully replaces local records, Memory, todos, chats, provider metadata, packs, permissions, runtime state, and traces with the backup contents. Continue only if this is the file you want.';
+
+  @override
+  String get backupConfirmReplaceCancel => 'Cancel';
+
+  @override
+  String get backupConfirmReplaceAction => 'Replace and import';
 
   @override
   String backupImportNeedsProviderKeys(int count) {

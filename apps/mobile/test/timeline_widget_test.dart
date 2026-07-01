@@ -109,8 +109,7 @@ void main() {
 
     await tester.tap(find.byKey(const Key('timeline-item-detail-back')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('timeline-item-card-1')));
-    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('card-detail-page')), findsOneWidget);
 
     final sourceRefButton = find.byKey(
       const Key('open-source-ref-capture-capture-1'),
@@ -125,6 +124,80 @@ void main() {
     expect(find.text('Project Alpha kickoff notes.'), findsWidgets);
 
     await tester.tap(find.byKey(const Key('timeline-item-detail-back')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('card-detail-page')), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('timeline-page')), findsOneWidget);
+  });
+
+  testWidgets('timeline system back unwinds search detail and source stacks', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    _seedTimeline(database);
+
+    await _pumpApp(tester, database: database);
+
+    await tester.tap(find.byKey(const Key('open-timeline-button')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('timeline-page')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('timeline-search-button')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('timeline-search-page')), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.byKey(const Key('timeline-search-back'))).dx,
+      lessThan(tester.getTopLeft(find.text('Search')).dx),
+    );
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('timeline-page')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('timeline-search-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('timeline-item-card-1')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('card-detail-page')), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.byKey(const Key('card-detail-back'))).dx,
+      lessThan(tester.getTopLeft(find.text('Card Detail')).dx),
+    );
+
+    final sourceRefButton = find.byKey(
+      const Key('open-source-ref-capture-capture-1'),
+    );
+    await tester.ensureVisible(sourceRefButton);
+    await tester.pumpAndSettle();
+    await tester.tap(sourceRefButton);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('timeline-item-detail-page')), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('card-detail-page')), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('timeline-search-page')), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('timeline-page')), findsOneWidget);
+
+    await tester.ensureVisible(find.byKey(const Key('timeline-item-memory-1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('timeline-item-memory-1')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('timeline-item-detail-page')), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.byKey(const Key('timeline-item-detail-back'))).dx,
+      lessThan(tester.getTopLeft(find.text('Memory Detail')).dx),
+    );
+
+    await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('timeline-page')), findsOneWidget);
   });

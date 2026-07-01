@@ -43,7 +43,7 @@ class _TimelineContent extends StatelessWidget {
           trailing: IconButton.filledTonal(
             key: const Key('timeline-search-button'),
             tooltip: l10n.timelineSearchTooltip,
-            onPressed: () => context.go('/timeline/search'),
+            onPressed: () => context.push('/timeline/search'),
             icon: const Icon(Icons.search),
           ),
         ),
@@ -91,10 +91,10 @@ class _TimelineDaySection extends StatelessWidget {
 
 void _openTimelineItem(BuildContext context, MemoryFirstTimelineItem item) {
   if (item.kind == MemoryFirstTimelineItemKind.card) {
-    context.go('/timeline/cards/${item.id}');
+    context.push('/timeline/cards/${item.id}');
     return;
   }
-  context.go('/timeline/items/${Uri.encodeComponent(item.id)}');
+  context.push('/timeline/items/${Uri.encodeComponent(item.id)}');
 }
 
 class _TimelineLoading extends StatelessWidget {

@@ -4,9 +4,10 @@
 
 Provides the user-facing local backup and import surface for WideNote mobile.
 It wraps the `widenote_local_db` backup codec so users can create a portable
-`.widenote` archive, inspect manifest counts, copy the nested safe restore JSON
-or readable Owner Export Markdown projection, and import either a `.widenote`
-file or a legacy pasted backup JSON into the local database.
+`.widenote` archive, inspect manifest counts, open/share the archive with other
+apps, save it to a user-selected destination, copy the readable Owner Export
+Markdown projection, and import either a `.widenote` file or a legacy pasted
+backup JSON into the local database after an explicit replace-all confirmation.
 
 ## Ownership Boundary
 
@@ -19,6 +20,13 @@ file or a legacy pasted backup JSON into the local database.
   report tells the user which provider keys must be re-entered.
 - Runs archive compression and decompression off the main Flutter isolate, and
   imports extracted restore JSON from a staging directory.
+- Includes local capture media bytes in the `.widenote` archive when the
+  attachment storage path can be resolved to an app-local file. During restore,
+  extracted media is copied back under the mobile capture media directory before
+  database rows are replaced.
+- Does not auto-import backups received from Android/iOS file-open intents.
+  External `.widenote` opens load the file into the Backup page and wait for the
+  same destructive replace-all confirmation as in-app import.
 - Treats provider payload fields with secret-like names as unsafe for safe
   backup and recursively redacts them while preserving ordinary metadata such as
   provider name, endpoint, model, capabilities, default state, and
@@ -52,6 +60,12 @@ file or a legacy pasted backup JSON into the local database.
 - Owner Export Markdown never includes provider API key values or Context
   Packet cache contents.
 - Android and iOS register `.widenote` as an app-openable backup file type.
+- Android and iOS expose `.widenote` export through system share/open surfaces
+  and save-to-selected-location document pickers instead of relying on the
+  app-private support directory as the user-facing destination.
+- Import is intentionally full replacement after confirmation; local rows that
+  are absent from the backup are removed in the same transaction as restored
+  rows are inserted.
 - Import errors are recoverable; a malformed JSON paste does not write partial
   rows and a later valid JSON can still import.
 

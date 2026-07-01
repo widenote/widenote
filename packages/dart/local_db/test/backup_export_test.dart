@@ -419,6 +419,49 @@ void main() {
       expect(target.modelProviderConfigs.readAll(), isEmpty);
     });
 
+    test('replace-all import overwrites conflicts and removes local rows', () {
+      final source = WideNoteLocalDatabase.inMemory();
+      final target = WideNoteLocalDatabase.inMemory();
+      addTearDown(source.close);
+      addTearDown(target.close);
+      _seedBackupSource(source);
+      target.captures
+        ..insert(
+          CaptureRecord(
+            id: 'capture-backup',
+            sourceType: 'manual',
+            payload: const <String, Object?>{'text': 'stale local row'},
+            createdAt: DateTime.utc(2026, 6, 23),
+            updatedAt: DateTime.utc(2026, 6, 23),
+          ),
+        )
+        ..insert(
+          CaptureRecord(
+            id: 'capture-local-only',
+            sourceType: 'manual',
+            payload: const <String, Object?>{'text': 'not in backup'},
+            createdAt: DateTime.utc(2026, 6, 23),
+            updatedAt: DateTime.utc(2026, 6, 23),
+          ),
+        );
+
+      final backup = LocalBackupCodec.decode(
+        LocalBackupService(source).exportJson(),
+      );
+      final report = LocalBackupService(
+        target,
+      ).importBackup(backup, strategy: LocalBackupImportStrategy.replaceAll);
+
+      expect(report.runtimeRunsRestored, 1);
+      expect(
+        target.captures.readById('capture-backup')!.payload['text'],
+        'Remember the backup demo.',
+      );
+      expect(target.captures.readById('capture-local-only'), isNull);
+      expect(target.eventLog.readById('event-backup'), isNotNull);
+      expect(target.traceEvents.readById('trace-backup'), isNotNull);
+    });
+
     test('decodes but rejects v1 secret-bearing backups', () {
       final source = WideNoteLocalDatabase.inMemory();
       final target = WideNoteLocalDatabase.inMemory();
@@ -570,6 +613,10 @@ void main() {
         expect(writeResult.path, archivePath);
         expect(writeResult.sizeBytes, greaterThan(0));
         expect(writeResult.manifest.format, LocalBackupArchiveCodec.formatId);
+        expect(
+          writeResult.manifest.formatVersion,
+          LocalBackupArchiveCodec.currentFormatVersion,
+        );
         expect(writeResult.manifest.backupMode, LocalBackupMode.safe);
         expect(writeResult.manifest.includesSecrets, isFalse);
         expect(
@@ -611,6 +658,63 @@ void main() {
         expect(target.traceEvents.readById('trace-backup'), isNotNull);
       },
     );
+
+    test('writes attachment media into the .widenote archive', () async {
+      final temp = await Directory.systemTemp.createTemp(
+        'widenote-media-archive-',
+      );
+      addTearDown(() async {
+        if (await temp.exists()) {
+          await temp.delete(recursive: true);
+        }
+      });
+      final source = WideNoteLocalDatabase.inMemory();
+      addTearDown(source.close);
+      _seedBackupSource(source);
+      final mediaFile = File('${temp.path}/backup-demo.jpg');
+      await mediaFile.writeAsBytes(<int>[1, 3, 3, 7]);
+      final backup = LocalBackupService(source).exportBackup();
+      final archivePath = '${temp.path}/widenote-backup-media.widenote';
+      final archivedMediaPath =
+          '${LocalBackupArchiveCodec.rootDirectory}/media/originals/'
+          'attachment-backup.jpg';
+
+      final writeResult = await LocalBackupArchiveCodec.writeArchive(
+        backup: backup,
+        outputPath: archivePath,
+        mediaFiles: <LocalBackupArchiveMediaFile>[
+          LocalBackupArchiveMediaFile(
+            originalStoragePath: 'media/originals/attachment-backup.jpg',
+            sourcePath: mediaFile.path,
+            archivePath: archivedMediaPath,
+          ),
+        ],
+      );
+
+      final mediaEntry = writeResult.manifest.entries.singleWhere(
+        (entry) => entry.role == LocalBackupArchiveMediaFile.attachmentRole,
+      );
+      expect(mediaEntry.path, archivedMediaPath);
+      expect(mediaEntry.sizeBytes, 4);
+
+      final extract = await LocalBackupArchiveCodec.extractToDirectory(
+        archivePath: archivePath,
+        stagingDirectory: '${temp.path}/staging-media',
+      );
+      expect(extract.mediaFiles.single.archivePath, archivedMediaPath);
+      expect(await File(extract.mediaFiles.single.path).readAsBytes(), <int>[
+        1,
+        3,
+        3,
+        7,
+      ]);
+
+      final restoreJson = await File(extract.restoreJsonPath).readAsString();
+      final restoreBackup = LocalBackupCodec.decode(restoreJson);
+      final attachment = restoreBackup.attachments.single;
+      expect(attachment.storagePath, archivedMediaPath);
+      expect(attachment.payload['archive_storage_path'], archivedMediaPath);
+    });
 
     test('rejects .widenote archives with checksum mismatches', () async {
       final temp = await Directory.systemTemp.createTemp(

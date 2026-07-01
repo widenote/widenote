@@ -634,23 +634,31 @@ void main() {
       await _openPluginsTab(tester);
       expect(find.byKey(const Key('plugins-page')), findsOneWidget);
 
-      await tester.tap(find.byKey(const Key('backup-entry')));
-      await tester.pumpAndSettle();
-      expect(find.byKey(const Key('backup-page')), findsOneWidget);
-
-      await tester.binding.handlePopRoute();
-      await tester.pumpAndSettle();
-      expect(find.byKey(const Key('plugins-page')), findsOneWidget);
-      expect(find.byKey(const Key('backup-page')), findsNothing);
-
-      await tester.tap(find.byKey(const Key('trace-console-entry')));
-      await tester.pumpAndSettle();
-      expect(find.byKey(const Key('trace-console-page')), findsOneWidget);
-
-      await tester.binding.handlePopRoute();
-      await tester.pumpAndSettle();
-      expect(find.byKey(const Key('plugins-page')), findsOneWidget);
-      expect(find.byKey(const Key('trace-console-page')), findsNothing);
+      await _openPluginChildAndReturn(
+        tester,
+        entryKey: const Key('pack-library-entry'),
+        pageKey: const Key('pack-library-page'),
+      );
+      await _openPluginChildAndReturn(
+        tester,
+        entryKey: const Key('permission-gate-entry'),
+        pageKey: const Key('permission-gate-page'),
+      );
+      await _openPluginChildAndReturn(
+        tester,
+        entryKey: const Key('model-provider-entry'),
+        pageKey: const Key('model-provider-settings-page'),
+      );
+      await _openPluginChildAndReturn(
+        tester,
+        entryKey: const Key('backup-entry'),
+        pageKey: const Key('backup-page'),
+      );
+      await _openPluginChildAndReturn(
+        tester,
+        entryKey: const Key('trace-console-entry'),
+        pageKey: const Key('trace-console-page'),
+      );
     },
   );
 
@@ -743,6 +751,23 @@ Future<void> _pumpApp(WidgetTester tester) async {
 Future<void> _openPluginsTab(WidgetTester tester) async {
   await tester.tap(find.byKey(const Key('tab-plugins')));
   await tester.pumpAndSettle();
+}
+
+Future<void> _openPluginChildAndReturn(
+  WidgetTester tester, {
+  required Key entryKey,
+  required Key pageKey,
+}) async {
+  await tester.ensureVisible(find.byKey(entryKey));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(entryKey));
+  await tester.pumpAndSettle();
+  expect(find.byKey(pageKey), findsOneWidget);
+
+  await tester.binding.handlePopRoute();
+  await tester.pumpAndSettle();
+  expect(find.byKey(const Key('plugins-page')), findsOneWidget);
+  expect(find.byKey(pageKey), findsNothing);
 }
 
 String _officialManifestPath(String packId) {
