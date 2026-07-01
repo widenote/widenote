@@ -20,6 +20,12 @@ void main() {
     final contents = manifest.readAsStringSync();
     expect(contents, contains('android.permission.CAMERA'));
     expect(contents, contains('android.permission.RECORD_AUDIO'));
+    expect(contents, contains('android.permission.ACCESS_COARSE_LOCATION'));
+    expect(contents, contains('android.permission.ACCESS_FINE_LOCATION'));
+    expect(
+      contents,
+      isNot(contains('android.permission.ACCESS_BACKGROUND_LOCATION')),
+    );
     expect(
       contents,
       isNot(contains('android.permission.READ_EXTERNAL_STORAGE')),

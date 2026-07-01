@@ -14,6 +14,7 @@ import 'package:widenote_mobile/features/capture/application/capture_input_contr
 import 'package:widenote_mobile/features/capture/application/capture_orchestrator.dart';
 import 'package:widenote_mobile/features/capture/domain/capture_models.dart';
 import 'package:widenote_mobile/features/capture/media/capture_media.dart';
+import 'package:widenote_mobile/features/location/application/location_settings_controller.dart';
 
 void main() {
   testWidgets(
@@ -644,6 +645,9 @@ Future<void> _pumpApp(
         localDatabaseProvider.overrideWithValue(localDatabase),
         if (modelClient != null)
           modelClientProvider.overrideWithValue(modelClient),
+        locationSettingsRepositoryProvider.overrideWithValue(
+          InMemoryLocationSettingsRepository(),
+        ),
         ...overrides,
       ],
       child: WideNoteApp(locale: locale),

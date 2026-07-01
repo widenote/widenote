@@ -5,6 +5,7 @@ import 'package:widenote_local_db/widenote_local_db.dart' as localdb;
 
 import '../domain/capture_models.dart';
 import '../media/capture_media.dart';
+import '../../location/domain/location_context.dart';
 
 final class LocalCaptureReadModelStore {
   const LocalCaptureReadModelStore(this._database);
@@ -80,9 +81,7 @@ final class LocalCaptureReadModelStore {
     );
   }
 
-  bool _shouldPreserveExistingArtifact(
-    localdb.DerivedArtifactRecord artifact,
-  ) {
+  bool _shouldPreserveExistingArtifact(localdb.DerivedArtifactRecord artifact) {
     if (artifact.artifactKind != 'audio_transcript') {
       return false;
     }
@@ -106,6 +105,15 @@ localdb.CaptureRecord _captureRecord(
     payload: <String, Object?>{
       'text': record.body,
       if (record.sourceEventId != null) 'source_event_id': record.sourceEventId,
+      if (record.locationContext != null)
+        'location_context': record.locationContext!.toJson(),
+      if (record.locationContext != null)
+        'fact_metadata': <String, Object?>{
+          'location': record.locationContext!.toFactMetadata(
+            sourceCaptureId: record.id,
+            sourceEventId: record.sourceEventId,
+          ),
+        },
       if (attachments.isNotEmpty)
         'attachments': attachments
             .map((attachment) => attachment.toEventPayload())
@@ -510,6 +518,7 @@ String _excerpt(String value) {
 }
 
 CaptureRecord _captureView(localdb.CaptureRecord record) {
+  final rawLocation = record.payload['location_context'];
   return CaptureRecord(
     id: record.id,
     body: _string(record.payload['text']) ?? '',
@@ -517,6 +526,9 @@ CaptureRecord _captureView(localdb.CaptureRecord record) {
     status: record.status,
     sourceEventId:
         _string(record.payload['source_event_id']) ?? record.sourceId,
+    locationContext: rawLocation is Map
+        ? CapturedLocationContext.fromJson(rawLocation.cast<String, Object?>())
+        : null,
   );
 }
 

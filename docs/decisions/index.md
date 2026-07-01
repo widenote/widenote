@@ -15,6 +15,7 @@
 | [ADR-0010](./0010-delegate-semantic-selection-to-models.md) | No local content keyword heuristics in core | accepted | 2026-06-27 |
 | [ADR-0011](./0011-adopt-agent-runtime-roadmap.md) | Adopt the WideNote Agent Runtime and Capability Roadmap | accepted | 2026-06-27 |
 | [ADR-0012](./0012-accept-voice-transcription-and-correction-boundaries.md) | Accept voice transcription and correction boundaries | accepted | 2026-07-01 |
+| [ADR-0013](./0013-accept-location-capture-boundaries.md) | Accept location capture boundaries | accepted | 2026-07-01 |
 
 ## RFC Status
 

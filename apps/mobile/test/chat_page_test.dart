@@ -13,6 +13,7 @@ import 'package:widenote_mobile/features/chat/application/chat_assistant.dart';
 import 'package:widenote_mobile/features/chat/application/chat_controller.dart';
 import 'package:widenote_mobile/features/chat/application/local_chat_repository.dart';
 import 'package:widenote_mobile/features/chat/domain/chat_models.dart';
+import 'package:widenote_mobile/features/location/application/location_settings_controller.dart';
 
 void main() {
   testWidgets('chat page shows empty state before a local session exists', (
@@ -331,6 +332,9 @@ Future<void> _pumpApp(
           modelClientProvider.overrideWithValue(modelClient),
           chatModelClientProvider.overrideWithValue(modelClient),
         ],
+        locationSettingsRepositoryProvider.overrideWithValue(
+          InMemoryLocationSettingsRepository(),
+        ),
         ...overrides,
       ],
       child: WideNoteApp(locale: locale),

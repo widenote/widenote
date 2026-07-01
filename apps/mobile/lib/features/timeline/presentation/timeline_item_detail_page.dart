@@ -117,6 +117,11 @@ class _TimelineItemDetailContent extends StatelessWidget {
                       icon: Icons.schedule,
                       label: timeLabel(item.createdAt),
                     ),
+                    if (timelineLocationTagLabel(l10n, item) != null)
+                      TimelineTag(
+                        icon: Icons.location_on_outlined,
+                        label: timelineLocationTagLabel(l10n, item)!,
+                      ),
                   ],
                 ),
                 if (artifacts.isNotEmpty) ...[

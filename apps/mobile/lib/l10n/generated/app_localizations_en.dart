@@ -2711,4 +2711,201 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get backupImportNoProviderKeysNeeded =>
       'No provider keys need re-entry for this backup.';
+
+  @override
+  String get settingsLocationTitle => 'Location Context';
+
+  @override
+  String get settingsLocationSubtitle =>
+      'Save local GPS with records and optionally use AMap for address summaries.';
+
+  @override
+  String get settingsLocationStatusOff => 'off';
+
+  @override
+  String get settingsLocationStatusGps => 'GPS only';
+
+  @override
+  String get settingsLocationStatusAmap => 'GPS + AMap';
+
+  @override
+  String get locationSettingsTitle => 'Location Context';
+
+  @override
+  String get locationSettingsSubtitle =>
+      'Choose what WideNote saves locally and when coordinates may be sent to AMap.';
+
+  @override
+  String get locationPrivacyTitle => 'Privacy boundary';
+
+  @override
+  String get locationPrivacyLocalTitle => 'Local GPS';
+
+  @override
+  String get locationPrivacyLocalBody =>
+      'When enabled, WideNote requests foreground location only while saving a record and stores the coordinate on that local record.';
+
+  @override
+  String get locationPrivacyAmapTitle => 'AMap reverse geocoding';
+
+  @override
+  String get locationPrivacyAmapBody =>
+      'AMap address lookup is separate consent. When enabled, the record coordinate is sent to AMap Web Service to return an address summary.';
+
+  @override
+  String get locationStatusGpsOn => 'GPS capture on';
+
+  @override
+  String get locationStatusGpsOff => 'GPS capture off';
+
+  @override
+  String get locationStatusAmapOn => 'AMap lookup on';
+
+  @override
+  String get locationStatusAmapOff => 'AMap lookup off';
+
+  @override
+  String get locationCaptureTitle => 'Record location';
+
+  @override
+  String get locationSaveGpsTitle => 'Save GPS with new records';
+
+  @override
+  String get locationSaveGpsBody =>
+      'Stores WGS-84 latitude, longitude, accuracy, source, and capture time only on the local record.';
+
+  @override
+  String get locationAmapTitle => 'Address lookup';
+
+  @override
+  String get locationAmapSwitchTitle => 'Use AMap reverse geocoding';
+
+  @override
+  String get locationAmapSwitchBody =>
+      'Sends the record coordinate to AMap Web Service and stores the returned address as derived context.';
+
+  @override
+  String get locationAmapKeyLabel => 'AMap Web Service Key';
+
+  @override
+  String get locationAmapKeyHelper =>
+      'Stored in secure local storage. It is not included in safe backups or Owner Export.';
+
+  @override
+  String get locationGranularityTitle => 'Display granularity';
+
+  @override
+  String get locationGranularityBody =>
+      'Lists and status surfaces use coarse display by default to reduce shoulder-surfing risk.';
+
+  @override
+  String get locationGranularityLabel => 'Default display';
+
+  @override
+  String get locationGranularityCity => 'City';
+
+  @override
+  String get locationGranularityDistrict => 'District';
+
+  @override
+  String get locationGranularityNeighborhood => 'Neighborhood';
+
+  @override
+  String get locationGranularityStreet => 'Street';
+
+  @override
+  String get locationGranularityFull => 'Full address';
+
+  @override
+  String get locationTestTitle => 'Current status';
+
+  @override
+  String get locationTestBody =>
+      'Run one foreground lookup with the current settings. The preview stays coarse.';
+
+  @override
+  String get locationTestAction => 'Test location';
+
+  @override
+  String get locationTestRunning => 'Testing...';
+
+  @override
+  String get locationMaintenanceTitle => 'Saved locations';
+
+  @override
+  String get locationMaintenanceBody =>
+      'Turning the feature off stops future capture. Use clear to remove saved location metadata from existing records.';
+
+  @override
+  String get locationClearSavedAction => 'Clear saved locations';
+
+  @override
+  String get locationClearConfirmTitle => 'Clear saved locations?';
+
+  @override
+  String get locationClearConfirmBody =>
+      'This removes location metadata from existing local capture records. Record text and attachments stay unchanged.';
+
+  @override
+  String get locationClearConfirmAction => 'Clear';
+
+  @override
+  String locationClearSavedResult(int count) {
+    return 'Cleared location metadata from $count records.';
+  }
+
+  @override
+  String get locationStatusAvailable => 'Location captured.';
+
+  @override
+  String locationStatusSummary(String summary) {
+    return 'Area: $summary';
+  }
+
+  @override
+  String get locationStatusCoordinatesSaved =>
+      'GPS coordinates saved on the local record.';
+
+  @override
+  String get locationStatusDisabled => 'Location capture is off.';
+
+  @override
+  String get locationStatusServiceDisabled =>
+      'Device location service is disabled.';
+
+  @override
+  String get locationStatusPermissionDenied =>
+      'Location permission was denied.';
+
+  @override
+  String get locationStatusPermissionDeniedForever =>
+      'Location permission is blocked in system settings.';
+
+  @override
+  String get locationStatusTimeout => 'Location lookup timed out.';
+
+  @override
+  String get locationStatusAmapKeyMissing =>
+      'AMap key is missing. GPS can still be saved.';
+
+  @override
+  String get locationStatusAmapDisabled => 'AMap lookup is off.';
+
+  @override
+  String get locationStatusAmapTimeout =>
+      'AMap lookup timed out. GPS can still be saved.';
+
+  @override
+  String get locationStatusUnavailable => 'Location is unavailable.';
+
+  @override
+  String locationRecordSummary(String summary) {
+    return 'Location: $summary';
+  }
+
+  @override
+  String get locationRecordCoordinatesSaved => 'GPS saved';
+
+  @override
+  String get locationRecordUnavailable => 'Location unavailable';
 }

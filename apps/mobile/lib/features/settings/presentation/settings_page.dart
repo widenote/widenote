@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../l10n/l10n.dart';
 import '../../backup/application/backup_controller.dart';
+import '../../location/application/location_settings_controller.dart';
+import '../../location/domain/location_context.dart';
 import '../../model_providers/application/model_provider_settings_controller.dart';
 import '../../plugins/application/pack_catalog.dart';
 import '../../traces/application/trace_console_controller.dart';
@@ -79,6 +81,10 @@ class _ControlSurface extends ConsumerWidget {
     final voiceSettings = ref
         .watch(voiceTranscriptionSettingsControllerProvider)
         .valueOrNull;
+    final locationSettings = ref
+        .watch(locationSettingsControllerProvider)
+        .valueOrNull
+        ?.settings;
     final backupState = ref.watch(backupControllerProvider);
     final traceSnapshot = ref.watch(traceConsoleControllerProvider);
     return _Surface(
@@ -114,6 +120,15 @@ class _ControlSurface extends ConsumerWidget {
             subtitle: l10n.settingsTranscriptionSubtitle,
             status: _transcriptionStatus(l10n, voiceSettings),
             onTap: () => context.go('/settings/transcription'),
+          ),
+          const Divider(height: 20),
+          _ControlRow(
+            key: const Key('settings-location-entry'),
+            icon: Icons.my_location_outlined,
+            title: l10n.settingsLocationTitle,
+            subtitle: l10n.settingsLocationSubtitle,
+            status: _locationStatus(l10n, locationSettings),
+            onTap: () => context.go('/settings/location'),
           ),
           const Divider(height: 20),
           _ControlRow(
@@ -182,6 +197,19 @@ class _ControlSurface extends ConsumerWidget {
       return l10n.settingsTranscriptionStatusLocal;
     }
     return l10n.settingsTranscriptionStatusNeedsSetup;
+  }
+
+  String _locationStatus(
+    AppLocalizations l10n,
+    LocationCaptureSettings? settings,
+  ) {
+    if (settings == null || !settings.saveGps) {
+      return l10n.settingsLocationStatusOff;
+    }
+    if (settings.useAmapReverseGeocode) {
+      return l10n.settingsLocationStatusAmap;
+    }
+    return l10n.settingsLocationStatusGps;
   }
 }
 

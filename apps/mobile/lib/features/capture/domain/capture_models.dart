@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../../location/domain/location_context.dart';
+
 @immutable
 class CaptureRecord {
   const CaptureRecord({
@@ -8,6 +10,7 @@ class CaptureRecord {
     required this.createdAt,
     required this.status,
     this.sourceEventId,
+    this.locationContext,
   });
 
   final String id;
@@ -15,6 +18,7 @@ class CaptureRecord {
   final DateTime createdAt;
   final String status;
   final String? sourceEventId;
+  final CapturedLocationContext? locationContext;
 
   CaptureRecord copyWith({
     String? id,
@@ -22,6 +26,8 @@ class CaptureRecord {
     DateTime? createdAt,
     String? status,
     String? sourceEventId,
+    CapturedLocationContext? locationContext,
+    bool clearLocationContext = false,
   }) {
     return CaptureRecord(
       id: id ?? this.id,
@@ -29,6 +35,9 @@ class CaptureRecord {
       createdAt: createdAt ?? this.createdAt,
       status: status ?? this.status,
       sourceEventId: sourceEventId ?? this.sourceEventId,
+      locationContext: clearLocationContext
+          ? null
+          : locationContext ?? this.locationContext,
     );
   }
 }

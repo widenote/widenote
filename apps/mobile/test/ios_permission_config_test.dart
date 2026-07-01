@@ -10,9 +10,11 @@ void main() {
     final contents = infoPlist.readAsStringSync();
     expect(contents, contains('NSCameraUsageDescription'));
     expect(contents, contains('NSMicrophoneUsageDescription'));
+    expect(contents, contains('NSLocationWhenInUseUsageDescription'));
     expect(contents, contains('NSPhotoLibraryUsageDescription'));
     expect(contents, contains('local raw capture attachments'));
     expect(contents, contains('source metadata'));
+    expect(contents, isNot(contains('NSLocationAlwaysUsageDescription')));
   });
 
   test('iOS app registers and handles .widenote backup documents', () {

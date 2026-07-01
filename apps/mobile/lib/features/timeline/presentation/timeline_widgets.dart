@@ -525,6 +525,11 @@ class _TimelineItemText extends StatelessWidget {
               ),
             ),
             TimelineTag(icon: Icons.schedule, label: timeLabel(item.createdAt)),
+            if (timelineLocationTagLabel(context.l10n, item) != null)
+              TimelineTag(
+                icon: Icons.location_on_outlined,
+                label: timelineLocationTagLabel(context.l10n, item)!,
+              ),
           ],
         ),
         if (artifacts.isNotEmpty) ...[
@@ -573,6 +578,23 @@ class TimelineTag extends StatelessWidget {
       ),
     );
   }
+}
+
+String? timelineLocationTagLabel(
+  AppLocalizations l10n,
+  MemoryFirstTimelineItem item,
+) {
+  final summary = item.metadata['location_summary'];
+  if (summary is String && summary.trim().isNotEmpty) {
+    return l10n.locationRecordSummary(summary);
+  }
+  if (item.metadata['location_coordinates_saved'] == true) {
+    return l10n.locationRecordCoordinatesSaved;
+  }
+  if (item.metadata['location_status'] == 'unavailable') {
+    return l10n.locationRecordUnavailable;
+  }
+  return null;
 }
 
 IconData timelineIcon(MemoryFirstTimelineItemKind kind) {
