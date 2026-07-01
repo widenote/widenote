@@ -49,6 +49,13 @@
             "encrypted_full"
           ]
         },
+        "media_policy": {
+          "type": "string",
+          "enum": [
+            "metadata_only",
+            "include_media_bytes"
+          ]
+        },
         "includes_secrets": {
           "type": "boolean"
         },
@@ -176,6 +183,9 @@
           "type": "boolean"
         },
         "contains_secrets": {
+          "type": "boolean"
+        },
+        "contains_media_bytes": {
           "type": "boolean"
         },
         "required_for_restore": {

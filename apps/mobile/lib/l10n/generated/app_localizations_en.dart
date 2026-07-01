@@ -171,6 +171,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'A background recording is still running. Stop it before saving this record.';
 
   @override
+  String get voicePreviewListening => 'Listening...';
+
+  @override
+  String get voicePreviewUnavailable =>
+      'Live transcript preview is unavailable. Audio is still being saved locally.';
+
+  @override
+  String voicePreviewDraft(String text) {
+    return 'Draft transcript: $text';
+  }
+
+  @override
   String get recapTitle => 'Daily Recap';
 
   @override
@@ -1387,6 +1399,25 @@ class AppLocalizationsEn extends AppLocalizations {
       'Configure local or BYOK model access for runtime and Agent Packs.';
 
   @override
+  String get settingsTranscriptionTitle => 'Voice Transcription';
+
+  @override
+  String get settingsTranscriptionSubtitle =>
+      'Configure live preview, local ASR, MiMo fallback, and transcript correction.';
+
+  @override
+  String get settingsTranscriptionStatusLoading => 'loading';
+
+  @override
+  String get settingsTranscriptionStatusLocal => 'local';
+
+  @override
+  String get settingsTranscriptionStatusRemote => 'remote';
+
+  @override
+  String get settingsTranscriptionStatusNeedsSetup => 'setup';
+
+  @override
   String get settingsBackupTitle => 'Backup & Restore';
 
   @override
@@ -2300,6 +2331,178 @@ class AppLocalizationsEn extends AppLocalizations {
   String providerConnectionProviderUnexpectedFailure(String provider) {
     return '$provider connection test failed unexpectedly.';
   }
+
+  @override
+  String get voiceSettingsTitle => 'Voice Transcription';
+
+  @override
+  String get voiceSettingsSubtitle =>
+      'Save original audio locally, use transcript text for records, and keep correction evidence source-linked.';
+
+  @override
+  String voiceSettingsLoadFailed(String details) {
+    return 'Voice transcription settings could not load: $details';
+  }
+
+  @override
+  String get voiceSettingsSaved => 'Voice transcription settings saved.';
+
+  @override
+  String get voiceSettingsStatusTitle => 'Status';
+
+  @override
+  String get voiceSettingsLocalModelTitle => 'Local model';
+
+  @override
+  String get voiceSettingsLocalModelManageTitle => 'Local ASR model';
+
+  @override
+  String get voiceSettingsLocalModelManageDescription =>
+      'Download SenseVoice for offline transcription and live preview. Downloads use a temporary .part directory and can be retried safely.';
+
+  @override
+  String voiceSettingsModelProgress(String state, int progress) {
+    return '$state · $progress%';
+  }
+
+  @override
+  String get voiceSettingsModelDownloadButton => 'Download local model';
+
+  @override
+  String get voiceSettingsModelDownloading => 'Downloading...';
+
+  @override
+  String get voiceSettingsModelDeleteButton => 'Delete local model';
+
+  @override
+  String get voiceSettingsModelUnavailable =>
+      'Local model storage is unavailable on this device.';
+
+  @override
+  String get voiceSettingsModelDownloadReady => 'Local ASR model is ready.';
+
+  @override
+  String voiceSettingsModelDownloadFailed(String details) {
+    return 'Local ASR model download failed: $details';
+  }
+
+  @override
+  String get voiceSettingsModelDeleted => 'Local ASR model deleted.';
+
+  @override
+  String get voiceSettingsRemoteFallbackTitle => 'Remote fallback';
+
+  @override
+  String get voiceSettingsRemoteEnabled => 'enabled';
+
+  @override
+  String get voiceSettingsRemoteDisabled => 'disabled';
+
+  @override
+  String get voiceSettingsPreviewTitle => 'Live preview';
+
+  @override
+  String get voiceSettingsPreviewDescription =>
+      'Preview uses local microphone PCM while recording. If preview fails, the WAV file is still saved.';
+
+  @override
+  String get voiceSettingsPreviewSwitchTitle =>
+      'Show transcript preview while recording';
+
+  @override
+  String get voiceSettingsPreviewSwitchSubtitle =>
+      'The saved WAV remains the source of truth.';
+
+  @override
+  String get voiceSettingsRemoteTitle => 'MiMo ASR fallback';
+
+  @override
+  String get voiceSettingsRemoteDescription =>
+      'When the local model cannot transcribe, WideNote can upload the saved WAV to the configured MiMo-compatible endpoint after consent.';
+
+  @override
+  String get voiceSettingsRemoteConsentTitle => 'Allow remote ASR fallback';
+
+  @override
+  String get voiceSettingsRemoteConsentSubtitle =>
+      'Audio upload is used only for transcription fallback and manual retry.';
+
+  @override
+  String get voiceSettingsEndpointLabel => 'Endpoint';
+
+  @override
+  String get voiceSettingsModelLabel => 'Model';
+
+  @override
+  String get voiceSettingsApiKeyLabel => 'API key';
+
+  @override
+  String get voiceSettingsApiKeyHelper =>
+      'Stored in secure local storage. Leave blank to keep the saved key.';
+
+  @override
+  String get voiceSettingsCorrectionTitle => 'Transcript correction';
+
+  @override
+  String get voiceSettingsCorrectionDescription =>
+      'The correction Agent Pack can revise names and terms. It records correction evidence but does not write Memory directly.';
+
+  @override
+  String get voiceSettingsCorrectionModeLabel => 'Correction mode';
+
+  @override
+  String get voiceSettingsCorrectionDisabled => 'Disabled';
+
+  @override
+  String get voiceSettingsCorrectionSuggest => 'Suggest only';
+
+  @override
+  String get voiceSettingsCorrectionAutoApply => 'Auto-apply high confidence';
+
+  @override
+  String get voiceSettingsRetryTitle => 'Manual retry';
+
+  @override
+  String get voiceSettingsRetryDescription =>
+      'Retry failed or review-needed transcripts with the remote ASR path.';
+
+  @override
+  String get voiceSettingsRetryButton => 'Retry failed transcripts';
+
+  @override
+  String get voiceSettingsRetryRunning => 'Retrying...';
+
+  @override
+  String voiceSettingsRetrySummary(int attempted, int succeeded, int failed) {
+    return '$attempted attempted / $succeeded succeeded / $failed failed';
+  }
+
+  @override
+  String get voiceSettingsModelStateNotDownloaded => 'not downloaded';
+
+  @override
+  String get voiceSettingsModelStateChecking => 'checking';
+
+  @override
+  String get voiceSettingsModelStateDownloading => 'downloading';
+
+  @override
+  String get voiceSettingsModelStateInterrupted => 'interrupted';
+
+  @override
+  String get voiceSettingsModelStateVerifying => 'verifying';
+
+  @override
+  String get voiceSettingsModelStateReady => 'ready';
+
+  @override
+  String get voiceSettingsModelStateFailed => 'failed';
+
+  @override
+  String get voiceSettingsModelStateCorrupted => 'corrupted';
+
+  @override
+  String get voiceSettingsModelStateDeleting => 'deleting';
 
   @override
   String get backupTitle => 'Backup';

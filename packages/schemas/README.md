@@ -7,6 +7,7 @@ Shared schema package for cross-runtime contracts.
 Initial schema families:
 
 - Event
+- Transcript events and corrections
 - Memory
 - Agent Pack manifest
 - Permission
@@ -30,6 +31,7 @@ Current source schemas:
 | Contract | Source |
 | --- | --- |
 | Event envelope | `src/event/event.schema.json` |
+| Transcript events and corrections | `src/transcript/transcript.schema.json` |
 | Memory candidate/item | `src/memory/memory.schema.json` |
 | Agent Pack manifest | `src/agent_pack/agent_pack_manifest.schema.json` |
 | Agent Pack marketplace index | `src/agent_pack/agent_pack_marketplace.schema.json` |
@@ -75,7 +77,7 @@ node packages/schemas/validate_fixtures.mjs
 Current lightweight Agent Pack manifest validation checks parseability, basic shape, cross-references, and WideNote phase-one guardrails without adding repository dependencies:
 
 ```sh
-node tools/pack_validator/validate.mjs packs/official/default/manifest.json packs/official/todo/manifest.json
+node tools/pack_validator/validate.mjs packs/official/default/manifest.json packs/official/todo/manifest.json packs/official/pkm_library/manifest.json packs/official/transcript_correction/manifest.json packs/marketplace/index.json
 ```
 
 The runtime task/run contract uses public JSON run modes
@@ -104,6 +106,16 @@ Approval request and decision fixtures intentionally store action summaries,
 reasons, expiry, pack/agent/task/run/tool/source refs, and
 `redacted_input_keys` only. Do not add raw tool input, credentials, provider
 keys, or private records to approval or trace fixtures.
+
+Transcript event fixtures cover `wn.transcript.requested`,
+`wn.transcript.created`, `wn.transcript.failed`, and
+`wn.transcript.corrected`. Transcript fixtures must use synthetic text only:
+never add real transcripts, raw audio bytes, provider keys, local DB rows, or
+backup contents.
+
+Safe backup manifests may declare `media_policy: include_media_bytes` and mark
+media sections with `contains_media_bytes: true`. Provider credentials remain
+excluded from safe backup fixtures and generated docs.
 
 Agent Pack `model_profiles[]` may omit routing fields while packs are still
 declarative. A materialized provider routing object should apply conservative

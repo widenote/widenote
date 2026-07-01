@@ -1,0 +1,48 @@
+{
+  "id": "evt_synthetic_transcript_failed_001",
+  "type": "wn.transcript.failed",
+  "schema_version": 1,
+  "actor": "system",
+  "status": "failed",
+  "pack_id": null,
+  "agent_id": null,
+  "source_capture_id": "cap_synthetic_voice_002",
+  "source_event_id": "evt_synthetic_transcript_requested_002",
+  "subject_ref": {
+    "kind": "attachment",
+    "id": "att_synthetic_voice_002",
+    "uri": null
+  },
+  "payload": {
+    "request_id": "tx_req_synthetic_002",
+    "capture_id": "cap_synthetic_voice_002",
+    "attachment_id": "att_synthetic_voice_002",
+    "transcript_status": "failed",
+    "provider_id": "local.sensevoice",
+    "provider_kind": "local_asr",
+    "error_code": "model_not_ready",
+    "error_message_safe": "Local speech model is not ready.",
+    "retry_available": true,
+    "manual_retry_available": true,
+    "fallback_attempted": false,
+    "source_attachment_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  },
+  "privacy": "local_only",
+  "causation_id": "evt_synthetic_transcript_requested_002",
+  "correlation_id": "corr_synthetic_voice_002",
+  "trace_id": "trace_synthetic_transcript_002",
+  "idempotency_key": "transcript:cap_synthetic_voice_002:att_synthetic_voice_002:failed",
+  "device_id": "device_synthetic",
+  "created_at": "2026-07-01T02:01:09Z",
+  "retention": {
+    "policy": "delete_with_subject",
+    "expires_at": null
+  },
+  "redaction": {
+    "policy": "none",
+    "reason": null
+  },
+  "metadata": {
+    "fixture": true
+  }
+}

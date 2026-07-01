@@ -356,6 +356,24 @@ abstract class AppLocalizations {
   /// **'A background recording is still running. Stop it before saving this record.'**
   String get backgroundVoiceComposerBusy;
 
+  /// No description provided for @voicePreviewListening.
+  ///
+  /// In en, this message translates to:
+  /// **'Listening...'**
+  String get voicePreviewListening;
+
+  /// No description provided for @voicePreviewUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Live transcript preview is unavailable. Audio is still being saved locally.'**
+  String get voicePreviewUnavailable;
+
+  /// No description provided for @voicePreviewDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft transcript: {text}'**
+  String voicePreviewDraft(String text);
+
   /// No description provided for @recapTitle.
   ///
   /// In en, this message translates to:
@@ -2381,6 +2399,42 @@ abstract class AppLocalizations {
   /// **'Configure local or BYOK model access for runtime and Agent Packs.'**
   String get settingsModelProvidersSubtitle;
 
+  /// No description provided for @settingsTranscriptionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice Transcription'**
+  String get settingsTranscriptionTitle;
+
+  /// No description provided for @settingsTranscriptionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure live preview, local ASR, MiMo fallback, and transcript correction.'**
+  String get settingsTranscriptionSubtitle;
+
+  /// No description provided for @settingsTranscriptionStatusLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'loading'**
+  String get settingsTranscriptionStatusLoading;
+
+  /// No description provided for @settingsTranscriptionStatusLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'local'**
+  String get settingsTranscriptionStatusLocal;
+
+  /// No description provided for @settingsTranscriptionStatusRemote.
+  ///
+  /// In en, this message translates to:
+  /// **'remote'**
+  String get settingsTranscriptionStatusRemote;
+
+  /// No description provided for @settingsTranscriptionStatusNeedsSetup.
+  ///
+  /// In en, this message translates to:
+  /// **'setup'**
+  String get settingsTranscriptionStatusNeedsSetup;
+
   /// No description provided for @settingsBackupTitle.
   ///
   /// In en, this message translates to:
@@ -3740,6 +3794,312 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{provider} connection test failed unexpectedly.'**
   String providerConnectionProviderUnexpectedFailure(String provider);
+
+  /// No description provided for @voiceSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice Transcription'**
+  String get voiceSettingsTitle;
+
+  /// No description provided for @voiceSettingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save original audio locally, use transcript text for records, and keep correction evidence source-linked.'**
+  String get voiceSettingsSubtitle;
+
+  /// No description provided for @voiceSettingsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice transcription settings could not load: {details}'**
+  String voiceSettingsLoadFailed(String details);
+
+  /// No description provided for @voiceSettingsSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice transcription settings saved.'**
+  String get voiceSettingsSaved;
+
+  /// No description provided for @voiceSettingsStatusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get voiceSettingsStatusTitle;
+
+  /// No description provided for @voiceSettingsLocalModelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Local model'**
+  String get voiceSettingsLocalModelTitle;
+
+  /// No description provided for @voiceSettingsLocalModelManageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Local ASR model'**
+  String get voiceSettingsLocalModelManageTitle;
+
+  /// No description provided for @voiceSettingsLocalModelManageDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Download SenseVoice for offline transcription and live preview. Downloads use a temporary .part directory and can be retried safely.'**
+  String get voiceSettingsLocalModelManageDescription;
+
+  /// No description provided for @voiceSettingsModelProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{state} · {progress}%'**
+  String voiceSettingsModelProgress(String state, int progress);
+
+  /// No description provided for @voiceSettingsModelDownloadButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Download local model'**
+  String get voiceSettingsModelDownloadButton;
+
+  /// No description provided for @voiceSettingsModelDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading...'**
+  String get voiceSettingsModelDownloading;
+
+  /// No description provided for @voiceSettingsModelDeleteButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete local model'**
+  String get voiceSettingsModelDeleteButton;
+
+  /// No description provided for @voiceSettingsModelUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Local model storage is unavailable on this device.'**
+  String get voiceSettingsModelUnavailable;
+
+  /// No description provided for @voiceSettingsModelDownloadReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Local ASR model is ready.'**
+  String get voiceSettingsModelDownloadReady;
+
+  /// No description provided for @voiceSettingsModelDownloadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Local ASR model download failed: {details}'**
+  String voiceSettingsModelDownloadFailed(String details);
+
+  /// No description provided for @voiceSettingsModelDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Local ASR model deleted.'**
+  String get voiceSettingsModelDeleted;
+
+  /// No description provided for @voiceSettingsRemoteFallbackTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remote fallback'**
+  String get voiceSettingsRemoteFallbackTitle;
+
+  /// No description provided for @voiceSettingsRemoteEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'enabled'**
+  String get voiceSettingsRemoteEnabled;
+
+  /// No description provided for @voiceSettingsRemoteDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'disabled'**
+  String get voiceSettingsRemoteDisabled;
+
+  /// No description provided for @voiceSettingsPreviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Live preview'**
+  String get voiceSettingsPreviewTitle;
+
+  /// No description provided for @voiceSettingsPreviewDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview uses local microphone PCM while recording. If preview fails, the WAV file is still saved.'**
+  String get voiceSettingsPreviewDescription;
+
+  /// No description provided for @voiceSettingsPreviewSwitchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show transcript preview while recording'**
+  String get voiceSettingsPreviewSwitchTitle;
+
+  /// No description provided for @voiceSettingsPreviewSwitchSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The saved WAV remains the source of truth.'**
+  String get voiceSettingsPreviewSwitchSubtitle;
+
+  /// No description provided for @voiceSettingsRemoteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'MiMo ASR fallback'**
+  String get voiceSettingsRemoteTitle;
+
+  /// No description provided for @voiceSettingsRemoteDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'When the local model cannot transcribe, WideNote can upload the saved WAV to the configured MiMo-compatible endpoint after consent.'**
+  String get voiceSettingsRemoteDescription;
+
+  /// No description provided for @voiceSettingsRemoteConsentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow remote ASR fallback'**
+  String get voiceSettingsRemoteConsentTitle;
+
+  /// No description provided for @voiceSettingsRemoteConsentSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio upload is used only for transcription fallback and manual retry.'**
+  String get voiceSettingsRemoteConsentSubtitle;
+
+  /// No description provided for @voiceSettingsEndpointLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Endpoint'**
+  String get voiceSettingsEndpointLabel;
+
+  /// No description provided for @voiceSettingsModelLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get voiceSettingsModelLabel;
+
+  /// No description provided for @voiceSettingsApiKeyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'API key'**
+  String get voiceSettingsApiKeyLabel;
+
+  /// No description provided for @voiceSettingsApiKeyHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Stored in secure local storage. Leave blank to keep the saved key.'**
+  String get voiceSettingsApiKeyHelper;
+
+  /// No description provided for @voiceSettingsCorrectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcript correction'**
+  String get voiceSettingsCorrectionTitle;
+
+  /// No description provided for @voiceSettingsCorrectionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'The correction Agent Pack can revise names and terms. It records correction evidence but does not write Memory directly.'**
+  String get voiceSettingsCorrectionDescription;
+
+  /// No description provided for @voiceSettingsCorrectionModeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Correction mode'**
+  String get voiceSettingsCorrectionModeLabel;
+
+  /// No description provided for @voiceSettingsCorrectionDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled'**
+  String get voiceSettingsCorrectionDisabled;
+
+  /// No description provided for @voiceSettingsCorrectionSuggest.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest only'**
+  String get voiceSettingsCorrectionSuggest;
+
+  /// No description provided for @voiceSettingsCorrectionAutoApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-apply high confidence'**
+  String get voiceSettingsCorrectionAutoApply;
+
+  /// No description provided for @voiceSettingsRetryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual retry'**
+  String get voiceSettingsRetryTitle;
+
+  /// No description provided for @voiceSettingsRetryDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry failed or review-needed transcripts with the remote ASR path.'**
+  String get voiceSettingsRetryDescription;
+
+  /// No description provided for @voiceSettingsRetryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry failed transcripts'**
+  String get voiceSettingsRetryButton;
+
+  /// No description provided for @voiceSettingsRetryRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Retrying...'**
+  String get voiceSettingsRetryRunning;
+
+  /// No description provided for @voiceSettingsRetrySummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{attempted} attempted / {succeeded} succeeded / {failed} failed'**
+  String voiceSettingsRetrySummary(int attempted, int succeeded, int failed);
+
+  /// No description provided for @voiceSettingsModelStateNotDownloaded.
+  ///
+  /// In en, this message translates to:
+  /// **'not downloaded'**
+  String get voiceSettingsModelStateNotDownloaded;
+
+  /// No description provided for @voiceSettingsModelStateChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'checking'**
+  String get voiceSettingsModelStateChecking;
+
+  /// No description provided for @voiceSettingsModelStateDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'downloading'**
+  String get voiceSettingsModelStateDownloading;
+
+  /// No description provided for @voiceSettingsModelStateInterrupted.
+  ///
+  /// In en, this message translates to:
+  /// **'interrupted'**
+  String get voiceSettingsModelStateInterrupted;
+
+  /// No description provided for @voiceSettingsModelStateVerifying.
+  ///
+  /// In en, this message translates to:
+  /// **'verifying'**
+  String get voiceSettingsModelStateVerifying;
+
+  /// No description provided for @voiceSettingsModelStateReady.
+  ///
+  /// In en, this message translates to:
+  /// **'ready'**
+  String get voiceSettingsModelStateReady;
+
+  /// No description provided for @voiceSettingsModelStateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'failed'**
+  String get voiceSettingsModelStateFailed;
+
+  /// No description provided for @voiceSettingsModelStateCorrupted.
+  ///
+  /// In en, this message translates to:
+  /// **'corrupted'**
+  String get voiceSettingsModelStateCorrupted;
+
+  /// No description provided for @voiceSettingsModelStateDeleting.
+  ///
+  /// In en, this message translates to:
+  /// **'deleting'**
+  String get voiceSettingsModelStateDeleting;
 
   /// No description provided for @backupTitle.
   ///

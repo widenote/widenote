@@ -1,0 +1,18 @@
+{
+  "id": "source.write.transcript",
+  "title": "Write transcript artifact",
+  "description": "Allows a transcription engine to create source-linked transcript artifacts without mutating the original audio.",
+  "risk": "medium",
+  "grant_behavior": "grant_on_enable",
+  "scope": {
+    "artifact_kind": "audio_transcript",
+    "may_overwrite_source": false
+  },
+  "side_effects": [
+    "local_write"
+  ],
+  "requires_trace": true,
+  "metadata": {
+    "fixture": true
+  }
+}

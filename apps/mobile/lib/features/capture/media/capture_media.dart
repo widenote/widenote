@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:typed_data';
+
 enum CaptureAssetKind {
   photo('photo'),
   voice('voice'),
@@ -257,6 +260,7 @@ final class AssetSafetyGuard {
       'image/png',
       'image/heic',
       'image/webp',
+      'audio/wav',
       'audio/m4a',
       'audio/mp4',
       'text/plain',
@@ -504,11 +508,23 @@ final class VoiceRecordingSession {
     required this.id,
     required this.path,
     required this.startedAt,
+    this.pcmStream,
+    this.sampleRate = 16000,
+    this.numChannels = 1,
+    this.usesStreamingSource = false,
+    this.finalizeStreamingSource,
+    this.cancelStreamingSource,
   });
 
   final String id;
   final String path;
   final DateTime startedAt;
+  final Stream<Uint8List>? pcmStream;
+  final int sampleRate;
+  final int numChannels;
+  final bool usesStreamingSource;
+  final Future<void> Function()? finalizeStreamingSource;
+  final Future<void> Function()? cancelStreamingSource;
 }
 
 enum FakePhotoMode { safe, dangerous, unsupported, cancelled, denied, error }
@@ -625,8 +641,12 @@ final class FakeVoiceCaptureAdapter implements VoiceCaptureAdapter {
     return switch (mode) {
       FakeVoiceMode.success || FakeVoiceMode.stopError => VoiceRecordingSession(
         id: 'fake-voice-session-${createdAt.microsecondsSinceEpoch}',
-        path: 'fake://microphone/voice-note.m4a',
+        path: 'fake://microphone/voice-note.wav',
         startedAt: createdAt,
+        pcmStream: Stream<Uint8List>.fromIterable(<Uint8List>[
+          Uint8List.fromList(<int>[0, 0, 1, 0, 2, 0, 3, 0]),
+        ]),
+        usesStreamingSource: true,
       ),
       FakeVoiceMode.denied => throw const CaptureMediaException(
         CaptureMediaFailureReason.permissionDenied,
@@ -651,14 +671,18 @@ final class FakeVoiceCaptureAdapter implements VoiceCaptureAdapter {
     return RawCaptureAsset(
       id: 'fake-voice-${endedAt.microsecondsSinceEpoch}',
       kind: CaptureAssetKind.voice,
-      displayName: 'Voice recording sample.m4a',
-      mimeType: 'audio/m4a',
+      displayName: 'Voice recording sample.wav',
+      mimeType: 'audio/wav',
       sourceUri: session.path,
       sizeBytes: 96000,
       previewText: 'Voice recording captured. Transcript pending.',
       rawMetadata: <String, Object?>{
         'adapter': 'fake_voice',
         'source': 'microphone',
+        'audio_format': 'wav',
+        'sample_rate': session.sampleRate,
+        'num_channels': session.numChannels,
+        'streaming_source': session.usesStreamingSource,
         'duration_ms': endedAt.difference(session.startedAt).inMilliseconds,
         'sha256': 'fake-voice-sha256',
         'transcript_status': 'pending',

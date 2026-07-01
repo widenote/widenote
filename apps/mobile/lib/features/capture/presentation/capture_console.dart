@@ -4,6 +4,7 @@ import '../../../l10n/l10n.dart';
 import '../application/capture_input_controller.dart';
 import '../media/capture_media.dart';
 import 'attachment_artifact_widgets.dart';
+import '../../transcription/transcription_types.dart';
 
 class CaptureConsole extends StatelessWidget {
   const CaptureConsole({
@@ -71,7 +72,7 @@ class CaptureConsole extends StatelessWidget {
             ),
             if (inputState.isRecordingVoice) ...[
               const SizedBox(height: 12),
-              const _RecordingInProgressLine(),
+              _RecordingInProgressLine(preview: inputState.voicePreview),
             ],
             const SizedBox(height: 12),
             _ConsoleActions(
@@ -207,7 +208,9 @@ class _ConsoleActions extends StatelessWidget {
 }
 
 class _RecordingInProgressLine extends StatelessWidget {
-  const _RecordingInProgressLine();
+  const _RecordingInProgressLine({required this.preview});
+
+  final TranscriptionPreview preview;
 
   @override
   Widget build(BuildContext context) {
@@ -224,17 +227,37 @@ class _RecordingInProgressLine extends StatelessWidget {
           children: [
             Icon(Icons.mic_outlined, color: colorScheme.error),
             const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                context.l10n.backgroundVoiceComposerBusy,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
+            Expanded(child: _VoicePreviewText(preview: preview, compact: true)),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _VoicePreviewText extends StatelessWidget {
+  const _VoicePreviewText({required this.preview, this.compact = false});
+
+  final TranscriptionPreview preview;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final colorScheme = Theme.of(context).colorScheme;
+    final text = preview.hasText
+        ? l10n.voicePreviewDraft(preview.displayText)
+        : preview.errorCode == null
+        ? l10n.voicePreviewListening
+        : l10n.voicePreviewUnavailable;
+    return Text(
+      text,
+      key: compact ? const Key('voice-preview-compact') : null,
+      maxLines: compact ? 3 : 5,
+      overflow: TextOverflow.ellipsis,
+      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+        color: colorScheme.onSurfaceVariant,
+        fontWeight: FontWeight.w600,
       ),
     );
   }

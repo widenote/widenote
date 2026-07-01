@@ -142,6 +142,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get backgroundVoiceComposerBusy => '后台录音仍在进行中。请先停止录音，再保存这条记录。';
 
   @override
+  String get voicePreviewListening => '正在听写...';
+
+  @override
+  String get voicePreviewUnavailable => '实时转写预览暂不可用，音频仍会本地保存。';
+
+  @override
+  String voicePreviewDraft(String text) {
+    return '转写草稿：$text';
+  }
+
+  @override
   String get recapTitle => '每日回顾';
 
   @override
@@ -1232,6 +1243,24 @@ class AppLocalizationsZh extends AppLocalizations {
       '为运行时和 Agent Pack 配置本地或自带密钥的模型访问。';
 
   @override
+  String get settingsTranscriptionTitle => '语音转写';
+
+  @override
+  String get settingsTranscriptionSubtitle => '配置实时预览、本地 ASR、MiMo 兜底和转写校正。';
+
+  @override
+  String get settingsTranscriptionStatusLoading => '加载中';
+
+  @override
+  String get settingsTranscriptionStatusLocal => '本地';
+
+  @override
+  String get settingsTranscriptionStatusRemote => '远端';
+
+  @override
+  String get settingsTranscriptionStatusNeedsSetup => '待配置';
+
+  @override
   String get settingsBackupTitle => '备份与恢复';
 
   @override
@@ -2047,6 +2076,171 @@ class AppLocalizationsZh extends AppLocalizations {
   String providerConnectionProviderUnexpectedFailure(String provider) {
     return '$provider 连接测试意外失败。';
   }
+
+  @override
+  String get voiceSettingsTitle => '语音转写';
+
+  @override
+  String get voiceSettingsSubtitle => '原始音频本地保存，记录默认使用转写文本，校正证据继续保留来源引用。';
+
+  @override
+  String voiceSettingsLoadFailed(String details) {
+    return '语音转写设置加载失败：$details';
+  }
+
+  @override
+  String get voiceSettingsSaved => '语音转写设置已保存。';
+
+  @override
+  String get voiceSettingsStatusTitle => '状态';
+
+  @override
+  String get voiceSettingsLocalModelTitle => '本地模型';
+
+  @override
+  String get voiceSettingsLocalModelManageTitle => '本地 ASR 模型';
+
+  @override
+  String get voiceSettingsLocalModelManageDescription =>
+      '下载 SenseVoice 用于离线转写和实时预览。下载会写入临时 .part 目录，中断后可以安全重试。';
+
+  @override
+  String voiceSettingsModelProgress(String state, int progress) {
+    return '$state · $progress%';
+  }
+
+  @override
+  String get voiceSettingsModelDownloadButton => '下载本地模型';
+
+  @override
+  String get voiceSettingsModelDownloading => '下载中...';
+
+  @override
+  String get voiceSettingsModelDeleteButton => '删除本地模型';
+
+  @override
+  String get voiceSettingsModelUnavailable => '当前设备无法使用本地模型存储。';
+
+  @override
+  String get voiceSettingsModelDownloadReady => '本地 ASR 模型已就绪。';
+
+  @override
+  String voiceSettingsModelDownloadFailed(String details) {
+    return '本地 ASR 模型下载失败：$details';
+  }
+
+  @override
+  String get voiceSettingsModelDeleted => '本地 ASR 模型已删除。';
+
+  @override
+  String get voiceSettingsRemoteFallbackTitle => '远端兜底';
+
+  @override
+  String get voiceSettingsRemoteEnabled => '已启用';
+
+  @override
+  String get voiceSettingsRemoteDisabled => '已停用';
+
+  @override
+  String get voiceSettingsPreviewTitle => '实时预览';
+
+  @override
+  String get voiceSettingsPreviewDescription =>
+      '录音时用本地麦克风 PCM 生成预览。预览失败时，WAV 文件仍会保存。';
+
+  @override
+  String get voiceSettingsPreviewSwitchTitle => '录音时显示转写预览';
+
+  @override
+  String get voiceSettingsPreviewSwitchSubtitle => '保存的 WAV 仍是来源事实。';
+
+  @override
+  String get voiceSettingsRemoteTitle => 'MiMo ASR 兜底';
+
+  @override
+  String get voiceSettingsRemoteDescription =>
+      '本地模型无法转写时，WideNote 可以在授权后把保存的 WAV 上传到配置的 MiMo 兼容端点。';
+
+  @override
+  String get voiceSettingsRemoteConsentTitle => '允许远端 ASR 兜底';
+
+  @override
+  String get voiceSettingsRemoteConsentSubtitle => '音频上传只用于转写兜底和手动重试。';
+
+  @override
+  String get voiceSettingsEndpointLabel => '端点';
+
+  @override
+  String get voiceSettingsModelLabel => '模型';
+
+  @override
+  String get voiceSettingsApiKeyLabel => 'API Key';
+
+  @override
+  String get voiceSettingsApiKeyHelper => '保存到本地安全存储。留空会保留已保存的密钥。';
+
+  @override
+  String get voiceSettingsCorrectionTitle => '转写校正';
+
+  @override
+  String get voiceSettingsCorrectionDescription =>
+      '校正 Agent Pack 可以修正名称和术语。它会记录校正证据，但不会直接写入 Memory。';
+
+  @override
+  String get voiceSettingsCorrectionModeLabel => '校正模式';
+
+  @override
+  String get voiceSettingsCorrectionDisabled => '停用';
+
+  @override
+  String get voiceSettingsCorrectionSuggest => '仅建议';
+
+  @override
+  String get voiceSettingsCorrectionAutoApply => '高置信自动应用';
+
+  @override
+  String get voiceSettingsRetryTitle => '手动重试';
+
+  @override
+  String get voiceSettingsRetryDescription => '用远端 ASR 路径重试失败或需要复核的转写。';
+
+  @override
+  String get voiceSettingsRetryButton => '重试失败转写';
+
+  @override
+  String get voiceSettingsRetryRunning => '重试中...';
+
+  @override
+  String voiceSettingsRetrySummary(int attempted, int succeeded, int failed) {
+    return '$attempted 已尝试 / $succeeded 成功 / $failed 失败';
+  }
+
+  @override
+  String get voiceSettingsModelStateNotDownloaded => '未下载';
+
+  @override
+  String get voiceSettingsModelStateChecking => '检查中';
+
+  @override
+  String get voiceSettingsModelStateDownloading => '下载中';
+
+  @override
+  String get voiceSettingsModelStateInterrupted => '已中断';
+
+  @override
+  String get voiceSettingsModelStateVerifying => '校验中';
+
+  @override
+  String get voiceSettingsModelStateReady => '就绪';
+
+  @override
+  String get voiceSettingsModelStateFailed => '失败';
+
+  @override
+  String get voiceSettingsModelStateCorrupted => '已损坏';
+
+  @override
+  String get voiceSettingsModelStateDeleting => '删除中';
 
   @override
   String get backupTitle => '备份';

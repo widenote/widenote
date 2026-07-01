@@ -454,7 +454,7 @@ void main() {
         rootDirectoryProvider: () async => tempDir,
         now: () => DateTime.utc(2026, 6, 24, 11),
       );
-      final input = File('${tempDir.path}/input.m4a');
+      final input = File('${tempDir.path}/input.wav');
       await input.writeAsString('voice bytes');
       final session = await fileStore.prepareVoiceSession();
 
@@ -463,7 +463,7 @@ void main() {
 
       expect(asset.kind, CaptureAssetKind.voice);
       expect(asset.sourceUri, startsWith('local://capture_media/voice/'));
-      expect(asset.mimeType, 'audio/m4a');
+      expect(asset.mimeType, 'audio/wav');
       expect(metadata['adapter'], 'record');
       expect(metadata['source'], 'microphone');
       expect(metadata['sha256'], hasLength(64));

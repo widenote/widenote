@@ -63,6 +63,16 @@
   "backgroundVoiceActiveBody": "Audio is being preserved as local source material. Stop to review the draft and add context.",
   "backgroundVoiceTimerPlaceholder": "REC",
   "backgroundVoiceComposerBusy": "A background recording is still running. Stop it before saving this record.",
+  "voicePreviewListening": "Listening...",
+  "voicePreviewUnavailable": "Live transcript preview is unavailable. Audio is still being saved locally.",
+  "voicePreviewDraft": "Draft transcript: {text}",
+  "@voicePreviewDraft": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
   "recapTitle": "Daily Recap",
   "recapSubtitle": "Today from local object truth · {date}",
   "@recapSubtitle": {
@@ -666,6 +676,12 @@
   },
   "settingsModelProvidersTitle": "Model Providers",
   "settingsModelProvidersSubtitle": "Configure local or BYOK model access for runtime and Agent Packs.",
+  "settingsTranscriptionTitle": "Voice Transcription",
+  "settingsTranscriptionSubtitle": "Configure live preview, local ASR, MiMo fallback, and transcript correction.",
+  "settingsTranscriptionStatusLoading": "loading",
+  "settingsTranscriptionStatusLocal": "local",
+  "settingsTranscriptionStatusRemote": "remote",
+  "settingsTranscriptionStatusNeedsSetup": "setup",
   "settingsBackupTitle": "Backup & Restore",
   "settingsBackupSubtitle": "Export or import local records, Memory, cards, providers, todos, and logs.",
   "settingsBackupStatus": "local",
@@ -1348,6 +1364,94 @@
       }
     }
   },
+  "voiceSettingsTitle": "Voice Transcription",
+  "voiceSettingsSubtitle": "Save original audio locally, use transcript text for records, and keep correction evidence source-linked.",
+  "voiceSettingsLoadFailed": "Voice transcription settings could not load: {details}",
+  "@voiceSettingsLoadFailed": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "voiceSettingsSaved": "Voice transcription settings saved.",
+  "voiceSettingsStatusTitle": "Status",
+  "voiceSettingsLocalModelTitle": "Local model",
+  "voiceSettingsLocalModelManageTitle": "Local ASR model",
+  "voiceSettingsLocalModelManageDescription": "Download SenseVoice for offline transcription and live preview. Downloads use a temporary .part directory and can be retried safely.",
+  "voiceSettingsModelProgress": "{state} · {progress}%",
+  "@voiceSettingsModelProgress": {
+    "placeholders": {
+      "state": {
+        "type": "String"
+      },
+      "progress": {
+        "type": "int"
+      }
+    }
+  },
+  "voiceSettingsModelDownloadButton": "Download local model",
+  "voiceSettingsModelDownloading": "Downloading...",
+  "voiceSettingsModelDeleteButton": "Delete local model",
+  "voiceSettingsModelUnavailable": "Local model storage is unavailable on this device.",
+  "voiceSettingsModelDownloadReady": "Local ASR model is ready.",
+  "voiceSettingsModelDownloadFailed": "Local ASR model download failed: {details}",
+  "@voiceSettingsModelDownloadFailed": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "voiceSettingsModelDeleted": "Local ASR model deleted.",
+  "voiceSettingsRemoteFallbackTitle": "Remote fallback",
+  "voiceSettingsRemoteEnabled": "enabled",
+  "voiceSettingsRemoteDisabled": "disabled",
+  "voiceSettingsPreviewTitle": "Live preview",
+  "voiceSettingsPreviewDescription": "Preview uses local microphone PCM while recording. If preview fails, the WAV file is still saved.",
+  "voiceSettingsPreviewSwitchTitle": "Show transcript preview while recording",
+  "voiceSettingsPreviewSwitchSubtitle": "The saved WAV remains the source of truth.",
+  "voiceSettingsRemoteTitle": "MiMo ASR fallback",
+  "voiceSettingsRemoteDescription": "When the local model cannot transcribe, WideNote can upload the saved WAV to the configured MiMo-compatible endpoint after consent.",
+  "voiceSettingsRemoteConsentTitle": "Allow remote ASR fallback",
+  "voiceSettingsRemoteConsentSubtitle": "Audio upload is used only for transcription fallback and manual retry.",
+  "voiceSettingsEndpointLabel": "Endpoint",
+  "voiceSettingsModelLabel": "Model",
+  "voiceSettingsApiKeyLabel": "API key",
+  "voiceSettingsApiKeyHelper": "Stored in secure local storage. Leave blank to keep the saved key.",
+  "voiceSettingsCorrectionTitle": "Transcript correction",
+  "voiceSettingsCorrectionDescription": "The correction Agent Pack can revise names and terms. It records correction evidence but does not write Memory directly.",
+  "voiceSettingsCorrectionModeLabel": "Correction mode",
+  "voiceSettingsCorrectionDisabled": "Disabled",
+  "voiceSettingsCorrectionSuggest": "Suggest only",
+  "voiceSettingsCorrectionAutoApply": "Auto-apply high confidence",
+  "voiceSettingsRetryTitle": "Manual retry",
+  "voiceSettingsRetryDescription": "Retry failed or review-needed transcripts with the remote ASR path.",
+  "voiceSettingsRetryButton": "Retry failed transcripts",
+  "voiceSettingsRetryRunning": "Retrying...",
+  "voiceSettingsRetrySummary": "{attempted} attempted / {succeeded} succeeded / {failed} failed",
+  "@voiceSettingsRetrySummary": {
+    "placeholders": {
+      "attempted": {
+        "type": "int"
+      },
+      "succeeded": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
+  "voiceSettingsModelStateNotDownloaded": "not downloaded",
+  "voiceSettingsModelStateChecking": "checking",
+  "voiceSettingsModelStateDownloading": "downloading",
+  "voiceSettingsModelStateInterrupted": "interrupted",
+  "voiceSettingsModelStateVerifying": "verifying",
+  "voiceSettingsModelStateReady": "ready",
+  "voiceSettingsModelStateFailed": "failed",
+  "voiceSettingsModelStateCorrupted": "corrupted",
+  "voiceSettingsModelStateDeleting": "deleting",
   "backupTitle": "Backup",
   "backupSubtitle": "Export and import local records, Memory, cards, chat, providers, todos, and trace data.",
   "backupIdleStatus": "Local data stays on this device until you create or import a backup.",

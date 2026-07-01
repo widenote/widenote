@@ -1,0 +1,52 @@
+{
+  "id": "evt_synthetic_transcript_requested_001",
+  "type": "wn.transcript.requested",
+  "schema_version": 1,
+  "actor": "system",
+  "status": "pending",
+  "pack_id": null,
+  "agent_id": null,
+  "source_capture_id": "cap_synthetic_voice_001",
+  "source_event_id": "evt_synthetic_capture_voice_001",
+  "subject_ref": {
+    "kind": "attachment",
+    "id": "att_synthetic_voice_001",
+    "uri": null
+  },
+  "payload": {
+    "request_id": "tx_req_synthetic_001",
+    "capture_id": "cap_synthetic_voice_001",
+    "attachment_id": "att_synthetic_voice_001",
+    "source_format": "wav",
+    "source_attachment_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "provider_preference": "local_first",
+    "duration_ms": 8200,
+    "realtime_preview_enabled": true,
+    "fallback_policy": {
+      "automatic_remote_asr_after_local_failure": true,
+      "manual_retry_enabled": true,
+      "remote_permission_ids": [
+        "audio.upload.remote_asr",
+        "network.call.declared_host"
+      ]
+    }
+  },
+  "privacy": "local_only",
+  "causation_id": "evt_synthetic_capture_voice_001",
+  "correlation_id": "corr_synthetic_voice_001",
+  "trace_id": "trace_synthetic_transcript_001",
+  "idempotency_key": "transcript:cap_synthetic_voice_001:att_synthetic_voice_001:aaaaaaaa",
+  "device_id": "device_synthetic",
+  "created_at": "2026-07-01T02:00:00Z",
+  "retention": {
+    "policy": "delete_with_subject",
+    "expires_at": null
+  },
+  "redaction": {
+    "policy": "none",
+    "reason": null
+  },
+  "metadata": {
+    "fixture": true
+  }
+}

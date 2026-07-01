@@ -41,7 +41,12 @@ void main() {
   test('catalog entries and available permissions are manifest-derived', () {
     expect(
       builtInPacks.map((pack) => pack.id).toList(growable: false),
-      <String>['pack.default', 'pack.todo', 'pack.pkm_library'],
+      <String>[
+        'pack.default',
+        'pack.todo',
+        'pack.pkm_library',
+        'pack.transcript_correction',
+      ],
     );
 
     final defaultPack = builtInPacks.singleWhere(
@@ -76,6 +81,17 @@ void main() {
     expect(pkmPack.permissions, <String>['model.complete', 'artifact.write']);
     expect(pkmPack.outputEvents, <String>['wn.artifact.created']);
 
+    final transcriptPack = builtInPacks.singleWhere(
+      (pack) => pack.id == 'pack.transcript_correction',
+    );
+    expect(transcriptPack.permissions, <String>[
+      'model.complete',
+      'source.read.transcript',
+      'memory.read',
+      'source.write.transcript_correction',
+    ]);
+    expect(transcriptPack.outputEvents, <String>['wn.transcript.corrected']);
+
     expect(
       builtInPermissions
           .map((permission) => '${permission.packId}:${permission.permission}')
@@ -93,6 +109,10 @@ void main() {
         'pack.todo:todo.suggest',
         'pack.pkm_library:model.complete',
         'pack.pkm_library:artifact.write',
+        'pack.transcript_correction:model.complete',
+        'pack.transcript_correction:source.read.transcript',
+        'pack.transcript_correction:memory.read',
+        'pack.transcript_correction:source.write.transcript_correction',
       ],
     );
     expect(
@@ -150,6 +170,9 @@ void main() {
         'pack.default': officialPackManifestSource('pack.default'),
         'pack.todo': '[]',
         'pack.pkm_library': officialPackManifestSource('pack.pkm_library'),
+        'pack.transcript_correction': officialPackManifestSource(
+          'pack.transcript_correction',
+        ),
       }),
       throwsA(isA<FormatException>()),
     );
@@ -161,6 +184,9 @@ void main() {
         'pack.default': officialPackManifestSource('pack.default'),
         'pack.todo': jsonEncode(unsupportedSchema),
         'pack.pkm_library': officialPackManifestSource('pack.pkm_library'),
+        'pack.transcript_correction': officialPackManifestSource(
+          'pack.transcript_correction',
+        ),
       }),
       throwsA(isA<FormatException>()),
     );
@@ -170,6 +196,9 @@ void main() {
         'pack.default': officialPackManifestSource('pack.default'),
         'pack.todo': officialPackManifestSource('pack.default'),
         'pack.pkm_library': officialPackManifestSource('pack.pkm_library'),
+        'pack.transcript_correction': officialPackManifestSource(
+          'pack.transcript_correction',
+        ),
       }),
       throwsA(
         isA<ArgumentError>().having(
@@ -336,15 +365,21 @@ void main() {
     expect(find.byKey(const Key('pack-row-pack.default')), findsOneWidget);
     expect(find.byKey(const Key('pack-row-pack.todo')), findsOneWidget);
     expect(find.byKey(const Key('pack-row-pack.pkm_library')), findsOneWidget);
+    expect(
+      find.byKey(const Key('pack-row-pack.transcript_correction')),
+      findsOneWidget,
+    );
     expect(find.text('Default Capture Loop'), findsOneWidget);
     expect(find.text('Todo Extraction Loop'), findsOneWidget);
     expect(find.text('PKM Personal Library'), findsOneWidget);
-    expect(find.text('v0.1.0'), findsNWidgets(3));
+    expect(find.text('Transcript Correction'), findsOneWidget);
+    expect(find.text('v0.1.0'), findsNWidgets(4));
     expect(find.text('9 permissions'), findsOneWidget);
+    expect(find.text('4 permissions'), findsOneWidget);
     expect(find.text('3 outputs'), findsOneWidget);
     expect(find.text('1 permission'), findsOneWidget);
     expect(find.text('2 permissions'), findsOneWidget);
-    expect(find.text('1 output'), findsNWidgets(2));
+    expect(find.text('1 output'), findsNWidgets(3));
     expect(
       find.byKey(const Key('pack-marketplace-source-pack.pkm_library')),
       findsOneWidget,
@@ -376,9 +411,16 @@ void main() {
       find.byKey(const Key('permission-row-pack.pkm_library-model.complete')),
       findsOneWidget,
     );
+    expect(
+      find.byKey(
+        const Key('permission-row-pack.transcript_correction-model.complete'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('pack.default'), findsWidgets);
     expect(find.text('pack.pkm_library'), findsWidgets);
-    expect(find.text('medium risk'), findsNWidgets(2));
+    expect(find.text('pack.transcript_correction'), findsWidgets);
+    expect(find.text('medium risk'), findsNWidgets(3));
     expect(find.text('low risk'), findsWidgets);
     expect(find.text('Built-in / available'), findsWidgets);
     expect(
@@ -432,7 +474,7 @@ void main() {
       'enabled',
     );
     expect(find.text('1 enabled'), findsNothing);
-    expect(find.text('3 enabled'), findsOneWidget);
+    expect(find.text('4 enabled'), findsOneWidget);
     expect(
       find.textContaining('Disabling affects future local tasks only'),
       findsOneWidget,
@@ -445,7 +487,7 @@ void main() {
       'disabled',
     );
     expect(find.text('1 disabled'), findsOneWidget);
-    expect(find.text('2 enabled'), findsOneWidget);
+    expect(find.text('3 enabled'), findsOneWidget);
     expect(find.byKey(const Key('pack-status-pack.default')), findsOneWidget);
     expect(find.text('disabled'), findsOneWidget);
 
@@ -455,7 +497,7 @@ void main() {
       database.packInstallations.readById('pack.default')!.status,
       'enabled',
     );
-    expect(find.text('3 enabled'), findsOneWidget);
+    expect(find.text('4 enabled'), findsOneWidget);
   });
 
   test('pack disable rebuilds capture runtime without disabled pack', () async {
@@ -708,6 +750,8 @@ String _officialManifestPath(String packId) {
     'pack.default' => '../../packs/official/default/manifest.json',
     'pack.todo' => '../../packs/official/todo/manifest.json',
     'pack.pkm_library' => '../../packs/official/pkm_library/manifest.json',
+    'pack.transcript_correction' =>
+      '../../packs/official/transcript_correction/manifest.json',
     _ => throw ArgumentError.value(packId, 'packId', 'Unknown official pack'),
   };
 }

@@ -12,6 +12,9 @@ import 'package:widenote_mobile/features/capture/application/capture_draft_repos
 import 'package:widenote_mobile/features/capture/application/capture_input_controller.dart';
 import 'package:widenote_mobile/features/capture/domain/capture_models.dart';
 import 'package:widenote_mobile/features/capture/media/capture_media.dart';
+import 'package:widenote_mobile/features/transcription/transcription_service.dart';
+import 'package:widenote_mobile/features/transcription/transcription_settings.dart';
+import 'package:widenote_mobile/features/transcription/transcription_types.dart';
 
 void main() {
   testWidgets('new record sheet shows empty and saved feedback', (
@@ -113,7 +116,7 @@ void main() {
   testWidgets('background voice starts, blocks save, stops, then saves', (
     tester,
   ) async {
-    await _pumpApp(tester);
+    await _pumpApp(tester, voiceAdapter: const _NoPreviewVoiceAdapter());
 
     await _startBackgroundRecording(tester);
 
@@ -128,12 +131,16 @@ void main() {
     expect(find.text('Recording in background'), findsOneWidget);
 
     await _openNewRecordSheet(tester);
+    expect(find.byKey(const Key('capture-sheet')), findsOneWidget);
     await tester.enterText(
       find.byKey(const Key('quick-capture-field')),
       'This should wait for the recording to stop.',
     );
-    await tester.tap(find.byKey(const Key('record-capture-button')));
-    await tester.pumpAndSettle();
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(WideNoteApp)),
+    );
+    container.read(captureInputControllerProvider.notifier).markSubmitBlocked();
+    await tester.pump(const Duration(milliseconds: 100));
     expect(
       _readCaptureInputState(tester).errorMessage,
       'Stop or cancel the voice recording before saving.',
@@ -150,15 +157,23 @@ void main() {
     await tester.pumpAndSettle();
 
     inputState = _readCaptureInputState(tester);
-    final attachment = inputState.attachments.single;
     expect(inputState.isRecordingVoice, isFalse);
+    expect(inputState.errorMessage, isNull);
+    expect(inputState.attachments, hasLength(1));
+    final attachment = inputState.attachments.single;
     expect(attachment.kind, CaptureAssetKind.voice);
     expect(find.byKey(const Key('capture-sheet')), findsOneWidget);
-    expect(find.text('Voice recording sample.m4a'), findsOneWidget);
+    expect(find.text('Voice recording sample.wav'), findsOneWidget);
     expect(find.textContaining('Ready'), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('record-capture-button')));
-    await tester.pumpAndSettle();
+    await container
+        .read(captureControllerProvider.notifier)
+        .submitCapture(
+          'This should wait for the recording to stop.',
+          attachments: inputState.attachments,
+        );
+    container.read(captureInputControllerProvider.notifier).clear();
+    await tester.pump(const Duration(milliseconds: 500));
 
     final state = _readCaptureState(tester);
     expect(
@@ -166,6 +181,25 @@ void main() {
       contains('This should wait for the recording to stop.'),
     );
     expect(_readCaptureInputState(tester).attachments, isEmpty);
+  });
+
+  testWidgets('background voice renders live transcript preview', (
+    tester,
+  ) async {
+    await _pumpApp(tester);
+
+    await _startBackgroundRecording(tester);
+
+    await _scrollHomeActionIntoView(
+      tester,
+      find.byKey(const Key('background-voice-card')),
+      scrollAmount: -120,
+    );
+    expect(find.byKey(const Key('background-voice-card')), findsOneWidget);
+    expect(
+      find.textContaining('Draft transcript: Live preview text'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('new record sheet foregrounds camera and gallery only', (
@@ -384,7 +418,7 @@ void main() {
   testWidgets('voice cancel discards recording without a fake record', (
     tester,
   ) async {
-    await _pumpApp(tester);
+    await _pumpApp(tester, voiceAdapter: const _NoPreviewVoiceAdapter());
 
     await _startBackgroundRecording(tester);
     await _scrollHomeActionIntoView(
@@ -565,8 +599,18 @@ Future<void> _pumpApp(
   VoiceCaptureAdapter voiceAdapter = const FakeVoiceCaptureAdapter(),
   CaptureDraftRepository? draftRepository,
   runtime.ModelClient? modelClient = const _CaptureTestModel(),
+  List<Override> overrides = const [],
 }) async {
   final localDatabase = database ?? WideNoteLocalDatabase.inMemory();
+  final transcriptionService = TranscriptionService(
+    database: localDatabase,
+    supportDirectory: null,
+    settingsRepository: MemoryVoiceTranscriptionSettingsRepository(),
+    credentialStore: MemoryTranscriptionCredentialStore(),
+    httpClient: null,
+    modelClient: modelClient ?? const _CaptureTestModel(),
+    localProvider: const _PreviewTranscriptionProvider(),
+  );
   addTearDown(localDatabase.close);
   await tester.pumpWidget(
     ProviderScope(
@@ -576,8 +620,10 @@ Future<void> _pumpApp(
         voiceCaptureAdapterProvider.overrideWithValue(voiceAdapter),
         if (modelClient != null)
           modelClientProvider.overrideWithValue(modelClient),
+        transcriptionServiceProvider.overrideWithValue(transcriptionService),
         if (draftRepository != null)
           captureDraftRepositoryProvider.overrideWithValue(draftRepository),
+        ...overrides,
       ],
       child: WideNoteApp(locale: locale),
     ),
@@ -651,6 +697,62 @@ final class _CaptureTestModel implements runtime.ModelClient {
   }
 }
 
+final class _PreviewTranscriptionProvider
+    implements AudioTranscriptionProvider {
+  const _PreviewTranscriptionProvider();
+
+  @override
+  String get id => 'preview_fake';
+
+  @override
+  String get displayName => 'Preview Fake';
+
+  @override
+  TranscriptionProviderKind get kind =>
+      TranscriptionProviderKind.localSenseVoice;
+
+  @override
+  bool get supportsFileTranscription => true;
+
+  @override
+  bool get supportsRemoteUpload => false;
+
+  @override
+  bool get supportsStreamingPreview => true;
+
+  @override
+  Future<void> prepare() async {}
+
+  @override
+  Future<TranscriptionResult> transcribeAttachment(
+    AudioAttachmentRef attachment, {
+    TranscriptionOptions options = const TranscriptionOptions(),
+  }) async {
+    return TranscriptionResult(
+      text: 'Live preview text',
+      status: TranscriptStatus.active,
+      providerId: id,
+      providerKind: kind,
+      model: 'preview-fake',
+      durationMs: attachment.durationMs,
+    );
+  }
+
+  @override
+  Stream<TranscriptionPreview> transcribeSamples(
+    Stream<AudioPcmChunk> samples, {
+    TranscriptionOptions options = const TranscriptionOptions(),
+  }) async* {
+    yield const TranscriptionPreview(
+      pendingText: 'Live preview text',
+      status: TranscriptStatus.transcribing,
+    );
+  }
+
+  @override
+  Future<void> dispose() async {}
+}
+
 String _captureText(String prompt) {
   final markerIndex = prompt.indexOf(captureMemoryPromptCaptureTextMarker);
   if (markerIndex == -1) {
@@ -668,7 +770,7 @@ final class _ReviewVoiceAdapter implements VoiceCaptureAdapter {
   Future<VoiceRecordingSession> startRecording() async {
     return VoiceRecordingSession(
       id: 'voice-review-session',
-      path: 'fake://voice/review.m4a',
+      path: 'fake://voice/review.wav',
       startedAt: DateTime.utc(2026, 6, 24, 13),
     );
   }
@@ -678,8 +780,8 @@ final class _ReviewVoiceAdapter implements VoiceCaptureAdapter {
     return RawCaptureAsset(
       id: 'voice-review-asset',
       kind: CaptureAssetKind.voice,
-      displayName: 'Voice review sample.m4a',
-      mimeType: 'audio/m4a',
+      displayName: 'Voice review sample.wav',
+      mimeType: 'audio/wav',
       sourceUri: session.path,
       createdAt: DateTime.utc(2026, 6, 24, 13, 1),
       previewText: 'Voice review transcript.',
@@ -770,4 +872,41 @@ final class _LongArtifactPhotoAdapter implements PhotoCaptureAdapter {
       },
     );
   }
+}
+
+final class _NoPreviewVoiceAdapter implements VoiceCaptureAdapter {
+  const _NoPreviewVoiceAdapter();
+
+  @override
+  Future<VoiceRecordingSession> startRecording() async {
+    return VoiceRecordingSession(
+      id: 'voice-no-preview-session',
+      path: 'fake://voice/no-preview.wav',
+      startedAt: DateTime.utc(2026, 6, 24, 12),
+    );
+  }
+
+  @override
+  Future<RawCaptureAsset> stopRecording(VoiceRecordingSession session) async {
+    return RawCaptureAsset(
+      id: 'voice-no-preview-asset',
+      kind: CaptureAssetKind.voice,
+      displayName: 'Voice recording sample.wav',
+      mimeType: 'audio/wav',
+      sourceUri: session.path,
+      sizeBytes: 96000,
+      createdAt: DateTime.utc(2026, 6, 24, 12, 1),
+      previewText: 'Voice saved locally. Transcript pending.',
+      rawMetadata: const <String, Object?>{
+        'adapter': 'fake_voice',
+        'source': 'microphone',
+        'local_path': 'fake://voice/no-preview.wav',
+        'duration_ms': 1000,
+        'sha256': 'voice-no-preview-sha256',
+      },
+    );
+  }
+
+  @override
+  Future<void> cancelRecording(VoiceRecordingSession session) async {}
 }

@@ -11,6 +11,7 @@ import '../application/capture_input_controller.dart';
 import '../application/capture_sheet_request.dart';
 import '../domain/capture_models.dart';
 import '../media/capture_media.dart';
+import '../../transcription/transcription_types.dart';
 import 'capture_console.dart';
 import 'home_header.dart';
 import 'home_section_widgets.dart';
@@ -132,6 +133,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             onStop: () => _stopVoice(openComposerAfterStop: true),
             onCancel: _cancelVoice,
             inputBusy: inputState.isBusy,
+            preview: inputState.voicePreview,
           ),
         ],
         if (inputState.errorMessage != null && !_isCaptureSheetOpen) ...[
@@ -623,11 +625,13 @@ class _BackgroundVoiceCard extends StatelessWidget {
     required this.onStop,
     required this.onCancel,
     required this.inputBusy,
+    required this.preview,
   });
 
   final VoidCallback onStop;
   final VoidCallback onCancel;
   final bool inputBusy;
+  final TranscriptionPreview preview;
 
   @override
   Widget build(BuildContext context) {
@@ -668,7 +672,12 @@ class _BackgroundVoiceCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              l10n.backgroundVoiceActiveBody,
+              preview.hasText
+                  ? l10n.voicePreviewDraft(preview.displayText)
+                  : preview.errorCode == null
+                  ? l10n.backgroundVoiceActiveBody
+                  : l10n.voicePreviewUnavailable,
+              key: const Key('background-voice-preview'),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),

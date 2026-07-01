@@ -1,0 +1,19 @@
+{
+  "id": "audio.upload.remote_asr",
+  "title": "Upload audio for remote ASR",
+  "description": "Allows a transcription engine to upload user-approved audio bytes to a declared remote ASR provider after explicit opt-in.",
+  "risk": "high",
+  "grant_behavior": "grant_on_enable",
+  "scope": {
+    "provider_kind": "remote_asr",
+    "requires_declared_host": true
+  },
+  "side_effects": [
+    "network",
+    "model_call"
+  ],
+  "requires_trace": true,
+  "metadata": {
+    "fixture": true
+  }
+}

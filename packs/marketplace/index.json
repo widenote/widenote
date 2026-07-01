@@ -2,7 +2,7 @@
   "$schema": "../../packages/schemas/src/agent_pack/agent_pack_marketplace.schema.json",
   "schema_version": 1,
   "source": "github",
-  "updated_at": "2026-06-28",
+  "updated_at": "2026-07-01",
   "packs": [
     {
       "id": "pack.default",
@@ -57,6 +57,24 @@
       ],
       "repository_url": "https://github.com/widenote/widenote",
       "docs_path": "packs/official/pkm_library/README.md"
+    },
+    {
+      "id": "pack.transcript_correction",
+      "manifest_path": "../official/transcript_correction/manifest.json",
+      "publisher": "widenote",
+      "edition": "official",
+      "trust_level": "official",
+      "status": "available",
+      "categories": [
+        "transcription",
+        "memory"
+      ],
+      "capabilities": [
+        "transcript.correct",
+        "memory.read"
+      ],
+      "repository_url": "https://github.com/widenote/widenote",
+      "docs_path": "packs/official/transcript_correction/README.md"
     }
   ]
 }

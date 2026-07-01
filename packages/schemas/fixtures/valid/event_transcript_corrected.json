@@ -1,0 +1,72 @@
+{
+  "id": "evt_synthetic_transcript_corrected_001",
+  "type": "wn.transcript.corrected",
+  "schema_version": 1,
+  "actor": "agent",
+  "status": "processed",
+  "pack_id": "pack.transcript_correction",
+  "agent_id": "agent.transcript_correction",
+  "source_capture_id": "cap_synthetic_voice_001",
+  "source_event_id": "evt_synthetic_transcript_created_001",
+  "subject_ref": {
+    "kind": "transcript",
+    "id": "tx_synthetic_001_corrected",
+    "uri": null
+  },
+  "payload": {
+    "correction_id": "tx_corr_synthetic_001",
+    "source_transcript_id": "tx_synthetic_001",
+    "output_transcript_id": "tx_synthetic_001_corrected",
+    "correction_status": "auto_applied",
+    "auto_applied": true,
+    "confidence": "high",
+    "patches": [
+      {
+        "from": "Alise",
+        "to": "Alice",
+        "span": {
+          "start": 5,
+          "end": 10
+        },
+        "confidence": "high",
+        "reason": "term_memory",
+        "requires_review": false
+      }
+    ],
+    "source_refs": [
+      {
+        "kind": "transcript",
+        "id": "tx_synthetic_001",
+        "uri": null
+      },
+      {
+        "kind": "event",
+        "id": "evt_synthetic_transcript_created_001",
+        "uri": null
+      },
+      {
+        "kind": "memory",
+        "id": "mem_synthetic_contact_001",
+        "uri": null
+      }
+    ]
+  },
+  "privacy": "local_only",
+  "causation_id": "evt_synthetic_transcript_created_001",
+  "correlation_id": "corr_synthetic_voice_001",
+  "trace_id": "trace_synthetic_transcript_correction_001",
+  "idempotency_key": "transcript-correction:tx_synthetic_001:tx_corr_synthetic_001",
+  "device_id": "device_synthetic",
+  "created_at": "2026-07-01T02:00:12Z",
+  "retention": {
+    "policy": "delete_with_subject",
+    "expires_at": null
+  },
+  "redaction": {
+    "policy": "none",
+    "reason": null
+  },
+  "metadata": {
+    "fixture": true
+  }
+}

@@ -601,6 +601,8 @@ const Set<String> _toolKeys = <String>{
   'execution',
   'side_effect',
   'compatible_run_modes',
+  'input_schema',
+  'output_schema',
 };
 const Set<String> _modelProfileKeys = <String>{
   'id',

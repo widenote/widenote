@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
@@ -69,7 +70,7 @@ final class CaptureMediaFileStore {
   Future<VoiceRecordingSession> prepareVoiceSession() async {
     final startedAt = _now();
     final id = _assetId('voice', startedAt);
-    final target = await _targetFile('voice', '$id.m4a');
+    final target = await _targetFile('voice', '$id.wav');
     return VoiceRecordingSession(
       id: id,
       path: target.path,
@@ -112,7 +113,7 @@ final class CaptureMediaFileStore {
       id: session.id,
       kind: CaptureAssetKind.voice,
       displayName: p.basename(target.path),
-      mimeType: 'audio/m4a',
+      mimeType: 'audio/wav',
       sourceUri: storageRef,
       sizeBytes: byteLength,
       previewText:
@@ -121,6 +122,10 @@ final class CaptureMediaFileStore {
       rawMetadata: <String, Object?>{
         'adapter': 'record',
         'source': 'microphone',
+        'audio_format': 'wav',
+        'sample_rate': session.sampleRate,
+        'num_channels': session.numChannels,
+        'streaming_source': session.usesStreamingSource,
         'local_path': target.path,
         'storage_ref': storageRef,
         'sha256': fileHash,
@@ -247,11 +252,7 @@ final class RecordVoiceCaptureAdapter implements VoiceCaptureAdapter {
         );
       }
       session = await _fileStore.prepareVoiceSession();
-      await _recorder.start(
-        const RecordConfig(encoder: AudioEncoder.aacLc, numChannels: 1),
-        path: session.path,
-      );
-      return session;
+      return await _startStreamingSession(session);
     } on CaptureMediaException {
       rethrow;
     } on PlatformException catch (error) {
@@ -271,6 +272,10 @@ final class RecordVoiceCaptureAdapter implements VoiceCaptureAdapter {
   Future<RawCaptureAsset> stopRecording(VoiceRecordingSession session) async {
     try {
       final path = await _recorder.stop();
+      if (session.usesStreamingSource) {
+        await session.finalizeStreamingSource?.call();
+        return _fileStore.storeVoiceRecording(session, session.path);
+      }
       if (path == null || path.trim().isEmpty) {
         throw const CaptureMediaException(
           CaptureMediaFailureReason.unavailable,
@@ -301,6 +306,12 @@ final class RecordVoiceCaptureAdapter implements VoiceCaptureAdapter {
     }
 
     try {
+      await session.cancelStreamingSource?.call();
+    } catch (error) {
+      recorderFailure ??= error;
+    }
+
+    try {
       final file = File(session.path);
       if (file.existsSync()) {
         await file.delete();
@@ -321,6 +332,171 @@ final class RecordVoiceCaptureAdapter implements VoiceCaptureAdapter {
       );
     }
   }
+
+  Future<VoiceRecordingSession> _startStreamingSession(
+    VoiceRecordingSession session,
+  ) async {
+    _StreamingWavFileWriter? writer;
+    StreamSubscription<Uint8List>? subscription;
+    StreamController<Uint8List>? previewController;
+    try {
+      writer = _StreamingWavFileWriter(
+        file: File(session.path),
+        sampleRate: 16000,
+        numChannels: 1,
+      );
+      await writer.open();
+      final stream = await _recorder.startStream(
+        const RecordConfig(
+          encoder: AudioEncoder.pcm16bits,
+          sampleRate: 16000,
+          numChannels: 1,
+          streamBufferSize: 4096,
+        ),
+      );
+      previewController = StreamController<Uint8List>.broadcast();
+      subscription = stream.listen(
+        (chunk) {
+          writer?.add(chunk);
+          previewController?.add(chunk);
+        },
+        onError: (Object error, StackTrace stackTrace) {
+          previewController?.addError(error, stackTrace);
+        },
+        onDone: () {
+          unawaited(previewController?.close());
+        },
+        cancelOnError: false,
+      );
+      return VoiceRecordingSession(
+        id: session.id,
+        path: session.path,
+        startedAt: session.startedAt,
+        pcmStream: previewController.stream,
+        sampleRate: 16000,
+        numChannels: 1,
+        usesStreamingSource: true,
+        finalizeStreamingSource: () async {
+          await subscription?.cancel();
+          await writer?.finalizeFile();
+          if (!(previewController?.isClosed ?? true)) {
+            await previewController?.close();
+          }
+        },
+        cancelStreamingSource: () async {
+          await subscription?.cancel();
+          await writer?.cancel();
+          if (!(previewController?.isClosed ?? true)) {
+            await previewController?.close();
+          }
+        },
+      );
+    } catch (_) {
+      await subscription?.cancel();
+      await writer?.cancel();
+      if (!(previewController?.isClosed ?? true)) {
+        await previewController?.close();
+      }
+      await _deleteIfExists(session.path);
+      await _recorder.start(
+        const RecordConfig(
+          encoder: AudioEncoder.wav,
+          sampleRate: 16000,
+          numChannels: 1,
+        ),
+        path: session.path,
+      );
+      return session;
+    }
+  }
+}
+
+final class _StreamingWavFileWriter {
+  _StreamingWavFileWriter({
+    required this.file,
+    required this.sampleRate,
+    required this.numChannels,
+  });
+
+  final File file;
+  final int sampleRate;
+  final int numChannels;
+  IOSink? _sink;
+  var _dataLength = 0;
+  var _closed = false;
+
+  Future<void> open() async {
+    await file.parent.create(recursive: true);
+    _sink = file.openWrite();
+    _sink!.add(Uint8List(44));
+  }
+
+  void add(Uint8List chunk) {
+    if (_closed || chunk.isEmpty) {
+      return;
+    }
+    _dataLength += chunk.length;
+    _sink?.add(chunk);
+  }
+
+  Future<void> finalizeFile() async {
+    if (_closed) {
+      return;
+    }
+    _closed = true;
+    await _sink?.close();
+    final header = _wavHeader(
+      dataLength: _dataLength,
+      sampleRate: sampleRate,
+      numChannels: numChannels,
+    );
+    final handle = await file.open(mode: FileMode.write);
+    try {
+      await handle.setPosition(0);
+      await handle.writeFrom(header);
+    } finally {
+      await handle.close();
+    }
+  }
+
+  Future<void> cancel() async {
+    _closed = true;
+    await _sink?.close();
+    if (file.existsSync()) {
+      await file.delete();
+    }
+  }
+}
+
+Uint8List _wavHeader({
+  required int dataLength,
+  required int sampleRate,
+  required int numChannels,
+}) {
+  const bitsPerSample = 16;
+  final byteRate = sampleRate * numChannels * bitsPerSample ~/ 8;
+  final blockAlign = numChannels * bitsPerSample ~/ 8;
+  final header = ByteData(44);
+  void writeAscii(int offset, String value) {
+    for (var i = 0; i < value.length; i += 1) {
+      header.setUint8(offset + i, value.codeUnitAt(i));
+    }
+  }
+
+  writeAscii(0, 'RIFF');
+  header.setUint32(4, 36 + dataLength, Endian.little);
+  writeAscii(8, 'WAVE');
+  writeAscii(12, 'fmt ');
+  header.setUint32(16, 16, Endian.little);
+  header.setUint16(20, 1, Endian.little);
+  header.setUint16(22, numChannels, Endian.little);
+  header.setUint32(24, sampleRate, Endian.little);
+  header.setUint32(28, byteRate, Endian.little);
+  header.setUint16(32, blockAlign, Endian.little);
+  header.setUint16(34, bitsPerSample, Endian.little);
+  writeAscii(36, 'data');
+  header.setUint32(40, dataLength, Endian.little);
+  return header.buffer.asUint8List();
 }
 
 CaptureMediaException _imagePickerException(

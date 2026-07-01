@@ -10,6 +10,8 @@ abstract final class WnEventTypes {
   static const insightCreated = 'wn.insight.created';
   static const todoSuggested = 'wn.todo.suggested';
   static const artifactCreated = 'wn.artifact.created';
+  static const transcriptCreated = 'wn.transcript.created';
+  static const transcriptCorrected = 'wn.transcript.corrected';
 }
 
 enum WnActor { user, agent, plugin, system }
