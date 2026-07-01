@@ -1,8 +1,13 @@
 # Start Here
 
-This is the entrypoint for AI agents working on WideNote.
+This is the orientation entrypoint for AI agents working on WideNote.
 
-Read these in order:
+Use this page for first-time repository orientation, broad planning, or recovery
+when the right area is unclear. For ordinary coding work, prefer the narrower
+path in `AGENTS.md`: current contracts, project map when needed, nearest module
+README, then related ADRs or RFCs only when the task calls for them.
+
+Broad orientation path:
 
 1. `README.md`
 2. `docs/architecture/current-contracts.md`
