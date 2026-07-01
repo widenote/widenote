@@ -44,6 +44,14 @@ void main() {
     });
 
     test('presets choose compatibility endpoints and models', () {
+      final gemini = ModelProviderConfig.preset(
+        id: 'gemini',
+        kind: ModelProviderKind.gemini,
+      );
+      final deepSeek = ModelProviderConfig.preset(
+        id: 'deepseek',
+        kind: ModelProviderKind.deepSeek,
+      );
       final mimo = ModelProviderConfig.preset(
         id: 'mimo',
         kind: ModelProviderKind.mimo,
@@ -53,12 +61,31 @@ void main() {
         kind: ModelProviderKind.kimi,
       );
 
+      expect(gemini.kind.usesAnthropicMessages, isFalse);
+      expect(gemini.endpoint.path, contains('/openai'));
+      expect(gemini.model, 'gemini-3.5-flash');
+      expect(deepSeek.kind.usesAnthropicMessages, isFalse);
+      expect(deepSeek.endpoint.host, 'api.deepseek.com');
+      expect(deepSeek.model, isNotEmpty);
       expect(mimo.kind.usesAnthropicMessages, isTrue);
       expect(mimo.endpoint.path, contains('/anthropic/'));
       expect(mimo.model, isNotEmpty);
       expect(kimi.kind.usesAnthropicMessages, isFalse);
-      expect(kimi.endpoint.path, contains('/chat/completions'));
+      expect(kimi.endpoint.path, '/v1');
       expect(kimi.model, isNotEmpty);
+    });
+
+    test('does not require a key for local Ollama presets', () {
+      final config = ModelProviderConfig.preset(
+        id: 'ollama',
+        kind: ModelProviderKind.ollama,
+      );
+
+      final validation = config.validate();
+
+      expect(config.kind.requiresApiKey, isFalse);
+      expect(validation.isValid, isTrue);
+      expect(config.endpoint.scheme, 'http');
     });
   });
 }

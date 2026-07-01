@@ -86,11 +86,8 @@ final class OpenAiCompatibleModelProvider implements ModelProvider {
     final httpResponse = await _sendRequest(
       id,
       () => httpClient.postJson(
-        config.endpoint,
-        headers: <String, String>{
-          'content-type': 'application/json',
-          'authorization': 'Bearer ${config.apiKey}',
-        },
+        _openAiChatCompletionsEndpoint(config.endpoint),
+        headers: _openAiHeaders(config.apiKey),
         body: _buildBody(request),
         timeout: timeout,
       ),
@@ -203,11 +200,7 @@ final class AnthropicCompatibleModelProvider implements ModelProvider {
       id,
       () => httpClient.postJson(
         _anthropicMessagesEndpoint(config.endpoint),
-        headers: <String, String>{
-          'content-type': 'application/json',
-          'anthropic-version': '2023-06-01',
-          'x-api-key': config.apiKey,
-        },
+        headers: _anthropicHeaders(config),
         body: _buildBody(request),
         timeout: timeout,
       ),
@@ -294,6 +287,27 @@ final class AnthropicCompatibleModelProvider implements ModelProvider {
   }
 }
 
+Uri _openAiChatCompletionsEndpoint(Uri endpoint) {
+  final segments = endpoint.pathSegments
+      .where((segment) => segment.isNotEmpty)
+      .toList(growable: false);
+  if (_endsWithOpenAiChatCompletionsPath(segments)) {
+    return endpoint;
+  }
+  if (segments.isNotEmpty && segments.last == 'chat') {
+    return endpoint.replace(pathSegments: <String>[...segments, 'completions']);
+  }
+  return endpoint.replace(
+    pathSegments: <String>[...segments, 'chat', 'completions'],
+  );
+}
+
+bool _endsWithOpenAiChatCompletionsPath(List<String> segments) {
+  return segments.length >= 2 &&
+      segments[segments.length - 2] == 'chat' &&
+      segments.last == 'completions';
+}
+
 Uri _anthropicMessagesEndpoint(Uri endpoint) {
   final segments = endpoint.pathSegments
       .where((segment) => segment.isNotEmpty)
@@ -311,6 +325,25 @@ Uri _anthropicMessagesEndpoint(Uri endpoint) {
 
 bool _endsWithMessagesPath(List<String> segments) {
   return segments.isNotEmpty && segments.last == 'messages';
+}
+
+Map<String, String> _openAiHeaders(String apiKey) {
+  return <String, String>{
+    'content-type': 'application/json',
+    if (apiKey.trim().isNotEmpty) 'authorization': 'Bearer $apiKey',
+  };
+}
+
+Map<String, String> _anthropicHeaders(ModelProviderConfig config) {
+  return <String, String>{
+    'content-type': 'application/json',
+    'anthropic-version': '2023-06-01',
+    if (config.apiKey.trim().isNotEmpty)
+      if (config.kind.usesAnthropicBearerAuthorization)
+        'authorization': 'Bearer ${config.apiKey}'
+      else
+        'x-api-key': config.apiKey,
+  };
 }
 
 bool _shouldDisableAnthropicThinking(ModelProviderConfig config) {

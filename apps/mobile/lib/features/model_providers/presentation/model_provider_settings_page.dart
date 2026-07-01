@@ -8,10 +8,20 @@ import '../../../l10n/l10n.dart';
 import '../application/model_provider_settings_controller.dart';
 
 const _visibleProviderKinds = <ModelProviderKind>[
+  ModelProviderKind.openAi,
+  ModelProviderKind.anthropic,
+  ModelProviderKind.gemini,
+  ModelProviderKind.openRouter,
+  ModelProviderKind.deepSeek,
+  ModelProviderKind.kimi,
+  ModelProviderKind.qwen,
+  ModelProviderKind.doubao,
+  ModelProviderKind.zhipu,
+  ModelProviderKind.miniMax,
+  ModelProviderKind.mimo,
+  ModelProviderKind.ollama,
   ModelProviderKind.openAiCompatible,
   ModelProviderKind.anthropicCompatible,
-  ModelProviderKind.mimo,
-  ModelProviderKind.kimi,
 ];
 
 class ModelProviderSettingsPage extends ConsumerWidget {
@@ -468,7 +478,7 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
     final existingKind = existing?.kind;
     _kind = existingKind != null && _visibleProviderKinds.contains(existingKind)
         ? existingKind
-        : ModelProviderKind.openAiCompatible;
+        : _visibleProviderKinds.first;
     _nameController = TextEditingController(
       text: existing?.displayName ?? _kind.label,
     );
@@ -541,6 +551,7 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
                 enableIMEPersonalizedLearning: false,
                 decoration: InputDecoration(
                   labelText: l10n.providerFieldEndpoint,
+                  helperText: l10n.providerEndpointPresetHelper,
                 ),
               ),
               const SizedBox(height: 12),
@@ -548,7 +559,10 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
                 key: const Key('provider-model-field'),
                 controller: _modelController,
                 keyboardType: TextInputType.text,
-                decoration: InputDecoration(labelText: l10n.providerFieldModel),
+                decoration: InputDecoration(
+                  labelText: l10n.providerFieldModel,
+                  helperText: l10n.providerModelPresetHelper,
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -561,9 +575,7 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
                 enableIMEPersonalizedLearning: false,
                 decoration: InputDecoration(
                   labelText: l10n.providerFieldApiKey,
-                  helperText: widget.existing == null
-                      ? null
-                      : l10n.providerApiKeyKeepSessionHelper,
+                  helperText: _apiKeyHelperText(l10n),
                 ),
               ),
               if (_hasSavedApiKey) ...[
@@ -690,6 +702,16 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
 
   bool get _hasSavedApiKey =>
       widget.existing?.apiKey.trim().isNotEmpty ?? false;
+
+  String? _apiKeyHelperText(AppLocalizations l10n) {
+    if (!_kind.requiresApiKey) {
+      return l10n.providerApiKeyOptionalHelper;
+    }
+    if (widget.existing != null) {
+      return l10n.providerApiKeyKeepSessionHelper;
+    }
+    return null;
+  }
 }
 
 class _PageHeader extends StatelessWidget {

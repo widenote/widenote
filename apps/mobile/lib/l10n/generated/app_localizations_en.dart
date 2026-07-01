@@ -2279,6 +2279,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'Leave blank to keep the session credential.';
 
   @override
+  String get providerApiKeyOptionalHelper =>
+      'Optional for this provider; fill it only if your local server requires one.';
+
+  @override
+  String get providerEndpointPresetHelper =>
+      'Preset from the provider docs; edit it if your account uses another region or gateway.';
+
+  @override
+  String get providerModelPresetHelper =>
+      'Preset model; edit it if your account has a different enabled model.';
+
+  @override
   String get providerInvalidEndpoint => 'Endpoint is not a valid URI.';
 
   @override

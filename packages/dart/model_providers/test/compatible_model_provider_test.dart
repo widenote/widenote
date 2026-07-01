@@ -185,6 +185,87 @@ void main() {
         ),
       );
     });
+
+    test('accepts base endpoints by appending chat completions path', () async {
+      final http = FakeModelProviderHttpClient(
+        responses: <ModelProviderHttpResponse>[
+          _openAiTextResponse('OpenAI OK'),
+          _openAiTextResponse('DeepSeek OK'),
+          _openAiTextResponse('Gemini OK'),
+        ],
+      );
+      final openAiProvider = OpenAiCompatibleModelProvider(
+        config: ModelProviderConfig.preset(
+          id: 'openai',
+          kind: ModelProviderKind.openAi,
+          apiKey: _runtimeCredential(),
+        ),
+        httpClient: http,
+      );
+      final deepSeekProvider = OpenAiCompatibleModelProvider(
+        config: ModelProviderConfig.preset(
+          id: 'deepseek',
+          kind: ModelProviderKind.deepSeek,
+          apiKey: _runtimeCredential(),
+        ),
+        httpClient: http,
+      );
+      final geminiProvider = OpenAiCompatibleModelProvider(
+        config: ModelProviderConfig.preset(
+          id: 'gemini',
+          kind: ModelProviderKind.gemini,
+          apiKey: _runtimeCredential(),
+        ),
+        httpClient: http,
+      );
+
+      expect(
+        (await openAiProvider.complete(ModelRequest.text('hello'))).text,
+        'OpenAI OK',
+      );
+      expect(
+        (await deepSeekProvider.complete(ModelRequest.text('hello'))).text,
+        'DeepSeek OK',
+      );
+      expect(
+        (await geminiProvider.complete(ModelRequest.text('hello'))).text,
+        'Gemini OK',
+      );
+
+      expect(
+        http.requests[0].endpoint.toString(),
+        'https://api.openai.com/v1/chat/completions',
+      );
+      expect(
+        http.requests[1].endpoint.toString(),
+        'https://api.deepseek.com/chat/completions',
+      );
+      expect(
+        http.requests[2].endpoint.toString(),
+        'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+      );
+    });
+
+    test('omits authorization header for no-key local providers', () async {
+      final http = FakeModelProviderHttpClient(
+        responses: <ModelProviderHttpResponse>[_openAiTextResponse('Local OK')],
+      );
+      final provider = OpenAiCompatibleModelProvider(
+        config: ModelProviderConfig.preset(
+          id: 'ollama',
+          kind: ModelProviderKind.ollama,
+        ),
+        httpClient: http,
+      );
+
+      final response = await provider.complete(ModelRequest.text('hello'));
+
+      expect(response.text, 'Local OK');
+      expect(
+        http.requests.single.headers.containsKey('authorization'),
+        isFalse,
+      );
+    });
   });
 
   group('AnthropicCompatibleModelProvider', () {
@@ -330,27 +411,107 @@ void main() {
         expect(http.requests[2].body.containsKey('thinking'), isFalse);
       },
     );
+
+    test(
+      'uses Bearer authorization for MiniMax Anthropic-compatible API',
+      () async {
+        final http = FakeModelProviderHttpClient(
+          responses: <ModelProviderHttpResponse>[
+            ModelProviderHttpResponse(
+              statusCode: 200,
+              body: <String, Object?>{
+                'content': <Object?>[
+                  <String, Object?>{'type': 'text', 'text': 'MiniMax OK'},
+                ],
+              },
+            ),
+          ],
+        );
+        final provider = AnthropicCompatibleModelProvider(
+          config: ModelProviderConfig.preset(
+            id: 'minimax',
+            kind: ModelProviderKind.miniMax,
+            apiKey: _runtimeCredential(),
+          ),
+          httpClient: http,
+        );
+
+        final response = await provider.complete(ModelRequest.text('hello'));
+
+        expect(response.text, 'MiniMax OK');
+        expect(
+          http.requests.single.endpoint.toString(),
+          'https://api.minimax.io/anthropic/v1/messages',
+        );
+        expect(
+          http.requests.single.headers['authorization'],
+          startsWith('Bearer '),
+        );
+        expect(http.requests.single.headers.containsKey('x-api-key'), isFalse);
+        expect(
+          http.requests.single.redactedHeaders['authorization'],
+          '<redacted>',
+        );
+      },
+    );
   });
 
   group('modelProviderFromConfig', () {
-    test('routes Kimi through OpenAI-compatible adapter', () {
-      final provider = modelProviderFromConfig(
-        config: _config(ModelProviderKind.kimi),
-        httpClient: FakeModelProviderHttpClient(),
-      );
+    test(
+      'routes OpenAI-compatible provider presets through OpenAI adapter',
+      () {
+        for (final kind in <ModelProviderKind>[
+          ModelProviderKind.openAi,
+          ModelProviderKind.gemini,
+          ModelProviderKind.openRouter,
+          ModelProviderKind.deepSeek,
+          ModelProviderKind.kimi,
+          ModelProviderKind.qwen,
+          ModelProviderKind.doubao,
+          ModelProviderKind.zhipu,
+          ModelProviderKind.ollama,
+        ]) {
+          final provider = modelProviderFromConfig(
+            config: _config(kind),
+            httpClient: FakeModelProviderHttpClient(),
+          );
 
-      expect(provider, isA<OpenAiCompatibleModelProvider>());
-    });
+          expect(provider, isA<OpenAiCompatibleModelProvider>());
+        }
+      },
+    );
 
-    test('routes MIMO through Anthropic-compatible adapter', () {
-      final provider = modelProviderFromConfig(
-        config: _config(ModelProviderKind.mimo),
-        httpClient: FakeModelProviderHttpClient(),
-      );
+    test(
+      'routes Anthropic-compatible provider presets through Anthropic adapter',
+      () {
+        for (final kind in <ModelProviderKind>[
+          ModelProviderKind.anthropic,
+          ModelProviderKind.miniMax,
+          ModelProviderKind.mimo,
+        ]) {
+          final provider = modelProviderFromConfig(
+            config: _config(kind),
+            httpClient: FakeModelProviderHttpClient(),
+          );
 
-      expect(provider, isA<AnthropicCompatibleModelProvider>());
-    });
+          expect(provider, isA<AnthropicCompatibleModelProvider>());
+        }
+      },
+    );
   });
+}
+
+ModelProviderHttpResponse _openAiTextResponse(String text) {
+  return ModelProviderHttpResponse(
+    statusCode: 200,
+    body: <String, Object?>{
+      'choices': <Object?>[
+        <String, Object?>{
+          'message': <String, Object?>{'content': text},
+        },
+      ],
+    },
+  );
 }
 
 ModelProviderConfig _config(

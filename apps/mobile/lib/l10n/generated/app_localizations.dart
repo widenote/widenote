@@ -3717,6 +3717,24 @@ abstract class AppLocalizations {
   /// **'Leave blank to keep the session credential.'**
   String get providerApiKeyKeepSessionHelper;
 
+  /// No description provided for @providerApiKeyOptionalHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional for this provider; fill it only if your local server requires one.'**
+  String get providerApiKeyOptionalHelper;
+
+  /// No description provided for @providerEndpointPresetHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Preset from the provider docs; edit it if your account uses another region or gateway.'**
+  String get providerEndpointPresetHelper;
+
+  /// No description provided for @providerModelPresetHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Preset model; edit it if your account has a different enabled model.'**
+  String get providerModelPresetHelper;
+
   /// No description provided for @providerInvalidEndpoint.
   ///
   /// In en, this message translates to:

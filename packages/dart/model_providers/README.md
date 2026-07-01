@@ -44,6 +44,12 @@ setup UI, routing policy, or Agent Pack prompts.
 - `RuntimeModelProviderException`
 - `UnsupportedModelCapabilityException`
 
+Provider presets currently cover OpenAI, Anthropic Claude, Google Gemini,
+OpenRouter, DeepSeek, Kimi, Alibaba Qwen, Volcengine Doubao, Zhipu GLM,
+MiniMax, Xiaomi MIMO, Ollama, and custom OpenAI-compatible or
+Anthropic-compatible endpoints. Vendor presets choose the closest compatible
+adapter and remain editable in mobile Settings.
+
 ## Dependencies
 
 Runtime dependencies:
@@ -68,10 +74,11 @@ Run:
 dart test
 ```
 
-Current tests cover config validation, fake provider queued responses, fake HTTP
-recording, OpenAI-compatible and Anthropic-compatible request construction,
-response parsing, connection-test success/failure classification, missing
-capability errors, and the runtime adapter.
+Current tests cover config validation, provider presets, fake provider queued
+responses, fake HTTP recording, OpenAI-compatible and Anthropic-compatible
+request construction, endpoint normalization, response parsing,
+connection-test success/failure classification, missing capability errors, and
+the runtime adapter.
 
 ## Related Context
 
