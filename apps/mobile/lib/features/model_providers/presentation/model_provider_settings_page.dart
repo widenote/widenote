@@ -24,6 +24,8 @@ const _visibleProviderKinds = <ModelProviderKind>[
   ModelProviderKind.anthropicCompatible,
 ];
 
+const _customModelValue = '__widenote_custom_model__';
+
 class ModelProviderSettingsPage extends ConsumerWidget {
   const ModelProviderSettingsPage({super.key});
 
@@ -468,6 +470,9 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
   late final TextEditingController _endpointController;
   late final TextEditingController _modelController;
   late final TextEditingController _apiKeyController;
+  List<String> _availableModels = const <String>[];
+  bool _isFetchingModels = false;
+  bool _isCustomModel = false;
   bool _clearSavedKey = false;
   String? _localError;
 
@@ -555,15 +560,63 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
                 ),
               ),
               const SizedBox(height: 12),
-              TextField(
-                key: const Key('provider-model-field'),
-                controller: _modelController,
-                keyboardType: TextInputType.text,
-                decoration: InputDecoration(
-                  labelText: l10n.providerFieldModel,
-                  helperText: l10n.providerModelPresetHelper,
-                ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: InputDecorator(
+                      decoration: InputDecoration(
+                        labelText: l10n.providerFieldModel,
+                        helperText: l10n.providerModelPresetHelper,
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          key: const Key('provider-model-field'),
+                          value: _modelDropdownValue,
+                          isExpanded: true,
+                          items: _modelDropdownItems(l10n),
+                          onChanged: (value) {
+                            if (value != null) {
+                              _selectModel(value);
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: IconButton(
+                      key: const Key('provider-fetch-models-button'),
+                      tooltip: l10n.providerFetchModelsTooltip,
+                      onPressed: _isFetchingModels
+                          ? null
+                          : () => unawaited(_fetchModels()),
+                      icon: _isFetchingModels
+                          ? const SizedBox.square(
+                              dimension: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.refresh),
+                    ),
+                  ),
+                ],
               ),
+              if (_isCustomModel) ...[
+                const SizedBox(height: 12),
+                TextField(
+                  key: const Key('provider-custom-model-field'),
+                  controller: _modelController,
+                  keyboardType: TextInputType.text,
+                  autocorrect: false,
+                  enableSuggestions: false,
+                  decoration: InputDecoration(
+                    labelText: l10n.providerModelCustomOption,
+                    helperText: l10n.providerModelCustomHelper,
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
               TextField(
                 key: const Key('provider-api-key-field'),
@@ -627,7 +680,67 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
       _nameController.text = kind.label;
       _endpointController.text = kind.defaultEndpoint.toString();
       _modelController.text = kind.defaultModel;
+      _availableModels = const <String>[];
+      _isCustomModel = false;
       _localError = null;
+    });
+  }
+
+  Future<void> _fetchModels() async {
+    if (_isFetchingModels) {
+      return;
+    }
+    final l10n = context.l10n;
+    final endpoint = Uri.tryParse(_endpointController.text.trim());
+    if (endpoint == null) {
+      setState(() => _localError = l10n.providerInvalidEndpoint);
+      return;
+    }
+    final apiKey = _nextApiKey();
+    if (_kind.requiresApiKey && apiKey.trim().isEmpty) {
+      setState(() => _localError = l10n.providerModelFetchRequiresApiKey);
+      return;
+    }
+
+    setState(() {
+      _isFetchingModels = true;
+      _localError = null;
+    });
+    final result = await ref
+        .read(modelProviderModelListServiceProvider)
+        .listModels(
+          ModelProviderConfig(
+            id: widget.existing?.id ?? _newProviderId(_nameController.text),
+            kind: _kind,
+            displayName: _nameController.text.trim().isEmpty
+                ? _kind.label
+                : _nameController.text.trim(),
+            endpoint: endpoint,
+            model: _modelController.text.trim().isEmpty
+                ? _kind.defaultModel
+                : _modelController.text.trim(),
+            apiKey: apiKey,
+          ),
+        );
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isFetchingModels = false;
+      if (result.succeeded && result.models.isNotEmpty) {
+        _availableModels = result.models;
+        final current = _modelController.text.trim();
+        _modelController.text = result.models.contains(current)
+            ? current
+            : result.models.first;
+        _isCustomModel = false;
+        _localError = null;
+        return;
+      }
+      _localError = result.succeeded
+          ? l10n.providerModelFetchEmpty
+          : _modelFetchFailureText(l10n, result.errorKind);
     });
   }
 
@@ -703,6 +816,57 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
   bool get _hasSavedApiKey =>
       widget.existing?.apiKey.trim().isNotEmpty ?? false;
 
+  List<String> get _modelOptions {
+    final values = <String>[];
+    values.addAll(
+      _availableModels.isEmpty
+          ? <String>[_kind.defaultModel]
+          : _availableModels,
+    );
+    final current = _modelController.text.trim();
+    if (!_isCustomModel && current.isNotEmpty && !values.contains(current)) {
+      values.insert(0, current);
+    }
+    return values;
+  }
+
+  String get _modelDropdownValue {
+    if (_isCustomModel) {
+      return _customModelValue;
+    }
+    final current = _modelController.text.trim();
+    if (current.isNotEmpty) {
+      return current;
+    }
+    return _modelOptions.first;
+  }
+
+  List<DropdownMenuItem<String>> _modelDropdownItems(AppLocalizations l10n) {
+    return <DropdownMenuItem<String>>[
+      for (final model in _modelOptions)
+        DropdownMenuItem<String>(
+          value: model,
+          child: Text(model, overflow: TextOverflow.ellipsis),
+        ),
+      DropdownMenuItem<String>(
+        value: _customModelValue,
+        child: Text(l10n.providerModelCustomOption),
+      ),
+    ];
+  }
+
+  void _selectModel(String value) {
+    setState(() {
+      if (value == _customModelValue) {
+        _isCustomModel = true;
+      } else {
+        _isCustomModel = false;
+        _modelController.text = value;
+      }
+      _localError = null;
+    });
+  }
+
   String? _apiKeyHelperText(AppLocalizations l10n) {
     if (!_kind.requiresApiKey) {
       return l10n.providerApiKeyOptionalHelper;
@@ -711,6 +875,20 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
       return l10n.providerApiKeyKeepSessionHelper;
     }
     return null;
+  }
+
+  String _modelFetchFailureText(
+    AppLocalizations l10n,
+    ModelProviderErrorKind? errorKind,
+  ) {
+    return switch (errorKind) {
+      ModelProviderErrorKind.authentication =>
+        l10n.providerModelFetchAuthenticationFailed,
+      ModelProviderErrorKind.rateLimited => l10n.providerModelFetchRateLimited,
+      ModelProviderErrorKind.timeout => l10n.providerModelFetchTimedOut,
+      ModelProviderErrorKind.server => l10n.providerModelFetchServerFailed,
+      _ => l10n.providerModelFetchFailed,
+    };
   }
 }
 

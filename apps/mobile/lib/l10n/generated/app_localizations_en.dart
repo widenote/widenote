@@ -2288,7 +2288,45 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get providerModelPresetHelper =>
-      'Preset model; edit it if your account has a different enabled model.';
+      'Fetch models from the provider, then choose one from the list; use custom only when needed.';
+
+  @override
+  String get providerFetchModelsTooltip => 'Fetch available models';
+
+  @override
+  String get providerModelCustomOption => 'Custom model ID';
+
+  @override
+  String get providerModelCustomHelper =>
+      'Use this when the provider does not return the model you need.';
+
+  @override
+  String get providerModelFetchRequiresApiKey =>
+      'Add an API key before fetching this provider\'s models.';
+
+  @override
+  String get providerModelFetchEmpty =>
+      'No models were returned. Keep the current model or enter a custom ID.';
+
+  @override
+  String get providerModelFetchFailed =>
+      'Could not fetch models. Check the endpoint, key, and network.';
+
+  @override
+  String get providerModelFetchAuthenticationFailed =>
+      'Model fetch authentication failed. Check the API key and account access.';
+
+  @override
+  String get providerModelFetchRateLimited =>
+      'Model fetch was rate limited. Try again later.';
+
+  @override
+  String get providerModelFetchTimedOut =>
+      'Model fetch timed out. Check the endpoint and network.';
+
+  @override
+  String get providerModelFetchServerFailed =>
+      'The provider returned a server error while fetching models.';
 
   @override
   String get providerInvalidEndpoint => 'Endpoint is not a valid URI.';

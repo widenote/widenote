@@ -2,6 +2,12 @@ import 'dart:async';
 import 'dart:collection';
 
 abstract interface class ModelProviderHttpClient {
+  Future<ModelProviderHttpResponse> getJson(
+    Uri endpoint, {
+    required Map<String, String> headers,
+    Duration timeout,
+  });
+
   Future<ModelProviderHttpResponse> postJson(
     Uri endpoint, {
     required Map<String, String> headers,
@@ -24,12 +30,14 @@ final class ModelProviderHttpResponse {
 
 final class RecordedModelProviderHttpRequest {
   const RecordedModelProviderHttpRequest({
+    required this.method,
     required this.endpoint,
     required this.headers,
     required this.body,
     required this.timeout,
   });
 
+  final String method;
   final Uri endpoint;
   final Map<String, String> headers;
   final Map<String, Object?> body;
@@ -49,7 +57,8 @@ final class RecordedModelProviderHttpRequest {
 
   @override
   String toString() {
-    return 'RecordedModelProviderHttpRequest(endpoint: $endpoint, '
+    return 'RecordedModelProviderHttpRequest(method: $method, '
+        'endpoint: $endpoint, '
         'headers: $redactedHeaders, body: $body, timeout: $timeout)';
   }
 }
@@ -78,14 +87,46 @@ final class FakeModelProviderHttpClient implements ModelProviderHttpClient {
   }
 
   @override
+  Future<ModelProviderHttpResponse> getJson(
+    Uri endpoint, {
+    required Map<String, String> headers,
+    Duration timeout = const Duration(seconds: 30),
+  }) async {
+    return _send(
+      method: 'GET',
+      endpoint: endpoint,
+      headers: headers,
+      body: const <String, Object?>{},
+      timeout: timeout,
+    );
+  }
+
+  @override
   Future<ModelProviderHttpResponse> postJson(
     Uri endpoint, {
     required Map<String, String> headers,
     required Map<String, Object?> body,
     Duration timeout = const Duration(seconds: 30),
   }) async {
+    return _send(
+      method: 'POST',
+      endpoint: endpoint,
+      headers: headers,
+      body: body,
+      timeout: timeout,
+    );
+  }
+
+  Future<ModelProviderHttpResponse> _send({
+    required String method,
+    required Uri endpoint,
+    required Map<String, String> headers,
+    required Map<String, Object?> body,
+    required Duration timeout,
+  }) async {
     _requests.add(
       RecordedModelProviderHttpRequest(
+        method: method,
         endpoint: endpoint,
         headers: Map.unmodifiable(headers),
         body: Map.unmodifiable(body),

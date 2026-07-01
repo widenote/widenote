@@ -2033,7 +2033,38 @@ class AppLocalizationsZh extends AppLocalizations {
   String get providerEndpointPresetHelper => '已按官方文档预填；如果账号使用其他地域或网关，可以修改。';
 
   @override
-  String get providerModelPresetHelper => '已预填一个可用模型；如果账号启用了其他模型，可以修改。';
+  String get providerModelPresetHelper => '先从提供商拉取可用模型，再从列表里选择；只有需要时再使用自定义。';
+
+  @override
+  String get providerFetchModelsTooltip => '获取可用模型';
+
+  @override
+  String get providerModelCustomOption => '自定义模型 ID';
+
+  @override
+  String get providerModelCustomHelper => '当提供商没有返回你要用的模型时使用。';
+
+  @override
+  String get providerModelFetchRequiresApiKey => '请先填写 API Key，再获取这个提供商的模型列表。';
+
+  @override
+  String get providerModelFetchEmpty => '没有返回可用模型。可以保留当前模型，或输入自定义 ID。';
+
+  @override
+  String get providerModelFetchFailed => '无法获取模型列表。请检查端点、密钥和网络。';
+
+  @override
+  String get providerModelFetchAuthenticationFailed =>
+      '获取模型列表鉴权失败。请检查 API Key 和账号权限。';
+
+  @override
+  String get providerModelFetchRateLimited => '获取模型列表被限流，请稍后再试。';
+
+  @override
+  String get providerModelFetchTimedOut => '获取模型列表超时。请检查端点和网络。';
+
+  @override
+  String get providerModelFetchServerFailed => '提供商在获取模型列表时返回了服务端错误。';
 
   @override
   String get providerInvalidEndpoint => '端点不是有效的 URI。';

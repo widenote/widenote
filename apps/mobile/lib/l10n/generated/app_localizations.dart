@@ -3732,8 +3732,68 @@ abstract class AppLocalizations {
   /// No description provided for @providerModelPresetHelper.
   ///
   /// In en, this message translates to:
-  /// **'Preset model; edit it if your account has a different enabled model.'**
+  /// **'Fetch models from the provider, then choose one from the list; use custom only when needed.'**
   String get providerModelPresetHelper;
+
+  /// No description provided for @providerFetchModelsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetch available models'**
+  String get providerFetchModelsTooltip;
+
+  /// No description provided for @providerModelCustomOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom model ID'**
+  String get providerModelCustomOption;
+
+  /// No description provided for @providerModelCustomHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this when the provider does not return the model you need.'**
+  String get providerModelCustomHelper;
+
+  /// No description provided for @providerModelFetchRequiresApiKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an API key before fetching this provider\'s models.'**
+  String get providerModelFetchRequiresApiKey;
+
+  /// No description provided for @providerModelFetchEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No models were returned. Keep the current model or enter a custom ID.'**
+  String get providerModelFetchEmpty;
+
+  /// No description provided for @providerModelFetchFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not fetch models. Check the endpoint, key, and network.'**
+  String get providerModelFetchFailed;
+
+  /// No description provided for @providerModelFetchAuthenticationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Model fetch authentication failed. Check the API key and account access.'**
+  String get providerModelFetchAuthenticationFailed;
+
+  /// No description provided for @providerModelFetchRateLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Model fetch was rate limited. Try again later.'**
+  String get providerModelFetchRateLimited;
+
+  /// No description provided for @providerModelFetchTimedOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Model fetch timed out. Check the endpoint and network.'**
+  String get providerModelFetchTimedOut;
+
+  /// No description provided for @providerModelFetchServerFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The provider returned a server error while fetching models.'**
+  String get providerModelFetchServerFailed;
 
   /// No description provided for @providerInvalidEndpoint.
   ///

@@ -139,10 +139,7 @@ void main() {
         find.byKey(const Key('provider-name-field')),
         'Team OpenAI Edited',
       );
-      await tester.enterText(
-        find.byKey(const Key('provider-model-field')),
-        'edited-chat',
-      );
+      await _setCustomModel(tester, 'edited-chat');
       await tester.tap(find.byKey(const Key('provider-save-button')));
       await tester.pumpAndSettle();
 
@@ -374,7 +371,7 @@ void main() {
       _fieldText(tester, 'provider-endpoint-field'),
       'https://generativelanguage.googleapis.com/v1beta/openai',
     );
-    expect(_fieldText(tester, 'provider-model-field'), 'gemini-3.5-flash');
+    expect(_selectedModel(tester), 'gemini-3.5-flash');
 
     await _selectProviderKind(tester, 'Anthropic Claude');
 
@@ -383,7 +380,7 @@ void main() {
       _fieldText(tester, 'provider-endpoint-field'),
       'https://api.anthropic.com',
     );
-    expect(_fieldText(tester, 'provider-model-field'), 'claude-sonnet-5');
+    expect(_selectedModel(tester), 'claude-sonnet-5');
 
     await _selectProviderKind(tester, 'OpenRouter');
 
@@ -392,7 +389,7 @@ void main() {
       _fieldText(tester, 'provider-endpoint-field'),
       'https://openrouter.ai/api/v1',
     );
-    expect(_fieldText(tester, 'provider-model-field'), 'openrouter/auto');
+    expect(_selectedModel(tester), 'openrouter/auto');
 
     await _selectProviderKind(tester, 'DeepSeek');
 
@@ -401,7 +398,7 @@ void main() {
       _fieldText(tester, 'provider-endpoint-field'),
       'https://api.deepseek.com',
     );
-    expect(_fieldText(tester, 'provider-model-field'), 'deepseek-v4-pro');
+    expect(_selectedModel(tester), 'deepseek-v4-pro');
 
     await _selectProviderKind(tester, 'Kimi');
 
@@ -410,7 +407,109 @@ void main() {
       _fieldText(tester, 'provider-endpoint-field'),
       'https://api.moonshot.ai/v1',
     );
-    expect(_fieldText(tester, 'provider-model-field'), 'kimi-k2.6');
+    expect(_selectedModel(tester), 'kimi-k2.6');
+  });
+
+  testWidgets('provider settings fetches models and saves selected model', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    final modelListService = _QueueModelListService(
+      <ModelProviderModelListResult>[
+        ModelProviderModelListResult.success(<String>[
+          'deepseek-chat',
+          'deepseek-reasoner',
+        ]),
+      ],
+    );
+    await _pumpSettings(
+      tester,
+      database: database,
+      overrides: [
+        modelProviderModelListServiceProvider.overrideWithValue(
+          modelListService,
+        ),
+      ],
+    );
+
+    await tester.tap(find.byKey(const Key('provider-add-button')));
+    await tester.pumpAndSettle();
+    await _selectProviderKind(tester, 'DeepSeek');
+    await tester.enterText(
+      find.byKey(const Key('provider-api-key-field')),
+      _runtimeCredential(),
+    );
+    await tester.tap(find.byKey(const Key('provider-fetch-models-button')));
+    await tester.pumpAndSettle();
+
+    expect(modelListService.requests.single.kind, ModelProviderKind.deepSeek);
+    expect(modelListService.requests.single.apiKey, _runtimeCredential());
+    expect(find.text('deepseek-chat'), findsOneWidget);
+    await _selectModel(tester, 'deepseek-reasoner');
+
+    await tester.tap(find.byKey(const Key('provider-save-button')));
+    await tester.pumpAndSettle();
+
+    final persisted = database.modelProviderConfigs.readById('deepseek')!;
+    expect(persisted.model, 'deepseek-reasoner');
+    expect(find.textContaining('deepseek-reasoner'), findsWidgets);
+  });
+
+  testWidgets('provider model fetch failure keeps custom fallback', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    final modelListService =
+        _QueueModelListService(<ModelProviderModelListResult>[
+          ModelProviderModelListResult.failure(
+            errorKind: ModelProviderErrorKind.authentication,
+          ),
+          ModelProviderModelListResult.success(const <String>[]),
+        ]);
+    await _pumpSettings(
+      tester,
+      database: database,
+      overrides: [
+        modelProviderModelListServiceProvider.overrideWithValue(
+          modelListService,
+        ),
+      ],
+    );
+
+    await tester.tap(find.byKey(const Key('provider-add-button')));
+    await tester.pumpAndSettle();
+    await _selectProviderKind(tester, 'Kimi');
+    await tester.enterText(
+      find.byKey(const Key('provider-api-key-field')),
+      _runtimeCredential(),
+    );
+
+    await tester.tap(find.byKey(const Key('provider-fetch-models-button')));
+    await tester.pumpAndSettle();
+    expect(
+      find.text(
+        'Model fetch authentication failed. Check the API key and account access.',
+      ),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const Key('provider-fetch-models-button')));
+    await tester.pumpAndSettle();
+    expect(
+      find.text(
+        'No models were returned. Keep the current model or enter a custom ID.',
+      ),
+      findsOneWidget,
+    );
+
+    await _setCustomModel(tester, 'kimi-private-gateway-model');
+    await tester.tap(find.byKey(const Key('provider-save-button')));
+    await tester.pumpAndSettle();
+
+    final persisted = database.modelProviderConfigs.readById('kimi')!;
+    expect(persisted.model, 'kimi-private-gateway-model');
   });
 
   testWidgets('provider settings can save no-key Ollama preset', (
@@ -457,8 +556,9 @@ void main() {
     final endpointField = tester.widget<TextField>(
       find.byKey(const Key('provider-endpoint-field')),
     );
-    final modelField = tester.widget<TextField>(
-      find.byKey(const Key('provider-model-field')),
+    await _setCustomModel(tester, 'custom-chat');
+    final customModelField = tester.widget<TextField>(
+      find.byKey(const Key('provider-custom-model-field')),
     );
     final apiKeyField = tester.widget<TextField>(
       find.byKey(const Key('provider-api-key-field')),
@@ -470,7 +570,9 @@ void main() {
     expect(endpointField.autocorrect, isFalse);
     expect(endpointField.enableSuggestions, isTrue);
     expect(endpointField.enableIMEPersonalizedLearning, isFalse);
-    expect(modelField.keyboardType, TextInputType.text);
+    expect(customModelField.keyboardType, TextInputType.text);
+    expect(customModelField.autocorrect, isFalse);
+    expect(customModelField.enableSuggestions, isFalse);
     expect(apiKeyField.keyboardType, TextInputType.text);
     expect(apiKeyField.obscureText, isFalse);
     expect(apiKeyField.autocorrect, isFalse);
@@ -543,6 +645,9 @@ Future<void> _pumpSettings(
     ProviderScope(
       overrides: [
         localDatabaseProvider.overrideWithValue(database),
+        modelProviderModelListServiceProvider.overrideWithValue(
+          const OfflineModelProviderModelListService(),
+        ),
         ...overrides,
       ],
       child: MaterialApp(
@@ -572,6 +677,22 @@ final class _QueueConnectionTestService
   }
 }
 
+final class _QueueModelListService implements ModelProviderModelListService {
+  _QueueModelListService(Iterable<ModelProviderModelListResult> results)
+    : _results = Queue<ModelProviderModelListResult>.of(results);
+
+  final Queue<ModelProviderModelListResult> _results;
+  final List<ModelProviderConfig> requests = <ModelProviderConfig>[];
+
+  @override
+  Future<ModelProviderModelListResult> listModels(
+    ModelProviderConfig config,
+  ) async {
+    requests.add(config);
+    return _results.removeFirst();
+  }
+}
+
 Future<void> _addProvider(
   WidgetTester tester, {
   required String displayName,
@@ -594,7 +715,7 @@ Future<void> _addProvider(
     find.byKey(const Key('provider-endpoint-field')),
     endpoint,
   );
-  await tester.enterText(find.byKey(const Key('provider-model-field')), model);
+  await _setCustomModel(tester, model);
   await tester.enterText(
     find.byKey(const Key('provider-api-key-field')),
     _runtimeCredential(),
@@ -631,6 +752,36 @@ String _runtimeCredential() {
 String _fieldText(WidgetTester tester, String key) {
   final field = tester.widget<TextField>(find.byKey(Key(key)));
   return field.controller?.text ?? '';
+}
+
+String? _selectedModel(WidgetTester tester) {
+  final field = tester.widget<DropdownButton<String>>(
+    find.byKey(const Key('provider-model-field')),
+  );
+  return field.value;
+}
+
+Future<void> _selectModel(WidgetTester tester, String label) async {
+  await tester.tap(find.byKey(const Key('provider-model-field')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(label).last);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _setCustomModel(WidgetTester tester, String model) async {
+  await tester.tap(find.byKey(const Key('provider-model-field')));
+  await tester.pumpAndSettle();
+  final english = find.text('Custom model ID');
+  final customFinder = english.evaluate().isNotEmpty
+      ? english.last
+      : find.text('自定义模型 ID').last;
+  await tester.tap(customFinder);
+  await tester.pumpAndSettle();
+  await tester.enterText(
+    find.byKey(const Key('provider-custom-model-field')),
+    model,
+  );
+  await tester.pumpAndSettle();
 }
 
 Future<void> _selectProviderKind(WidgetTester tester, String label) async {

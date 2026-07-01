@@ -9,8 +9,8 @@ providers.
 
 This feature owns app-local provider settings state, provider setup forms,
 runtime-status presentation, default-provider selection, first-pass model-role
-explanation, provider-settings page test status, and the mobile connection-test
-service wiring.
+explanation, provider-settings page test status, the provider model picker, and
+the mobile connection-test/model-list service wiring.
 
 It does not own model routing policy, Agent Pack prompts, or durable provider
 schemas. Shared provider contracts and compatible adapters live in
@@ -25,8 +25,12 @@ left blank, and the edit dialog can explicitly clear the saved key.
 The add/edit dialog exposes common provider presets so most users can choose a
 service, paste a key, and save. Presets include OpenAI, Anthropic Claude,
 Google Gemini, OpenRouter, DeepSeek, Kimi, Qwen, Doubao, Zhipu GLM, MiniMax,
-MIMO, Ollama, and custom compatible endpoints. Endpoint and model fields remain
-editable for account-specific regions, gateways, and enabled model ids.
+MIMO, Ollama, and custom compatible endpoints. Endpoint fields remain editable
+for account-specific regions and gateways. The model field is a dropdown: users
+can fetch official provider model lists, choose an available model, or fall
+back to a custom model id when a gateway/account does not return the desired
+model. Widget tests override the model-list service with a deterministic
+offline/fake implementation; real model-list requests are user-triggered only.
 
 ## Public Surface
 
