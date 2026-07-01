@@ -15,15 +15,15 @@ The long-term system is broader: user records become durable personal context, a
 This repository is in the phase-one local-first usable-state integration stage.
 The current W7 state has a Flutter mobile app, hand-written SQLite local truth,
 local runtime outputs, runtime-enforced built-in Pack permissions, Settings /
-Privacy, compressed `.widenote` safe backup / restore, real media permission
-handling, Daily Recap, timeline / search / detail surfaces, and
-cross-platform QA evidence. Safe backup restore rejects secret-bearing
-`encrypted_full` imports until a real encryption and credential-restore
-boundary exists. Use
+Privacy, compressed full `.widenote` backup / restore with local media and
+provider credentials, real media permission handling, Daily Recap, timeline /
+search / detail surfaces, and cross-platform QA evidence. Legacy safe JSON and
+Markdown projections remain no-secret compatibility/export surfaces; the
+future encrypted-full envelope is still deferred. Use
 [Current Architecture Contracts](./docs/architecture/current-contracts.md)
 for the target-state contracts agents should maintain by default, use
 [W7 Current Integration State](./docs/research/2026-06-26-w7-current-integration-state.md)
-for the current implementation boundary, and keep the original product brief in
+for the integration-state narrative, and keep the original product brief in
 [widenote_project_brief.md](./widenote_project_brief.md) for product intent.
 
 ## Repository Map

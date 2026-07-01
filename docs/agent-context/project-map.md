@@ -31,6 +31,7 @@ It should stay short. It points to the right local context instead of duplicatin
 - `docs/research/2026-07-01-chat-session-management-plan.md`
 - `docs/research/2026-07-01-android-backup-restore-interaction-plan.md`
 - `docs/research/2026-07-01-provider-presets-kimi-review.md`
+- `docs/research/2026-07-01-location-context-amap-kimi-review.md`
 - `docs/research/2026-06-30-voice-input-asr-correction-plan.md`
 - `docs/research/2026-06-28-marketplace-pkm-plan.md`
 - `docs/research/2026-06-27-agent-runtime-roadmap-research.md`
@@ -128,6 +129,7 @@ It should stay short. It points to the right local context instead of duplicatin
 | Mobile timeline | `apps/mobile/lib/features/timeline/README.md` | Local timeline browse, search, details, and source-ref inspection |
 | Mobile recap | `apps/mobile/lib/features/recap/README.md` | Daily Recap page built from local object truth |
 | Mobile settings | `apps/mobile/lib/features/settings/README.md` | Settings and Privacy hub for controls, permissions, providers, backup, logs, and display status |
+| Mobile location | `apps/mobile/lib/features/location/README.md` | Opt-in foreground GPS capture, AMap reverse geocoding, fact-backed place metadata, and redacted location display |
 | Mobile Memory | `apps/mobile/lib/features/memory/README.md` | Accepted Memory list, edit, tombstone delete, and restore UI |
 | Mobile model providers | `apps/mobile/lib/features/model_providers/README.md` | Provider settings UI and local state |
 | Mobile traces | `apps/mobile/lib/features/traces/README.md` | Read-only local Agent Runtime log center |

@@ -1,6 +1,6 @@
 # RFC: Phase-One Product Scope
 
-Status: Accepted phase-one scope; amended by W7 full-backup boundary
+Status: Accepted phase-one scope; amended by ADR-0013 full-backup credential boundary
 
 Date: 2026-06-24
 
@@ -65,8 +65,9 @@ capture created
 ## Model Provider Requirements
 
 - Provider config must be stored without leaking secrets into logs, generated
-  docs, automated review prompts, or test output. Safe backup is the current
-  implemented default and does not include provider API key values.
+  docs, automated review prompts, or test output. Default `.widenote` backup is
+  the explicit secret-bearing restore artifact and preserves provider API key
+  values; safe JSON and Markdown projections must exclude those values.
 - Runtime traces should expose provider/model ids, token usage, retry/failure
   state, and provider-exposed cost metadata for BYOK visibility without storing
   API keys or raw private prompts.

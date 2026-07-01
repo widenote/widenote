@@ -732,8 +732,7 @@ class _RecordsSection extends StatelessWidget {
                   HomeRecordRow(
                     key: Key('record-row-${record.id}'),
                     title: record.body,
-                    subtitle:
-                        '${record.id} · ${_localizedRecordStatus(l10n, record.status)}',
+                    subtitle: _recordSubtitle(l10n, record),
                     icon: Icons.notes_outlined,
                     onTap: () => context.push(
                       '/timeline/items/${Uri.encodeComponent(record.id)}',
@@ -743,6 +742,25 @@ class _RecordsSection extends StatelessWidget {
             ),
     );
   }
+}
+
+String _recordSubtitle(AppLocalizations l10n, CaptureRecord record) {
+  final parts = <String>[
+    record.id,
+    _localizedRecordStatus(l10n, record.status),
+  ];
+  final location = record.locationContext;
+  if (location != null) {
+    final summary = location.displaySummary(coarseOnly: true);
+    if (summary != null) {
+      parts.add(l10n.locationRecordSummary(summary));
+    } else if (location.hasCoordinates) {
+      parts.add(l10n.locationRecordCoordinatesSaved);
+    } else {
+      parts.add(l10n.locationRecordUnavailable);
+    }
+  }
+  return parts.join(' · ');
 }
 
 String _localizedRecordStatus(AppLocalizations l10n, String status) {

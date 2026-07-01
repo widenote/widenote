@@ -12,6 +12,7 @@ import 'package:widenote_mobile/features/capture/application/capture_draft_repos
 import 'package:widenote_mobile/features/capture/application/capture_input_controller.dart';
 import 'package:widenote_mobile/features/capture/domain/capture_models.dart';
 import 'package:widenote_mobile/features/capture/media/capture_media.dart';
+import 'package:widenote_mobile/features/location/application/location_settings_controller.dart';
 import 'package:widenote_mobile/features/transcription/transcription_service.dart';
 import 'package:widenote_mobile/features/transcription/transcription_settings.dart';
 import 'package:widenote_mobile/features/transcription/transcription_types.dart';
@@ -620,6 +621,9 @@ Future<void> _pumpApp(
         voiceCaptureAdapterProvider.overrideWithValue(voiceAdapter),
         if (modelClient != null)
           modelClientProvider.overrideWithValue(modelClient),
+        locationSettingsRepositoryProvider.overrideWithValue(
+          InMemoryLocationSettingsRepository(),
+        ),
         transcriptionServiceProvider.overrideWithValue(transcriptionService),
         if (draftRepository != null)
           captureDraftRepositoryProvider.overrideWithValue(draftRepository),

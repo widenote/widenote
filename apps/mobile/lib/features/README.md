@@ -27,8 +27,11 @@ Features may own presentation and temporary app-local controllers. Durable runti
 - `todos`: source-linked todo list.
 - `settings`: Settings / Privacy hub for permissions, model providers,
   backup/restore, log center, and display status.
-- `backup`: full `.widenote` directory archive export/import plus legacy JSON
-  paste and human-readable Markdown projection backed by local DB.
+- `location`: opt-in foreground GPS capture, separate AMap reverse geocoding,
+  fact-backed place metadata, redacted location display, and saved-location
+  clearing.
+- `backup`: full `.widenote` directory archive export/import UI; legacy safe
+  JSON and Markdown projections remain local DB compatibility/export surfaces.
 - `plugins`: pack, permission, model, backup, and log control entries.
 - `model_providers`: provider setup, fake connection tests, and default-provider
   local state.

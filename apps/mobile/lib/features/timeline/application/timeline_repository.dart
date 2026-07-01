@@ -5,6 +5,7 @@ import 'package:widenote_local_db/widenote_local_db.dart';
 
 import '../../../app/local_database.dart';
 import '../../capture/media/capture_media.dart';
+import '../../location/domain/location_context.dart';
 
 final timelineRepositoryProvider = Provider<TimelineRepository>((ref) {
   return LocalDbTimelineRepository(ref.watch(localDatabaseProvider));
@@ -99,6 +100,12 @@ final class LocalDbTimelineRepository implements TimelineRepository {
         .map((event) {
           final body = _string(event.payload['text']) ?? 'Untitled capture';
           final captureId = event.subjectRefId ?? event.id;
+          final captureRecord = _database.captures.readById(captureId);
+          final location = _locationFromCapture(captureRecord);
+          final locationMetadata = _locationTimelineMetadata(
+            captureRecord,
+            location,
+          );
           final attachments = _database.attachments.readByCapture(captureId);
           final artifactPayloads = _attachmentArtifactPayloads(
             captureId,
@@ -136,6 +143,7 @@ final class LocalDbTimelineRepository implements TimelineRepository {
             metadata: <String, Object?>{
               'event_type': event.type,
               'event_id': event.id,
+              ...locationMetadata,
               if (attachments.isNotEmpty)
                 'attachment_count': attachments.length,
               if (artifactPayloads.isNotEmpty)
@@ -308,6 +316,93 @@ final class LocalDbTimelineRepository implements TimelineRepository {
   }
 }
 
+CapturedLocationContext? _locationFromCapture(CaptureRecord? capture) {
+  final rawLocation = capture?.payload['location_context'];
+  if (rawLocation is! Map) {
+    return null;
+  }
+  return CapturedLocationContext.fromJson(rawLocation.cast<String, Object?>());
+}
+
+Map<String, Object?> _locationTimelineMetadata(
+  CaptureRecord? capture,
+  CapturedLocationContext? location,
+) {
+  final fact = _locationFactFromCapture(capture) ?? location?.toFactMetadata();
+  if (fact == null) {
+    return const <String, Object?>{};
+  }
+  final coordinate = _map(fact['coordinate']);
+  final place = _map(fact['place']);
+  final metadata = <String, Object?>{
+    'location': fact,
+    if (_string(fact['status']) != null)
+      'location_status': _string(fact['status']),
+  };
+
+  final displayName =
+      _string(place?['display_name']) ??
+      location?.displaySummary(coarseOnly: true);
+  if (displayName != null) {
+    metadata['location_summary'] = displayName;
+    metadata['location_display_name'] = displayName;
+  }
+  final placeName = _string(place?['place_name']) ?? location?.placeName;
+  if (placeName != null) {
+    metadata['location_place_name'] = placeName;
+  }
+  final formattedAddress = _string(place?['formatted_address']);
+  if (formattedAddress != null) {
+    metadata['location_formatted_address'] = formattedAddress;
+  }
+  final provider = _string(place?['provider']);
+  if (provider != null) {
+    metadata['location_reverse_geocode_provider'] = provider;
+  }
+  final geocodeStatus = _string(place?['status']);
+  if (geocodeStatus != null) {
+    metadata['location_reverse_geocode_status'] = geocodeStatus;
+  }
+  if (coordinate != null) {
+    final latitude = _double(coordinate['latitude']);
+    final longitude = _double(coordinate['longitude']);
+    if (latitude != null && longitude != null) {
+      metadata['location_coordinates_saved'] = true;
+      metadata['location_latitude'] = latitude;
+      metadata['location_longitude'] = longitude;
+    }
+    final accuracy = _double(coordinate['accuracy_meters']);
+    if (accuracy != null) {
+      metadata['location_accuracy_meters'] = accuracy;
+    }
+    final coordinateSystem = _string(coordinate['coordinate_system']);
+    if (coordinateSystem != null) {
+      metadata['location_coordinate_system'] = coordinateSystem;
+    }
+    final capturedAt = _string(coordinate['captured_at']);
+    if (capturedAt != null) {
+      metadata['location_captured_at'] = capturedAt;
+    }
+    final source = _string(coordinate['source']);
+    if (source != null) {
+      metadata['location_source'] = source;
+    }
+  }
+  return metadata;
+}
+
+Map<String, Object?>? _locationFactFromCapture(CaptureRecord? capture) {
+  final rawFacts = capture?.payload['fact_metadata'];
+  if (rawFacts is! Map) {
+    return null;
+  }
+  final rawLocation = rawFacts['location'];
+  if (rawLocation is! Map) {
+    return null;
+  }
+  return rawLocation.cast<String, Object?>();
+}
+
 Map<String, Object?> _artifactPayload(
   String captureId,
   AttachmentRecord attachment,
@@ -357,6 +452,23 @@ List<SourceLink> _linksWithSelf({
 String? _string(Object? value) {
   if (value is String && value.trim().isNotEmpty) {
     return value.trim();
+  }
+  return null;
+}
+
+double? _double(Object? value) {
+  if (value is num) {
+    return value.toDouble();
+  }
+  if (value is String) {
+    return double.tryParse(value);
+  }
+  return null;
+}
+
+Map<String, Object?>? _map(Object? value) {
+  if (value is Map) {
+    return value.cast<String, Object?>();
   }
   return null;
 }

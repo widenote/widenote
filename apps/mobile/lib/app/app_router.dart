@@ -8,6 +8,7 @@ import '../features/capture/presentation/home_page.dart';
 import '../features/chat/presentation/chat_page.dart';
 import '../features/memory/presentation/memory_page.dart';
 import '../features/model_providers/presentation/model_provider_settings_page.dart';
+import '../features/location/presentation/location_settings_page.dart';
 import '../features/plugins/presentation/pack_library_page.dart';
 import '../features/plugins/presentation/permission_gate_page.dart';
 import '../features/plugins/presentation/plugins_page.dart';
@@ -110,6 +111,12 @@ GoRouter createAppRouter() {
               state,
               const VoiceTranscriptionSettingsPage(),
             ),
+          ),
+          GoRoute(
+            path: '/settings/location',
+            name: 'settings-location',
+            pageBuilder: (context, state) =>
+                _noTransitionPage(state, const LocationSettingsPage()),
           ),
           GoRoute(
             path: '/settings/backup',

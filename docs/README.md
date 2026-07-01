@@ -61,8 +61,8 @@ historical decisions, rationale, and supersession history, use
 ## Phase-One RFC State
 
 - [Phase-One Umbrella Technical Plan](./rfcs/phase-one-umbrella-technical-plan.md): accepted implementation baseline.
-- [Phase-One Product Scope](./rfcs/phase-one-product-scope.md): accepted scope, amended by W7 safe-backup boundary.
-- [Model Provider Settings](./rfcs/model-provider-settings.md): accepted provider-settings slice, amended by W7 safe-backup boundary.
+- [Phase-One Product Scope](./rfcs/phase-one-product-scope.md): accepted scope, amended by ADR-0013 full-backup credential boundary.
+- [Model Provider Settings](./rfcs/model-provider-settings.md): accepted provider-settings slice, amended by ADR-0013 full-backup credential boundary.
 - [Memory Model](./rfcs/memory-model.md): accepted phase-one contract with follow-ups open.
 - [Agent Pack Schema](./rfcs/agent-pack-schema.md): accepted phase-one contract; scripted/community runtime deferred.
 - [Agent Runtime Capability Boundaries](./rfcs/agent-runtime-capability-boundaries.md): proposed implementation guardrail under ADR-0011.

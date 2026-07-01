@@ -4371,11 +4371,11 @@ abstract class AppLocalizations {
   /// **'Full backups include provider API keys. Keep .widenote files somewhere you trust.'**
   String get backupSecretWarning;
 
-  /// No description provided for @backupSafeRestoreBoundary.
+  /// No description provided for @backupRestoreBoundary.
   ///
   /// In en, this message translates to:
   /// **'The .widenote archive restores a SQLite snapshot, capture media files, and provider API keys.'**
-  String get backupSafeRestoreBoundary;
+  String get backupRestoreBoundary;
 
   /// No description provided for @backupOwnerExportBoundary.
   ///
@@ -4389,11 +4389,11 @@ abstract class AppLocalizations {
   /// **'Full .widenote backups include provider API keys so restore can use configured providers immediately.'**
   String get backupFullSecretBoundary;
 
-  /// No description provided for @backupSafeOmittedProviderKeys.
+  /// No description provided for @backupLegacyProviderCredentialReentryCount.
   ///
   /// In en, this message translates to:
   /// **'Provider keys requiring re-entry: {count}'**
-  String backupSafeOmittedProviderKeys(int count);
+  String backupLegacyProviderCredentialReentryCount(int count);
 
   /// No description provided for @backupManifestCountsTitle.
   ///
@@ -4526,6 +4526,354 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No provider keys need re-entry for this backup.'**
   String get backupImportNoProviderKeysNeeded;
+
+  /// No description provided for @settingsLocationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Location Context'**
+  String get settingsLocationTitle;
+
+  /// No description provided for @settingsLocationSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save local GPS with records and optionally use AMap for address summaries.'**
+  String get settingsLocationSubtitle;
+
+  /// No description provided for @settingsLocationStatusOff.
+  ///
+  /// In en, this message translates to:
+  /// **'off'**
+  String get settingsLocationStatusOff;
+
+  /// No description provided for @settingsLocationStatusGps.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS only'**
+  String get settingsLocationStatusGps;
+
+  /// No description provided for @settingsLocationStatusAmap.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS + AMap'**
+  String get settingsLocationStatusAmap;
+
+  /// No description provided for @locationSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Location Context'**
+  String get locationSettingsTitle;
+
+  /// No description provided for @locationSettingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose what WideNote saves locally and when coordinates may be sent to AMap.'**
+  String get locationSettingsSubtitle;
+
+  /// No description provided for @locationPrivacyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy boundary'**
+  String get locationPrivacyTitle;
+
+  /// No description provided for @locationPrivacyLocalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Local GPS'**
+  String get locationPrivacyLocalTitle;
+
+  /// No description provided for @locationPrivacyLocalBody.
+  ///
+  /// In en, this message translates to:
+  /// **'When enabled, WideNote requests foreground location only while saving a record and stores the coordinate on that local record.'**
+  String get locationPrivacyLocalBody;
+
+  /// No description provided for @locationPrivacyAmapTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AMap reverse geocoding'**
+  String get locationPrivacyAmapTitle;
+
+  /// No description provided for @locationPrivacyAmapBody.
+  ///
+  /// In en, this message translates to:
+  /// **'AMap address lookup is separate consent. When enabled, the record coordinate is sent to AMap Web Service to return an address summary.'**
+  String get locationPrivacyAmapBody;
+
+  /// No description provided for @locationStatusGpsOn.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS capture on'**
+  String get locationStatusGpsOn;
+
+  /// No description provided for @locationStatusGpsOff.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS capture off'**
+  String get locationStatusGpsOff;
+
+  /// No description provided for @locationStatusAmapOn.
+  ///
+  /// In en, this message translates to:
+  /// **'AMap lookup on'**
+  String get locationStatusAmapOn;
+
+  /// No description provided for @locationStatusAmapOff.
+  ///
+  /// In en, this message translates to:
+  /// **'AMap lookup off'**
+  String get locationStatusAmapOff;
+
+  /// No description provided for @locationCaptureTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Record location'**
+  String get locationCaptureTitle;
+
+  /// No description provided for @locationSaveGpsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save GPS with new records'**
+  String get locationSaveGpsTitle;
+
+  /// No description provided for @locationSaveGpsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Stores WGS-84 latitude, longitude, accuracy, source, and capture time only on the local record.'**
+  String get locationSaveGpsBody;
+
+  /// No description provided for @locationAmapTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Address lookup'**
+  String get locationAmapTitle;
+
+  /// No description provided for @locationAmapSwitchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use AMap reverse geocoding'**
+  String get locationAmapSwitchTitle;
+
+  /// No description provided for @locationAmapSwitchBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Sends the record coordinate to AMap Web Service and stores the returned address as derived context.'**
+  String get locationAmapSwitchBody;
+
+  /// No description provided for @locationAmapKeyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'AMap Web Service Key'**
+  String get locationAmapKeyLabel;
+
+  /// No description provided for @locationAmapKeyHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Stored in secure local storage. It is not included in .widenote backups or Owner Export.'**
+  String get locationAmapKeyHelper;
+
+  /// No description provided for @locationGranularityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Display granularity'**
+  String get locationGranularityTitle;
+
+  /// No description provided for @locationGranularityBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Lists and status surfaces use coarse display by default to reduce shoulder-surfing risk.'**
+  String get locationGranularityBody;
+
+  /// No description provided for @locationGranularityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Default display'**
+  String get locationGranularityLabel;
+
+  /// No description provided for @locationGranularityCity.
+  ///
+  /// In en, this message translates to:
+  /// **'City'**
+  String get locationGranularityCity;
+
+  /// No description provided for @locationGranularityDistrict.
+  ///
+  /// In en, this message translates to:
+  /// **'District'**
+  String get locationGranularityDistrict;
+
+  /// No description provided for @locationGranularityNeighborhood.
+  ///
+  /// In en, this message translates to:
+  /// **'Neighborhood'**
+  String get locationGranularityNeighborhood;
+
+  /// No description provided for @locationGranularityStreet.
+  ///
+  /// In en, this message translates to:
+  /// **'Street'**
+  String get locationGranularityStreet;
+
+  /// No description provided for @locationGranularityFull.
+  ///
+  /// In en, this message translates to:
+  /// **'Full address'**
+  String get locationGranularityFull;
+
+  /// No description provided for @locationTestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Current status'**
+  String get locationTestTitle;
+
+  /// No description provided for @locationTestBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Run one foreground lookup with the current settings. The preview stays coarse.'**
+  String get locationTestBody;
+
+  /// No description provided for @locationTestAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Test location'**
+  String get locationTestAction;
+
+  /// No description provided for @locationTestRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Testing...'**
+  String get locationTestRunning;
+
+  /// No description provided for @locationMaintenanceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved locations'**
+  String get locationMaintenanceTitle;
+
+  /// No description provided for @locationMaintenanceBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Turning the feature off stops future capture. Use clear to remove saved location metadata from existing records.'**
+  String get locationMaintenanceBody;
+
+  /// No description provided for @locationClearSavedAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear saved locations'**
+  String get locationClearSavedAction;
+
+  /// No description provided for @locationClearConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear saved locations?'**
+  String get locationClearConfirmTitle;
+
+  /// No description provided for @locationClearConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes location metadata from existing local capture records. Record text and attachments stay unchanged.'**
+  String get locationClearConfirmBody;
+
+  /// No description provided for @locationClearConfirmAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get locationClearConfirmAction;
+
+  /// No description provided for @locationClearSavedResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Cleared location metadata from {count} records.'**
+  String locationClearSavedResult(int count);
+
+  /// No description provided for @locationStatusAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Location captured.'**
+  String get locationStatusAvailable;
+
+  /// No description provided for @locationStatusSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Area: {summary}'**
+  String locationStatusSummary(String summary);
+
+  /// No description provided for @locationStatusCoordinatesSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS coordinates saved on the local record.'**
+  String get locationStatusCoordinatesSaved;
+
+  /// No description provided for @locationStatusDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Location capture is off.'**
+  String get locationStatusDisabled;
+
+  /// No description provided for @locationStatusServiceDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Device location service is disabled.'**
+  String get locationStatusServiceDisabled;
+
+  /// No description provided for @locationStatusPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Location permission was denied.'**
+  String get locationStatusPermissionDenied;
+
+  /// No description provided for @locationStatusPermissionDeniedForever.
+  ///
+  /// In en, this message translates to:
+  /// **'Location permission is blocked in system settings.'**
+  String get locationStatusPermissionDeniedForever;
+
+  /// No description provided for @locationStatusTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Location lookup timed out.'**
+  String get locationStatusTimeout;
+
+  /// No description provided for @locationStatusAmapKeyMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'AMap key is missing. GPS can still be saved.'**
+  String get locationStatusAmapKeyMissing;
+
+  /// No description provided for @locationStatusAmapDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'AMap lookup is off.'**
+  String get locationStatusAmapDisabled;
+
+  /// No description provided for @locationStatusAmapTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'AMap lookup timed out. GPS can still be saved.'**
+  String get locationStatusAmapTimeout;
+
+  /// No description provided for @locationStatusUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Location is unavailable.'**
+  String get locationStatusUnavailable;
+
+  /// No description provided for @locationRecordSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Location: {summary}'**
+  String locationRecordSummary(String summary);
+
+  /// No description provided for @locationRecordCoordinatesSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS saved'**
+  String get locationRecordCoordinatesSaved;
+
+  /// No description provided for @locationRecordUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Location unavailable'**
+  String get locationRecordUnavailable;
 }
 
 class _AppLocalizationsDelegate

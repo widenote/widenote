@@ -1511,11 +1511,11 @@
   "backupExportButton": "Create .widenote backup",
   "backupExportEmpty": "Export creates one compressed directory .widenote archive. You can open it with another app or save it to a location you choose.",
   "backupSecretWarning": "Full backups include provider API keys. Keep .widenote files somewhere you trust.",
-  "backupSafeRestoreBoundary": "The .widenote archive restores a SQLite snapshot, capture media files, and provider API keys.",
+  "backupRestoreBoundary": "The .widenote archive restores a SQLite snapshot, capture media files, and provider API keys.",
   "backupOwnerExportBoundary": "Backups are compressed directories, not JSON or Markdown restore documents.",
   "backupFullSecretBoundary": "Full .widenote backups include provider API keys so restore can use configured providers immediately.",
-  "backupSafeOmittedProviderKeys": "Provider keys requiring re-entry: {count}",
-  "@backupSafeOmittedProviderKeys": {
+  "backupLegacyProviderCredentialReentryCount": "Provider keys requiring re-entry: {count}",
+  "@backupLegacyProviderCredentialReentryCount": {
     "placeholders": {
       "count": {
         "type": "int"
@@ -1560,5 +1560,84 @@
     }
   },
   "backupImportSecretsRestored": "Provider credentials restored and ready to use.",
-  "backupImportNoProviderKeysNeeded": "No provider keys need re-entry for this backup."
+  "backupImportNoProviderKeysNeeded": "No provider keys need re-entry for this backup.",
+  "settingsLocationTitle": "Location Context",
+  "settingsLocationSubtitle": "Save local GPS with records and optionally use AMap for address summaries.",
+  "settingsLocationStatusOff": "off",
+  "settingsLocationStatusGps": "GPS only",
+  "settingsLocationStatusAmap": "GPS + AMap",
+  "locationSettingsTitle": "Location Context",
+  "locationSettingsSubtitle": "Choose what WideNote saves locally and when coordinates may be sent to AMap.",
+  "locationPrivacyTitle": "Privacy boundary",
+  "locationPrivacyLocalTitle": "Local GPS",
+  "locationPrivacyLocalBody": "When enabled, WideNote requests foreground location only while saving a record and stores the coordinate on that local record.",
+  "locationPrivacyAmapTitle": "AMap reverse geocoding",
+  "locationPrivacyAmapBody": "AMap address lookup is separate consent. When enabled, the record coordinate is sent to AMap Web Service to return an address summary.",
+  "locationStatusGpsOn": "GPS capture on",
+  "locationStatusGpsOff": "GPS capture off",
+  "locationStatusAmapOn": "AMap lookup on",
+  "locationStatusAmapOff": "AMap lookup off",
+  "locationCaptureTitle": "Record location",
+  "locationSaveGpsTitle": "Save GPS with new records",
+  "locationSaveGpsBody": "Stores WGS-84 latitude, longitude, accuracy, source, and capture time only on the local record.",
+  "locationAmapTitle": "Address lookup",
+  "locationAmapSwitchTitle": "Use AMap reverse geocoding",
+  "locationAmapSwitchBody": "Sends the record coordinate to AMap Web Service and stores the returned address as derived context.",
+  "locationAmapKeyLabel": "AMap Web Service Key",
+  "locationAmapKeyHelper": "Stored in secure local storage. It is not included in .widenote backups or Owner Export.",
+  "locationGranularityTitle": "Display granularity",
+  "locationGranularityBody": "Lists and status surfaces use coarse display by default to reduce shoulder-surfing risk.",
+  "locationGranularityLabel": "Default display",
+  "locationGranularityCity": "City",
+  "locationGranularityDistrict": "District",
+  "locationGranularityNeighborhood": "Neighborhood",
+  "locationGranularityStreet": "Street",
+  "locationGranularityFull": "Full address",
+  "locationTestTitle": "Current status",
+  "locationTestBody": "Run one foreground lookup with the current settings. The preview stays coarse.",
+  "locationTestAction": "Test location",
+  "locationTestRunning": "Testing...",
+  "locationMaintenanceTitle": "Saved locations",
+  "locationMaintenanceBody": "Turning the feature off stops future capture. Use clear to remove saved location metadata from existing records.",
+  "locationClearSavedAction": "Clear saved locations",
+  "locationClearConfirmTitle": "Clear saved locations?",
+  "locationClearConfirmBody": "This removes location metadata from existing local capture records. Record text and attachments stay unchanged.",
+  "locationClearConfirmAction": "Clear",
+  "locationClearSavedResult": "Cleared location metadata from {count} records.",
+  "@locationClearSavedResult": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "locationStatusAvailable": "Location captured.",
+  "locationStatusSummary": "Area: {summary}",
+  "@locationStatusSummary": {
+    "placeholders": {
+      "summary": {
+        "type": "String"
+      }
+    }
+  },
+  "locationStatusCoordinatesSaved": "GPS coordinates saved on the local record.",
+  "locationStatusDisabled": "Location capture is off.",
+  "locationStatusServiceDisabled": "Device location service is disabled.",
+  "locationStatusPermissionDenied": "Location permission was denied.",
+  "locationStatusPermissionDeniedForever": "Location permission is blocked in system settings.",
+  "locationStatusTimeout": "Location lookup timed out.",
+  "locationStatusAmapKeyMissing": "AMap key is missing. GPS can still be saved.",
+  "locationStatusAmapDisabled": "AMap lookup is off.",
+  "locationStatusAmapTimeout": "AMap lookup timed out. GPS can still be saved.",
+  "locationStatusUnavailable": "Location is unavailable.",
+  "locationRecordSummary": "Location: {summary}",
+  "@locationRecordSummary": {
+    "placeholders": {
+      "summary": {
+        "type": "String"
+      }
+    }
+  },
+  "locationRecordCoordinatesSaved": "GPS saved",
+  "locationRecordUnavailable": "Location unavailable"
 }

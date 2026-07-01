@@ -16,14 +16,15 @@
 | [ADR-0011](./0011-adopt-agent-runtime-roadmap.md) | Adopt the WideNote Agent Runtime and Capability Roadmap | accepted | 2026-06-27 |
 | [ADR-0012](./0012-accept-voice-transcription-and-correction-boundaries.md) | Accept voice transcription and correction boundaries | accepted | 2026-07-01 |
 | [ADR-0013](./0013-preserve-provider-credentials-in-widenote-backups.md) | Preserve provider credentials in WideNote backup archives | accepted | 2026-07-01 |
+| [ADR-0014](./0014-accept-location-capture-boundaries.md) | Accept location capture boundaries | accepted | 2026-07-01 |
 
 ## RFC Status
 
 | RFC | Status |
 | --- | --- |
 | [Phase-One Umbrella Technical Plan](../rfcs/phase-one-umbrella-technical-plan.md) | accepted implementation baseline |
-| [Phase-One Product Scope](../rfcs/phase-one-product-scope.md) | accepted phase-one scope; W7 full-backup amendment |
-| [Model Provider Settings](../rfcs/model-provider-settings.md) | accepted phase-one slice; W7 full-backup amendment |
+| [Phase-One Product Scope](../rfcs/phase-one-product-scope.md) | accepted phase-one scope; ADR-0013 full-backup amendment |
+| [Model Provider Settings](../rfcs/model-provider-settings.md) | accepted phase-one slice; ADR-0013 full-backup amendment |
 | [Memory Model](../rfcs/memory-model.md) | accepted phase-one contract; follow-ups open |
 | [Agent Pack Schema](../rfcs/agent-pack-schema.md) | accepted phase-one contract; scripted/community runtime deferred |
 | [Agent Runtime Capability Boundaries](../rfcs/agent-runtime-capability-boundaries.md) | proposed implementation guardrail under ADR-0011 |

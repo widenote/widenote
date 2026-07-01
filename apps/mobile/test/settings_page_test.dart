@@ -6,6 +6,7 @@ import 'package:widenote_local_db/widenote_local_db.dart';
 import 'package:widenote_mobile/app/local_database.dart';
 import 'package:widenote_mobile/features/plugins/application/pack_catalog.dart';
 import 'package:widenote_mobile/app/widenote_app.dart';
+import 'package:widenote_mobile/features/location/application/location_settings_controller.dart';
 import 'package:widenote_mobile/features/settings/presentation/settings_page.dart';
 import 'package:widenote_mobile/l10n/l10n.dart';
 
@@ -22,6 +23,7 @@ void main() {
     expect(find.text('Settings'), findsOneWidget);
     expect(find.text('Privacy'), findsOneWidget);
     expect(find.text('Privacy & Permissions'), findsOneWidget);
+    expect(find.text('Location Context'), findsOneWidget);
     expect(find.text('Model Providers'), findsOneWidget);
     expect(find.text('Backup & Restore'), findsOneWidget);
     expect(find.text('Log Center'), findsOneWidget);
@@ -53,6 +55,11 @@ void main() {
       tester,
       entryKey: const Key('settings-permissions-entry'),
       pageKey: const Key('permission-gate-page'),
+    );
+    await _openChildAndReturn(
+      tester,
+      entryKey: const Key('settings-location-entry'),
+      pageKey: const Key('location-settings-page'),
     );
     await _openChildAndReturn(
       tester,
@@ -109,6 +116,8 @@ void main() {
       find.textContaining('Full .widenote backups include provider API keys'),
       findsOneWidget,
     );
+    expect(find.text('Location Context'), findsOneWidget);
+    expect(find.text('off'), findsOneWidget);
   });
 
   testWidgets('settings control entries expose tappable semantics', (
@@ -123,6 +132,11 @@ void main() {
         locale: const Locale('en'),
       );
 
+      _expectButtonSemantics(
+        tester,
+        const Key('settings-location-entry'),
+        'Location Context',
+      );
       _expectButtonSemantics(
         tester,
         const Key('settings-model-providers-entry'),
@@ -220,7 +234,12 @@ Future<void> _pumpApp(WidgetTester tester) async {
   addTearDown(database.close);
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [localDatabaseProvider.overrideWithValue(database)],
+      overrides: [
+        localDatabaseProvider.overrideWithValue(database),
+        locationSettingsRepositoryProvider.overrideWithValue(
+          InMemoryLocationSettingsRepository(),
+        ),
+      ],
       child: const WideNoteApp(locale: Locale('en')),
     ),
   );
@@ -235,7 +254,12 @@ Future<void> _pumpSettingsPage(
   addTearDown(database.close);
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [localDatabaseProvider.overrideWithValue(database)],
+      overrides: [
+        localDatabaseProvider.overrideWithValue(database),
+        locationSettingsRepositoryProvider.overrideWithValue(
+          InMemoryLocationSettingsRepository(),
+        ),
+      ],
       child: MaterialApp(
         locale: locale,
         localizationsDelegates: AppLocalizations.localizationsDelegates,

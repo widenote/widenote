@@ -60,13 +60,12 @@ SQLite/Drift object tables remain the canonical current state.
 
 Backup and Owner Export are separate:
 
-- Safe Backup restores local app data and settings without provider credential
-  values. It includes provider/model metadata, selected defaults/routing,
-  installed pack state, and settings, then reports which provider keys need
-  user re-entry after restore.
-- Encrypted full backup is the future path for secret-bearing restore
-  portability. It must not be described as implemented until the encryption
-  boundary and restore behavior exist.
+- The default `.widenote` Backup is a user-managed local restore artifact. It
+  stores a full SQLite snapshot and local capture media files, including
+  provider credential values required for direct-use restore.
+- Encrypted full backup remains a future envelope for encrypted
+  secret-bearing restore portability. It must not be described as implemented
+  until the encryption boundary and restore behavior exist.
 - Owner Export is portable user data and excludes API keys, tokens, and secrets
   by default. It may include provider/model metadata without secrets.
 
@@ -102,8 +101,8 @@ Positive:
 - Raw input and source files remain protected from AI overwrites.
 - AI context can be progressively disclosed without exposing private tables.
 - Owner Export stays portable and safe by default.
-- Safe Backup can restore local records, derived state, settings, and provider
-  metadata while requiring provider key re-entry.
+- Full `.widenote` Backup can restore local records, media, derived state,
+  settings, provider metadata, and provider credentials for direct-use restore.
 - Context, FTS, embedding, thumbnails, Markdown, and other projections remain
   rebuildable.
 
@@ -120,38 +119,40 @@ Negative:
 - Draft the umbrella technical-plan RFC from the accepted direction.
 - Define context packet schemas, invalidation keys, and permission scopes.
 - Define encrypted full-backup UX and restore behavior.
-- Keep the Model Provider Settings RFC aligned with the W7 safe-backup default.
+- Keep the Model Provider Settings RFC aligned with the full `.widenote`
+  backup credential boundary.
 - Add tests that official packs still exercise capability declaration,
   permission checks, denial, and revocation paths.
 
-## Amendment: W7 Safe-Backup Boundary
+## Superseded Amendment: W7 Safe-Backup Boundary
 
 Date: 2026-06-26
 
-The W7 phase-one implementation makes safe backup the default and only
-implemented mobile backup path. Safe backup does not include provider API key
-values and cannot fully restore provider credentials. It preserves provider
-metadata and reports that keys must be re-entered.
+This historical W7 phase-one implementation made safe backup the default and
+only implemented mobile backup path. Safe backup did not include provider API
+key values and could not fully restore provider credentials. It preserved
+provider metadata and reported that keys must be re-entered.
 
-Encrypted full backup remains a follow-up capability. It may become the
+Encrypted full backup remained a follow-up capability. It could become the
 secret-bearing restore path only after encryption metadata, UX, and restore
 behavior are implemented.
 
-## Amendment: Directory-Based Safe Backup
+## Superseded Amendment: Directory-Based Safe Backup
 
 Date: 2026-07-01
 
-The default user-facing `.widenote` backup is a compressed directory archive,
-not a Markdown or JSON restore document. The archive stores a safe SQLite
-snapshot under `widenote-backup/data/`, local capture media under
+This historical amendment changed the default user-facing `.widenote` backup
+to a compressed directory archive, not a Markdown or JSON restore document. The
+archive stored a safe SQLite snapshot under `widenote-backup/data/`, local
+capture media under
 `widenote-backup/media/`, and a lightweight `manifest.properties` file with
 entry sizes and SHA-256 hashes.
 
-The safe SQLite snapshot preserves provider metadata and `has_api_key` state,
-but clears provider credential values and redacts unsafe provider payload
-fields before compression. Restore extracts the archive to a staging directory,
-verifies entry checksums, then imports the staged SQLite snapshot through the
-same replace-all database restore policy.
+The safe SQLite snapshot preserved provider metadata and `has_api_key` state,
+but cleared provider credential values and redacted unsafe provider payload
+fields before compression. Restore extracted the archive to a staging
+directory, verified entry checksums, then imported the staged SQLite snapshot
+through the same replace-all database restore policy.
 
 JSON backup documents and Markdown Owner Export remain package-level
 compatibility/projection tools, not the default mobile backup or restore path.

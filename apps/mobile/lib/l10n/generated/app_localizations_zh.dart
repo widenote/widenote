@@ -2391,7 +2391,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get backupSecretWarning => '完整备份会包含模型提供商 API Key，请只保存到可信位置。';
 
   @override
-  String get backupSafeRestoreBoundary =>
+  String get backupRestoreBoundary =>
       '.widenote 归档会恢复 SQLite 快照、采集媒体文件和 Provider Key。';
 
   @override
@@ -2403,7 +2403,7 @@ class AppLocalizationsZh extends AppLocalizations {
       '完整 .widenote 备份会包含 Provider Key，恢复后可直接使用已配置的模型提供商。';
 
   @override
-  String backupSafeOmittedProviderKeys(int count) {
+  String backupLegacyProviderCredentialReentryCount(int count) {
     return '需要重新填写的 Provider Key 数：$count';
   }
 
@@ -2483,4 +2483,188 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get backupImportNoProviderKeysNeeded => '这个备份不需要重新填写 Provider Key。';
+
+  @override
+  String get settingsLocationTitle => '位置上下文';
+
+  @override
+  String get settingsLocationSubtitle => '为记录保存本地 GPS，并可单独启用高德地址解析。';
+
+  @override
+  String get settingsLocationStatusOff => '未启用';
+
+  @override
+  String get settingsLocationStatusGps => '仅 GPS';
+
+  @override
+  String get settingsLocationStatusAmap => 'GPS + 高德';
+
+  @override
+  String get locationSettingsTitle => '位置上下文';
+
+  @override
+  String get locationSettingsSubtitle =>
+      '选择 WideNote 在本地保存什么，以及什么时候可以把坐标发送给高德。';
+
+  @override
+  String get locationPrivacyTitle => '隐私边界';
+
+  @override
+  String get locationPrivacyLocalTitle => '本地 GPS';
+
+  @override
+  String get locationPrivacyLocalBody =>
+      '启用后，WideNote 只会在保存记录时请求前台定位，并把坐标保存到这条本地记录上。';
+
+  @override
+  String get locationPrivacyAmapTitle => '高德逆地理编码';
+
+  @override
+  String get locationPrivacyAmapBody =>
+      '高德地址解析需要单独授权。启用后，记录坐标会发送到高德 Web 服务，用来返回地址摘要。';
+
+  @override
+  String get locationStatusGpsOn => 'GPS 采集已开';
+
+  @override
+  String get locationStatusGpsOff => 'GPS 采集已关';
+
+  @override
+  String get locationStatusAmapOn => '高德解析已开';
+
+  @override
+  String get locationStatusAmapOff => '高德解析已关';
+
+  @override
+  String get locationCaptureTitle => '记录位置';
+
+  @override
+  String get locationSaveGpsTitle => '新记录保存 GPS';
+
+  @override
+  String get locationSaveGpsBody => '只在本地记录上保存 WGS-84 纬度、经度、精度、来源和采集时间。';
+
+  @override
+  String get locationAmapTitle => '地址解析';
+
+  @override
+  String get locationAmapSwitchTitle => '使用高德逆地理编码';
+
+  @override
+  String get locationAmapSwitchBody => '把记录坐标发送给高德 Web 服务，并把返回地址作为派生上下文保存。';
+
+  @override
+  String get locationAmapKeyLabel => '高德 Web 服务 Key';
+
+  @override
+  String get locationAmapKeyHelper =>
+      '保存到本地安全存储；不会进入 .widenote 备份或 Owner Export。';
+
+  @override
+  String get locationGranularityTitle => '展示粒度';
+
+  @override
+  String get locationGranularityBody => '列表和状态默认使用较粗粒度展示，降低旁人看到精确位置的风险。';
+
+  @override
+  String get locationGranularityLabel => '默认展示';
+
+  @override
+  String get locationGranularityCity => '城市';
+
+  @override
+  String get locationGranularityDistrict => '区县';
+
+  @override
+  String get locationGranularityNeighborhood => '社区';
+
+  @override
+  String get locationGranularityStreet => '街道';
+
+  @override
+  String get locationGranularityFull => '完整地址';
+
+  @override
+  String get locationTestTitle => '当前状态';
+
+  @override
+  String get locationTestBody => '按当前设置运行一次前台定位测试；预览会保持粗粒度。';
+
+  @override
+  String get locationTestAction => '测试定位';
+
+  @override
+  String get locationTestRunning => '测试中...';
+
+  @override
+  String get locationMaintenanceTitle => '已保存位置';
+
+  @override
+  String get locationMaintenanceBody => '关闭功能只会停止未来采集；可以清除已有记录里的位置元数据。';
+
+  @override
+  String get locationClearSavedAction => '清除已保存位置';
+
+  @override
+  String get locationClearConfirmTitle => '清除已保存位置？';
+
+  @override
+  String get locationClearConfirmBody => '这会移除已有本地记录中的位置元数据，记录正文和附件不会改变。';
+
+  @override
+  String get locationClearConfirmAction => '清除';
+
+  @override
+  String locationClearSavedResult(int count) {
+    return '已从 $count 条记录清除位置元数据。';
+  }
+
+  @override
+  String get locationStatusAvailable => '已获取位置。';
+
+  @override
+  String locationStatusSummary(String summary) {
+    return '区域：$summary';
+  }
+
+  @override
+  String get locationStatusCoordinatesSaved => 'GPS 坐标已保存到本地记录。';
+
+  @override
+  String get locationStatusDisabled => '位置采集未启用。';
+
+  @override
+  String get locationStatusServiceDisabled => '设备定位服务已关闭。';
+
+  @override
+  String get locationStatusPermissionDenied => '定位权限被拒绝。';
+
+  @override
+  String get locationStatusPermissionDeniedForever => '定位权限已在系统设置中被阻止。';
+
+  @override
+  String get locationStatusTimeout => '定位超时。';
+
+  @override
+  String get locationStatusAmapKeyMissing => '缺少高德 Key；仍可保存 GPS。';
+
+  @override
+  String get locationStatusAmapDisabled => '高德解析未启用。';
+
+  @override
+  String get locationStatusAmapTimeout => '高德解析超时；仍可保存 GPS。';
+
+  @override
+  String get locationStatusUnavailable => '位置不可用。';
+
+  @override
+  String locationRecordSummary(String summary) {
+    return '位置：$summary';
+  }
+
+  @override
+  String get locationRecordCoordinatesSaved => 'GPS 已保存';
+
+  @override
+  String get locationRecordUnavailable => '位置不可用';
 }

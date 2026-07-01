@@ -96,7 +96,7 @@ class _ExportSurface extends ConsumerWidget {
           _BoundaryLine(
             lineKey: const Key('backup-safe-restore-boundary'),
             icon: Icons.restore_outlined,
-            text: l10n.backupSafeRestoreBoundary,
+            text: l10n.backupRestoreBoundary,
           ),
           const SizedBox(height: 8),
           _BoundaryLine(
@@ -120,10 +120,10 @@ class _ExportSurface extends ConsumerWidget {
           if (state.exportedJson == null)
             Text(l10n.backupExportEmpty)
           else ...[
-            if (state.safeProviderSecretOmissionCount > 0) ...[
+            if (state.legacyProviderCredentialReentryCount > 0) ...[
               Text(
-                l10n.backupSafeOmittedProviderKeys(
-                  state.safeProviderSecretOmissionCount,
+                l10n.backupLegacyProviderCredentialReentryCount(
+                  state.legacyProviderCredentialReentryCount,
                 ),
                 key: const Key('backup-safe-provider-key-omissions'),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(

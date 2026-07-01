@@ -5,6 +5,8 @@ import 'package:widenote_local_db/widenote_local_db.dart' as localdb;
 import '../../../app/local_database.dart';
 import '../../../app/model_client.dart';
 import '../../plugins/application/official_pack_manifests.dart';
+import '../../location/application/location_settings_controller.dart';
+import '../../location/domain/location_context.dart';
 import '../../transcription/transcription_service.dart';
 import '../../transcription/transcription_types.dart';
 import 'capture_orchestrator.dart';
@@ -60,18 +62,20 @@ class CaptureController extends Notifier<CaptureState> {
 
     var processingAttachments = attachments;
     var recordBody = body.isEmpty ? _attachmentRecordBody(attachments) : body;
+    state = state.copyWith(isProcessing: true, clearError: true);
+    final locationContext = await _captureLocationContext();
 
     final pendingRecord = CaptureRecord(
       id: 'local-${DateTime.now().toUtc().microsecondsSinceEpoch}',
       body: recordBody,
       createdAt: DateTime.now().toUtc(),
       status: 'Saved locally, processing',
+      locationContext: locationContext,
     );
     _readModelStore().saveCapture(pendingRecord, attachments: attachments);
 
     state = state.copyWith(
       records: [pendingRecord, ...state.records],
-      isProcessing: true,
       clearError: true,
     );
 
@@ -111,8 +115,11 @@ class CaptureController extends Notifier<CaptureState> {
             attachments: processingAttachments,
             captureId: pendingRecord.id,
           );
+      final resultRecord = result.record.copyWith(
+        locationContext: locationContext,
+      );
       final readModel = _readModelStore()
-        ..saveCapture(result.record, attachments: processingAttachments);
+        ..saveCapture(resultRecord, attachments: processingAttachments);
       if (result.todo.isSuggested) {
         readModel.saveTodo(result.todo);
       }
@@ -121,7 +128,7 @@ class CaptureController extends Notifier<CaptureState> {
           : state.todos;
 
       state = state.copyWith(
-        records: _replaceRecord(state.records, pendingRecord.id, result.record),
+        records: _replaceRecord(state.records, pendingRecord.id, resultRecord),
         memories: result.memoryItem.needsReview
             ? state.memories
             : [result.memoryItem, ...state.memories],
@@ -239,6 +246,14 @@ class CaptureController extends Notifier<CaptureState> {
 
   LocalCaptureReadModelStore _readModelStore() {
     return LocalCaptureReadModelStore(ref.read(localDatabaseProvider));
+  }
+
+  Future<CapturedLocationContext?> _captureLocationContext() async {
+    try {
+      return await ref.read(locationCaptureServiceProvider).captureForRecord();
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<List<CaptureAttachment>> _transcribeVoiceAttachments(

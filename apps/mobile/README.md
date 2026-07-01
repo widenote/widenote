@@ -42,13 +42,15 @@ revoke decisions are read by the runtime and block future Pack work. Capture,
 todo, Memory, card, insight, and trace read models hydrate from SQLite on
 restart.
 
-Safe backup / restore is the implemented backup path. User-facing exports are
-single `.widenote` compressed archives that contain a directory-style manifest,
-safe restore JSON, and readable Owner Export Markdown. Import decompresses the
-archive through a staging directory before restoring records, runtime evidence,
-Pack state, permissions, and provider metadata. Provider credential values are
-excluded. Secret-bearing `encrypted_full` backup import is rejected in this
-build until encrypted full restore is designed and implemented.
+Full backup / restore is the implemented backup path. User-facing exports are
+single `.widenote` compressed directory archives that contain a manifest, full
+SQLite snapshot, and local capture media files. Import decompresses the archive
+through a staging directory before restoring records, runtime evidence, Pack
+state, permissions, provider metadata, and provider credential values. Treat
+`.widenote` files as secret-bearing local artifacts. Legacy safe JSON and
+Markdown projections remain package-level compatibility/export surfaces, not
+the default mobile restore source; `encrypted_full` is reserved for a future
+encrypted envelope.
 
 ## Dependencies
 
