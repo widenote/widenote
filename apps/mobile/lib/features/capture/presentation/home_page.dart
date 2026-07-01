@@ -735,7 +735,7 @@ class _RecordsSection extends StatelessWidget {
                     subtitle:
                         '${record.id} · ${_localizedRecordStatus(l10n, record.status)}',
                     icon: Icons.notes_outlined,
-                    onTap: () => context.go(
+                    onTap: () => context.push(
                       '/timeline/items/${Uri.encodeComponent(record.id)}',
                     ),
                   ),

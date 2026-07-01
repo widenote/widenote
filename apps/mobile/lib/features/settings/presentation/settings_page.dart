@@ -145,6 +145,7 @@ class _ControlSurface extends ConsumerWidget {
     return switch (state.outcome) {
       BackupOutcome.exported ||
       BackupOutcome.savedFile => l10n.settingsBackupStatusExportReady,
+      BackupOutcome.importReady => l10n.settingsBackupStatusNeedsReview,
       BackupOutcome.imported => l10n.settingsBackupStatusRestored,
       BackupOutcome.failed => l10n.settingsBackupStatusNeedsReview,
       BackupOutcome.idle => l10n.settingsBackupStatusSafeOnly,
@@ -300,6 +301,19 @@ class _PageHeader extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        IconButton.outlined(
+          key: const Key('settings-close-button'),
+          tooltip: l10n.settingsBackTooltip,
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/');
+            }
+          },
+          icon: const Icon(Icons.arrow_back),
+        ),
+        const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -319,19 +333,6 @@ class _PageHeader extends StatelessWidget {
               ),
             ],
           ),
-        ),
-        const SizedBox(width: 12),
-        IconButton.outlined(
-          key: const Key('settings-close-button'),
-          tooltip: l10n.settingsBackTooltip,
-          onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              context.go('/');
-            }
-          },
-          icon: const Icon(Icons.close),
         ),
       ],
     );

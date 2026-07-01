@@ -469,7 +469,7 @@ class _SourceTag extends StatelessWidget {
     return GestureDetector(
       key: tagKey,
       behavior: HitTestBehavior.opaque,
-      onTap: () => context.go(target),
+      onTap: () => context.push(target),
       child: tag,
     );
   }

@@ -201,7 +201,7 @@ class _MemoryRow extends StatelessWidget {
                     label: localizedSourceLabel(l10n, item.sourceLabel),
                     onTap: item.sourceCaptureId == null
                         ? null
-                        : () => context.go(
+                        : () => context.push(
                             '/timeline/items/${Uri.encodeComponent(item.sourceCaptureId!)}',
                           ),
                   ),

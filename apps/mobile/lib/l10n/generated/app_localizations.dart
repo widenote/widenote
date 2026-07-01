@@ -2291,7 +2291,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsBackTooltip.
   ///
   /// In en, this message translates to:
-  /// **'Close Settings'**
+  /// **'Back from Settings'**
   String get settingsBackTooltip;
 
   /// No description provided for @settingsPrivacyTitle.
@@ -4206,13 +4206,19 @@ abstract class AppLocalizations {
   /// No description provided for @backupSavedFileStatus.
   ///
   /// In en, this message translates to:
-  /// **'WideNote backup archive saved locally.'**
+  /// **'WideNote backup archive is ready in the selected destination.'**
   String get backupSavedFileStatus;
+
+  /// No description provided for @backupImportReadyStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup file loaded. Confirm import to replace local data.'**
+  String get backupImportReadyStatus;
 
   /// No description provided for @backupImportDoneStatus.
   ///
   /// In en, this message translates to:
-  /// **'Backup imported into local storage.'**
+  /// **'Backup replaced local storage.'**
   String get backupImportDoneStatus;
 
   /// No description provided for @backupFailedStatus.
@@ -4266,7 +4272,7 @@ abstract class AppLocalizations {
   /// No description provided for @backupExportEmpty.
   ///
   /// In en, this message translates to:
-  /// **'Export creates one compressed .widenote archive with a safe restore JSON and readable Owner Export Markdown inside.'**
+  /// **'Export creates one compressed .widenote archive. You can open it with another app or save it to a location you choose.'**
   String get backupExportEmpty;
 
   /// No description provided for @backupSecretWarning.
@@ -4311,35 +4317,23 @@ abstract class AppLocalizations {
   /// **'{section}: {count}'**
   String backupCount(String section, int count);
 
-  /// No description provided for @backupCopyJsonButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy JSON'**
-  String get backupCopyJsonButton;
-
   /// No description provided for @backupCopyMarkdownButton.
   ///
   /// In en, this message translates to:
   /// **'Copy Markdown'**
   String get backupCopyMarkdownButton;
 
+  /// No description provided for @backupOpenShareFileButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Open or share .widenote'**
+  String get backupOpenShareFileButton;
+
   /// No description provided for @backupSaveFilesButton.
   ///
   /// In en, this message translates to:
-  /// **'Save .widenote file'**
+  /// **'Save to selected location'**
   String get backupSaveFilesButton;
-
-  /// No description provided for @backupSavedJsonPath.
-  ///
-  /// In en, this message translates to:
-  /// **'JSON file'**
-  String get backupSavedJsonPath;
-
-  /// No description provided for @backupSavedMarkdownPath.
-  ///
-  /// In en, this message translates to:
-  /// **'Markdown file'**
-  String get backupSavedMarkdownPath;
 
   /// No description provided for @backupSavedArchivePath.
   ///
@@ -4347,17 +4341,17 @@ abstract class AppLocalizations {
   /// **'WideNote backup'**
   String get backupSavedArchivePath;
 
+  /// No description provided for @backupExportDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'Destination'**
+  String get backupExportDestination;
+
   /// No description provided for @backupCopiedStatus.
   ///
   /// In en, this message translates to:
   /// **'Export copied.'**
   String get backupCopiedStatus;
-
-  /// No description provided for @backupExportJsonTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Safe backup JSON'**
-  String get backupExportJsonTitle;
 
   /// No description provided for @backupExportMarkdownTitle.
   ///
@@ -4374,20 +4368,56 @@ abstract class AppLocalizations {
   /// No description provided for @backupImportHint.
   ///
   /// In en, this message translates to:
-  /// **'Paste a legacy WideNote local backup JSON...'**
+  /// **'Paste legacy WideNote backup JSON...'**
   String get backupImportHint;
 
   /// No description provided for @backupImportButton.
   ///
   /// In en, this message translates to:
-  /// **'Import backup'**
+  /// **'Import and replace'**
   String get backupImportButton;
 
-  /// No description provided for @backupImportLatestFileButton.
+  /// No description provided for @backupImportFileButton.
   ///
   /// In en, this message translates to:
-  /// **'Import latest .widenote file'**
-  String get backupImportLatestFileButton;
+  /// **'Choose .widenote file'**
+  String get backupImportFileButton;
+
+  /// No description provided for @backupImportReadyInline.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup is loaded and ready to replace local data.'**
+  String get backupImportReadyInline;
+
+  /// No description provided for @backupImportSourcePath.
+  ///
+  /// In en, this message translates to:
+  /// **'Import source'**
+  String get backupImportSourcePath;
+
+  /// No description provided for @backupConfirmReplaceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace local data?'**
+  String get backupConfirmReplaceTitle;
+
+  /// No description provided for @backupConfirmReplaceBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This import fully replaces local records, Memory, todos, chats, provider metadata, packs, permissions, runtime state, and traces with the backup contents. Continue only if this is the file you want.'**
+  String get backupConfirmReplaceBody;
+
+  /// No description provided for @backupConfirmReplaceCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get backupConfirmReplaceCancel;
+
+  /// No description provided for @backupConfirmReplaceAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace and import'**
+  String get backupConfirmReplaceAction;
 
   /// No description provided for @backupImportNeedsProviderKeys.
   ///

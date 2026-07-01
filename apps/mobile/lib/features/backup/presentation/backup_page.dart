@@ -49,6 +49,10 @@ class _StatusLine extends StatelessWidget {
         l10n.backupSavedFileStatus,
         Theme.of(context).colorScheme.primary,
       ),
+      BackupOutcome.importReady => (
+        l10n.backupImportReadyStatus,
+        Theme.of(context).colorScheme.primary,
+      ),
       BackupOutcome.imported => (
         l10n.backupImportDoneStatus,
         Theme.of(context).colorScheme.primary,
@@ -145,16 +149,18 @@ class _ExportSurface extends ConsumerWidget {
               runSpacing: 8,
               children: [
                 _CopyButton(
-                  buttonKey: const Key('backup-copy-json-button'),
-                  text: state.exportedJson!,
-                  label: l10n.backupCopyJsonButton,
+                  buttonKey: const Key('backup-copy-markdown-button'),
+                  text: state.exportedMarkdown!,
+                  label: l10n.backupCopyMarkdownButton,
                 ),
-                if (state.exportedMarkdown != null)
-                  _CopyButton(
-                    buttonKey: const Key('backup-copy-markdown-button'),
-                    text: state.exportedMarkdown!,
-                    label: l10n.backupCopyMarkdownButton,
-                  ),
+                OutlinedButton.icon(
+                  key: const Key('backup-open-share-file-button'),
+                  onPressed: () => ref
+                      .read(backupControllerProvider.notifier)
+                      .shareExportedFile(),
+                  icon: const Icon(Icons.ios_share_outlined),
+                  label: Text(l10n.backupOpenShareFileButton),
+                ),
                 OutlinedButton.icon(
                   key: const Key('backup-save-files-button'),
                   onPressed: () => ref
@@ -171,16 +177,14 @@ class _ExportSurface extends ConsumerWidget {
                 label: l10n.backupSavedArchivePath,
                 path: state.exportedArchivePath!,
               ),
+              if (state.exportDestinationLabel != null) ...[
+                const SizedBox(height: 4),
+                _FilePathLine(
+                  label: l10n.backupExportDestination,
+                  path: state.exportDestinationLabel!,
+                ),
+              ],
             ],
-            const SizedBox(height: 12),
-            Text(
-              l10n.backupExportJsonTitle,
-              style: Theme.of(
-                context,
-              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 8),
-            _JsonPreview(text: state.exportedJson!),
             if (state.exportedMarkdown != null) ...[
               const SizedBox(height: 12),
               Text(
@@ -235,22 +239,22 @@ class _ImportSurface extends ConsumerWidget {
           FilledButton.icon(
             key: const Key('backup-import-button'),
             onPressed: state.canImport
-                ? () =>
-                      ref.read(backupControllerProvider.notifier).importBackup()
+                ? () => _confirmReplaceAllImport(context, ref)
                 : null,
             icon: const Icon(Icons.download_done_outlined),
             label: Text(l10n.backupImportButton),
           ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
-            key: const Key('backup-import-latest-file-button'),
+            key: const Key('backup-import-file-button'),
             onPressed: () => ref
                 .read(backupControllerProvider.notifier)
-                .importLatestSavedFile(),
+                .pickArchiveForImport(),
             icon: const Icon(Icons.folder_open_outlined),
-            label: Text(l10n.backupImportLatestFileButton),
+            label: Text(l10n.backupImportFileButton),
           ),
-          if (state.outcome == BackupOutcome.imported ||
+          if (state.outcome == BackupOutcome.importReady ||
+              state.outcome == BackupOutcome.imported ||
               state.outcome == BackupOutcome.failed) ...[
             const SizedBox(height: 8),
             _InlineOutcome(state: state),
@@ -258,6 +262,37 @@ class _ImportSurface extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _confirmReplaceAllImport(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final l10n = context.l10n;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(l10n.backupConfirmReplaceTitle),
+          content: Text(l10n.backupConfirmReplaceBody),
+          actions: [
+            TextButton(
+              key: const Key('backup-confirm-cancel-button'),
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(l10n.backupConfirmReplaceCancel),
+            ),
+            FilledButton(
+              key: const Key('backup-confirm-replace-button'),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(l10n.backupConfirmReplaceAction),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed == true) {
+      ref.read(backupControllerProvider.notifier).importBackup();
+    }
   }
 }
 
@@ -270,6 +305,7 @@ class _InlineOutcome extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final isFailure = state.outcome == BackupOutcome.failed;
+    final isReady = state.outcome == BackupOutcome.importReady;
     final reportText = isFailure
         ? null
         : _importReportText(l10n, state.lastImportReport);
@@ -281,6 +317,8 @@ class _InlineOutcome extends StatelessWidget {
               ? l10n.backupFailedStatus(
                   localizedBackupErrorDetails(l10n, state.errorDetails ?? ''),
                 )
+              : isReady
+              ? l10n.backupImportReadyInline
               : l10n.backupImportDoneStatus,
           key: const Key('backup-inline-outcome'),
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -296,6 +334,17 @@ class _InlineOutcome extends StatelessWidget {
             key: const Key('backup-import-report'),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+        if (isReady && state.importSourceLabel != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            '${l10n.backupImportSourcePath}: ${state.importSourceLabel}',
+            key: const Key('backup-import-source-path'),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontFamily: 'monospace',
             ),
           ),
         ],
@@ -400,36 +449,6 @@ class _CopyButton extends StatelessWidget {
       },
       icon: const Icon(Icons.copy),
       label: Text(label),
-    );
-  }
-}
-
-class _JsonPreview extends StatelessWidget {
-  const _JsonPreview({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      key: const Key('backup-export-json'),
-      constraints: const BoxConstraints(maxHeight: 220),
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF1F4F8),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: SingleChildScrollView(
-        child: ExcludeSemantics(
-          child: SelectableText(
-            text,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
-          ),
-        ),
-      ),
     );
   }
 }

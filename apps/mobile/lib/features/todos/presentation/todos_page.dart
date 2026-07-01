@@ -98,7 +98,7 @@ class _TodoRow extends ConsumerWidget {
                       label: localizedSourceLabel(l10n, todo.sourceLabel),
                       onTap: _sourceTarget(todo) == null
                           ? null
-                          : () => context.go(_sourceTarget(todo)!),
+                          : () => context.push(_sourceTarget(todo)!),
                     ),
                     _Tag(
                       icon: Icons.info_outline,

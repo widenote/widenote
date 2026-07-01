@@ -9,12 +9,14 @@ class TimelinePageHeader extends StatelessWidget {
   const TimelinePageHeader({
     required this.title,
     required this.subtitle,
+    this.leading,
     this.trailing,
     super.key,
   });
 
   final String title;
   final String subtitle;
+  final Widget? leading;
   final Widget? trailing;
 
   @override
@@ -22,6 +24,7 @@ class TimelinePageHeader extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (leading != null) ...[leading!, const SizedBox(width: 12)],
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

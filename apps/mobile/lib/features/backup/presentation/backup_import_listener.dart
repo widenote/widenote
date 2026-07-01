@@ -57,7 +57,9 @@ class _BackupImportListenerState extends ConsumerState<BackupImportListener> {
     if (!_handledPaths.add(path)) {
       return;
     }
-    await ref.read(backupControllerProvider.notifier).importArchivePath(path);
+    await ref
+        .read(backupControllerProvider.notifier)
+        .loadArchivePathForImport(path);
     if (mounted) {
       context.go('/settings/backup');
     }

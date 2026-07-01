@@ -123,7 +123,7 @@ class _DetailShell extends StatelessWidget {
         TimelinePageHeader(
           title: title,
           subtitle: l10n.timelineCardDetailSubtitle,
-          trailing: IconButton(
+          leading: IconButton(
             key: const Key('card-detail-back'),
             tooltip: l10n.timelineBackTooltip,
             onPressed: () => _goBack(context),
@@ -171,14 +171,14 @@ class _RelatedSection extends StatelessWidget {
 
 void _openTimelineItem(BuildContext context, MemoryFirstTimelineItem item) {
   if (item.kind == MemoryFirstTimelineItemKind.card) {
-    context.go('/timeline/cards/${item.id}');
+    context.push('/timeline/cards/${item.id}');
     return;
   }
-  context.go('/timeline/items/${Uri.encodeComponent(item.id)}');
+  context.push('/timeline/items/${Uri.encodeComponent(item.id)}');
 }
 
 void _openSourceLink(BuildContext context, SourceLink link) {
-  context.go('/timeline/items/${Uri.encodeComponent(link.id)}');
+  context.push('/timeline/items/${Uri.encodeComponent(link.id)}');
 }
 
 void _goBack(BuildContext context) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:widenote_local_db/widenote_local_db.dart';
 import 'package:widenote_mobile/app/local_database.dart';
 import 'package:widenote_mobile/features/plugins/application/pack_catalog.dart';
@@ -245,6 +246,39 @@ void main() {
     expect(find.text('[redacted]'), findsWidgets);
     expect(find.textContaining('safe: visible'), findsOneWidget);
   });
+
+  testWidgets('agent console source detail returns with system back', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    database.traceEvents.insert(
+      _trace(
+        'trace-source',
+        'runtime.handler.output',
+        eventId: 'capture-from-trace',
+      ),
+    );
+
+    await _pumpTraceConsoleRouter(tester, database);
+    await _tap(tester, const Key('trace-console-row-trace-source'));
+    await _scrollTo(
+      tester,
+      const Key('trace-console-open-source-trace-source'),
+    );
+    await tester.tap(
+      find.byKey(const Key('trace-console-open-source-trace-source')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('trace-source-destination')), findsOneWidget);
+    expect(find.text('capture-from-trace'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('trace-console-page')), findsOneWidget);
+    expect(find.byKey(const Key('trace-source-destination')), findsNothing);
+  });
 }
 
 Future<void> _pumpTraceConsole(
@@ -260,6 +294,42 @@ Future<void> _pumpTraceConsole(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: const Scaffold(body: TraceConsolePage()),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
+Future<void> _pumpTraceConsoleRouter(
+  WidgetTester tester,
+  WideNoteLocalDatabase database,
+) async {
+  addTearDown(database.close);
+  final router = GoRouter(
+    initialLocation: '/',
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (context, state) => const Scaffold(body: TraceConsolePage()),
+      ),
+      GoRoute(
+        path: '/timeline/items/:itemId',
+        builder: (context, state) => Scaffold(
+          key: const Key('trace-source-destination'),
+          body: Text(state.pathParameters['itemId'] ?? ''),
+        ),
+      ),
+    ],
+  );
+  addTearDown(router.dispose);
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [localDatabaseProvider.overrideWithValue(database)],
+      child: MaterialApp.router(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        routerConfig: router,
       ),
     ),
   );

@@ -611,7 +611,7 @@ class _SourceAction extends StatelessWidget {
     return OutlinedButton.icon(
       key: Key('trace-console-open-source-${item.id}'),
       onPressed: () {
-        context.go('/timeline/items/${Uri.encodeComponent(eventId)}');
+        context.push('/timeline/items/${Uri.encodeComponent(eventId)}');
       },
       icon: const Icon(Icons.open_in_new),
       label: Text(l10n.traceConsoleOpenSourceButton),
