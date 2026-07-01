@@ -47,7 +47,11 @@ infra/                 Deployment and self-hosting assets.
 tools/                 Repository automation, validation scripts, and generation helpers.
 ```
 
-## Read First
+## Broad Orientation
+
+For coding agents, [AGENTS.md](./AGENTS.md) is the canonical instruction file.
+Use the links below for broad orientation rather than as mandatory pre-work for
+every change.
 
 - [Project positioning](./docs/product/positioning.md)
 - [Current architecture contracts](./docs/architecture/current-contracts.md)

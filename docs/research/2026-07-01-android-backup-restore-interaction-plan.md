@@ -84,29 +84,31 @@ or update the existing timeline/recap/settings headers so that:
 
 ### Backup Export
 
-The current user-facing backup path is still two-stage:
+The current user-facing backup path should be a direct `.widenote` directory
+archive flow:
 
 1. User taps "Create .widenote backup".
-2. The page generates safe backup JSON and Owner Export Markdown in memory.
-3. The page shows "Copy JSON", "Copy Markdown", JSON preview, Markdown
-   preview, and a separate "Save .widenote file" action.
-4. Saving writes to `getApplicationSupportDirectory()/local-data/exports`,
-   which is an app-private path on mobile.
+2. The page prepares manifest counts and explains that the full backup includes
+   provider API keys.
+3. User opens/shares the `.widenote` archive or saves it to a selected platform
+   destination.
+4. Compression runs off the UI isolate and writes through a temporary staging
+   directory.
 
 Current platform code supports opening/sharing `.widenote` into WideNote for
 import, but there is no equivalent Android document-create or share/export
 flow for getting the backup out of the app-private directory.
 
-The backup archive is ZIP-compatible and currently includes:
+The backup archive is ZIP-compatible and should include:
 
-- `widenote-backup/manifest.json`
-- `widenote-backup/restore/safe-backup.json`
-- `widenote-backup/owner-export/owner-export.md`
+- `widenote-backup/manifest.properties`
+- `widenote-backup/data/widenote.sqlite`
+- `widenote-backup/media/capture_media/**`
 
-The current architecture contract also says safe `.widenote` backup includes
-original media/audio bytes, but the codec only writes JSON, Markdown, and
-manifest entries. This must be closed before the restore flow is presented as
-complete backup coverage.
+The default `.widenote` path is a full local restore artifact. It preserves
+provider API key values so restored model-provider settings work immediately;
+safe JSON and Markdown projections remain package-level compatibility/export
+surfaces rather than the mobile restore source.
 
 ### Import And Restore
 
@@ -224,7 +226,8 @@ Implementation:
 - Show a destructive confirmation dialog before any write:
   - State that current local records, Memory, cards, providers, todos, traces,
     and restorable media will be replaced.
-  - Show backup counts and whether provider keys must be re-entered.
+  - Show backup counts and whether provider credentials are restored or a
+    legacy safe import requires key re-entry.
   - Cancel does not write anything.
 - On confirm, run one transaction that clears restorable tables in foreign-key
   safe order, inserts backup rows, verifies `PRAGMA foreign_key_check`, and

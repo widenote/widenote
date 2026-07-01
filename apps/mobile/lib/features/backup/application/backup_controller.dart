@@ -20,7 +20,9 @@ final backupServiceProvider = Provider<LocalBackupService>((ref) {
 });
 
 final backupFileStoreProvider = Provider<BackupFileStore>((ref) {
-  return const AppSupportBackupFileStore();
+  return AppSupportBackupFileStore(
+    supportDirectory: ref.watch(appSupportDirectoryProvider),
+  );
 });
 
 final backupControllerProvider =
@@ -42,40 +44,57 @@ final class BackupFileResult {
 
 abstract interface class BackupFileStore {
   Future<BackupFileResult> shareExport({
-    required String json,
-    required String markdown,
+    required LocalDataBackup backup,
     required DateTime createdAt,
   });
 
   Future<BackupFileResult> saveExport({
-    required String json,
-    required String markdown,
+    required LocalDataBackup backup,
     required DateTime createdAt,
   });
 
-  Future<String> readLatestJson();
+  Future<BackupImportPayload> readLatestBackup();
 
-  Future<String> readArchiveJson(String archivePath);
+  Future<BackupImportPayload> readArchive(String archivePath);
 
-  Future<String> pickArchiveJson();
+  Future<BackupImportPayload> pickArchive();
+
+  Future<void> restorePreparedMedia(BackupImportPayload payload);
+
+  Future<void> discardPreparedImport(BackupImportPayload payload);
+}
+
+final class BackupImportPayload {
+  const BackupImportPayload({
+    required this.backup,
+    required this.sourceLabel,
+    this.stagingDirectory,
+    this.mediaFiles = const <LocalBackupDirectoryArchiveExtractedFile>[],
+  });
+
+  final LocalDataBackup backup;
+  final String sourceLabel;
+  final String? stagingDirectory;
+  final List<LocalBackupDirectoryArchiveExtractedFile> mediaFiles;
 }
 
 final class AppSupportBackupFileStore implements BackupFileStore {
   const AppSupportBackupFileStore({
+    Directory? supportDirectory,
     BackupExportPlatform platform = const BackupExportPlatform(),
-  }) : _platform = platform;
+  }) : _supportDirectory = supportDirectory,
+       _platform = platform;
 
+  final Directory? _supportDirectory;
   final BackupExportPlatform _platform;
 
   @override
   Future<BackupFileResult> shareExport({
-    required String json,
-    required String markdown,
+    required LocalDataBackup backup,
     required DateTime createdAt,
   }) async {
     final result = await _createExportArchive(
-      json: json,
-      markdown: markdown,
+      backup: backup,
       createdAt: createdAt,
     );
     await _platform.shareBackup(
@@ -91,13 +110,11 @@ final class AppSupportBackupFileStore implements BackupFileStore {
 
   @override
   Future<BackupFileResult> saveExport({
-    required String json,
-    required String markdown,
+    required LocalDataBackup backup,
     required DateTime createdAt,
   }) async {
     final result = await _createExportArchive(
-      json: json,
-      markdown: markdown,
+      backup: backup,
       createdAt: createdAt,
     );
     final destination = await _platform.saveBackup(
@@ -112,69 +129,35 @@ final class AppSupportBackupFileStore implements BackupFileStore {
   }
 
   Future<BackupFileResult> _createExportArchive({
-    required String json,
-    required String markdown,
+    required LocalDataBackup backup,
     required DateTime createdAt,
   }) async {
     final directory = await _exportsDirectory();
+    final stagingDirectory = await _exportStagingDirectory();
     final stamp = _fileStamp(createdAt);
     final archivePath =
         '${directory.path}/widenote-backup-$stamp'
         '${LocalBackupArchiveCodec.fileExtension}';
-    final backup = LocalBackupCodec.decode(json);
     final mediaFiles = await _mediaFilesForBackup(backup);
-    final result = await Isolate.run(
-      () => _writeBackupArchiveFromJson(
-        _BackupArchiveWriteJob(
-          json: json,
-          markdown: markdown,
-          outputPath: archivePath,
-          mediaFiles: mediaFiles,
-        ),
-      ),
-    );
-    return BackupFileResult(
-      archivePath: result.path,
-      archiveSizeBytes: result.archiveSizeBytes,
-    );
-  }
-
-  @override
-  Future<String> readLatestJson() async {
-    final directory = await _exportsDirectory();
-    final files = _latestBackupFiles(directory);
-    if (files.isEmpty) {
-      throw const FileSystemException('No WideNote backup file found.');
-    }
-    final latest = files.first;
-    if (LocalBackupArchiveCodec.hasArchiveExtension(latest.path)) {
-      return readArchiveJson(latest.path);
-    }
-    return latest.readAsString();
-  }
-
-  @override
-  Future<String> readArchiveJson(String archivePath) async {
-    final stagingDirectory = await _stagingDirectory();
+    final databasePath = await _databasePath();
     try {
       final result = await Isolate.run(
-        () => _extractRestoreJsonFromArchive(
-          _BackupArchiveReadJob(
-            archivePath: archivePath,
+        () => _writeBackupDirectoryArchive(
+          _BackupDirectoryArchiveWriteJob(
+            sourceDatabasePath: databasePath,
             stagingDirectory: stagingDirectory.path,
+            outputPath: archivePath,
+            createdAt: createdAt,
+            localDbSchemaVersion: backup.manifest.localDbSchemaVersion,
+            recordCounts: backup.manifest.recordCounts,
+            mediaFiles: mediaFiles,
           ),
         ),
       );
-      final json = await File(result.restoreJsonPath).readAsString();
-      if (result.mediaFiles.isEmpty) {
-        return json;
-      }
-      final backup = LocalBackupCodec.decode(json);
-      final restored = await _backupWithRestoredMediaRefs(
-        backup,
-        result.mediaFiles,
+      return BackupFileResult(
+        archivePath: result.path,
+        archiveSizeBytes: result.archiveSizeBytes,
       );
-      return LocalBackupCodec.encode(restored);
     } finally {
       if (await stagingDirectory.exists()) {
         await stagingDirectory.delete(recursive: true);
@@ -183,38 +166,141 @@ final class AppSupportBackupFileStore implements BackupFileStore {
   }
 
   @override
-  Future<String> pickArchiveJson() async {
+  Future<BackupImportPayload> readLatestBackup() async {
+    final directory = await _exportsDirectory();
+    final files = _latestBackupFiles(directory);
+    if (files.isEmpty) {
+      throw const FileSystemException('No WideNote backup file found.');
+    }
+    return readArchive(files.first.path);
+  }
+
+  @override
+  Future<BackupImportPayload> readArchive(String archivePath) async {
+    final stagingDirectory = await _stagingDirectory();
+    try {
+      final result = await Isolate.run(
+        () => _extractBackupDirectoryArchive(
+          _BackupDirectoryArchiveReadJob(
+            archivePath: archivePath,
+            stagingDirectory: stagingDirectory.path,
+          ),
+        ),
+      );
+      final snapshot = WideNoteLocalDatabase.openPath(result.databasePath);
+      try {
+        final backup = LocalBackupService(
+          snapshot,
+        ).exportBackup(mode: LocalBackupMode.full);
+        return BackupImportPayload(
+          backup: backup,
+          sourceLabel: archivePath,
+          stagingDirectory: stagingDirectory.path,
+          mediaFiles: result.mediaFiles,
+        );
+      } finally {
+        snapshot.close();
+      }
+    } catch (_) {
+      if (await stagingDirectory.exists()) {
+        await stagingDirectory.delete(recursive: true);
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<BackupImportPayload> pickArchive() async {
     final path = await _platform.pickBackup();
     if (path == null || path.trim().isEmpty) {
       throw const FileSystemException('No WideNote backup file selected.');
     }
-    return readArchiveJson(path);
+    return readArchive(path);
+  }
+
+  @override
+  Future<void> restorePreparedMedia(BackupImportPayload payload) async {
+    if (payload.mediaFiles.isEmpty) {
+      return;
+    }
+    final documents = await getApplicationDocumentsDirectory();
+    for (final mediaFile in payload.mediaFiles) {
+      final relative = _captureMediaRelativePath(mediaFile.archivePath);
+      final target = File(
+        p.joinAll(<String>[
+          documents.path,
+          'capture_media',
+          ...relative.split('/'),
+        ]),
+      );
+      await target.parent.create(recursive: true);
+      await File(mediaFile.path).copy(target.path);
+    }
+  }
+
+  @override
+  Future<void> discardPreparedImport(BackupImportPayload payload) async {
+    final stagingDirectory = payload.stagingDirectory;
+    if (stagingDirectory == null) {
+      return;
+    }
+    final directory = Directory(stagingDirectory);
+    if (await directory.exists()) {
+      await directory.delete(recursive: true);
+    }
   }
 
   Future<Directory> _exportsDirectory() async {
-    final support = await getApplicationSupportDirectory();
+    final support = await _supportRoot();
     final directory = Directory('${support.path}/local-data/exports');
     await directory.create(recursive: true);
     return directory;
   }
 
+  Future<Directory> _exportStagingDirectory() async {
+    final support = await _supportRoot();
+    return Directory(
+      '${support.path}/local-data/tmp/backup-export-'
+      '${DateTime.now().microsecondsSinceEpoch}',
+    )..createSync(recursive: true);
+  }
+
   Future<Directory> _stagingDirectory() async {
-    final support = await getApplicationSupportDirectory();
+    final support = await _supportRoot();
     return Directory(
       '${support.path}/local-data/tmp/backup-import-'
       '${DateTime.now().microsecondsSinceEpoch}',
     )..createSync(recursive: true);
   }
 
-  Future<List<LocalBackupArchiveMediaFile>> _mediaFilesForBackup(
+  Future<Directory> _supportRoot() async {
+    return _supportDirectory ?? getApplicationSupportDirectory();
+  }
+
+  Future<String> _databasePath() async {
+    final support = await _supportRoot();
+    return p.join(support.path, 'local-data', 'widenote.sqlite');
+  }
+
+  Future<List<_BackupDirectoryMediaFile>> _mediaFilesForBackup(
     LocalDataBackup backup,
   ) async {
-    final result = <LocalBackupArchiveMediaFile>[];
+    final result = <_BackupDirectoryMediaFile>[];
     for (final attachment in backup.attachments) {
-      final file = await _fileForAttachmentStoragePath(attachment.storagePath);
-      if (file == null) {
+      final relativePath = _relativeCaptureMediaStoragePath(
+        attachment.storagePath,
+      );
+      if (relativePath == null) {
         continue;
       }
+      final documents = await getApplicationDocumentsDirectory();
+      final file = File(
+        p.joinAll(<String>[
+          documents.path,
+          'capture_media',
+          ...relativePath.split('/'),
+        ]),
+      );
       if (!await file.exists()) {
         throw FileSystemException(
           'Backup media file was not found.',
@@ -222,118 +308,13 @@ final class AppSupportBackupFileStore implements BackupFileStore {
         );
       }
       result.add(
-        LocalBackupArchiveMediaFile(
-          originalStoragePath: attachment.storagePath,
+        _BackupDirectoryMediaFile(
           sourcePath: file.path,
-          archivePath: _archiveMediaPathForAttachment(attachment, file),
+          relativePath: 'media/capture_media/$relativePath',
         ),
       );
     }
     return result;
-  }
-
-  Future<File?> _fileForAttachmentStoragePath(String storagePath) async {
-    if (storagePath.startsWith('local://capture_media/')) {
-      final documents = await getApplicationDocumentsDirectory();
-      final relative = storagePath.substring('local://capture_media/'.length);
-      final segments = relative
-          .split('/')
-          .where((segment) {
-            return segment.isNotEmpty && segment != '.' && segment != '..';
-          })
-          .toList(growable: false);
-      if (segments.isEmpty) {
-        return null;
-      }
-      return File(
-        p.joinAll(<String>[documents.path, 'capture_media', ...segments]),
-      );
-    }
-    final file = File(storagePath);
-    if (file.isAbsolute && await file.exists()) {
-      return file;
-    }
-    return null;
-  }
-
-  String _archiveMediaPathForAttachment(
-    AttachmentRecord attachment,
-    File file,
-  ) {
-    final basename = _safeFileName(
-      attachment.originalFileName?.trim().isNotEmpty == true
-          ? attachment.originalFileName!
-          : p.basename(file.path),
-    );
-    return '${LocalBackupArchiveCodec.rootDirectory}/media/originals/'
-        '${_safeFileName(attachment.id)}-$basename';
-  }
-
-  Future<LocalDataBackup> _backupWithRestoredMediaRefs(
-    LocalDataBackup backup,
-    List<LocalBackupArchiveExtractedFile> mediaFiles,
-  ) async {
-    final restoredByArchivePath = <String, _RestoredMediaRef>{};
-    for (final mediaFile in mediaFiles) {
-      final restored = await _restoreExtractedMedia(mediaFile);
-      restoredByArchivePath[mediaFile.archivePath] = restored;
-    }
-    return LocalDataBackup(
-      manifest: backup.manifest,
-      eventLog: backup.eventLog,
-      captures: backup.captures,
-      attachments: [
-        for (final attachment in backup.attachments)
-          if (restoredByArchivePath.containsKey(attachment.storagePath))
-            attachment.copyWith(
-              storagePath:
-                  restoredByArchivePath[attachment.storagePath]!.storageRef,
-              payload: _payloadWithRestoredMediaRef(
-                attachment.payload,
-                restoredByArchivePath[attachment.storagePath]!,
-              ),
-            )
-          else
-            attachment,
-      ],
-      derivedArtifacts: backup.derivedArtifacts,
-      memoryItems: backup.memoryItems,
-      memoryCandidates: backup.memoryCandidates,
-      cards: backup.cards,
-      insights: backup.insights,
-      chatSessions: backup.chatSessions,
-      chatMessages: backup.chatMessages,
-      modelProviderConfigs: backup.modelProviderConfigs,
-      todos: backup.todos,
-      runtimeTasks: backup.runtimeTasks,
-      runtimeRuns: backup.runtimeRuns,
-      packInstallations: backup.packInstallations,
-      permissionGrants: backup.permissionGrants,
-      contextPacketCaches: backup.contextPacketCaches,
-      traceEvents: backup.traceEvents,
-    );
-  }
-
-  Future<_RestoredMediaRef> _restoreExtractedMedia(
-    LocalBackupArchiveExtractedFile mediaFile,
-  ) async {
-    final documents = await getApplicationDocumentsDirectory();
-    final directory = Directory(
-      p.join(documents.path, 'capture_media', 'restored'),
-    );
-    await directory.create(recursive: true);
-    final basename = _safeFileName(p.basename(mediaFile.path));
-    final target = File(
-      p.join(
-        directory.path,
-        '${DateTime.now().microsecondsSinceEpoch}-$basename',
-      ),
-    );
-    await File(mediaFile.path).copy(target.path);
-    return _RestoredMediaRef(
-      storageRef: 'local://capture_media/restored/${p.basename(target.path)}',
-      localPath: target.path,
-    );
   }
 }
 
@@ -390,22 +371,15 @@ final class BackupExportPlatform {
 
 bool get _supportsPlatformExport => Platform.isAndroid || Platform.isIOS;
 
-final class _RestoredMediaRef {
-  const _RestoredMediaRef({required this.storageRef, required this.localPath});
-
-  final String storageRef;
-  final String localPath;
-}
-
 final class BackupState {
   const BackupState({
     this.exportedJson,
-    this.exportedMarkdown,
     this.exportedArchivePath,
     this.exportedArchiveSizeBytes,
     this.exportDestinationLabel,
     this.recordCounts = const <String, int>{},
     this.importDraft = '',
+    this.preparedImport,
     this.importSourceLabel,
     this.lastImportReport,
     this.safeProviderSecretOmissionCount = 0,
@@ -414,28 +388,28 @@ final class BackupState {
   });
 
   final String? exportedJson;
-  final String? exportedMarkdown;
   final String? exportedArchivePath;
   final int? exportedArchiveSizeBytes;
   final String? exportDestinationLabel;
   final Map<String, int> recordCounts;
   final String importDraft;
+  final BackupImportPayload? preparedImport;
   final String? importSourceLabel;
   final LocalBackupImportReport? lastImportReport;
   final int safeProviderSecretOmissionCount;
   final BackupOutcome outcome;
   final String? errorDetails;
 
-  bool get canImport => importDraft.trim().isNotEmpty;
+  bool get canImport => preparedImport != null || importDraft.trim().isNotEmpty;
 
   BackupState copyWith({
     String? exportedJson,
-    String? exportedMarkdown,
     String? exportedArchivePath,
     int? exportedArchiveSizeBytes,
     String? exportDestinationLabel,
     Map<String, int>? recordCounts,
     String? importDraft,
+    BackupImportPayload? preparedImport,
     String? importSourceLabel,
     LocalBackupImportReport? lastImportReport,
     int? safeProviderSecretOmissionCount,
@@ -445,10 +419,10 @@ final class BackupState {
     bool clearFilePaths = false,
     bool clearImportReport = false,
     bool clearImportSource = false,
+    bool clearPreparedImport = false,
   }) {
     return BackupState(
       exportedJson: exportedJson ?? this.exportedJson,
-      exportedMarkdown: exportedMarkdown ?? this.exportedMarkdown,
       exportedArchivePath: clearFilePaths
           ? null
           : exportedArchivePath ?? this.exportedArchivePath,
@@ -460,6 +434,9 @@ final class BackupState {
           : exportDestinationLabel ?? this.exportDestinationLabel,
       recordCounts: recordCounts ?? this.recordCounts,
       importDraft: importDraft ?? this.importDraft,
+      preparedImport: clearPreparedImport
+          ? null
+          : preparedImport ?? this.preparedImport,
       importSourceLabel: clearImportSource
           ? null
           : importSourceLabel ?? this.importSourceLabel,
@@ -488,22 +465,21 @@ final class BackupController extends Notifier<BackupState> {
       clearError: true,
       clearImportReport: true,
       clearImportSource: true,
+      clearPreparedImport: true,
     );
   }
 
   void exportBackup() {
     try {
-      final backup = ref.read(backupServiceProvider).exportBackup();
+      final backup = ref
+          .read(backupServiceProvider)
+          .exportBackup(mode: LocalBackupMode.full);
       state = state.copyWith(
-        exportedJson: LocalBackupCodec.encode(backup),
-        exportedMarkdown: const LocalMarkdownExportService().exportBackup(
-          backup,
-        ),
+        exportedJson: 'directory-snapshot',
         exportedArchivePath: null,
         exportedArchiveSizeBytes: null,
         recordCounts: backup.manifest.recordCounts,
-        safeProviderSecretOmissionCount:
-            backup.providerConfigsNeedingCredentialReentry.length,
+        safeProviderSecretOmissionCount: 0,
         outcome: BackupOutcome.exported,
         clearError: true,
         clearFilePaths: true,
@@ -527,19 +503,20 @@ final class BackupController extends Notifier<BackupState> {
 
   Future<void> _writeExport({required bool useShareSheet}) async {
     try {
-      if (state.exportedJson == null || state.exportedMarkdown == null) {
+      if (state.exportedJson == null) {
         exportBackup();
       }
+      final backup = ref
+          .read(backupServiceProvider)
+          .exportBackup(mode: LocalBackupMode.full);
       final store = ref.read(backupFileStoreProvider);
       final result = useShareSheet
           ? await store.shareExport(
-              json: state.exportedJson!,
-              markdown: state.exportedMarkdown!,
+              backup: backup,
               createdAt: DateTime.now().toUtc(),
             )
           : await store.saveExport(
-              json: state.exportedJson!,
-              markdown: state.exportedMarkdown!,
+              backup: backup,
               createdAt: DateTime.now().toUtc(),
             );
       state = state.copyWith(
@@ -557,19 +534,33 @@ final class BackupController extends Notifier<BackupState> {
     }
   }
 
-  bool importBackup() {
+  Future<bool> importBackup() async {
+    BackupImportPayload? prepared;
     try {
-      final report = ref
-          .read(backupServiceProvider)
-          .importJson(
-            state.importDraft,
-            strategy: LocalBackupImportStrategy.replaceAll,
-          );
+      final store = ref.read(backupFileStoreProvider);
+      prepared = state.preparedImport;
+      if (prepared != null) {
+        await store.restorePreparedMedia(prepared);
+      }
+      final report = prepared == null
+          ? ref
+                .read(backupServiceProvider)
+                .importJson(
+                  state.importDraft,
+                  strategy: LocalBackupImportStrategy.replaceAll,
+                )
+          : ref
+                .read(backupServiceProvider)
+                .importBackup(
+                  prepared.backup,
+                  strategy: LocalBackupImportStrategy.replaceAll,
+                );
       _refreshImportedData();
       state = state.copyWith(
         lastImportReport: report,
         outcome: BackupOutcome.imported,
         clearError: true,
+        clearPreparedImport: true,
       );
       return true;
     } catch (error) {
@@ -578,15 +569,22 @@ final class BackupController extends Notifier<BackupState> {
         errorDetails: _safeBackupError(error),
       );
       return false;
+    } finally {
+      if (prepared != null) {
+        await ref.read(backupFileStoreProvider).discardPreparedImport(prepared);
+      }
     }
   }
 
   Future<bool> loadLatestSavedFileForImport() async {
     try {
-      final json = await ref.read(backupFileStoreProvider).readLatestJson();
+      final payload = await ref
+          .read(backupFileStoreProvider)
+          .readLatestBackup();
       state = state.copyWith(
-        importDraft: json,
-        importSourceLabel: 'latest local backup file',
+        importDraft: '',
+        preparedImport: payload,
+        importSourceLabel: payload.sourceLabel,
         outcome: BackupOutcome.importReady,
         clearImportReport: true,
         clearError: true,
@@ -603,10 +601,11 @@ final class BackupController extends Notifier<BackupState> {
 
   Future<bool> pickArchiveForImport() async {
     try {
-      final json = await ref.read(backupFileStoreProvider).pickArchiveJson();
+      final payload = await ref.read(backupFileStoreProvider).pickArchive();
       state = state.copyWith(
-        importDraft: json,
-        importSourceLabel: 'selected .widenote file',
+        importDraft: '',
+        preparedImport: payload,
+        importSourceLabel: payload.sourceLabel,
         outcome: BackupOutcome.importReady,
         clearImportReport: true,
         clearError: true,
@@ -623,12 +622,13 @@ final class BackupController extends Notifier<BackupState> {
 
   Future<bool> loadArchivePathForImport(String archivePath) async {
     try {
-      final json = await ref
+      final payload = await ref
           .read(backupFileStoreProvider)
-          .readArchiveJson(archivePath);
+          .readArchive(archivePath);
       state = state.copyWith(
-        importDraft: json,
-        importSourceLabel: archivePath,
+        importDraft: '',
+        preparedImport: payload,
+        importSourceLabel: payload.sourceLabel,
         outcome: BackupOutcome.importReady,
         clearImportReport: true,
         clearError: true,
@@ -665,50 +665,6 @@ String _safeBackupError(Object error) {
   };
 }
 
-JsonMap _payloadWithRestoredMediaRef(
-  JsonMap payload,
-  _RestoredMediaRef restored,
-) {
-  final rawMetadata = payload['raw_metadata'];
-  if (rawMetadata is! Map) {
-    return <String, Object?>{
-      ...payload,
-      'restored_local_path': restored.localPath,
-      'restored_storage_ref': restored.storageRef,
-    };
-  }
-  final raw = rawMetadata.cast<String, Object?>();
-  final adapterMetadata = raw['adapter_metadata'];
-  final updatedRaw = <String, Object?>{
-    ...raw,
-    'local_path': restored.localPath,
-    'storage_ref': restored.storageRef,
-    'restored_storage_ref': restored.storageRef,
-  };
-  if (adapterMetadata is Map) {
-    updatedRaw['adapter_metadata'] = <String, Object?>{
-      ...adapterMetadata.cast<String, Object?>(),
-      'local_path': restored.localPath,
-      'storage_ref': restored.storageRef,
-      'restored_storage_ref': restored.storageRef,
-    };
-  }
-  return <String, Object?>{
-    ...payload,
-    'restored_local_path': restored.localPath,
-    'restored_storage_ref': restored.storageRef,
-    'raw_metadata': updatedRaw,
-  };
-}
-
-String _safeFileName(String value) {
-  final sanitized = value
-      .replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_')
-      .replaceAll(RegExp(r'_+'), '_')
-      .replaceAll(RegExp(r'^[._-]+|[._-]+$'), '');
-  return sanitized.isEmpty ? 'backup-media' : sanitized;
-}
-
 String _fileStamp(DateTime value) {
   return value
       .toUtc()
@@ -720,8 +676,7 @@ String _fileStamp(DateTime value) {
 List<File> _latestBackupFiles(Directory directory) {
   final files =
       directory.listSync().whereType<File>().where((file) {
-        return LocalBackupArchiveCodec.hasArchiveExtension(file.path) ||
-            file.path.endsWith('.json');
+        return LocalBackupArchiveCodec.hasArchiveExtension(file.path);
       }).toList()..sort((a, b) {
         final time = b.lastModifiedSync().compareTo(a.lastModifiedSync());
         return time == 0 ? b.path.compareTo(a.path) : time;
@@ -729,22 +684,38 @@ List<File> _latestBackupFiles(Directory directory) {
   return files;
 }
 
-final class _BackupArchiveWriteJob {
-  const _BackupArchiveWriteJob({
-    required this.json,
-    required this.markdown,
+final class _BackupDirectoryMediaFile {
+  const _BackupDirectoryMediaFile({
+    required this.sourcePath,
+    required this.relativePath,
+  });
+
+  final String sourcePath;
+  final String relativePath;
+}
+
+final class _BackupDirectoryArchiveWriteJob {
+  const _BackupDirectoryArchiveWriteJob({
+    required this.sourceDatabasePath,
+    required this.stagingDirectory,
     required this.outputPath,
+    required this.createdAt,
+    required this.localDbSchemaVersion,
+    required this.recordCounts,
     required this.mediaFiles,
   });
 
-  final String json;
-  final String markdown;
+  final String sourceDatabasePath;
+  final String stagingDirectory;
   final String outputPath;
-  final List<LocalBackupArchiveMediaFile> mediaFiles;
+  final DateTime createdAt;
+  final int localDbSchemaVersion;
+  final Map<String, int> recordCounts;
+  final List<_BackupDirectoryMediaFile> mediaFiles;
 }
 
-final class _BackupArchiveWriteResult {
-  const _BackupArchiveWriteResult({
+final class _BackupDirectoryArchiveWriteResult {
+  const _BackupDirectoryArchiveWriteResult({
     required this.path,
     required this.archiveSizeBytes,
   });
@@ -753,24 +724,45 @@ final class _BackupArchiveWriteResult {
   final int archiveSizeBytes;
 }
 
-Future<_BackupArchiveWriteResult> _writeBackupArchiveFromJson(
-  _BackupArchiveWriteJob job,
+Future<_BackupDirectoryArchiveWriteResult> _writeBackupDirectoryArchive(
+  _BackupDirectoryArchiveWriteJob job,
 ) async {
-  final backup = LocalBackupCodec.decode(job.json);
-  final result = await LocalBackupArchiveCodec.writeArchive(
-    backup: backup,
-    ownerMarkdown: job.markdown,
-    outputPath: job.outputPath,
-    mediaFiles: job.mediaFiles,
+  final staging = Directory(job.stagingDirectory);
+  if (await staging.exists()) {
+    await staging.delete(recursive: true);
+  }
+  await staging.create(recursive: true);
+  await LocalBackupDatabaseSnapshotter.writeFullSnapshot(
+    sourceDatabasePath: job.sourceDatabasePath,
+    outputDatabasePath: p.join(job.stagingDirectory, 'data', 'widenote.sqlite'),
   );
-  return _BackupArchiveWriteResult(
+  for (final mediaFile in job.mediaFiles) {
+    final target = File(
+      p.joinAll(<String>[
+        job.stagingDirectory,
+        ...mediaFile.relativePath.split('/'),
+      ]),
+    );
+    await target.parent.create(recursive: true);
+    await File(mediaFile.sourcePath).copy(target.path);
+  }
+  final result = await LocalBackupDirectoryArchiveCodec.writeArchive(
+    sourceDirectory: job.stagingDirectory,
+    outputPath: job.outputPath,
+    createdAt: job.createdAt,
+    localDbSchemaVersion: job.localDbSchemaVersion,
+    recordCounts: job.recordCounts,
+    backupMode: LocalBackupMode.full,
+    includesSecrets: true,
+  );
+  return _BackupDirectoryArchiveWriteResult(
     path: result.path,
     archiveSizeBytes: result.sizeBytes,
   );
 }
 
-final class _BackupArchiveReadJob {
-  const _BackupArchiveReadJob({
+final class _BackupDirectoryArchiveReadJob {
+  const _BackupDirectoryArchiveReadJob({
     required this.archivePath,
     required this.stagingDirectory,
   });
@@ -779,11 +771,45 @@ final class _BackupArchiveReadJob {
   final String stagingDirectory;
 }
 
-Future<LocalBackupArchiveExtractResult> _extractRestoreJsonFromArchive(
-  _BackupArchiveReadJob job,
+Future<LocalBackupDirectoryArchiveExtractResult> _extractBackupDirectoryArchive(
+  _BackupDirectoryArchiveReadJob job,
 ) {
-  return LocalBackupArchiveCodec.extractToDirectory(
+  return LocalBackupDirectoryArchiveCodec.extractToDirectory(
     archivePath: job.archivePath,
     stagingDirectory: job.stagingDirectory,
   );
+}
+
+String? _relativeCaptureMediaStoragePath(String storagePath) {
+  const prefix = 'local://capture_media/';
+  if (!storagePath.startsWith(prefix)) {
+    return null;
+  }
+  final relative = storagePath.substring(prefix.length);
+  final segments = relative.split('/');
+  if (segments.isEmpty ||
+      segments.any((segment) {
+        return segment.isEmpty || segment == '.' || segment == '..';
+      })) {
+    return null;
+  }
+  return segments.join('/');
+}
+
+String _captureMediaRelativePath(String archivePath) {
+  final prefix = LocalBackupDirectoryArchiveCodec.mediaPrefix;
+  if (!archivePath.startsWith(prefix)) {
+    throw FormatException(
+      'Backup media path is outside capture media: $archivePath.',
+    );
+  }
+  final relative = archivePath.substring(prefix.length);
+  final segments = relative.split('/');
+  if (segments.isEmpty ||
+      segments.any((segment) {
+        return segment.isEmpty || segment == '.' || segment == '..';
+      })) {
+    throw FormatException('Unsafe backup media path: $archivePath.');
+  }
+  return segments.join('/');
 }

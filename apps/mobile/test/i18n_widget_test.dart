@@ -21,7 +21,7 @@ void main() {
     expect(find.text('Background voice'), findsOneWidget);
 
     await _openTab(tester, const Key('tab-chat'));
-    expect(find.text('History'), findsOneWidget);
+    expect(find.text('Conversations'), findsOneWidget);
     expect(find.text('No local sessions yet.'), findsOneWidget);
 
     await _openTab(tester, const Key('tab-todos'));
@@ -48,7 +48,7 @@ void main() {
     expect(find.text('后台录音'), findsOneWidget);
 
     await _openTab(tester, const Key('tab-chat'));
-    expect(find.text('历史会话'), findsOneWidget);
+    expect(find.text('对话列表'), findsOneWidget);
     expect(find.text('还没有本地会话。'), findsOneWidget);
 
     await _openTab(tester, const Key('tab-todos'));
@@ -70,8 +70,14 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('备份'), findsWidgets);
     expect(find.text('创建 .widenote 备份'), findsOneWidget);
-    expect(find.textContaining('当前版本不提供操作入口'), findsOneWidget);
-    expect(find.textContaining('但不包含 Provider Key'), findsOneWidget);
+    expect(
+      find.textContaining('完整 .widenote 备份会包含 Provider Key'),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('恢复 SQLite 快照、采集媒体文件和 Provider Key'),
+      findsOneWidget,
+    );
   });
 }
 

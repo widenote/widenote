@@ -9,6 +9,9 @@ record, memory, and agent runtime.
 
 Tool-specific entry files, including `CLAUDE.md`, should point here instead of
 duplicating project rules. If an instruction changes, update this file first.
+Keep this file concise and manually reviewed. Do not bulk-regenerate repository
+overviews or duplicate details that already live in README, ADR, RFC, schema, or
+module documentation.
 
 ## Project Identity
 
@@ -27,17 +30,22 @@ ADR or RFC says otherwise.
 
 ## Read First
 
-Before architectural, product, runtime, schema, privacy, plugin, or UX changes,
-read these in order:
+Load the smallest context that can safely answer the task. Do not treat the
+files below as a mandatory full-repository reading checklist.
 
-1. `docs/agent-context/START_HERE.md`
-2. `docs/architecture/current-contracts.md`
-3. `docs/decisions/index.md`
-4. `docs/agent-context/project-map.md`
-5. The nearest area or module `README.md`
-6. Any ADR or RFC related to the files you plan to touch when changing a
-   contract, resolving ambiguity, or needing historical rationale
-7. `widenote_project_brief.md` only when product intent is unclear
+For normal coding work, read in this order:
+
+1. `docs/architecture/current-contracts.md` for task-relevant current contracts
+2. `docs/agent-context/project-map.md` only when you need to locate the right
+   area or module
+3. The nearest area or module `README.md` for files you plan to touch
+4. Related ADRs or RFCs only when changing a contract, resolving ambiguity, or
+   needing historical rationale
+
+Use `docs/agent-context/START_HERE.md` for first-time repository orientation,
+broad planning, or when you are lost. Use `docs/decisions/index.md` to locate
+relevant decisions. Use `widenote_project_brief.md` only when product intent is
+unclear.
 
 `docs/architecture/current-contracts.md` is the current target-state contract
 layer. ADRs and RFCs preserve historical decisions, tradeoffs, and provenance;

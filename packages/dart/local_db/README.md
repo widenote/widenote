@@ -23,6 +23,8 @@ rendering.
 - `openInMemoryWideNoteLocalDatabase`
 - `LocalDbMigrator`
 - `LocalBackupService`
+- `LocalBackupDirectoryArchiveCodec`
+- `LocalBackupDatabaseSnapshotter`
 - `LocalBackupArchiveCodec`
 - `LocalBackupArchiveManifest`
 - `LocalBackupCodec`
@@ -86,9 +88,31 @@ prefer DAO APIs so table fields stay aligned with public schemas.
 
 ## Backup / Export / Import
 
-`LocalBackupService` provides the first local-only backup round-trip for the
-current SQLite truth tables. The JSON document uses a WideNote-owned
-`widenote.local_data_backup` format with:
+`LocalBackupDirectoryArchiveCodec` provides the default user-facing `.widenote`
+backup shape. It writes a zip-compatible compressed directory archive with:
+
+- `widenote-backup/manifest.properties`: archive format, backup mode, local DB
+  schema version, record counts, entry sizes, and SHA-256 checksums.
+- `widenote-backup/data/widenote.sqlite`: a full SQLite snapshot of the local
+  truth database, including provider API key values.
+- `widenote-backup/media/capture_media/**`: local capture media files whose
+  attachment storage path is under `local://capture_media/`.
+
+Archive writes use a file-streaming zip encoder and temp-file rename. Archive
+imports use a streamed zip decoder, extract into a staging directory, and verify
+entry checksums before the staged SQLite snapshot is imported with the
+replace-all restore strategy.
+
+`LocalBackupDatabaseSnapshotter` creates the full SQLite snapshot using
+SQLite's own snapshot path and validates it before compression. Provider
+credential values and provider payload fields are preserved so a restored
+device can use configured model providers immediately. Treat `.widenote` files
+as secret-bearing user data and keep them in trusted storage. The `.widenote`
+MIME type is `application/x-widenote-backup`.
+
+`LocalBackupService` still owns row-level import/export semantics and the legacy
+local-only JSON round-trip for compatibility tests and old backups. The JSON
+document uses a WideNote-owned `widenote.local_data_backup` format with:
 
 - `manifest`: format version, local DB schema version, creation timestamp, and
   backup mode, `includes_secrets`, encryption metadata placeholder, and
@@ -106,40 +130,25 @@ without those sections import them as empty. `context_packet_cache` is
 rebuildable derived state, so restore also tolerates that section missing from a
 current backup.
 
-`LocalBackupArchiveCodec` wraps that safe restore document in the user-facing
-`.widenote` format. The archive is a zip-compatible compressed directory with:
-
-- `widenote-backup/manifest.json`: archive format, nested backup format,
-  backup mode, counts, entry sizes, and sha256 checksums.
-- `widenote-backup/restore/safe-backup.json`: the restorable
-  `widenote.local_data_backup` JSON.
-- `widenote-backup/owner-export/owner-export.md`: the readable secret-free
-  Owner Export projection.
-
-Archive writes use a file-streaming zip encoder and temp-file rename. Archive
-imports extract entries to a staging directory and verify checksums before the
-existing safe restore JSON is imported. The `.widenote` MIME type is
-`application/x-widenote-backup`.
-
-`LocalBackupMode.safe` is the default and excludes provider API key values while
-preserving provider metadata, default-provider state, and whether a key was
-present. `LocalBackupMode.encryptedFull` is reserved for a future encrypted
-full-backup path that can carry provider API key values only after callers have
-a real encryption boundary. The W7 mobile app does not expose encrypted full
-backup yet. Keys must stay out of logs, generated docs, test output, and
-automated review prompts.
+`LocalBackupMode.safe` is the default row-level JSON/export projection and
+excludes provider API key values while preserving provider metadata,
+default-provider state, and whether a key was present. `LocalBackupMode.full`
+is the user-facing `.widenote` directory-backup mode and preserves provider API
+key values for direct-use restore. `LocalBackupMode.encryptedFull` is reserved
+for a future encrypted full-backup envelope. Keys must stay out of logs,
+generated docs, test output, and automated review prompts.
 
 `LocalBackupImportReport` summarizes restore effects for UI and QA without
 exposing backup contents. It reports backup mode, secret inclusion, restored
 provider/pack/permission/runtime/cache counts, and whether provider keys need
-user re-entry after a safe restore.
+user re-entry for legacy safe imports.
 
-`LocalMarkdownExportService` is a human-readable projection of a decoded
-backup. It is not restorable and intentionally reports only whether provider
-API keys are present; it does not include key values. It summarizes runtime
-pack/task/permission status and excludes Context Packet cache contents from the
-readable Owner Export projection. It also writes an explicit export boundary so
-users and agents do not confuse Markdown with the restore source.
+`LocalBackupArchiveCodec` and `LocalMarkdownExportService` are retained for
+legacy safe JSON archives and human-readable projections. Markdown is not
+restorable and intentionally reports only whether provider API keys are present;
+it does not include key values. It summarizes runtime pack/task/permission
+status and excludes Context Packet cache contents from the readable projection.
+Mobile backup no longer presents Markdown or JSON as the default restore source.
 
 ## Generated Artifacts
 
@@ -164,11 +173,11 @@ context-cache tables, migration indexes/foreign keys/repeated bootstrap/failure
 rollback, pagination, capture/event/task transactional enqueue, permission revoke terminal
 state, pending approval storage, approval decisions, canceled/expired approval
 records, backup import/export, cache-tolerant restore, tombstone restore behavior,
-secret-boundary manifest validation, safe-backup provider credential re-entry
-reports, encrypted-full guardrails, and runtime EventStore/TraceSink adapters.
-Backup tests also cover the
-Markdown projection and verify that provider API key values and Context Packet
-cache contents stay out of the readable export.
+secret-boundary manifest validation, legacy safe-backup provider credential
+re-entry reports, full directory-backup credential restore, encrypted-full
+guardrails, and runtime EventStore/TraceSink adapters. Backup tests also cover
+the directory `.widenote` archive, full SQLite snapshots, media entries,
+checksum verification, and the legacy Markdown projection boundary.
 Core tool catalog tests cover DB-backed Context Packet, Memory read/propose,
 todo suggestion, and redacted trace read tools, including required permission
 metadata, source refs, limits, redaction, and invalid-input behavior.

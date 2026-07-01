@@ -613,7 +613,7 @@ void main() {
     await _openTab(tester, const Key('tab-chat'));
 
     expect(find.byKey(const Key('chat-page')), findsOneWidget);
-    expect(find.text('History'), findsOneWidget);
+    expect(find.text('Conversations'), findsOneWidget);
     expect(find.text('No local sessions yet.'), findsOneWidget);
     expect(find.text('Local chat'), findsOneWidget);
     expect(

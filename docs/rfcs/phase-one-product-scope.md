@@ -1,6 +1,6 @@
 # RFC: Phase-One Product Scope
 
-Status: Accepted phase-one scope; amended by W7 safe-backup boundary
+Status: Accepted phase-one scope; amended by W7 full-backup boundary
 
 Date: 2026-06-24
 
@@ -80,10 +80,10 @@ capture created
 - Backup files must include a manifest with schema version, app version, created time, and record counts.
 - Export/import must round-trip existing local data families first: captures, event log, Memory items/candidates, todos, and traces.
 - Cards, insights, chat, and provider config must join the backup format as those modules land.
-- Safe backup must exclude provider API key values and report when keys need
-  user re-entry after restore. Encrypted full backup is the future
-  secret-bearing restore path and must remain unavailable until encryption is
-  implemented.
+- Default `.widenote` backup must use a compressed directory archive with a
+  full SQLite snapshot and local media files. It preserves provider API key
+  values so restore can use configured model providers immediately. Safe JSON
+  and Markdown projections remain no-secret compatibility/export surfaces.
 - Tests must cover successful round-trip, unsupported version, malformed payload, missing sections, and migration from older supported versions.
 
 ## Cards and Insights Requirements

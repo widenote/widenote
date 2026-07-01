@@ -1766,6 +1766,96 @@ abstract class AppLocalizations {
   /// **'History'**
   String get chatHistoryTitle;
 
+  /// No description provided for @chatNewSessionButton.
+  ///
+  /// In en, this message translates to:
+  /// **'New chat'**
+  String get chatNewSessionButton;
+
+  /// No description provided for @chatNewSessionTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a new chat'**
+  String get chatNewSessionTooltip;
+
+  /// No description provided for @chatConversationListTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations'**
+  String get chatConversationListTitle;
+
+  /// No description provided for @chatActiveSessionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Current chat'**
+  String get chatActiveSessionLabel;
+
+  /// No description provided for @chatDefaultSessionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New chat'**
+  String get chatDefaultSessionTitle;
+
+  /// No description provided for @chatSessionMessageCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Empty} =1{1 message} other{{count} messages}}'**
+  String chatSessionMessageCount(int count);
+
+  /// No description provided for @chatSessionActionsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat actions'**
+  String get chatSessionActionsTooltip;
+
+  /// No description provided for @chatRenameSessionAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get chatRenameSessionAction;
+
+  /// No description provided for @chatDeleteSessionAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get chatDeleteSessionAction;
+
+  /// No description provided for @chatRenameSessionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename chat'**
+  String get chatRenameSessionTitle;
+
+  /// No description provided for @chatRenameSessionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat title'**
+  String get chatRenameSessionHint;
+
+  /// No description provided for @chatDeleteSessionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete chat?'**
+  String get chatDeleteSessionTitle;
+
+  /// No description provided for @chatDeleteSessionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes the local chat and its messages from this device.'**
+  String get chatDeleteSessionBody;
+
+  /// No description provided for @chatDeleteSessionConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get chatDeleteSessionConfirm;
+
+  /// No description provided for @chatSessionDeletedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat deleted.'**
+  String get chatSessionDeletedSnackbar;
+
   /// No description provided for @chatEmptySessions.
   ///
   /// In en, this message translates to:
@@ -2345,13 +2435,13 @@ abstract class AppLocalizations {
   /// No description provided for @settingsPrivacyBackupBody.
   ///
   /// In en, this message translates to:
-  /// **'Safe export omits provider API keys. Encrypted full backup is the future secret-bearing restore path and has no action in this build.'**
+  /// **'Full .widenote backups include provider API keys so restore can use model providers immediately. Keep backup files in a trusted location.'**
   String get settingsPrivacyBackupBody;
 
   /// No description provided for @settingsPrivacyBackupStatus.
   ///
   /// In en, this message translates to:
-  /// **'safe export'**
+  /// **'full backup'**
   String get settingsPrivacyBackupStatus;
 
   /// No description provided for @settingsControlsTitle.
@@ -2456,7 +2546,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsBackupStatusSafeOnly.
   ///
   /// In en, this message translates to:
-  /// **'safe only'**
+  /// **'full local'**
   String get settingsBackupStatusSafeOnly;
 
   /// No description provided for @settingsBackupStatusExportReady.
@@ -4272,43 +4362,43 @@ abstract class AppLocalizations {
   /// No description provided for @backupExportEmpty.
   ///
   /// In en, this message translates to:
-  /// **'Export creates one compressed .widenote archive. You can open it with another app or save it to a location you choose.'**
+  /// **'Export creates one compressed directory .widenote archive. You can open it with another app or save it to a location you choose.'**
   String get backupExportEmpty;
 
   /// No description provided for @backupSecretWarning.
   ///
   /// In en, this message translates to:
-  /// **'Safe export omits provider API keys. Re-enter provider keys after restore.'**
+  /// **'Full backups include provider API keys. Keep .widenote files somewhere you trust.'**
   String get backupSecretWarning;
 
   /// No description provided for @backupSafeRestoreBoundary.
   ///
   /// In en, this message translates to:
-  /// **'The .widenote archive restores records, Memory, todos, provider metadata, pack installs, permissions, runtime state, and traces. Provider keys are omitted.'**
+  /// **'The .widenote archive restores a SQLite snapshot, capture media files, and provider API keys.'**
   String get backupSafeRestoreBoundary;
 
   /// No description provided for @backupOwnerExportBoundary.
   ///
   /// In en, this message translates to:
-  /// **'Owner Export Markdown is for reading and moving your data. It excludes secrets and is not a restore source.'**
+  /// **'Backups are compressed directories, not JSON or Markdown restore documents.'**
   String get backupOwnerExportBoundary;
 
   /// No description provided for @backupFullSecretBoundary.
   ///
   /// In en, this message translates to:
-  /// **'Encrypted full backup will be the secret-bearing path for restoring API keys. It has no action in this build.'**
+  /// **'Full .widenote backups include provider API keys so restore can use configured providers immediately.'**
   String get backupFullSecretBoundary;
 
   /// No description provided for @backupSafeOmittedProviderKeys.
   ///
   /// In en, this message translates to:
-  /// **'Provider keys omitted from safe export: {count}'**
+  /// **'Provider keys requiring re-entry: {count}'**
   String backupSafeOmittedProviderKeys(int count);
 
   /// No description provided for @backupManifestCountsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Manifest counts'**
+  /// **'Backup counts'**
   String get backupManifestCountsTitle;
 
   /// No description provided for @backupCount.
@@ -4320,7 +4410,7 @@ abstract class AppLocalizations {
   /// No description provided for @backupCopyMarkdownButton.
   ///
   /// In en, this message translates to:
-  /// **'Copy Markdown'**
+  /// **'Copy export'**
   String get backupCopyMarkdownButton;
 
   /// No description provided for @backupOpenShareFileButton.
@@ -4356,7 +4446,7 @@ abstract class AppLocalizations {
   /// No description provided for @backupExportMarkdownTitle.
   ///
   /// In en, this message translates to:
-  /// **'Owner Export Markdown'**
+  /// **'Readable export'**
   String get backupExportMarkdownTitle;
 
   /// No description provided for @backupImportSectionTitle.
@@ -4368,13 +4458,13 @@ abstract class AppLocalizations {
   /// No description provided for @backupImportHint.
   ///
   /// In en, this message translates to:
-  /// **'Paste legacy WideNote backup JSON...'**
+  /// **'Choose a .widenote file. WideNote will inspect it before replacing local data.'**
   String get backupImportHint;
 
   /// No description provided for @backupImportButton.
   ///
   /// In en, this message translates to:
-  /// **'Import and replace'**
+  /// **'Replace with selected backup'**
   String get backupImportButton;
 
   /// No description provided for @backupImportFileButton.
@@ -4428,7 +4518,7 @@ abstract class AppLocalizations {
   /// No description provided for @backupImportSecretsRestored.
   ///
   /// In en, this message translates to:
-  /// **'Secret-bearing backup restored provider credentials.'**
+  /// **'Provider credentials restored and ready to use.'**
   String get backupImportSecretsRestored;
 
   /// No description provided for @backupImportNoProviderKeysNeeded.
@@ -4578,7 +4668,7 @@ abstract class AppLocalizations {
   /// No description provided for @locationAmapKeyHelper.
   ///
   /// In en, this message translates to:
-  /// **'Stored in secure local storage. It is not included in safe backups or Owner Export.'**
+  /// **'Stored in secure local storage. It is not included in .widenote backups or Owner Export.'**
   String get locationAmapKeyHelper;
 
   /// No description provided for @locationGranularityTitle.

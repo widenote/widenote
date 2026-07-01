@@ -10,7 +10,12 @@ final class LocalChatRepository implements ChatRepository {
 
   @override
   Future<List<ChatSession>> listSessions() async {
-    return _database.chatSessions.readAll().map(_sessionFromRecord).toList();
+    return _database.chatSessions.readAll().map((record) {
+      return _sessionFromRecord(
+        record,
+        messageCount: _database.chatMessages.readBySession(record.id).length,
+      );
+    }).toList();
   }
 
   @override
@@ -48,14 +53,24 @@ final class LocalChatRepository implements ChatRepository {
       ),
     );
   }
+
+  @override
+  Future<void> deleteSession(String sessionId) async {
+    _database.chatMessages.deleteBySession(sessionId);
+    _database.chatSessions.deleteById(sessionId);
+  }
 }
 
-ChatSession _sessionFromRecord(ChatSessionRecord record) {
+ChatSession _sessionFromRecord(
+  ChatSessionRecord record, {
+  int messageCount = 0,
+}) {
   return ChatSession(
     id: record.id,
     title: record.title,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
+    messageCount: messageCount,
   );
 }
 
