@@ -71,3 +71,31 @@ Kimi's non-blocking follow-ups:
 
 Live-provider tests remain opt-in and are not required for this preset-only
 slice.
+
+## Follow-up Review: Model Dropdown
+
+The follow-up change replaced the free-text model field with a dropdown,
+user-triggered model fetch action, and custom model-id fallback. Kimi reviewed
+the current worktree, docs, active request, diff, and Memex model-config
+references with deep thinking enabled.
+
+Kimi agreed that the endpoint derivation is directionally correct: OpenAI-style
+providers use `/models`, Anthropic-style providers use `/v1/models`, Gemini
+uses the native `models` endpoint with key-query authentication, and Ollama can
+list models without an API key.
+
+Kimi flagged two blockers:
+
+- MiniMax model-list authorization differs from MiniMax message authorization.
+  This was resolved against current MiniMax official docs: Messages documents
+  `Authorization: Bearer`, while Anthropic-compatible List Models documents
+  `X-Api-Key`. The implementation keeps that provider-specific split and adds
+  comments/docs so future edits do not accidentally unify the two endpoints.
+- Widget tests could accidentally use the live model-list service. The package
+  now exposes `OfflineModelProviderModelListService`, and the Settings widget
+  test harness overrides model-list access to that offline service by default.
+  Tests that need fetched models inject a queue fake explicitly.
+
+Kimi also recommended more widget coverage for empty/failure/custom fallback
+paths. The follow-up widget tests now cover successful fetch + selection, fetch
+authentication failure, empty returned list, and saving a custom model id.

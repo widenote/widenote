@@ -36,6 +36,13 @@ final modelProviderConnectionHttpClientProvider =
       return client;
     });
 
+final modelProviderModelListServiceProvider =
+    Provider<ModelProviderModelListService>((ref) {
+      final client = DartIoModelProviderHttpClient();
+      ref.onDispose(client.close);
+      return AdapterModelProviderModelListService(httpClient: client);
+    });
+
 final modelProviderSettingsControllerProvider =
     AsyncNotifierProvider<
       ModelProviderSettingsController,
@@ -426,6 +433,26 @@ final class DartIoModelProviderHttpClient implements ModelProviderHttpClient {
 
   void close() {
     _httpClient.close(force: true);
+  }
+
+  @override
+  Future<ModelProviderHttpResponse> getJson(
+    Uri endpoint, {
+    required Map<String, String> headers,
+    Duration timeout = const Duration(seconds: 30),
+  }) async {
+    final request = await _httpClient.getUrl(endpoint).timeout(timeout);
+    for (final entry in headers.entries) {
+      request.headers.set(entry.key, entry.value);
+    }
+
+    final response = await request.close().timeout(timeout);
+    final responseBody = await utf8.decodeStream(response);
+    return ModelProviderHttpResponse(
+      statusCode: response.statusCode,
+      headers: _responseHeaders(response),
+      body: _decodeResponseBody(responseBody),
+    );
   }
 
   @override

@@ -139,6 +139,26 @@ final class _DartIoModelProviderHttpClient implements ModelProviderHttpClient {
   }
 
   @override
+  Future<ModelProviderHttpResponse> getJson(
+    Uri endpoint, {
+    required Map<String, String> headers,
+    Duration timeout = const Duration(seconds: 30),
+  }) async {
+    final request = await _httpClient.getUrl(endpoint).timeout(timeout);
+    for (final entry in headers.entries) {
+      request.headers.set(entry.key, entry.value);
+    }
+
+    final response = await request.close().timeout(timeout);
+    final responseBody = await utf8.decodeStream(response);
+    return ModelProviderHttpResponse(
+      statusCode: response.statusCode,
+      headers: _responseHeaders(response),
+      body: _decodeResponseBody(responseBody),
+    );
+  }
+
+  @override
   Future<ModelProviderHttpResponse> postJson(
     Uri endpoint, {
     required Map<String, String> headers,

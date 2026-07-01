@@ -533,13 +533,26 @@ final class _FailingTranscriptionProvider
 }
 
 final class _RecordingHttpClient implements ModelProviderHttpClient {
-  _RecordingHttpClient({
-    this.responseBody = const <String, Object?>{},
-  });
+  _RecordingHttpClient({this.responseBody = const <String, Object?>{}});
 
   final Map<String, Object?> responseBody;
   Map<String, String> lastHeaders = const <String, String>{};
   Map<String, Object?> lastBody = const <String, Object?>{};
+
+  @override
+  Future<ModelProviderHttpResponse> getJson(
+    Uri endpoint, {
+    required Map<String, String> headers,
+    Duration timeout = const Duration(seconds: 30),
+  }) async {
+    lastHeaders = headers;
+    lastBody = const <String, Object?>{};
+    return ModelProviderHttpResponse(
+      statusCode: 200,
+      headers: const <String, String>{},
+      body: responseBody,
+    );
+  }
 
   @override
   Future<ModelProviderHttpResponse> postJson(

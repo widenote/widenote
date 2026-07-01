@@ -28,6 +28,9 @@ requirement.
   missing-text failures.
 - Provide a mobile settings page for add, edit, test connection, and default
   provider selection.
+- Let users fetch official provider model lists and choose a model from a
+  dropdown while preserving custom model-id fallback for gateways or accounts
+  whose model list is incomplete.
 - Preserve local model-call trace metadata for BYOK users, including
   provider/model ids, token usage when providers expose it, retry/failure state,
   and future cost fields without persisting API keys or raw private prompts.
@@ -50,16 +53,19 @@ requirement.
 ## Proposed Design
 
 `packages/dart/model_providers` owns provider config models, preset defaults,
-compatible request builders, fake HTTP, fake providers, and a shared error
-taxonomy. Adapters are constructed with an injected HTTP client so tests can
-assert request shape without external network access. Provider presets are
-thin defaults over the compatible adapters; endpoint and model fields remain
-editable because accounts can differ by region, gateway, plan, or enabled
-model id.
+compatible request builders, official model-list helpers, fake HTTP, fake
+providers, and a shared error taxonomy. Adapters are constructed with an
+injected HTTP client so tests can assert request shape without external network
+access. Provider presets are thin defaults over the compatible adapters;
+endpoint fields remain editable because accounts can differ by region, gateway,
+plan, or enabled model id.
 
 `apps/mobile/lib/features/model_providers` owns the first mobile settings
 surface. Providers can be added, edited, tested with a fake connection service,
 selected as default, and persisted locally for app restarts and backup/restore.
+The add/edit dialog exposes a model dropdown. Users can fetch official model
+lists on demand, select a returned model, or switch to a custom model id when
+the provider/gateway does not expose the desired model through its list API.
 
 The plugin control page links to the settings page. A later settings-home
 integration can move or duplicate this entry without changing provider package

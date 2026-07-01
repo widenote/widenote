@@ -11,9 +11,9 @@ interface without depending on Flutter UI or real LLM services.
 ## Ownership Boundary
 
 Owns provider-agnostic request and response models, provider configuration
-models, capability metadata, compatible request/response adapters, fake HTTP,
-provider interface, offline/adapter connection-test behavior, and fake provider
-behavior.
+models, capability metadata, compatible request/response adapters, official
+model-list request helpers, fake HTTP, provider interface,
+offline/adapter connection-test behavior, and fake provider behavior.
 
 It must not own credential storage, network clients for real providers, model
 setup UI, routing policy, or Agent Pack prompts.
@@ -38,6 +38,9 @@ setup UI, routing policy, or Agent Pack prompts.
 - `OfflineModelProviderConnectionTestService`
 - `AdapterModelProviderConnectionTestService`
 - `ModelProviderConnectionTestResult`
+- `ModelProviderModelListService`
+- `AdapterModelProviderModelListService`
+- `ModelProviderModelListResult`
 - `FakeModelProvider`
 - `modelProviderFromConfig`
 - `RuntimeModelClientAdapter`
@@ -49,6 +52,18 @@ OpenRouter, DeepSeek, Kimi, Alibaba Qwen, Volcengine Doubao, Zhipu GLM,
 MiniMax, Xiaomi MIMO, Ollama, and custom OpenAI-compatible or
 Anthropic-compatible endpoints. Vendor presets choose the closest compatible
 adapter and remain editable in mobile Settings.
+
+Model-list support derives official provider model endpoints from the editable
+base endpoint. OpenAI-compatible presets use `/models`, Anthropic-compatible
+presets use `/v1/models`, and Gemini uses the native `models` endpoint with the
+API key query parameter. The service returns model IDs only; UI surfaces own
+selection, empty-state, and custom-model fallback behavior.
+
+The package also exposes an offline model-list service for deterministic
+Flutter/widget tests. Production UI wiring uses the adapter service only after a
+user taps the model refresh action. MiniMax is intentionally provider-specific:
+its Anthropic-compatible Messages endpoint documents Bearer authorization, while
+its official Models endpoint documents `X-Api-Key`.
 
 ## Dependencies
 
@@ -77,8 +92,9 @@ dart test
 Current tests cover config validation, provider presets, fake provider queued
 responses, fake HTTP recording, OpenAI-compatible and Anthropic-compatible
 request construction, endpoint normalization, response parsing,
-connection-test success/failure classification, missing capability errors, and
-the runtime adapter.
+official model-list endpoint derivation and parsing, connection-test
+success/failure classification, missing capability errors, and the runtime
+adapter.
 
 ## Related Context
 
