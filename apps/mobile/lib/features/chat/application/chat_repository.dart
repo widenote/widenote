@@ -8,6 +8,8 @@ abstract interface class ChatRepository {
   Future<void> saveSession(ChatSession session);
 
   Future<void> saveMessage(ChatMessage message);
+
+  Future<void> deleteSession(String sessionId);
 }
 
 final class InMemoryChatRepository implements ChatRepository {
@@ -16,8 +18,9 @@ final class InMemoryChatRepository implements ChatRepository {
 
   @override
   Future<List<ChatSession>> listSessions() async {
-    final sessions = _sessions.values.toList()
-      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    final sessions = _sessions.values.map((session) {
+      return session.copyWith(messageCount: _messageCount(session.id));
+    }).toList()..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
     return sessions;
   }
 
@@ -39,5 +42,17 @@ final class InMemoryChatRepository implements ChatRepository {
   @override
   Future<void> saveMessage(ChatMessage message) async {
     _messages[message.id] = message;
+  }
+
+  @override
+  Future<void> deleteSession(String sessionId) async {
+    _sessions.remove(sessionId);
+    _messages.removeWhere((_, message) => message.sessionId == sessionId);
+  }
+
+  int _messageCount(String sessionId) {
+    return _messages.values
+        .where((message) => message.sessionId == sessionId)
+        .length;
   }
 }

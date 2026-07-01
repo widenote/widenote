@@ -1029,6 +1029,61 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatHistoryTitle => 'History';
 
   @override
+  String get chatNewSessionButton => 'New chat';
+
+  @override
+  String get chatNewSessionTooltip => 'Start a new chat';
+
+  @override
+  String get chatConversationListTitle => 'Conversations';
+
+  @override
+  String get chatActiveSessionLabel => 'Current chat';
+
+  @override
+  String get chatDefaultSessionTitle => 'New chat';
+
+  @override
+  String chatSessionMessageCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count messages',
+      one: '1 message',
+      zero: 'Empty',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chatSessionActionsTooltip => 'Chat actions';
+
+  @override
+  String get chatRenameSessionAction => 'Rename';
+
+  @override
+  String get chatDeleteSessionAction => 'Delete';
+
+  @override
+  String get chatRenameSessionTitle => 'Rename chat';
+
+  @override
+  String get chatRenameSessionHint => 'Chat title';
+
+  @override
+  String get chatDeleteSessionTitle => 'Delete chat?';
+
+  @override
+  String get chatDeleteSessionBody =>
+      'This removes the local chat and its messages from this device.';
+
+  @override
+  String get chatDeleteSessionConfirm => 'Delete';
+
+  @override
+  String get chatSessionDeletedSnackbar => 'Chat deleted.';
+
+  @override
   String get chatEmptySessions => 'No local sessions yet.';
 
   @override

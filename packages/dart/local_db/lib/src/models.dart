@@ -503,6 +503,25 @@ final class ChatSessionRecord {
   final JsonMap payload;
   final DateTime createdAt;
   final DateTime updatedAt;
+
+  ChatSessionRecord copyWith({
+    int? schemaVersion,
+    String? title,
+    String? status,
+    JsonMap? payload,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return ChatSessionRecord(
+      id: id,
+      schemaVersion: schemaVersion ?? this.schemaVersion,
+      title: title ?? this.title,
+      status: status ?? this.status,
+      payload: payload ?? this.payload,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 }
 
 final class ChatMessageRecord {
