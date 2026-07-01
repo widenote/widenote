@@ -189,7 +189,7 @@ void main() {
     });
 
     test(
-      'omits provider secrets from safe backup and blocks plaintext full export',
+      'omits provider secrets from safe JSON and blocks plaintext full export',
       () {
         final source = WideNoteLocalDatabase.inMemory();
         addTearDown(source.close);
@@ -224,6 +224,25 @@ void main() {
         );
         expect(safeJson, isNot(contains(_backupCredential())));
         expect(
+          () =>
+              LocalBackupService(source).exportJson(mode: LocalBackupMode.full),
+          throwsA(isA<UnsupportedError>()),
+        );
+        final full = LocalBackupService(
+          source,
+        ).exportBackup(mode: LocalBackupMode.full);
+        expect(full.manifest.backupMode, LocalBackupMode.full);
+        expect(full.manifest.includesSecrets, isTrue);
+        expect(full.modelProviderConfigs.single.apiKey, _backupCredential());
+        expect(
+          full.modelProviderConfigs.single.payload.toString(),
+          contains(_backupCredential()),
+        );
+        expect(
+          () => LocalBackupCodec.encode(full),
+          throwsA(isA<UnsupportedError>()),
+        );
+        expect(
           () => LocalBackupService(
             source,
           ).exportJson(mode: LocalBackupMode.encryptedFull),
@@ -257,12 +276,14 @@ void main() {
       expect(markdown, isNot(contains(_backupCredential())));
     });
 
-    test('rejects secret-bearing full backup import in this build', () {
+    test('imports secret-bearing full backups for directory restore', () {
       final source = WideNoteLocalDatabase.inMemory();
       addTearDown(source.close);
       _seedBackupSource(source);
 
-      final full = LocalBackupCodec.decode(_secretBearingBackupJson(source));
+      final full = LocalBackupService(
+        source,
+      ).exportBackup(mode: LocalBackupMode.full);
       final target = WideNoteLocalDatabase.inMemory();
       addTearDown(target.close);
 
@@ -270,12 +291,30 @@ void main() {
         () => LocalBackupCodec.encode(full),
         throwsA(isA<UnsupportedError>()),
       );
-
+      final fullJson = _editBackupJson(
+        LocalBackupService(source).exportJson(),
+        (root) {
+          final manifest = root['manifest']! as Map<String, Object?>;
+          manifest['backup_mode'] = LocalBackupMode.full.wireName;
+          manifest['includes_secrets'] = true;
+          final providers = root['model_provider_configs']! as List<Object?>;
+          (providers.single as Map<String, Object?>)['api_key'] =
+              _backupCredential();
+        },
+      );
       expect(
-        () => LocalBackupService(target).importBackup(full),
+        () => LocalBackupService(target).importJson(fullJson),
         throwsA(isA<UnsupportedError>()),
       );
-      expect(target.modelProviderConfigs.readAll(), isEmpty);
+
+      final report = LocalBackupService(target).importBackup(full);
+
+      expect(report.backupMode, LocalBackupMode.full);
+      expect(report.includesSecrets, isTrue);
+      expect(report.requiresCredentialReentry, isFalse);
+      final provider = target.modelProviderConfigs.readDefault()!;
+      expect(provider.apiKey, _backupCredential());
+      expect(provider.payload.toString(), contains(_backupCredential()));
     });
 
     test(
@@ -773,6 +812,111 @@ void main() {
         throwsA(isA<FormatException>()),
       );
     });
+
+    test(
+      'writes a directory snapshot archive without JSON or Markdown entries',
+      () async {
+        final temp = await Directory.systemTemp.createTemp(
+          'widenote-directory-archive-',
+        );
+        addTearDown(() async {
+          if (await temp.exists()) {
+            await temp.delete(recursive: true);
+          }
+        });
+        final sourcePath = '${temp.path}/source.sqlite';
+        final source = WideNoteLocalDatabase.openPath(sourcePath);
+        final target = WideNoteLocalDatabase.inMemory();
+        addTearDown(source.close);
+        addTearDown(target.close);
+        _seedBackupSource(source);
+
+        final backup = LocalBackupService(
+          source,
+          clock: () => DateTime.utc(2026, 7, 1, 9),
+        ).exportBackup(mode: LocalBackupMode.full);
+        final staging = Directory('${temp.path}/directory-source');
+        await LocalBackupDatabaseSnapshotter.writeFullSnapshot(
+          sourceDatabasePath: sourcePath,
+          outputDatabasePath: '${staging.path}/data/widenote.sqlite',
+        );
+        final mediaFile = File(
+          '${staging.path}/media/capture_media/photos/demo.jpg',
+        );
+        await mediaFile.parent.create(recursive: true);
+        await mediaFile.writeAsBytes(<int>[8, 6, 7, 5, 3, 0, 9]);
+
+        final archivePath = '${temp.path}/directory-backup.widenote';
+        final writeResult = await LocalBackupDirectoryArchiveCodec.writeArchive(
+          sourceDirectory: staging.path,
+          outputPath: archivePath,
+          createdAt: backup.manifest.createdAt,
+          localDbSchemaVersion: backup.manifest.localDbSchemaVersion,
+          recordCounts: backup.manifest.recordCounts,
+        );
+
+        expect(writeResult.path, archivePath);
+        expect(
+          writeResult.manifest.format,
+          LocalBackupDirectoryArchiveCodec.formatId,
+        );
+        expect(writeResult.manifest.backupMode, LocalBackupMode.full);
+        expect(writeResult.manifest.includesSecrets, isTrue);
+        expect(writeResult.manifest.recordCounts, containsPair('captures', 1));
+        expect(
+          writeResult.manifest.entries.map((entry) => entry.path),
+          containsAll(<String>[
+            LocalBackupDirectoryArchiveCodec.databasePath,
+            '${LocalBackupDirectoryArchiveCodec.rootDirectory}/media/'
+                'capture_media/photos/demo.jpg',
+          ]),
+        );
+        expect(
+          writeResult.manifest.entries.map((entry) => entry.path),
+          everyElement(allOf(isNot(endsWith('.json')), isNot(endsWith('.md')))),
+        );
+
+        final manifest = await LocalBackupDirectoryArchiveCodec.readManifest(
+          archivePath,
+        );
+        expect(manifest.recordCounts, containsPair('trace_events', 1));
+
+        final extract =
+            await LocalBackupDirectoryArchiveCodec.extractToDirectory(
+              archivePath: archivePath,
+              stagingDirectory: '${temp.path}/directory-restore',
+            );
+        expect(await File(extract.mediaFiles.single.path).readAsBytes(), <int>[
+          8,
+          6,
+          7,
+          5,
+          3,
+          0,
+          9,
+        ]);
+
+        final snapshot = WideNoteLocalDatabase.openPath(extract.databasePath);
+        addTearDown(snapshot.close);
+        final provider = snapshot.modelProviderConfigs.readDefault()!;
+        expect(provider.hasApiKey, isTrue);
+        expect(provider.apiKey, _backupCredential());
+        expect(provider.payload.toString(), contains(_backupCredential()));
+
+        final report = LocalBackupService(target).importBackup(
+          LocalBackupService(snapshot).exportBackup(mode: LocalBackupMode.full),
+          strategy: LocalBackupImportStrategy.replaceAll,
+        );
+        expect(report.backupMode, LocalBackupMode.full);
+        expect(report.includesSecrets, isTrue);
+        expect(report.requiresCredentialReentry, isFalse);
+        expect(target.captures.readById('capture-backup'), isNotNull);
+        expect(
+          target.modelProviderConfigs.readDefault()!.apiKey,
+          _backupCredential(),
+        );
+      },
+    );
   });
 
   group('LocalBackupCodec', () {
@@ -1324,20 +1468,6 @@ String _backupCredential() {
     101,
     121,
   ]);
-}
-
-String _secretBearingBackupJson(WideNoteLocalDatabase database) {
-  return _editBackupJson(LocalBackupService(database).exportJson(), (root) {
-    final manifest = root['manifest']! as Map<String, Object?>;
-    manifest['backup_mode'] = LocalBackupMode.encryptedFull.wireName;
-    manifest['includes_secrets'] = true;
-    manifest['encryption'] = const <String, Object?>{
-      'status': 'decrypted_test_fixture',
-      'algorithm': 'test-only',
-    };
-    final providers = root['model_provider_configs']! as List<Object?>;
-    (providers.single as Map<String, Object?>)['api_key'] = _backupCredential();
-  });
 }
 
 String _editBackupJson(

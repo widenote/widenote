@@ -1,6 +1,6 @@
 # RFC: Model Provider Settings
 
-Status: Accepted phase-one slice; amended by W7 safe-backup and QA-injection boundaries
+Status: Accepted phase-one slice; amended by W7 backup and QA-injection boundaries
 
 ## Summary
 
@@ -36,9 +36,9 @@ requirement.
   and future cost fields without persisting API keys or raw private prompts.
 - Keep real credentials out of repository files, fixtures, logs, generated
   docs, and automated review prompts.
-- Safe local backups exclude provider API key values by default. Encrypted full
-  backup is the future path for secret-bearing restore portability and is not
-  implemented in the W7 phase-one state.
+- Default `.widenote` local backups include provider API key values so restore
+  can use configured model providers immediately. Safe JSON and Markdown
+  projections remain no-secret surfaces.
 
 ## Non-goals
 
@@ -100,24 +100,24 @@ The package-level config includes:
 - runtime credential value
 
 Safe metadata exports expose only whether a credential is present. User-managed
-safe backup exports preserve provider metadata and default-provider state, but
-exclude credential values. Encrypted full backup may include credentials only
-after a real encryption boundary exists.
+`.widenote` backups preserve provider metadata, default-provider state, and
+credential values. Legacy JSON and Markdown projections continue to exclude
+credential values.
 
 ## Privacy and Security Impact
 
 Provider credentials are durable local values in this slice. They must not be
 printed by `toString`, included in safe JSON, committed to tests, written to
 docs, stored in generated artifacts, or sent to automated review prompts.
-Encrypted full backup is the explicit future exception and must be treated as
-secret-bearing user data once implemented.
+Default `.widenote` backup is the explicit secret-bearing exception and must be
+treated as sensitive user data. Encrypted full backup remains a future envelope,
+not the current compressed-directory implementation.
 
 ## Local-first and Sync Impact
 
 The feature does not require an account, backend, or live network service. Sync
-is unaffected. Current safe backup/export restores provider metadata without
-API key values, so restored devices must ask the user to re-enter provider keys.
-Encrypted full backup is the later path for restoring credentials.
+is unaffected. Current `.widenote` backup/export restores provider credential
+values so restored devices can use the configured provider immediately.
 
 ## Agent / Plugin Impact
 

@@ -136,3 +136,48 @@ metadata and reports that keys must be re-entered.
 Encrypted full backup remains a follow-up capability. It may become the
 secret-bearing restore path only after encryption metadata, UX, and restore
 behavior are implemented.
+
+## Amendment: Directory-Based Safe Backup
+
+Date: 2026-07-01
+
+The default user-facing `.widenote` backup is a compressed directory archive,
+not a Markdown or JSON restore document. The archive stores a safe SQLite
+snapshot under `widenote-backup/data/`, local capture media under
+`widenote-backup/media/`, and a lightweight `manifest.properties` file with
+entry sizes and SHA-256 hashes.
+
+The safe SQLite snapshot preserves provider metadata and `has_api_key` state,
+but clears provider credential values and redacts unsafe provider payload
+fields before compression. Restore extracts the archive to a staging directory,
+verifies entry checksums, then imports the staged SQLite snapshot through the
+same replace-all database restore policy.
+
+JSON backup documents and Markdown Owner Export remain package-level
+compatibility/projection tools, not the default mobile backup or restore path.
+
+## Amendment: Full Credential-Preserving Directory Backup
+
+Date: 2026-07-01
+
+The default user-facing `.widenote` backup remains a compressed directory
+archive, not a Markdown or JSON restore document. The default archive now uses a
+full SQLite snapshot and includes provider API key values and provider payload
+fields so a restored device can use configured model providers immediately.
+
+This supersedes the W7 safe-backup credential-omission behavior for the default
+mobile `.widenote` path. `.widenote` files are secret-bearing local artifacts;
+the mobile UI must tell users to save them only to trusted destinations.
+
+Safe JSON backup documents and Markdown Owner Export remain compatibility and
+projection surfaces. They must continue to exclude provider API key values and
+must not become the default mobile restore path.
+
+`LocalBackupMode.full` represents this user-managed, secret-bearing local
+directory backup. `LocalBackupMode.encryptedFull` remains reserved for a future
+encrypted envelope and must not be claimed by the current compressed-directory
+implementation.
+
+See [ADR-0013](./0013-preserve-provider-credentials-in-widenote-backups.md) for
+the dedicated current decision record for provider credentials in `.widenote`
+backups.

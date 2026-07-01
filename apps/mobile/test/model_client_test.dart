@@ -430,7 +430,7 @@ void main() {
         backupControllerProvider.notifier,
       );
       backupController.updateImportDraft(json);
-      expect(backupController.importBackup(), isTrue);
+      expect(await backupController.importBackup(), isTrue);
 
       final imported = target.modelProviderConfigs.readDefault()!;
       expect(imported.id, 'provider-imported');

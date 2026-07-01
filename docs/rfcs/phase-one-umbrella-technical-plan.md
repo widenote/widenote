@@ -380,9 +380,10 @@ future content-addressing remains possible.
 
 ### Backup
 
-Backup restores app state. The current W7 mobile path implements safe backup by
-default. A future encrypted full backup can extend that path to include
-secret-bearing state after a real encryption boundary exists.
+Backup restores app state. The current mobile path implements a full
+`.widenote` compressed directory backup by default. It includes the SQLite
+object snapshot, local media files, and provider credentials needed for direct
+use after restore.
 
 A full restorable backup design includes:
 
@@ -392,26 +393,27 @@ A full restorable backup design includes:
 - installed pack state and settings
 - permissions and revocation state
 - backup/export job state needed for recovery
-- credentials/secrets required to keep the restored app usable, only when the
-  user chooses a future encrypted full backup
+- credentials/secrets required to keep the restored app usable
 
 Accepted backup design modes:
 
 ```text
-Safe backup
-  -> no provider secrets
-  -> portable enough to restore data and settings
-  -> implemented in W7 and the default path
+Full .widenote backup
+  -> compressed directory archive with SQLite snapshot and local media
+  -> includes provider secrets needed for direct-use restore
+  -> implemented as the default mobile path
 
-Encrypted full backup
-  -> includes provider secrets and credentials
-  -> requires encryption before export
-  -> deferred after W7; do not describe as implemented
+Safe JSON / Markdown projection
+  -> excludes provider secrets
+  -> compatibility/export surface, not the default mobile restore path
+
+Encrypted full backup envelope
+  -> future encrypted wrapper around secret-bearing backup data
+  -> deferred; do not describe as implemented
 ```
 
-Unencrypted full backup with secrets is not a phase-one path. Current Backup UX
-makes the safe/full distinction explicit in copy, but exposes only safe backup
-and Owner Export actions until encryption metadata and restore behavior exist.
+Current Backup UX must make the full backup's secret-bearing nature explicit
+and let users choose the destination through platform save/share surfaces.
 
 ### Owner Export
 
@@ -700,12 +702,13 @@ Coordination rules:
 
 Accepted before implementation:
 
-- Backup UX uses two modes: safe backup without secrets as the implemented
-  default, and encrypted full backup as a visible but deferred path.
+- Backup UX uses a full `.widenote` directory backup with provider credentials
+  as the implemented default, while legacy safe projections remain no-secret
+  compatibility surfaces.
 - Soft-delete uses a fixed 30-day recoverable window in phase one.
-- Provider secrets remain local user data, but W7 safe backup does not export
-  provider credential values. A future secure-storage or encrypted-full-backup
-  adapter may add full user-managed credential restore semantics.
+- Provider secrets remain local user data. Default `.widenote` backup exports
+  provider credential values for user-managed restore; a future encrypted
+  envelope may add stronger protection around the same full restore semantics.
 - Companion behavior is deferred from the implementation-critical path.
 
 ### 1. Public Contracts

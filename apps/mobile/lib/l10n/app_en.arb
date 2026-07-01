@@ -679,8 +679,8 @@
   "settingsPrivacyPermissionsBody": "Built-in packs use narrow permissions; high-risk file, network, and script capabilities stay deferred until explicit approval exists.",
   "settingsPrivacyPermissionsStatus": "reviewable",
   "settingsPrivacyBackupTitle": "Backup secrets boundary",
-  "settingsPrivacyBackupBody": "Safe export omits provider API keys. Encrypted full backup is the future secret-bearing restore path and has no action in this build.",
-  "settingsPrivacyBackupStatus": "safe export",
+  "settingsPrivacyBackupBody": "Full .widenote backups include provider API keys so restore can use model providers immediately. Keep backup files in a trusted location.",
+  "settingsPrivacyBackupStatus": "full backup",
   "settingsControlsTitle": "Controls",
   "settingsPermissionsTitle": "Privacy & Permissions",
   "settingsPermissionsSubtitle": "Review available pack permissions and deferred high-risk capabilities.",
@@ -707,7 +707,7 @@
   "settingsBackupTitle": "Backup & Restore",
   "settingsBackupSubtitle": "Export or import local records, Memory, cards, providers, todos, and logs.",
   "settingsBackupStatus": "local",
-  "settingsBackupStatusSafeOnly": "safe only",
+  "settingsBackupStatusSafeOnly": "full local",
   "settingsBackupStatusExportReady": "export ready",
   "settingsBackupStatusRestored": "restored",
   "settingsBackupStatusNeedsReview": "review needed",
@@ -1509,12 +1509,12 @@
   "backupUnexpectedError": "Unexpected backup error.",
   "backupExportSectionTitle": "Export and restore boundary",
   "backupExportButton": "Create .widenote backup",
-  "backupExportEmpty": "Export creates one compressed .widenote archive. You can open it with another app or save it to a location you choose.",
-  "backupSecretWarning": "Safe export omits provider API keys. Re-enter provider keys after restore.",
-  "backupSafeRestoreBoundary": "The .widenote archive restores records, Memory, todos, provider metadata, pack installs, permissions, runtime state, and traces. Provider keys are omitted.",
-  "backupOwnerExportBoundary": "Owner Export Markdown is for reading and moving your data. It excludes secrets and is not a restore source.",
-  "backupFullSecretBoundary": "Encrypted full backup will be the secret-bearing path for restoring API keys. It has no action in this build.",
-  "backupSafeOmittedProviderKeys": "Provider keys omitted from safe export: {count}",
+  "backupExportEmpty": "Export creates one compressed directory .widenote archive. You can open it with another app or save it to a location you choose.",
+  "backupSecretWarning": "Full backups include provider API keys. Keep .widenote files somewhere you trust.",
+  "backupSafeRestoreBoundary": "The .widenote archive restores a SQLite snapshot, capture media files, and provider API keys.",
+  "backupOwnerExportBoundary": "Backups are compressed directories, not JSON or Markdown restore documents.",
+  "backupFullSecretBoundary": "Full .widenote backups include provider API keys so restore can use configured providers immediately.",
+  "backupSafeOmittedProviderKeys": "Provider keys requiring re-entry: {count}",
   "@backupSafeOmittedProviderKeys": {
     "placeholders": {
       "count": {
@@ -1522,7 +1522,7 @@
       }
     }
   },
-  "backupManifestCountsTitle": "Manifest counts",
+  "backupManifestCountsTitle": "Backup counts",
   "backupCount": "{section}: {count}",
   "@backupCount": {
     "placeholders": {
@@ -1534,16 +1534,16 @@
       }
     }
   },
-  "backupCopyMarkdownButton": "Copy Markdown",
+  "backupCopyMarkdownButton": "Copy export",
   "backupOpenShareFileButton": "Open or share .widenote",
   "backupSaveFilesButton": "Save to selected location",
   "backupSavedArchivePath": "WideNote backup",
   "backupExportDestination": "Destination",
   "backupCopiedStatus": "Export copied.",
-  "backupExportMarkdownTitle": "Owner Export Markdown",
+  "backupExportMarkdownTitle": "Readable export",
   "backupImportSectionTitle": "Import",
-  "backupImportHint": "Paste legacy WideNote backup JSON...",
-  "backupImportButton": "Import and replace",
+  "backupImportHint": "Choose a .widenote file. WideNote will inspect it before replacing local data.",
+  "backupImportButton": "Replace with selected backup",
   "backupImportFileButton": "Choose .widenote file",
   "backupImportReadyInline": "Backup is loaded and ready to replace local data.",
   "backupImportSourcePath": "Import source",
@@ -1559,6 +1559,6 @@
       }
     }
   },
-  "backupImportSecretsRestored": "Secret-bearing backup restored provider credentials.",
+  "backupImportSecretsRestored": "Provider credentials restored and ready to use.",
   "backupImportNoProviderKeysNeeded": "No provider keys need re-entry for this backup."
 }

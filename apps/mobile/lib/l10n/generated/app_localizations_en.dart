@@ -1420,10 +1420,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsPrivacyBackupBody =>
-      'Safe export omits provider API keys. Encrypted full backup is the future secret-bearing restore path and has no action in this build.';
+      'Full .widenote backups include provider API keys so restore can use model providers immediately. Keep backup files in a trusted location.';
 
   @override
-  String get settingsPrivacyBackupStatus => 'safe export';
+  String get settingsPrivacyBackupStatus => 'full backup';
 
   @override
   String get settingsControlsTitle => 'Controls';
@@ -1483,7 +1483,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsBackupStatus => 'local';
 
   @override
-  String get settingsBackupStatusSafeOnly => 'safe only';
+  String get settingsBackupStatusSafeOnly => 'full local';
 
   @override
   String get settingsBackupStatusExportReady => 'export ready';
@@ -2662,31 +2662,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backupExportEmpty =>
-      'Export creates one compressed .widenote archive. You can open it with another app or save it to a location you choose.';
+      'Export creates one compressed directory .widenote archive. You can open it with another app or save it to a location you choose.';
 
   @override
   String get backupSecretWarning =>
-      'Safe export omits provider API keys. Re-enter provider keys after restore.';
+      'Full backups include provider API keys. Keep .widenote files somewhere you trust.';
 
   @override
   String get backupSafeRestoreBoundary =>
-      'The .widenote archive restores records, Memory, todos, provider metadata, pack installs, permissions, runtime state, and traces. Provider keys are omitted.';
+      'The .widenote archive restores a SQLite snapshot, capture media files, and provider API keys.';
 
   @override
   String get backupOwnerExportBoundary =>
-      'Owner Export Markdown is for reading and moving your data. It excludes secrets and is not a restore source.';
+      'Backups are compressed directories, not JSON or Markdown restore documents.';
 
   @override
   String get backupFullSecretBoundary =>
-      'Encrypted full backup will be the secret-bearing path for restoring API keys. It has no action in this build.';
+      'Full .widenote backups include provider API keys so restore can use configured providers immediately.';
 
   @override
   String backupSafeOmittedProviderKeys(int count) {
-    return 'Provider keys omitted from safe export: $count';
+    return 'Provider keys requiring re-entry: $count';
   }
 
   @override
-  String get backupManifestCountsTitle => 'Manifest counts';
+  String get backupManifestCountsTitle => 'Backup counts';
 
   @override
   String backupCount(String section, int count) {
@@ -2694,7 +2694,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get backupCopyMarkdownButton => 'Copy Markdown';
+  String get backupCopyMarkdownButton => 'Copy export';
 
   @override
   String get backupOpenShareFileButton => 'Open or share .widenote';
@@ -2712,16 +2712,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backupCopiedStatus => 'Export copied.';
 
   @override
-  String get backupExportMarkdownTitle => 'Owner Export Markdown';
+  String get backupExportMarkdownTitle => 'Readable export';
 
   @override
   String get backupImportSectionTitle => 'Import';
 
   @override
-  String get backupImportHint => 'Paste legacy WideNote backup JSON...';
+  String get backupImportHint =>
+      'Choose a .widenote file. WideNote will inspect it before replacing local data.';
 
   @override
-  String get backupImportButton => 'Import and replace';
+  String get backupImportButton => 'Replace with selected backup';
 
   @override
   String get backupImportFileButton => 'Choose .widenote file';
@@ -2761,7 +2762,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backupImportSecretsRestored =>
-      'Secret-bearing backup restored provider credentials.';
+      'Provider credentials restored and ready to use.';
 
   @override
   String get backupImportNoProviderKeysNeeded =>

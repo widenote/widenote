@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/services.dart';
 import 'package:widenote_local_db/widenote_local_db.dart';
 
 import '../../../l10n/l10n.dart';
@@ -102,7 +101,7 @@ class _ExportSurface extends ConsumerWidget {
           const SizedBox(height: 8),
           _BoundaryLine(
             lineKey: const Key('backup-owner-export-boundary'),
-            icon: Icons.description_outlined,
+            icon: Icons.folder_zip_outlined,
             text: l10n.backupOwnerExportBoundary,
           ),
           const SizedBox(height: 8),
@@ -110,6 +109,12 @@ class _ExportSurface extends ConsumerWidget {
             lineKey: const Key('backup-full-secret-boundary'),
             icon: Icons.lock_outline,
             text: l10n.backupFullSecretBoundary,
+          ),
+          const SizedBox(height: 8),
+          _BoundaryLine(
+            lineKey: const Key('backup-secret-warning'),
+            icon: Icons.security_outlined,
+            text: l10n.backupSecretWarning,
           ),
           const SizedBox(height: 12),
           if (state.exportedJson == null)
@@ -148,11 +153,6 @@ class _ExportSurface extends ConsumerWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                _CopyButton(
-                  buttonKey: const Key('backup-copy-markdown-button'),
-                  text: state.exportedMarkdown!,
-                  label: l10n.backupCopyMarkdownButton,
-                ),
                 OutlinedButton.icon(
                   key: const Key('backup-open-share-file-button'),
                   onPressed: () => ref
@@ -185,20 +185,6 @@ class _ExportSurface extends ConsumerWidget {
                 ),
               ],
             ],
-            if (state.exportedMarkdown != null) ...[
-              const SizedBox(height: 12),
-              Text(
-                l10n.backupExportMarkdownTitle,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 8),
-              _TextPreview(
-                key: const Key('backup-export-markdown'),
-                text: state.exportedMarkdown!,
-              ),
-            ],
           ],
         ],
       ),
@@ -220,31 +206,8 @@ class _ImportSurface extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TextField(
-            key: const Key('backup-import-field'),
-            minLines: 4,
-            maxLines: 4,
-            keyboardType: TextInputType.multiline,
-            autocorrect: false,
-            enableSuggestions: true,
-            enableIMEPersonalizedLearning: false,
-            smartDashesType: SmartDashesType.disabled,
-            smartQuotesType: SmartQuotesType.disabled,
-            onChanged: ref
-                .read(backupControllerProvider.notifier)
-                .updateImportDraft,
-            decoration: InputDecoration(hintText: l10n.backupImportHint),
-          ),
+          Text(l10n.backupImportHint),
           const SizedBox(height: 12),
-          FilledButton.icon(
-            key: const Key('backup-import-button'),
-            onPressed: state.canImport
-                ? () => _confirmReplaceAllImport(context, ref)
-                : null,
-            icon: const Icon(Icons.download_done_outlined),
-            label: Text(l10n.backupImportButton),
-          ),
-          const SizedBox(height: 8),
           OutlinedButton.icon(
             key: const Key('backup-import-file-button'),
             onPressed: () => ref
@@ -252,6 +215,15 @@ class _ImportSurface extends ConsumerWidget {
                 .pickArchiveForImport(),
             icon: const Icon(Icons.folder_open_outlined),
             label: Text(l10n.backupImportFileButton),
+          ),
+          const SizedBox(height: 8),
+          FilledButton.icon(
+            key: const Key('backup-import-button'),
+            onPressed: state.canImport
+                ? () => _confirmReplaceAllImport(context, ref)
+                : null,
+            icon: const Icon(Icons.download_done_outlined),
+            label: Text(l10n.backupImportButton),
           ),
           if (state.outcome == BackupOutcome.importReady ||
               state.outcome == BackupOutcome.imported ||
@@ -291,7 +263,7 @@ class _ImportSurface extends ConsumerWidget {
       },
     );
     if (confirmed == true) {
-      ref.read(backupControllerProvider.notifier).importBackup();
+      unawaited(ref.read(backupControllerProvider.notifier).importBackup());
     }
   }
 }
@@ -419,64 +391,6 @@ class _BoundaryLine extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _CopyButton extends StatelessWidget {
-  const _CopyButton({
-    required this.buttonKey,
-    required this.text,
-    required this.label,
-  });
-
-  final Key buttonKey;
-  final String text;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return OutlinedButton.icon(
-      key: buttonKey,
-      onPressed: () {
-        unawaited(Clipboard.setData(ClipboardData(text: text)));
-        if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(l10n.backupCopiedStatus)));
-        }
-      },
-      icon: const Icon(Icons.copy),
-      label: Text(label),
-    );
-  }
-}
-
-class _TextPreview extends StatelessWidget {
-  const _TextPreview({required this.text, super.key});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(maxHeight: 220),
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFD8DDE6)),
-      ),
-      child: SingleChildScrollView(
-        child: SelectableText(
-          text,
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
-        ),
-      ),
     );
   }
 }

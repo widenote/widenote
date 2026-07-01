@@ -103,10 +103,10 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('1 provider'), findsOneWidget);
-    expect(find.text('safe only'), findsOneWidget);
+    expect(find.text('full local'), findsOneWidget);
     expect(find.text('2 events / 1 warnings'), findsOneWidget);
     expect(
-      find.textContaining('future secret-bearing restore path'),
+      find.textContaining('Full .widenote backups include provider API keys'),
       findsOneWidget,
     );
   });
@@ -155,8 +155,8 @@ void main() {
     expect(find.text('Revocable permissions'), findsOneWidget);
     expect(find.text('Backup secrets boundary'), findsOneWidget);
     expect(find.text('no account'), findsOneWidget);
-    expect(find.text('safe export'), findsOneWidget);
-    expect(find.text('safe only'), findsOneWidget);
+    expect(find.text('full backup'), findsOneWidget);
+    expect(find.text('full local'), findsOneWidget);
     expect(find.byKey(const Key('settings-display-entry')), findsNothing);
   });
 
@@ -172,8 +172,8 @@ void main() {
     expect(find.text('权限可撤销'), findsOneWidget);
     expect(find.text('备份密钥边界'), findsOneWidget);
     expect(find.text('无需账号'), findsOneWidget);
-    expect(find.text('安全导出'), findsOneWidget);
-    expect(find.text('仅安全备份'), findsOneWidget);
+    expect(find.text('完整备份'), findsOneWidget);
+    expect(find.text('本地完整'), findsOneWidget);
     expect(find.byKey(const Key('settings-display-entry')), findsNothing);
   });
 }
