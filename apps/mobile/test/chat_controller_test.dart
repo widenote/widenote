@@ -60,11 +60,100 @@ void main() {
     final messages = await reloaded.listMessages('session-1');
 
     expect(sessions.single.title, 'Launch review');
+    expect(sessions.single.messageCount, 2);
     expect(messages.map((message) => message.body), <String>[
       'What did Lin ask?',
       'Lin asked about source links.',
     ]);
     expect(messages.last.sourceRefs.single.sourceLabel, 'event: capture-1');
+
+    await reloaded.saveSession(
+      sessions.single.copyWith(title: 'Renamed launch review'),
+    );
+    expect(
+      (await reloaded.listSessions()).single.title,
+      'Renamed launch review',
+    );
+
+    await reloaded.deleteSession('session-1');
+    expect(await reloaded.listSessions(), isEmpty);
+    expect(await reloaded.listMessages('session-1'), isEmpty);
+    expect(database.chatMessages.readBySession('session-1'), isEmpty);
+  });
+
+  test('controller creates, renames, switches, and deletes sessions', () async {
+    final repository = InMemoryChatRepository();
+    final container = ProviderContainer(
+      overrides: <Override>[
+        chatRepositoryProvider.overrideWithValue(repository),
+        chatContextSourceProvider.overrideWithValue(
+          const _StaticContextSource(<ChatSource>[]),
+        ),
+        chatAssistantProvider.overrideWithValue(
+          _ScriptedAssistant(
+            responses: const <ChatAssistantReply>[
+              ChatAssistantReply(body: 'First answer.'),
+              ChatAssistantReply(body: 'Second answer.'),
+            ],
+          ),
+        ),
+        chatClockProvider.overrideWithValue(
+          _FixedClock(DateTime.utc(2026, 7, 1, 9)).call,
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await container.read(chatControllerProvider.future);
+    await container.read(chatControllerProvider.notifier).startNewSession();
+
+    var state = container.read(chatControllerProvider).requireValue;
+    expect(state.sessions.single.title, chatDefaultSessionTitle);
+    expect(state.messages, isEmpty);
+
+    await container
+        .read(chatControllerProvider.notifier)
+        .sendMessage('First planning thread');
+    state = container.read(chatControllerProvider).requireValue;
+    final firstId = state.activeSessionId!;
+    expect(state.activeSession!.title, 'First planning thread');
+    expect(state.activeSession!.messageCount, 2);
+
+    await container.read(chatControllerProvider.notifier).startNewSession();
+    state = container.read(chatControllerProvider).requireValue;
+    final secondId = state.activeSessionId!;
+    expect(secondId, isNot(firstId));
+    expect(state.messages, isEmpty);
+
+    await container
+        .read(chatControllerProvider.notifier)
+        .sendMessage('Second topic');
+    await container
+        .read(chatControllerProvider.notifier)
+        .renameSession(firstId, 'Renamed first thread');
+    state = container.read(chatControllerProvider).requireValue;
+    expect(
+      state.sessions.firstWhere((session) => session.id == firstId).title,
+      'Renamed first thread',
+    );
+
+    await container
+        .read(chatControllerProvider.notifier)
+        .selectSession(firstId);
+    state = container.read(chatControllerProvider).requireValue;
+    expect(state.messages.first.body, 'First planning thread');
+
+    await container
+        .read(chatControllerProvider.notifier)
+        .deleteSession(firstId);
+    state = container.read(chatControllerProvider).requireValue;
+    expect(
+      state.sessions.map((session) => session.id),
+      isNot(contains(firstId)),
+    );
+    expect(state.activeSessionId, secondId);
+    expect(state.messages.first.body, 'Second topic');
+    expect(await repository.listMessages(firstId), isEmpty);
   });
 
   test('context selector preserves packet order without query scoring', () {
@@ -1077,6 +1166,23 @@ final class _SourceEchoAssistant implements ChatAssistant {
         .map((source) => '${source.kind}/${source.id}')
         .join(', ');
     return ChatAssistantReply(body: 'Fake model sources: $sources');
+  }
+}
+
+final class _ScriptedAssistant implements ChatAssistant {
+  _ScriptedAssistant({required List<ChatAssistantReply> responses})
+    : _responses = List<ChatAssistantReply>.of(responses);
+
+  final List<ChatAssistantReply> _responses;
+  int _index = 0;
+
+  @override
+  Future<ChatAssistantReply> answer(ChatAssistantPrompt prompt) async {
+    final response = _index < _responses.length
+        ? _responses[_index]
+        : _responses.last;
+    _index += 1;
+    return response;
   }
 }
 

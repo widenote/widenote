@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+const chatDefaultSessionTitle = 'New chat';
+
 enum ChatRole { user, assistant }
 
 enum ChatMessageStatus { sent, failed }
@@ -11,19 +13,26 @@ final class ChatSession {
     required this.title,
     required this.createdAt,
     required this.updatedAt,
+    this.messageCount = 0,
   });
 
   final String id;
   final String title;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final int messageCount;
 
-  ChatSession copyWith({String? title, DateTime? updatedAt}) {
+  ChatSession copyWith({
+    String? title,
+    DateTime? updatedAt,
+    int? messageCount,
+  }) {
     return ChatSession(
       id: id,
       title: title ?? this.title,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      messageCount: messageCount ?? this.messageCount,
     );
   }
 }

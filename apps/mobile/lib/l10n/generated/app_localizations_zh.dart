@@ -905,6 +905,60 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatHistoryTitle => '历史会话';
 
   @override
+  String get chatNewSessionButton => '新对话';
+
+  @override
+  String get chatNewSessionTooltip => '开始一个新对话';
+
+  @override
+  String get chatConversationListTitle => '对话列表';
+
+  @override
+  String get chatActiveSessionLabel => '当前对话';
+
+  @override
+  String get chatDefaultSessionTitle => '新对话';
+
+  @override
+  String chatSessionMessageCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 条消息',
+      one: '1 条消息',
+      zero: '空对话',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chatSessionActionsTooltip => '对话操作';
+
+  @override
+  String get chatRenameSessionAction => '重命名';
+
+  @override
+  String get chatDeleteSessionAction => '删除';
+
+  @override
+  String get chatRenameSessionTitle => '重命名对话';
+
+  @override
+  String get chatRenameSessionHint => '对话标题';
+
+  @override
+  String get chatDeleteSessionTitle => '删除对话？';
+
+  @override
+  String get chatDeleteSessionBody => '这会从本设备移除这个本地对话和其中的消息。';
+
+  @override
+  String get chatDeleteSessionConfirm => '删除';
+
+  @override
+  String get chatSessionDeletedSnackbar => '对话已删除。';
+
+  @override
   String get chatEmptySessions => '还没有本地会话。';
 
   @override

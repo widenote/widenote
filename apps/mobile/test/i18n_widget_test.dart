@@ -21,7 +21,7 @@ void main() {
     expect(find.text('Background voice'), findsOneWidget);
 
     await _openTab(tester, const Key('tab-chat'));
-    expect(find.text('History'), findsOneWidget);
+    expect(find.text('Conversations'), findsOneWidget);
     expect(find.text('No local sessions yet.'), findsOneWidget);
 
     await _openTab(tester, const Key('tab-todos'));
@@ -48,7 +48,7 @@ void main() {
     expect(find.text('后台录音'), findsOneWidget);
 
     await _openTab(tester, const Key('tab-chat'));
-    expect(find.text('历史会话'), findsOneWidget);
+    expect(find.text('对话列表'), findsOneWidget);
     expect(find.text('还没有本地会话。'), findsOneWidget);
 
     await _openTab(tester, const Key('tab-todos'));

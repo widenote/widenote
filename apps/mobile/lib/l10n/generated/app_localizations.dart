@@ -1766,6 +1766,96 @@ abstract class AppLocalizations {
   /// **'History'**
   String get chatHistoryTitle;
 
+  /// No description provided for @chatNewSessionButton.
+  ///
+  /// In en, this message translates to:
+  /// **'New chat'**
+  String get chatNewSessionButton;
+
+  /// No description provided for @chatNewSessionTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a new chat'**
+  String get chatNewSessionTooltip;
+
+  /// No description provided for @chatConversationListTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations'**
+  String get chatConversationListTitle;
+
+  /// No description provided for @chatActiveSessionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Current chat'**
+  String get chatActiveSessionLabel;
+
+  /// No description provided for @chatDefaultSessionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New chat'**
+  String get chatDefaultSessionTitle;
+
+  /// No description provided for @chatSessionMessageCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Empty} =1{1 message} other{{count} messages}}'**
+  String chatSessionMessageCount(int count);
+
+  /// No description provided for @chatSessionActionsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat actions'**
+  String get chatSessionActionsTooltip;
+
+  /// No description provided for @chatRenameSessionAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get chatRenameSessionAction;
+
+  /// No description provided for @chatDeleteSessionAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get chatDeleteSessionAction;
+
+  /// No description provided for @chatRenameSessionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename chat'**
+  String get chatRenameSessionTitle;
+
+  /// No description provided for @chatRenameSessionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat title'**
+  String get chatRenameSessionHint;
+
+  /// No description provided for @chatDeleteSessionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete chat?'**
+  String get chatDeleteSessionTitle;
+
+  /// No description provided for @chatDeleteSessionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes the local chat and its messages from this device.'**
+  String get chatDeleteSessionBody;
+
+  /// No description provided for @chatDeleteSessionConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get chatDeleteSessionConfirm;
+
+  /// No description provided for @chatSessionDeletedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat deleted.'**
+  String get chatSessionDeletedSnackbar;
+
   /// No description provided for @chatEmptySessions.
   ///
   /// In en, this message translates to:

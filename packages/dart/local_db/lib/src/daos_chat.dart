@@ -48,6 +48,12 @@ final class ChatSessionsDao {
     return rows.map(_chatSessionFromRow).toList(growable: false);
   }
 
+  void deleteById(String id) {
+    _execute(_database, 'DELETE FROM chat_sessions WHERE id = ?;', <Object?>[
+      id,
+    ]);
+  }
+
   void _write(ChatSessionRecord session, {required bool allowUpdate}) {
     _execute(
       _database,
@@ -110,6 +116,14 @@ ORDER BY created_at ASC;
       <Object?>[sessionId],
     );
     return rows.map(_chatMessageFromRow).toList(growable: false);
+  }
+
+  void deleteBySession(String sessionId) {
+    _execute(
+      _database,
+      'DELETE FROM chat_messages WHERE session_id = ?;',
+      <Object?>[sessionId],
+    );
   }
 
   List<ChatMessageRecord> readAll({String? status, int? limit, int? offset}) {

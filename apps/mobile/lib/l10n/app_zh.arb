@@ -278,6 +278,28 @@
   "chatLoadErrorTitle": "对话加载失败",
   "chatLoadErrorBody": "本地对话暂时无法打开，请稍后重试。",
   "chatHistoryTitle": "历史会话",
+  "chatNewSessionButton": "新对话",
+  "chatNewSessionTooltip": "开始一个新对话",
+  "chatConversationListTitle": "对话列表",
+  "chatActiveSessionLabel": "当前对话",
+  "chatDefaultSessionTitle": "新对话",
+  "chatSessionMessageCount": "{count, plural, =0{空对话} =1{1 条消息} other{{count} 条消息}}",
+  "@chatSessionMessageCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chatSessionActionsTooltip": "对话操作",
+  "chatRenameSessionAction": "重命名",
+  "chatDeleteSessionAction": "删除",
+  "chatRenameSessionTitle": "重命名对话",
+  "chatRenameSessionHint": "对话标题",
+  "chatDeleteSessionTitle": "删除对话？",
+  "chatDeleteSessionBody": "这会从本设备移除这个本地对话和其中的消息。",
+  "chatDeleteSessionConfirm": "删除",
+  "chatSessionDeletedSnackbar": "对话已删除。",
   "chatEmptySessions": "还没有本地会话。",
   "chatSessionSwitchDisabled": "当前回答完成后才能切换会话。",
   "chatLocalConversationTitle": "本地对话",

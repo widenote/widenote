@@ -113,6 +113,96 @@ final class ChatController extends AsyncNotifier<ChatState> {
     );
   }
 
+  Future<void> startNewSession() async {
+    final current = await _currentState();
+    if (current.isSending) {
+      return;
+    }
+    if (current.activeSession != null && current.messages.isEmpty) {
+      state = AsyncData(
+        current.copyWith(clearError: true, clearFailedMessage: true),
+      );
+      return;
+    }
+
+    final session = _newSession();
+    await ref.read(chatRepositoryProvider).saveSession(session);
+    state = AsyncData(
+      current.copyWith(
+        sessions: _upsertSession(current.sessions, session),
+        activeSessionId: session.id,
+        messages: const <ChatMessage>[],
+        clearError: true,
+        clearFailedMessage: true,
+      ),
+    );
+  }
+
+  Future<void> renameSession(String sessionId, String value) async {
+    final title = previewText(value.trim(), maxLength: 48);
+    if (title.isEmpty) {
+      return;
+    }
+    final current = await _currentState();
+    if (current.isSending) {
+      return;
+    }
+    final session = _sessionById(current.sessions, sessionId);
+    if (session == null || session.title == title) {
+      return;
+    }
+
+    final updated = session.copyWith(title: title);
+    await ref.read(chatRepositoryProvider).saveSession(updated);
+    state = AsyncData(
+      current.copyWith(
+        sessions: _replaceSession(current.sessions, updated),
+        clearError: true,
+      ),
+    );
+  }
+
+  Future<void> deleteSession(String sessionId) async {
+    final current = await _currentState();
+    if (current.isSending) {
+      return;
+    }
+    final remaining = [
+      for (final session in current.sessions)
+        if (session.id != sessionId) session,
+    ];
+    if (remaining.length == current.sessions.length) {
+      return;
+    }
+
+    await ref.read(chatRepositoryProvider).deleteSession(sessionId);
+    if (current.activeSessionId != sessionId) {
+      state = AsyncData(
+        current.copyWith(
+          sessions: remaining,
+          clearError: true,
+          clearFailedMessage: true,
+        ),
+      );
+      return;
+    }
+
+    final nextActive = remaining.isEmpty ? null : remaining.first;
+    final nextMessages = nextActive == null
+        ? const <ChatMessage>[]
+        : await ref.read(chatRepositoryProvider).listMessages(nextActive.id);
+    state = AsyncData(
+      ChatState(
+        sessions: remaining,
+        activeSessionId: nextActive?.id,
+        messages: nextMessages,
+        isSending: false,
+        errorMessage: null,
+        failedMessageId: null,
+      ),
+    );
+  }
+
   Future<void> sendMessage(String value) async {
     final text = value.trim();
     if (text.isEmpty) {
@@ -123,12 +213,13 @@ final class ChatController extends AsyncNotifier<ChatState> {
       return;
     }
 
-    final session = current.activeSession ?? _newSession(text);
+    var session = current.activeSession ?? _newSession(text);
     final userMessage = _newMessage(
       sessionId: session.id,
       role: ChatRole.user,
       body: text,
     );
+    session = _sessionForUserMessage(current, session, userMessage, text);
     await _persistTurnStart(current, session, userMessage);
     await _answerFor(userMessage);
   }
@@ -159,13 +250,17 @@ final class ChatController extends AsyncNotifier<ChatState> {
     ChatMessage userMessage,
   ) async {
     final repository = ref.read(chatRepositoryProvider);
-    await repository.saveSession(session);
+    final updatedSession = session.copyWith(
+      updatedAt: userMessage.createdAt,
+      messageCount: current.messages.length + 1,
+    );
+    await repository.saveSession(updatedSession);
     await repository.saveMessage(userMessage);
 
     state = AsyncData(
       current.copyWith(
-        sessions: _upsertSession(current.sessions, session),
-        activeSessionId: session.id,
+        sessions: _upsertSession(current.sessions, updatedSession),
+        activeSessionId: updatedSession.id,
         messages: [...current.messages, userMessage],
         isSending: true,
         clearError: true,
@@ -222,6 +317,7 @@ final class ChatController extends AsyncNotifier<ChatState> {
     final current = await _currentState();
     final updatedSession = current.activeSession?.copyWith(
       updatedAt: assistantMessage.createdAt,
+      messageCount: current.messages.length + 1,
     );
     if (updatedSession != null) {
       await repository.saveSession(updatedSession);
@@ -294,15 +390,35 @@ final class ChatController extends AsyncNotifier<ChatState> {
     }
   }
 
-  ChatSession _newSession(String firstMessage) {
+  ChatSession _newSession([String? firstMessage]) {
     final now = ref.read(chatClockProvider)();
     final id = ref.read(chatIdGeneratorProvider).nextId('chat-session');
     return ChatSession(
       id: id,
-      title: previewText(firstMessage, maxLength: 28),
+      title: firstMessage == null
+          ? chatDefaultSessionTitle
+          : previewText(firstMessage, maxLength: 28),
       createdAt: now,
       updatedAt: now,
     );
+  }
+
+  ChatSession _sessionForUserMessage(
+    ChatState current,
+    ChatSession session,
+    ChatMessage userMessage,
+    String text,
+  ) {
+    if (current.activeSession == null) {
+      return session;
+    }
+    if (current.messages.isEmpty && _isDefaultSessionTitle(session.title)) {
+      return session.copyWith(
+        title: previewText(text, maxLength: 28),
+        updatedAt: userMessage.createdAt,
+      );
+    }
+    return session;
   }
 
   ChatMessage _newMessage({
@@ -359,6 +475,16 @@ List<ChatSession> _upsertSession(
   return next;
 }
 
+List<ChatSession> _replaceSession(
+  List<ChatSession> sessions,
+  ChatSession replacement,
+) {
+  return [
+    for (final session in sessions)
+      if (session.id == replacement.id) replacement else session,
+  ];
+}
+
 List<ChatMessage> _replaceMessage(
   List<ChatMessage> messages,
   ChatMessage replacement,
@@ -367,4 +493,17 @@ List<ChatMessage> _replaceMessage(
     for (final message in messages)
       if (message.id == replacement.id) replacement else message,
   ];
+}
+
+ChatSession? _sessionById(List<ChatSession> sessions, String sessionId) {
+  for (final session in sessions) {
+    if (session.id == sessionId) {
+      return session;
+    }
+  }
+  return null;
+}
+
+bool _isDefaultSessionTitle(String title) {
+  return title == chatDefaultSessionTitle;
 }

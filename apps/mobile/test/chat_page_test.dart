@@ -36,7 +36,7 @@ void main() {
     await _openTab(tester, const Key('tab-chat'));
 
     expect(find.byKey(const Key('chat-page')), findsOneWidget);
-    expect(find.text('历史会话'), findsOneWidget);
+    expect(find.text('对话列表'), findsOneWidget);
     expect(find.text('还没有本地会话。'), findsOneWidget);
     expect(find.text('先问一个关于记录、记忆或待办的问题。'), findsOneWidget);
   });
@@ -48,6 +48,10 @@ void main() {
     await _openTab(tester, const Key('tab-chat'));
 
     await _sendChat(tester, 'What records do you have?');
+    await _ensureChatVisible(
+      tester,
+      find.textContaining('Model access is not configured'),
+    );
 
     expect(find.text('What records do you have?'), findsWidgets);
     expect(
@@ -122,6 +126,7 @@ void main() {
     await _submitQuickCapture(tester, captureText);
     await _openTab(tester, const Key('tab-chat'));
     await _sendChat(tester, 'Lin 的待办是什么？');
+    await _ensureChatVisible(tester, find.text('Sources'));
 
     expect(find.text('Sources'), findsOneWidget);
     final state = _readChatState(tester);
@@ -189,6 +194,10 @@ void main() {
     await _openTab(tester, const Key('tab-chat'));
 
     await _sendChat(tester, 'What did Lin say about launch?');
+    await _ensureChatVisible(
+      tester,
+      find.text('Lin asked for launch citations (memory/memory-ui).'),
+    );
 
     expect(
       find.text('Lin asked for launch citations (memory/memory-ui).'),
@@ -233,6 +242,7 @@ void main() {
     expect(find.byKey(const Key('chat-send-button')), findsOneWidget);
 
     await _sendChat(tester, 'Can I ask a second question?');
+    await _ensureChatVisible(tester, find.text('Second answer'));
 
     expect(find.text('Second answer'), findsOneWidget);
   });
@@ -262,6 +272,100 @@ void main() {
     expect(after.messages.length, before.messages.length);
   });
 
+  testWidgets('chat page creates, switches, renames, and deletes sessions', (
+    tester,
+  ) async {
+    await _pumpApp(
+      tester,
+      overrides: <Override>[
+        chatAssistantProvider.overrideWithValue(
+          _ScriptedAssistant(
+            responses: const <String>['First answer.', 'Second answer.'],
+          ),
+        ),
+      ],
+    );
+    await _openTab(tester, const Key('tab-chat'));
+
+    await _sendChat(tester, 'First planning thread');
+    var state = _readChatState(tester);
+    final firstId = state.activeSessionId!;
+    expect(find.text('First planning thread'), findsWidgets);
+    expect(find.text('2 messages'), findsOneWidget);
+
+    await _ensureChatVisible(
+      tester,
+      find.byKey(const Key('chat-new-session-button')),
+      delta: -240,
+    );
+    await tester.tap(find.byKey(const Key('chat-new-session-button')));
+    await tester.pumpAndSettle();
+
+    state = _readChatState(tester);
+    final emptyId = state.activeSessionId!;
+    expect(emptyId, isNot(firstId));
+    expect(find.text('New chat'), findsWidgets);
+    expect(find.text('Empty'), findsOneWidget);
+    await _ensureChatVisible(tester, find.byKey(const Key('chat-empty-state')));
+    expect(find.byKey(const Key('chat-empty-state')), findsOneWidget);
+
+    await _sendChat(tester, 'Second topic');
+    state = _readChatState(tester);
+    final secondId = state.activeSessionId!;
+    expect(secondId, emptyId);
+    expect(find.text('Second answer.'), findsOneWidget);
+
+    await _ensureChatVisible(tester, find.byKey(Key('chat-session-$firstId')));
+    await tester.tap(find.byKey(Key('chat-session-$firstId')));
+    await tester.pumpAndSettle();
+
+    expect(_readChatState(tester).activeSessionId, firstId);
+    await _ensureChatVisible(tester, find.text('First answer.'));
+    expect(find.text('First answer.'), findsOneWidget);
+
+    await _ensureChatVisible(
+      tester,
+      find.byKey(Key('chat-session-actions-$firstId')),
+      delta: -240,
+    );
+    await tester.tap(find.byKey(Key('chat-session-actions-$firstId')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Rename').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('chat-rename-session-field')),
+      'Renamed first thread',
+    );
+    await tester.tap(find.byKey(const Key('chat-rename-session-save-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Renamed first thread'), findsWidgets);
+
+    await _ensureChatVisible(
+      tester,
+      find.byKey(Key('chat-session-actions-$firstId')),
+      delta: -240,
+    );
+    await tester.tap(find.byKey(Key('chat-session-actions-$firstId')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete').last);
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const Key('chat-delete-session-confirm-button')),
+    );
+    await tester.pumpAndSettle();
+
+    state = _readChatState(tester);
+    expect(
+      state.sessions.map((session) => session.id),
+      isNot(contains(firstId)),
+    );
+    expect(state.activeSessionId, secondId);
+    expect(find.text('Renamed first thread'), findsNothing);
+    await _ensureChatVisible(tester, find.text('Second answer.'));
+    expect(find.text('Second answer.'), findsOneWidget);
+  });
+
   testWidgets('chat page loads a historical local session', (tester) async {
     final database = WideNoteLocalDatabase.inMemory();
     final repository = LocalChatRepository(database);
@@ -288,6 +392,7 @@ void main() {
     await _openTab(tester, const Key('tab-chat'));
 
     expect(find.text('历史复盘'), findsWidgets);
+    await _ensureChatVisible(tester, find.text('昨天记录了什么？'));
     expect(find.text('昨天记录了什么？'), findsOneWidget);
   });
 
@@ -300,6 +405,10 @@ void main() {
     await _openTab(tester, const Key('tab-chat'));
 
     await _sendChat(tester, '请总结本地上下文');
+    await _ensureChatVisible(
+      tester,
+      find.textContaining('first response failed'),
+    );
 
     expect(find.textContaining('first response failed'), findsOneWidget);
     expect(find.byKey(const Key('chat-retry-button')), findsOneWidget);
@@ -350,6 +459,23 @@ Future<void> _openTab(WidgetTester tester, Key tabKey) async {
 Future<void> _sendChat(WidgetTester tester, String text) async {
   await tester.enterText(find.byKey(const Key('chat-input-field')), text);
   await tester.tap(find.byKey(const Key('chat-send-button')));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _ensureChatVisible(
+  WidgetTester tester,
+  Finder finder, {
+  double delta = 240,
+}) async {
+  final scrollable = find.descendant(
+    of: find.byKey(const Key('chat-message-scroll')),
+    matching: find.byType(Scrollable),
+  );
+  if (finder.evaluate().isEmpty) {
+    await tester.scrollUntilVisible(finder, delta, scrollable: scrollable);
+  } else {
+    await tester.ensureVisible(finder);
+  }
   await tester.pumpAndSettle();
 }
 

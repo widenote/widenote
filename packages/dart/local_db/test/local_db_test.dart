@@ -529,6 +529,10 @@ void main() {
       expect(provider.hasApiKey, isTrue);
       expect(provider.apiKey, _testCredential());
       expect(provider.capabilities, contains('chat'));
+
+      database.chatSessions.deleteById('session-1');
+      expect(database.chatSessions.readById('session-1'), isNull);
+      expect(database.chatMessages.readBySession('session-1'), isEmpty);
     });
 
     test('transitions memory review candidates in SQLite', () {
