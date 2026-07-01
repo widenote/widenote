@@ -2027,6 +2027,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get providerApiKeyKeepSessionHelper => '留空会沿用本次会话中的凭据。';
 
   @override
+  String get providerApiKeyOptionalHelper => '这个提供商可不填；只有本地服务要求鉴权时再填写。';
+
+  @override
+  String get providerEndpointPresetHelper => '已按官方文档预填；如果账号使用其他地域或网关，可以修改。';
+
+  @override
+  String get providerModelPresetHelper => '已预填一个可用模型；如果账号启用了其他模型，可以修改。';
+
+  @override
   String get providerInvalidEndpoint => '端点不是有效的 URI。';
 
   @override

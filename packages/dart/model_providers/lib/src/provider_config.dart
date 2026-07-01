@@ -1,6 +1,21 @@
 import 'model_provider.dart';
 
-enum ModelProviderKind { openAiCompatible, anthropicCompatible, mimo, kimi }
+enum ModelProviderKind {
+  openAi,
+  anthropic,
+  gemini,
+  openRouter,
+  deepSeek,
+  kimi,
+  qwen,
+  doubao,
+  zhipu,
+  miniMax,
+  mimo,
+  ollama,
+  openAiCompatible,
+  anthropicCompatible,
+}
 
 enum ModelProviderConfigIssue {
   missingProviderId,
@@ -15,42 +30,104 @@ extension ModelProviderKindDetails on ModelProviderKind {
   String get label {
     return switch (this) {
       ModelProviderKind.openAiCompatible => 'OpenAI-compatible',
+      ModelProviderKind.openAi => 'OpenAI',
       ModelProviderKind.anthropicCompatible => 'Anthropic-compatible',
+      ModelProviderKind.anthropic => 'Anthropic Claude',
+      ModelProviderKind.gemini => 'Google Gemini',
+      ModelProviderKind.openRouter => 'OpenRouter',
+      ModelProviderKind.deepSeek => 'DeepSeek',
+      ModelProviderKind.qwen => 'Alibaba Qwen',
+      ModelProviderKind.doubao => 'Volcengine Doubao',
+      ModelProviderKind.zhipu => 'Zhipu GLM',
+      ModelProviderKind.miniMax => 'MiniMax',
       ModelProviderKind.mimo => 'Xiaomi MIMO',
       ModelProviderKind.kimi => 'Kimi',
+      ModelProviderKind.ollama => 'Ollama',
     };
   }
 
   Uri get defaultEndpoint {
     return switch (this) {
+      ModelProviderKind.openAi => Uri.parse('https://api.openai.com/v1'),
       ModelProviderKind.openAiCompatible => Uri.parse(
         'https://api.openai.com/v1/chat/completions',
       ),
+      ModelProviderKind.anthropic => Uri.parse('https://api.anthropic.com'),
       ModelProviderKind.anthropicCompatible => Uri.parse(
         'https://api.anthropic.com/v1/messages',
       ),
+      ModelProviderKind.gemini => Uri.parse(
+        'https://generativelanguage.googleapis.com/v1beta/openai',
+      ),
+      ModelProviderKind.openRouter => Uri.parse('https://openrouter.ai/api/v1'),
+      ModelProviderKind.deepSeek => Uri.parse('https://api.deepseek.com'),
       ModelProviderKind.mimo => Uri.parse(
         'https://token-plan-sgp.xiaomimimo.com/anthropic/v1/messages',
       ),
-      ModelProviderKind.kimi => Uri.parse(
-        'https://api.moonshot.cn/v1/chat/completions',
+      ModelProviderKind.kimi => Uri.parse('https://api.moonshot.ai/v1'),
+      ModelProviderKind.qwen => Uri.parse(
+        'https://dashscope.aliyuncs.com/compatible-mode/v1',
       ),
+      ModelProviderKind.doubao => Uri.parse(
+        'https://ark.cn-beijing.volces.com/api/v3',
+      ),
+      ModelProviderKind.zhipu => Uri.parse('https://api.z.ai/api/paas/v4'),
+      ModelProviderKind.miniMax => Uri.parse(
+        'https://api.minimax.io/anthropic',
+      ),
+      ModelProviderKind.ollama => Uri.parse('http://localhost:11434/v1'),
     };
   }
 
   String get defaultModel {
     return switch (this) {
+      ModelProviderKind.openAi => 'gpt-4.1-mini',
       ModelProviderKind.openAiCompatible => 'openai-compatible-chat',
+      ModelProviderKind.anthropic => 'claude-sonnet-5',
       ModelProviderKind.anthropicCompatible => 'anthropic-compatible-chat',
+      ModelProviderKind.gemini => 'gemini-3.5-flash',
+      ModelProviderKind.openRouter => 'openrouter/auto',
+      ModelProviderKind.deepSeek => 'deepseek-v4-pro',
       ModelProviderKind.mimo => 'mimo-v2.5-pro',
-      ModelProviderKind.kimi => 'moonshot-v1-8k',
+      ModelProviderKind.kimi => 'kimi-k2.6',
+      ModelProviderKind.qwen => 'qwen-plus',
+      ModelProviderKind.doubao => 'doubao-seed-2-0-lite-260428',
+      ModelProviderKind.zhipu => 'glm-5.2',
+      ModelProviderKind.miniMax => 'MiniMax-M3',
+      ModelProviderKind.ollama => 'qwen2.5:7b',
     };
   }
 
   bool get usesAnthropicMessages {
     return switch (this) {
-      ModelProviderKind.anthropicCompatible || ModelProviderKind.mimo => true,
-      ModelProviderKind.openAiCompatible || ModelProviderKind.kimi => false,
+      ModelProviderKind.anthropic ||
+      ModelProviderKind.anthropicCompatible ||
+      ModelProviderKind.miniMax ||
+      ModelProviderKind.mimo => true,
+      ModelProviderKind.openAi ||
+      ModelProviderKind.openAiCompatible ||
+      ModelProviderKind.gemini ||
+      ModelProviderKind.openRouter ||
+      ModelProviderKind.deepSeek ||
+      ModelProviderKind.kimi ||
+      ModelProviderKind.qwen ||
+      ModelProviderKind.doubao ||
+      ModelProviderKind.zhipu ||
+      ModelProviderKind.ollama => false,
+    };
+  }
+
+  bool get requiresApiKey {
+    return switch (this) {
+      ModelProviderKind.ollama => false,
+      _ => true,
+    };
+  }
+
+  bool get usesAnthropicBearerAuthorization {
+    return switch (this) {
+      ModelProviderKind.miniMax => true,
+      _ => false,
     };
   }
 }
@@ -137,7 +214,7 @@ final class ModelProviderConfig {
     if (model.trim().isEmpty) {
       issues.add(ModelProviderConfigIssue.missingModel);
     }
-    if (requireApiKey && apiKey.trim().isEmpty) {
+    if (requireApiKey && kind.requiresApiKey && apiKey.trim().isEmpty) {
       issues.add(ModelProviderConfigIssue.missingApiKey);
     }
     return ModelProviderConfigValidation(issues: Set.unmodifiable(issues));

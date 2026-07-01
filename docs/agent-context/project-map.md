@@ -28,6 +28,7 @@ It should stay short. It points to the right local context instead of duplicatin
 
 ## Research
 
+- `docs/research/2026-07-01-provider-presets-kimi-review.md`
 - `docs/research/2026-06-30-voice-input-asr-correction-plan.md`
 - `docs/research/2026-06-28-marketplace-pkm-plan.md`
 - `docs/research/2026-06-27-agent-runtime-roadmap-research.md`

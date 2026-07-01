@@ -22,6 +22,12 @@ injected Dart IO HTTP client and real compatible adapters. Saved API keys are
 never printed; editing a provider keeps the saved key when the key field is
 left blank, and the edit dialog can explicitly clear the saved key.
 
+The add/edit dialog exposes common provider presets so most users can choose a
+service, paste a key, and save. Presets include OpenAI, Anthropic Claude,
+Google Gemini, OpenRouter, DeepSeek, Kimi, Qwen, Doubao, Zhipu GLM, MiniMax,
+MIMO, Ollama, and custom compatible endpoints. Endpoint and model fields remain
+editable for account-specific regions, gateways, and enabled model ids.
+
 ## Public Surface
 
 - `application/model_provider_settings_controller.dart`

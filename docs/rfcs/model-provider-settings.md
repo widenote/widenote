@@ -18,8 +18,11 @@ requirement.
 
 ## Goals
 
-- Represent OpenAI-compatible, Anthropic-compatible, MIMO, and Kimi providers
-  with shared config models.
+- Represent OpenAI-compatible, Anthropic-compatible, and common provider
+  presets with shared config models. Current presets cover OpenAI, Anthropic
+  Claude, Google Gemini, OpenRouter, DeepSeek, Kimi, Alibaba Qwen, Volcengine
+  Doubao, Zhipu GLM, MiniMax, Xiaomi MIMO, Ollama, and custom compatible
+  endpoints.
 - Keep provider adapters testable with fake HTTP.
 - Classify auth, rate limit, timeout, server, network, malformed-response, and
   missing-text failures.
@@ -46,10 +49,13 @@ requirement.
 
 ## Proposed Design
 
-`packages/dart/model_providers` owns provider config models, compatible request
-builders, fake HTTP, fake providers, and a shared error taxonomy. Adapters are
-constructed with an injected HTTP client so tests can assert request shape
-without external network access.
+`packages/dart/model_providers` owns provider config models, preset defaults,
+compatible request builders, fake HTTP, fake providers, and a shared error
+taxonomy. Adapters are constructed with an injected HTTP client so tests can
+assert request shape without external network access. Provider presets are
+thin defaults over the compatible adapters; endpoint and model fields remain
+editable because accounts can differ by region, gateway, plan, or enabled
+model id.
 
 `apps/mobile/lib/features/model_providers` owns the first mobile settings
 surface. Providers can be added, edited, tested with a fake connection service,
@@ -67,8 +73,8 @@ The mobile settings page is organized as:
    per-Agent overrides are deferred.
 3. Capabilities and privacy, explaining BYOK local storage, user-initiated
    connection tests, and local raw-capture availability.
-4. Provider management, preserving add, edit, default selection, and connection
-   test actions.
+4. Provider management, preserving add, edit, default selection, preset
+   selection, and connection test actions.
 
 This hierarchy is based on clean-room product-flow review of public model setup
 patterns, including `memex-lab/memex`, but the implementation, labels, storage

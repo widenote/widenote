@@ -129,7 +129,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Connected'), findsOneWidget);
       expect(
-        find.text('OpenAI-compatible validated offline. No live request sent.'),
+        find.text('OpenAI validated offline. No live request sent.'),
         findsOneWidget,
       );
 
@@ -324,7 +324,7 @@ void main() {
     expect(find.text('Delete provider?'), findsNothing);
   });
 
-  testWidgets('provider kind picker does not expose fake demo providers', (
+  testWidgets('provider kind picker exposes common provider presets only', (
     tester,
   ) async {
     final database = WideNoteLocalDatabase.inMemory();
@@ -336,12 +336,109 @@ void main() {
     await tester.tap(find.byKey(const Key('provider-kind-field')));
     await tester.pumpAndSettle();
 
-    expect(find.text('OpenAI-compatible'), findsWidgets);
+    expect(find.text('OpenAI'), findsWidgets);
+    expect(find.text('Anthropic Claude'), findsOneWidget);
+    expect(find.text('Google Gemini'), findsOneWidget);
+    expect(find.text('OpenRouter'), findsOneWidget);
+    expect(find.text('DeepSeek'), findsOneWidget);
+    expect(find.text('Alibaba Qwen'), findsOneWidget);
+    expect(find.text('Volcengine Doubao'), findsOneWidget);
+
+    await tester.drag(find.byType(Scrollable).last, const Offset(0, -280));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Zhipu GLM'), findsOneWidget);
+    expect(find.text('MiniMax'), findsOneWidget);
+    expect(find.text('Ollama'), findsOneWidget);
+    expect(find.text('OpenAI-compatible'), findsOneWidget);
     expect(find.text('Anthropic-compatible'), findsOneWidget);
     expect(find.text('Xiaomi MIMO'), findsOneWidget);
     expect(find.text('Kimi'), findsOneWidget);
     expect(find.text('Fake Model Provider'), findsNothing);
     expect(find.text('fake-model'), findsNothing);
+  });
+
+  testWidgets('provider presets fill endpoint and model fields', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    await _pumpSettings(tester, database: database);
+
+    await tester.tap(find.byKey(const Key('provider-add-button')));
+    await tester.pumpAndSettle();
+    await _selectProviderKind(tester, 'Google Gemini');
+
+    expect(_fieldText(tester, 'provider-name-field'), 'Google Gemini');
+    expect(
+      _fieldText(tester, 'provider-endpoint-field'),
+      'https://generativelanguage.googleapis.com/v1beta/openai',
+    );
+    expect(_fieldText(tester, 'provider-model-field'), 'gemini-3.5-flash');
+
+    await _selectProviderKind(tester, 'Anthropic Claude');
+
+    expect(_fieldText(tester, 'provider-name-field'), 'Anthropic Claude');
+    expect(
+      _fieldText(tester, 'provider-endpoint-field'),
+      'https://api.anthropic.com',
+    );
+    expect(_fieldText(tester, 'provider-model-field'), 'claude-sonnet-5');
+
+    await _selectProviderKind(tester, 'OpenRouter');
+
+    expect(_fieldText(tester, 'provider-name-field'), 'OpenRouter');
+    expect(
+      _fieldText(tester, 'provider-endpoint-field'),
+      'https://openrouter.ai/api/v1',
+    );
+    expect(_fieldText(tester, 'provider-model-field'), 'openrouter/auto');
+
+    await _selectProviderKind(tester, 'DeepSeek');
+
+    expect(_fieldText(tester, 'provider-name-field'), 'DeepSeek');
+    expect(
+      _fieldText(tester, 'provider-endpoint-field'),
+      'https://api.deepseek.com',
+    );
+    expect(_fieldText(tester, 'provider-model-field'), 'deepseek-v4-pro');
+
+    await _selectProviderKind(tester, 'Kimi');
+
+    expect(_fieldText(tester, 'provider-name-field'), 'Kimi');
+    expect(
+      _fieldText(tester, 'provider-endpoint-field'),
+      'https://api.moonshot.ai/v1',
+    );
+    expect(_fieldText(tester, 'provider-model-field'), 'kimi-k2.6');
+  });
+
+  testWidgets('provider settings can save no-key Ollama preset', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    await _pumpSettings(tester, database: database);
+
+    await tester.tap(find.byKey(const Key('provider-add-button')));
+    await tester.pumpAndSettle();
+    await _selectProviderKind(tester, 'Ollama');
+    expect(
+      find.text(
+        'Optional for this provider; fill it only if your local server requires one.',
+      ),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const Key('provider-save-button')));
+    await tester.pumpAndSettle();
+
+    final persisted = database.modelProviderConfigs.readById('ollama')!;
+    expect(persisted.providerKind, ModelProviderKind.ollama.name);
+    expect(persisted.hasApiKey, isFalse);
+    expect(persisted.apiKey, isEmpty);
+    expect(find.byKey(const Key('provider-row-ollama')), findsOneWidget);
+    expect(find.text('Using Ollama'), findsOneWidget);
   });
 
   testWidgets('provider dialog fields use regular non-password keyboards', (
@@ -486,10 +583,7 @@ Future<void> _addProvider(
   await tester.pumpAndSettle();
 
   if (kindLabel != null) {
-    await tester.tap(find.byKey(const Key('provider-kind-field')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text(kindLabel).last);
-    await tester.pumpAndSettle();
+    await _selectProviderKind(tester, kindLabel);
   }
 
   await tester.enterText(
@@ -532,4 +626,23 @@ String _runtimeCredential() {
     97,
     108,
   ]);
+}
+
+String _fieldText(WidgetTester tester, String key) {
+  final field = tester.widget<TextField>(find.byKey(Key(key)));
+  return field.controller?.text ?? '';
+}
+
+Future<void> _selectProviderKind(WidgetTester tester, String label) async {
+  await tester.tap(find.byKey(const Key('provider-kind-field')));
+  await tester.pumpAndSettle();
+  for (var attempt = 0; attempt < 8; attempt += 1) {
+    if (find.text(label).evaluate().isNotEmpty) {
+      break;
+    }
+    await tester.drag(find.byType(Scrollable).last, const Offset(0, -280));
+    await tester.pumpAndSettle();
+  }
+  await tester.tap(find.text(label).last);
+  await tester.pumpAndSettle();
 }
