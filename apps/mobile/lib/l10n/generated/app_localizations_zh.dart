@@ -1264,10 +1264,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsPrivacyBackupBody =>
-      '安全导出不会包含模型提供商 API Key。加密完整备份是未来含密钥恢复路径，本版本不提供操作入口。';
+      '完整 .widenote 备份会包含模型提供商 API Key，恢复后可直接继续使用；请把备份文件保存在可信位置。';
 
   @override
-  String get settingsPrivacyBackupStatus => '安全导出';
+  String get settingsPrivacyBackupStatus => '完整备份';
 
   @override
   String get settingsControlsTitle => '控制入口';
@@ -1324,7 +1324,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsBackupStatus => '本地';
 
   @override
-  String get settingsBackupStatusSafeOnly => '仅安全备份';
+  String get settingsBackupStatusSafeOnly => '本地完整';
 
   @override
   String get settingsBackupStatusExportReady => '可导出';
@@ -2385,30 +2385,30 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get backupExportEmpty =>
-      '导出会创建一个压缩的 .widenote 归档，可以交给其他 App 打开，也可以保存到你选择的位置。';
+      '导出会创建一个整目录压缩的 .widenote 归档，可以交给其他 App 打开，也可以保存到你选择的位置。';
 
   @override
-  String get backupSecretWarning => '安全导出不会包含模型提供商 API Key，恢复后需要重新填写。';
+  String get backupSecretWarning => '完整备份会包含模型提供商 API Key，请只保存到可信位置。';
 
   @override
   String get backupSafeRestoreBoundary =>
-      '.widenote 归档会恢复记录、记忆、待办、模型提供商元数据、Pack 安装、权限、运行时状态和追踪，但不包含 Provider Key。';
+      '.widenote 归档会恢复 SQLite 快照、采集媒体文件和 Provider Key。';
 
   @override
   String get backupOwnerExportBoundary =>
-      'Owner Export Markdown 用来阅读和搬走你的数据；它不含密钥，也不是恢复源。';
+      '备份是压缩目录，不再把 JSON 或 Markdown 文档作为恢复源。';
 
   @override
   String get backupFullSecretBoundary =>
-      '加密完整备份会是恢复 API Key 的含密钥路径；当前版本不提供操作入口。';
+      '完整 .widenote 备份会包含 Provider Key，恢复后可直接使用已配置的模型提供商。';
 
   @override
   String backupSafeOmittedProviderKeys(int count) {
-    return '安全导出省略的 Provider Key 数：$count';
+    return '需要重新填写的 Provider Key 数：$count';
   }
 
   @override
-  String get backupManifestCountsTitle => 'Manifest 计数';
+  String get backupManifestCountsTitle => '备份计数';
 
   @override
   String backupCount(String section, int count) {
@@ -2416,7 +2416,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get backupCopyMarkdownButton => '复制 Markdown';
+  String get backupCopyMarkdownButton => '复制导出';
 
   @override
   String get backupOpenShareFileButton => '打开或分享 .widenote';
@@ -2434,16 +2434,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get backupCopiedStatus => '导出内容已复制。';
 
   @override
-  String get backupExportMarkdownTitle => 'Owner Export Markdown';
+  String get backupExportMarkdownTitle => '可读导出';
 
   @override
   String get backupImportSectionTitle => '导入';
 
   @override
-  String get backupImportHint => '粘贴旧版 WideNote 备份 JSON...';
+  String get backupImportHint => '选择 .widenote 文件。WideNote 会先检查备份，再替换本地数据。';
 
   @override
-  String get backupImportButton => '导入并替换';
+  String get backupImportButton => '用所选备份替换';
 
   @override
   String get backupImportFileButton => '选择 .widenote 文件';
@@ -2479,7 +2479,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get backupImportSecretsRestored => '含密钥备份已恢复模型提供商凭据。';
+  String get backupImportSecretsRestored => '模型提供商凭据已恢复，可直接使用。';
 
   @override
   String get backupImportNoProviderKeysNeeded => '这个备份不需要重新填写 Provider Key。';

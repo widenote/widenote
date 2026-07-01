@@ -70,8 +70,14 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('备份'), findsWidgets);
     expect(find.text('创建 .widenote 备份'), findsOneWidget);
-    expect(find.textContaining('当前版本不提供操作入口'), findsOneWidget);
-    expect(find.textContaining('但不包含 Provider Key'), findsOneWidget);
+    expect(
+      find.textContaining('完整 .widenote 备份会包含 Provider Key'),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('恢复 SQLite 快照、采集媒体文件和 Provider Key'),
+      findsOneWidget,
+    );
   });
 }
 

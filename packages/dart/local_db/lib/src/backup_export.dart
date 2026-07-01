@@ -50,6 +50,7 @@ const _backupSections = <String>[
 
 enum LocalBackupMode {
   safe('safe'),
+  full('full'),
   encryptedFull('encrypted_full');
 
   const LocalBackupMode(this.wireName);
@@ -101,7 +102,7 @@ final class LocalBackupManifest {
     bool? includesSecrets,
     JsonMap? encryption,
   }) : includesSecrets =
-           includesSecrets ?? backupMode == LocalBackupMode.encryptedFull,
+           includesSecrets ?? _backupModeIncludesSecrets(backupMode),
        encryption = encryption == null
            ? null
            : Map<String, Object?>.unmodifiable(encryption),
@@ -117,7 +118,7 @@ final class LocalBackupManifest {
     if (backupMode == LocalBackupMode.safe && this.includesSecrets) {
       throw const FormatException('Safe backups cannot include secrets.');
     }
-    if (backupMode == LocalBackupMode.encryptedFull && !this.includesSecrets) {
+    if (_backupModeIncludesSecrets(backupMode) && !this.includesSecrets) {
       throw const FormatException(
         'Full backups must declare included secrets.',
       );
@@ -551,15 +552,20 @@ final class LocalBackupService {
     String source, {
     LocalBackupImportStrategy strategy = LocalBackupImportStrategy.append,
   }) {
-    return importBackup(LocalBackupCodec.decode(source), strategy: strategy);
+    final backup = LocalBackupCodec.decode(source);
+    if (backup.manifest.includesSecrets) {
+      throw UnsupportedError(
+        'Secret-bearing backup JSON import requires a directory restore path.',
+      );
+    }
+    return importBackup(backup, strategy: strategy);
   }
 
   LocalBackupImportReport importBackup(
     LocalDataBackup backup, {
     LocalBackupImportStrategy strategy = LocalBackupImportStrategy.append,
   }) {
-    if (backup.manifest.includesSecrets ||
-        backup.manifest.backupMode == LocalBackupMode.encryptedFull) {
+    if (backup.manifest.backupMode == LocalBackupMode.encryptedFull) {
       throw UnsupportedError(
         'Secret-bearing backup import requires encrypted full restore and is '
         'not available in this build.',
@@ -1585,7 +1591,7 @@ int _optionalManifestSchemaVersion(JsonMap json) {
 bool _optionalIncludesSecrets(JsonMap json, LocalBackupMode mode) {
   final value = json['includes_secrets'];
   if (value == null) {
-    return mode == LocalBackupMode.encryptedFull;
+    return _backupModeIncludesSecrets(mode);
   }
   if (value is bool) {
     return value;
@@ -1599,7 +1605,7 @@ ModelProviderConfigRecord _modelProviderConfigForBackup(
   ModelProviderConfigRecord config,
   LocalBackupMode mode,
 ) {
-  if (mode == LocalBackupMode.encryptedFull) {
+  if (mode != LocalBackupMode.safe) {
     return config;
   }
   return ModelProviderConfigRecord(
@@ -1621,7 +1627,7 @@ ModelProviderConfigRecord _modelProviderConfigForBackup(
 }
 
 JsonMap _providerPayloadForBackup(JsonMap payload, LocalBackupMode mode) {
-  if (mode == LocalBackupMode.encryptedFull) {
+  if (mode != LocalBackupMode.safe) {
     return payload;
   }
   final safe = <String, Object?>{};
@@ -1639,6 +1645,13 @@ JsonMap _providerPayloadForBackup(JsonMap payload, LocalBackupMode mode) {
     safe['payload_omitted'] = true;
   }
   return safe;
+}
+
+bool _backupModeIncludesSecrets(LocalBackupMode mode) {
+  return switch (mode) {
+    LocalBackupMode.safe => false,
+    LocalBackupMode.full || LocalBackupMode.encryptedFull => true,
+  };
 }
 
 List<JsonMap> _requiredRecordList(JsonMap json, String key) {

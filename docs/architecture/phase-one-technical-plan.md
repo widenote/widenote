@@ -68,7 +68,7 @@ Phase one is not a tiny MVP. It should cover the complete MemeX-like surface, wi
 | Agent Packs | Default pack, custom agent creation, per-agent model profile, event triggers, sync/async execution, dependencies, retry, traces, permission review |
 | Providers | BYOK model setup, per-pack/per-agent model profiles, OpenAI-compatible first, Anthropic/Gemini/local/other adapters behind capability metadata |
 | Privacy | Local-first default, app lock, permission broker, trace/audit, local-only/privacy-tier flags, sensitive remote execution gates |
-| Backup/export | Current W7: safe backup/restore and readable Owner Export without provider secrets; future: encrypted full backup, JSON/JSONL archive export, Markdown/HTML/Obsidian-style projections, debug export behind explicit switch |
+| Backup/export | Current W7: full `.widenote` directory backup/restore with provider credentials and local media; safe JSON/Markdown projections remain no-secret compatibility exports; future: encrypted full envelope, JSONL archive export, Markdown/HTML/Obsidian-style projections, debug export behind explicit switch |
 | Settings | Model providers, permissions, packs, backup/export, location context, trace review, privacy lock |
 
 High-risk continuous capture surfaces such as notifications, SMS, screen content, automatic screenshots, and always-on listening should be implemented as explicit advanced/community packs, not enabled by default.
