@@ -6,8 +6,9 @@ These are the next architecture topics that need deeper design.
   proposals, Agent Pack boundaries, UI read models, and validation gates.
 - Context packet schema: source refs, progressive disclosure levels, cache
   invalidation keys, permission scopes, and generator versioning.
-- Backup/export split: encryption UX, restore warnings, provider/model config
-  metadata, secret-bearing backup handling, and owner export archive layout.
+- Backup/export split follow-ups: encrypted-envelope UX, hosted/sync backup
+  policy, owner export archive layout, and restore warnings beyond the default
+  local `.widenote` full-backup path.
 - Deletion and purge: 30-day recoverable window UX, permanent purge semantics,
   minimal tombstone metadata, and future sync conflict handling.
 - Memory data model: types, provenance, confidence, editing, deletion, and invalidation.

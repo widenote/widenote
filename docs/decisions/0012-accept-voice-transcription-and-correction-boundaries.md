@@ -72,7 +72,7 @@ the mobile-owned transcription engine rather than a second ASR implementation.
 
 - Ship final-only ASR first and keep real-time preview behind a later flag.
 - Save new recordings as compressed `.m4a` and transcode for ASR.
-- Keep safe backup metadata-only for media and add media bytes later.
+- Keep backup metadata-only for media and add media bytes later.
 - Make remote ASR manual retry only.
 - Implement correction as a native service before exposing it as an Agent Pack.
 - Ship `audio.transcribe` as a runtime tool in the same implementation slice.
@@ -86,8 +86,9 @@ WAV makes the first ASR path simpler and keeps the saved source file aligned
 with local ASR input. Deferring `.m4a` conversion avoids turning compatibility
 work into a blocker for first usable voice transcription.
 
-Including media bytes in safe backup preserves source truth in the artifact
-users can already open and restore, while still excluding provider secrets.
+Including media bytes in `.widenote` backup preserves source truth in the
+artifact users can already open and restore. The provider credential boundary
+for the backup artifact follows ADR-0013.
 
 Automatic remote fallback after explicit opt-in gives users recovery from local
 ASR failure without silently exporting audio. The accepted permission vocabulary
@@ -103,8 +104,8 @@ logic from bypassing Memory policy.
   corrected events before production code emits them.
 - The correction pack must stay additive and source-linked; it cannot replace
   raw audio, original transcript evidence, or Memory policy.
-- Backup tests must cover media-byte integrity for `.widenote` safe backup in
-  the implementation slice.
+- Backup tests must cover media-byte integrity for `.widenote` backup in the
+  implementation slice.
 - Remote ASR needs explicit consent, host declaration, trace redaction, and
   credentials stored only through the approved secure-storage boundary.
 - Mobile code owns the first transcription engine. Runtime and Pack surfaces

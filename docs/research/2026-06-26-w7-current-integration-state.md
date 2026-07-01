@@ -1,7 +1,7 @@
 # W7 Current Integration State
 
 Status: current phase-one integration state
-Date: 2026-06-26
+Date: 2026-07-01
 Supersedes-for-current-status:
 `docs/research/2026-06-26-current-implementation-baseline.md`
 
@@ -15,7 +15,7 @@ capture
   -> local SQLite object truth and event evidence
   -> native Agent Pack/runtime outputs
   -> Memory, cards, insights, todos, recaps, chat context, traces
-  -> Settings, safe backup/export, timeline/search/detail, and audit surfaces
+  -> Settings, full backup/export, timeline/search/detail, and audit surfaces
 ```
 
 The current implementation uses hand-written `sqlite3` DAOs for phase-one local
@@ -37,19 +37,21 @@ Todo cards.
 
 ## Current Backup Boundary
 
-Safe backup is the default implemented path. It restores local data and
-provider metadata, but it does not export provider credential values. Safe
-restore reports when provider keys must be re-entered.
+The default mobile backup path is now a full `.widenote` compressed directory
+archive. It stores a manifest, a full SQLite snapshot, and local capture media
+files, and it preserves provider credential values so restore can use configured
+model providers immediately.
 
-Encrypted full backup is a follow-up capability. It may include provider
-credentials only after a real encryption boundary exists. Do not describe W7 or
-phase one as already supporting full provider-key restore.
+Treat `.widenote` files as secret-bearing local artifacts. The mobile UI must
+warn users to save them only to trusted destinations. Legacy safe JSON and
+Markdown projections remain no-secret compatibility/export surfaces and are not
+the default mobile restore source.
 
-Current restore rejects any `includes_secrets` or `encrypted_full` backup. Older
-legacy backups that decode as secret-bearing are inspectable but not importable
-in this build.
+`LocalBackupMode.encryptedFull` remains reserved for a future encrypted
+envelope. Do not describe the current compressed-directory archive as encrypted
+full backup.
 
-Owner Export is readable and secret-free by default. It is not the restore
+Owner Export remains readable and secret-free by default. It is not the restore
 source.
 
 ## Current Evidence
@@ -58,7 +60,8 @@ source.
   record for W7 integration.
 - `docs/research/2026-06-26-w7-settings-privacy-qa.md` covers Settings and
   Privacy.
-- `docs/research/2026-06-26-w7-backup-restore-qa.md` covers safe backup,
-  restore reporting, and the encrypted-full-backup deferral.
+- `docs/research/2026-06-26-w7-backup-restore-qa.md` covers the earlier safe
+  backup boundary. ADR-0013 and current backup tests supersede that credential
+  boundary for the default `.widenote` archive.
 - `docs/research/2026-06-26-w7-real-media-capture-qa.md` covers real media
   capture permission/cancel/error behavior.

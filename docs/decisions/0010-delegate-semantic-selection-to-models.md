@@ -116,6 +116,6 @@ or answer, it should not exist in core.
 ## Follow-ups
 
 - Add regression checks around Chat, Capture, Context Packet, runtime traces,
-  and safe backup so core content keyword rules are not reintroduced.
+  and backup/export so core content keyword rules are not reintroduced.
 - Design plugin or Agent Pack contracts before adding any future content safety
   scanner or semantic classifier.

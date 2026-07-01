@@ -780,7 +780,7 @@ Boundary:
 Acceptance:
 
 - First real integration proves permission grant, revoke, trace, source refs,
-  failure handling, and safe backup/export behavior.
+  failure handling, and backup/export behavior.
 
 ### C9. Web Search And URL Fetch
 

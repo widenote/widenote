@@ -39,7 +39,7 @@ sharing explicit and reviewable.
 - Users must be able to stop future capture and clear saved capture-location
   facts from existing records.
 - AMap API keys are credentials. They live in secure storage and must not enter
-  SQLite safe backups, Owner Export, logs, fixtures, screenshots, automated
+  `.widenote` backups, Owner Export, logs, fixtures, screenshots, automated
   review prompts, PR descriptions, or generated docs.
 
 ## Consequences

@@ -54,7 +54,7 @@ The home capture surface now follows the interaction option selected in
 | Memory | A dedicated Memory page supports list, edit, tombstone delete, restore visibility, and source metadata. |
 | Packs | Built-in official packs have an inspectable library page based on WideNote-owned manifest concepts. |
 | Permissions | Pack permission requests have a review page that distinguishes default granted, explicit-review, and deferred high-risk capabilities. |
-| Backup | Backup keeps safe JSON/Markdown export and local import paths. Safe backup does not contain provider secrets; encrypted full backup stays unavailable until an encryption boundary exists. |
+| Backup | Superseded by ADR-0013: default mobile backup is a full `.widenote` directory archive that preserves provider credentials for direct-use restore; safe JSON/Markdown remain no-secret compatibility projections. |
 | Settings/Packs tab | The tab becomes a real control hub for Memory, packs, permissions, providers, backup, and traces. |
 
 ## Deferred

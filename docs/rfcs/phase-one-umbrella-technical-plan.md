@@ -289,8 +289,8 @@ Cache invalidation inputs:
 - local date boundary for daily recap packets
 - privacy/export setting changes
 
-Owner Export excludes Context Packet caches. A future encrypted/restorable full
-Backup may include them, but restore must tolerate missing, stale, or
+Owner Export excludes Context Packet caches. Full `.widenote` backup may carry
+them as rebuildable SQLite rows, but restore must tolerate missing, stale, or
 invalidated caches.
 
 ## Runtime Flow

@@ -144,17 +144,19 @@ state, or route product model calls through it.
   setup from users.
 - Implement real SDK clients immediately. This adds dependency and credential
   risk before the local settings model is stable.
-- Exclude provider credentials from backup. This would make provider restore
-  incomplete, but W7 accepts that tradeoff for safe backup until encrypted full
-  backup exists.
+- Exclude provider credentials from the default `.widenote` backup. Rejected by
+  ADR-0013 because it makes accountless restore incomplete; safe JSON and
+  Markdown projections remain available for no-secret export.
 
 ## Migration / Compatibility
 
 The existing MIMO test client remains available for opt-in live tests through
 test-time provider overrides. Dev and production app bootstrap do not read
 QA-only model dart-defines. `packages/dart/local_db` stores provider metadata,
-API keys, and default-provider state locally. Safe backup omits API key values
-and reports that keys need re-entry after restore.
+API keys, and default-provider state locally. Default `.widenote` backup
+preserves API key values for direct-use restore. Legacy safe JSON and Markdown
+projections omit API key values and may report that keys need re-entry after
+legacy safe import.
 
 ## Open Questions
 
@@ -167,5 +169,6 @@ and reports that keys need re-entry after restore.
 
 ## Decision Outcome
 
-Accepted for phase-one provider settings, with the W7 amendment that safe
-backup is the implemented default and encrypted full backup remains deferred.
+Accepted for phase-one provider settings, amended by ADR-0013 so the default
+`.widenote` backup preserves provider credentials while the encrypted-full
+envelope remains deferred.
