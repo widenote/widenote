@@ -19,6 +19,7 @@ import '../features/timeline/presentation/card_detail_page.dart';
 import '../features/timeline/presentation/timeline_item_detail_page.dart';
 import '../features/timeline/presentation/timeline_page.dart';
 import '../features/timeline/presentation/timeline_search_page.dart';
+import '../features/todos/presentation/todo_detail_page.dart';
 import '../features/todos/presentation/todos_page.dart';
 import '../features/traces/presentation/trace_console_page.dart';
 import '../features/transcription/presentation/voice_transcription_settings_page.dart';
@@ -195,6 +196,16 @@ GoRouter createAppRouter({String initialLocation = '/'}) {
             name: 'todos',
             pageBuilder: (context, state) =>
                 _noTransitionPage(state, const TodosPage()),
+            routes: [
+              GoRoute(
+                path: ':todoId',
+                name: 'todo-detail',
+                pageBuilder: (context, state) => _noTransitionPage(
+                  state,
+                  TodoDetailPage(todoId: state.pathParameters['todoId'] ?? ''),
+                ),
+              ),
+            ],
           ),
           GoRoute(
             path: '/plugins',

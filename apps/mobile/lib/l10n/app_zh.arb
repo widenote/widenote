@@ -349,6 +349,85 @@
       }
     }
   },
+  "todoSearchHint": "搜索待办",
+  "todoSummaryOpen": "未完成",
+  "todoSummarySchedule": "日程",
+  "todoSummaryCompleted": "完成",
+  "todoNoMatches": "没有匹配的待办。",
+  "todoBucketOverdue": "逾期",
+  "todoBucketToday": "今天",
+  "todoBucketTomorrow": "明天",
+  "todoBucketLater": "稍后",
+  "todoBucketNoDeadline": "无日期",
+  "todoBucketScheduleCandidates": "日程候选",
+  "todoBucketCompleted": "已完成",
+  "todoCompletedEmpty": "还没有已完成待办。",
+  "todoPriorityNone": "无",
+  "todoPriorityLow": "低",
+  "todoPriorityMedium": "中",
+  "todoPriorityHigh": "高",
+  "todoDueNone": "无日期",
+  "todoDueToday": "今天",
+  "todoDueTomorrow": "明天",
+  "todoDueLater": "稍后",
+  "todoDueLabel": "截止：{date}",
+  "@todoDueLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "todoSubtaskProgress": "{completed}/{total} 个子项",
+  "@todoSubtaskProgress": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "todoDetailTitle": "待办详情",
+  "todoDetailMissing": "这个待办已不可用。",
+  "todoDetailContent": "内容",
+  "todoDetailTitleField": "标题",
+  "todoDetailSaveTitle": "保存标题",
+  "todoDetailStatus": "状态",
+  "todoCompletedAtLabel": "完成：{date}",
+  "@todoCompletedAtLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "todoDetailScheduleNotice": "日程候选只是本地建议，不像行动项一样勾选完成。",
+  "todoDetailCompletedNotice": "已完成待办会沉到底部；重新打开后会回到未完成分组。",
+  "todoDetailMetadata": "任务信息",
+  "todoDetailPriority": "优先级",
+  "todoDetailDue": "截止日期",
+  "todoDetailIndent": "缩进层级 {level}",
+  "@todoDetailIndent": {
+    "placeholders": {
+      "level": {
+        "type": "int"
+      }
+    }
+  },
+  "todoDetailSort": "排序值 {order}",
+  "@todoDetailSort": {
+    "placeholders": {
+      "order": {
+        "type": "int"
+      }
+    }
+  },
+  "todoDetailSubtasks": "子任务",
+  "todoDetailNoSubtasks": "没有结构化子任务。",
+  "todoDetailSource": "来源",
+  "todoDetailOpenSource": "打开来源",
   "timelineTitle": "时间线",
   "timelineSubtitle": "浏览记录、卡片、记忆、洞察和待办。",
   "timelineSearchTooltip": "搜索时间线",

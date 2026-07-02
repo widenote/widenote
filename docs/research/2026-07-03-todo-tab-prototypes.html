@@ -1,0 +1,1442 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WideNote Todos Tab Interaction Prototypes</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --page: #eef2f5;
+        --paper: #fbfcfd;
+        --surface: #ffffff;
+        --surface-soft: #f5f7f8;
+        --surface-warm: #fbf7ef;
+        --line: #d8e0e6;
+        --line-strong: #b8c4cd;
+        --ink: #17212b;
+        --muted: #65717d;
+        --weak: #8a96a1;
+        --blue: #2f6695;
+        --blue-soft: #e4eef7;
+        --green: #2f7d68;
+        --green-soft: #e2f2ed;
+        --amber: #a76624;
+        --amber-soft: #f8ead9;
+        --rose: #a84d61;
+        --rose-soft: #f7e7eb;
+        --violet: #6257a6;
+        --violet-soft: #ece9f8;
+        --shadow: 0 18px 44px rgba(23, 33, 43, 0.12);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          linear-gradient(90deg, rgba(23, 33, 43, 0.045) 1px, transparent 1px),
+          linear-gradient(0deg, rgba(23, 33, 43, 0.045) 1px, transparent 1px),
+          var(--page);
+        background-size: 28px 28px;
+        color: var(--ink);
+        letter-spacing: 0;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      .page {
+        width: min(1480px, calc(100vw - 32px));
+        margin: 22px auto 40px;
+      }
+
+      .intro {
+        border: 1px solid rgba(23, 33, 43, 0.12);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.88);
+        box-shadow: 0 12px 32px rgba(23, 33, 43, 0.08);
+        padding: 18px;
+      }
+
+      .intro-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 18px;
+        align-items: start;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 25px;
+        line-height: 1.2;
+      }
+
+      h2 {
+        font-size: 18px;
+        line-height: 1.28;
+      }
+
+      h3 {
+        font-size: 15px;
+        line-height: 1.3;
+      }
+
+      .lead {
+        margin-top: 8px;
+        max-width: 960px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .principles {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 14px;
+      }
+
+      .principle {
+        min-height: 30px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        padding: 6px 9px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .recommendation {
+        width: 260px;
+        border-left: 4px solid var(--green);
+        background: var(--green-soft);
+        border-radius: 8px;
+        padding: 12px;
+      }
+
+      .recommendation strong {
+        display: block;
+        font-size: 13px;
+      }
+
+      .recommendation span {
+        display: block;
+        margin-top: 4px;
+        color: #355249;
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .board {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(270px, 1fr));
+        gap: 18px;
+        margin-top: 18px;
+      }
+
+      .option {
+        display: grid;
+        gap: 12px;
+      }
+
+      .option-header {
+        border: 1px solid rgba(23, 33, 43, 0.12);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.86);
+        padding: 12px;
+      }
+
+      .option-kicker {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .option-title {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-top: 4px;
+      }
+
+      .marker {
+        display: inline-grid;
+        width: 24px;
+        height: 24px;
+        place-items: center;
+        border-radius: 8px;
+        color: #ffffff;
+        font-size: 12px;
+        font-weight: 850;
+      }
+
+      .marker.a {
+        background: var(--blue);
+      }
+
+      .marker.b {
+        background: var(--green);
+      }
+
+      .marker.c {
+        background: var(--amber);
+      }
+
+      .marker.d {
+        background: var(--violet);
+      }
+
+      .option-copy {
+        margin-top: 7px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      .phone {
+        position: relative;
+        width: 100%;
+        min-height: 680px;
+        border: 1px solid rgba(23, 33, 43, 0.16);
+        border-radius: 8px;
+        background: #101820;
+        box-shadow: var(--shadow);
+        padding: 10px;
+      }
+
+      .screen {
+        display: flex;
+        flex-direction: column;
+        min-height: 660px;
+        overflow: hidden;
+        border-radius: 8px;
+        background: var(--paper);
+      }
+
+      .status {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 26px;
+        padding: 0 14px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .appbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 54px;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--line);
+        background: rgba(251, 252, 253, 0.94);
+      }
+
+      .title-block {
+        display: grid;
+        gap: 2px;
+      }
+
+      .screen-title {
+        font-size: 19px;
+        line-height: 1.2;
+        font-weight: 850;
+      }
+
+      .screen-subtitle {
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.35;
+      }
+
+      .icon-actions {
+        display: flex;
+        gap: 6px;
+      }
+
+      .icon-button {
+        display: inline-grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--muted);
+        font-size: 16px;
+        font-weight: 800;
+      }
+
+      .content {
+        flex: 1;
+        overflow: hidden;
+        padding: 12px;
+      }
+
+      .summary-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+
+      .metric {
+        min-height: 54px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        padding: 9px;
+      }
+
+      .metric-value {
+        display: block;
+        font-size: 18px;
+        line-height: 1;
+        font-weight: 850;
+      }
+
+      .metric-label {
+        display: block;
+        margin-top: 5px;
+        color: var(--muted);
+        font-size: 10px;
+        line-height: 1.2;
+      }
+
+      .segmented {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 4px;
+        margin-bottom: 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface-soft);
+        padding: 4px;
+      }
+
+      .segment {
+        min-height: 32px;
+        border: 0;
+        border-radius: 7px;
+        background: transparent;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .segment.active {
+        background: var(--surface);
+        color: var(--ink);
+        box-shadow: 0 1px 4px rgba(23, 33, 43, 0.08);
+      }
+
+      .section {
+        margin-top: 12px;
+      }
+
+      .section:first-child {
+        margin-top: 0;
+      }
+
+      .section-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        min-height: 28px;
+        margin-bottom: 7px;
+      }
+
+      .section-title {
+        color: var(--ink);
+        font-size: 12px;
+        font-weight: 850;
+      }
+
+      .section-meta {
+        color: var(--weak);
+        font-size: 10px;
+        font-weight: 750;
+      }
+
+      .item-list {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        overflow: hidden;
+      }
+
+      .item {
+        display: grid;
+        grid-template-columns: 28px minmax(0, 1fr) auto;
+        gap: 8px;
+        align-items: start;
+        padding: 10px;
+        border-top: 1px solid var(--line);
+      }
+
+      .item:first-child {
+        border-top: 0;
+      }
+
+      .item.compact {
+        grid-template-columns: 26px minmax(0, 1fr);
+      }
+
+      .item.indent-1 {
+        padding-left: 28px;
+      }
+
+      .item.indent-2 {
+        padding-left: 48px;
+      }
+
+      .check,
+      .event,
+      .done,
+      .drag {
+        display: inline-grid;
+        width: 24px;
+        height: 24px;
+        place-items: center;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 900;
+        line-height: 1;
+      }
+
+      .check {
+        border: 2px solid var(--line-strong);
+        color: transparent;
+        background: var(--surface);
+      }
+
+      .done {
+        border: 2px solid var(--green);
+        background: var(--green-soft);
+        color: var(--green);
+      }
+
+      .event {
+        border: 1px solid var(--blue);
+        background: var(--blue-soft);
+        color: var(--blue);
+      }
+
+      .drag {
+        color: var(--weak);
+        background: var(--surface-soft);
+      }
+
+      .item-main {
+        min-width: 0;
+      }
+
+      .item-title {
+        color: var(--ink);
+        font-size: 13px;
+        line-height: 1.35;
+        font-weight: 750;
+      }
+
+      .item-title.done-text {
+        color: var(--muted);
+        text-decoration: line-through;
+      }
+
+      .item-detail {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 6px;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 22px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface-soft);
+        color: var(--muted);
+        padding: 3px 6px;
+        font-size: 10px;
+        font-weight: 750;
+        line-height: 1.15;
+      }
+
+      .pill.blue {
+        border-color: #c8d9e8;
+        background: var(--blue-soft);
+        color: var(--blue);
+      }
+
+      .pill.green {
+        border-color: #c9e0d8;
+        background: var(--green-soft);
+        color: var(--green);
+      }
+
+      .pill.amber {
+        border-color: #efd8bc;
+        background: var(--amber-soft);
+        color: var(--amber);
+      }
+
+      .pill.rose {
+        border-color: #ebcdd5;
+        background: var(--rose-soft);
+        color: var(--rose);
+      }
+
+      .item-action {
+        align-self: center;
+        min-height: 28px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--muted);
+        padding: 5px 8px;
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .focus {
+        border: 1px solid #c8e1d7;
+        border-radius: 8px;
+        background: linear-gradient(180deg, #f4fbf7 0%, #ffffff 100%);
+        padding: 11px;
+      }
+
+      .focus-top {
+        display: grid;
+        grid-template-columns: 28px minmax(0, 1fr) auto;
+        gap: 8px;
+        align-items: start;
+      }
+
+      .progress {
+        height: 7px;
+        margin-top: 10px;
+        overflow: hidden;
+        border-radius: 8px;
+        background: #dfe8e4;
+      }
+
+      .progress span {
+        display: block;
+        height: 100%;
+        background: var(--green);
+      }
+
+      .subtasks {
+        margin-top: 9px;
+        display: grid;
+        gap: 6px;
+      }
+
+      .subtask {
+        display: grid;
+        grid-template-columns: 20px minmax(0, 1fr);
+        gap: 6px;
+        align-items: center;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .mini-check,
+      .mini-done {
+        display: inline-grid;
+        width: 18px;
+        height: 18px;
+        place-items: center;
+        border-radius: 6px;
+        font-size: 10px;
+        font-weight: 900;
+      }
+
+      .mini-check {
+        border: 1.5px solid var(--line-strong);
+      }
+
+      .mini-done {
+        border: 1.5px solid var(--green);
+        background: var(--green-soft);
+        color: var(--green);
+      }
+
+      .search {
+        display: grid;
+        grid-template-columns: 24px minmax(0, 1fr);
+        gap: 8px;
+        align-items: center;
+        min-height: 38px;
+        margin-bottom: 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        padding: 0 10px;
+        color: var(--weak);
+      }
+
+      .search span {
+        font-size: 13px;
+        font-weight: 750;
+      }
+
+      .search input {
+        width: 100%;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .bucket {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 30px;
+        border-bottom: 1px solid var(--line);
+        padding: 0 10px;
+        background: var(--surface-soft);
+      }
+
+      .bucket strong {
+        font-size: 12px;
+      }
+
+      .bucket span {
+        color: var(--weak);
+        font-size: 10px;
+        font-weight: 800;
+      }
+
+      .sheet {
+        margin-top: 12px;
+        border: 1px solid var(--line-strong);
+        border-radius: 8px 8px 0 0;
+        background: var(--surface);
+        box-shadow: 0 -10px 24px rgba(23, 33, 43, 0.1);
+        padding: 10px;
+      }
+
+      .sheet-handle {
+        width: 38px;
+        height: 4px;
+        margin: 0 auto 10px;
+        border-radius: 8px;
+        background: var(--line-strong);
+      }
+
+      .field {
+        display: grid;
+        gap: 5px;
+        margin-top: 9px;
+      }
+
+      .field label {
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 800;
+      }
+
+      .field-value {
+        min-height: 34px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface-soft);
+        padding: 8px;
+        color: var(--ink);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .mode-switch {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 4px;
+        margin-bottom: 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface-soft);
+        padding: 4px;
+      }
+
+      .mode-switch button {
+        min-height: 34px;
+        border: 0;
+        border-radius: 7px;
+        background: transparent;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 850;
+      }
+
+      .mode-switch button.active {
+        background: var(--surface);
+        color: var(--ink);
+        box-shadow: 0 1px 4px rgba(23, 33, 43, 0.08);
+      }
+
+      .split-preview {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 9px;
+      }
+
+      .mini-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        min-height: 34px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        padding: 0 8px;
+      }
+
+      .mini-toolbar span {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .floating-add {
+        position: absolute;
+        right: 22px;
+        bottom: 22px;
+        display: grid;
+        width: 48px;
+        height: 48px;
+        place-items: center;
+        border: 0;
+        border-radius: 8px;
+        background: var(--amber);
+        color: #ffffff;
+        box-shadow: 0 12px 22px rgba(167, 102, 36, 0.25);
+        font-size: 24px;
+        font-weight: 700;
+      }
+
+      .bottom-tab {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        border-top: 1px solid var(--line);
+        background: var(--surface);
+      }
+
+      .tab-item {
+        display: grid;
+        gap: 3px;
+        min-height: 54px;
+        place-items: center;
+        color: var(--weak);
+        font-size: 10px;
+        font-weight: 800;
+      }
+
+      .tab-item.active {
+        color: var(--green);
+      }
+
+      .tab-icon {
+        font-size: 18px;
+        line-height: 1;
+      }
+
+      .notes {
+        display: grid;
+        gap: 7px;
+        border: 1px solid rgba(23, 33, 43, 0.12);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.86);
+        padding: 12px;
+      }
+
+      .note {
+        display: grid;
+        grid-template-columns: 78px minmax(0, 1fr);
+        gap: 8px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .note strong {
+        color: var(--ink);
+        font-size: 11px;
+      }
+
+      .verdict {
+        border: 1px solid rgba(23, 33, 43, 0.12);
+        border-radius: 8px;
+        margin-top: 18px;
+        background: rgba(255, 255, 255, 0.88);
+        padding: 14px;
+      }
+
+      .verdict-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 10px;
+      }
+
+      .verdict-item {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        padding: 10px;
+      }
+
+      .verdict-item strong {
+        display: block;
+        font-size: 12px;
+      }
+
+      .verdict-item span {
+        display: block;
+        margin-top: 5px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
+      @media (max-width: 1280px) {
+        .board {
+          grid-template-columns: repeat(2, minmax(280px, 1fr));
+        }
+      }
+
+      @media (max-width: 760px) {
+        .page {
+          width: min(100vw - 20px, 460px);
+          margin-top: 10px;
+        }
+
+        .intro-row,
+        .board,
+        .verdict-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .recommendation {
+          width: auto;
+        }
+
+        .phone {
+          min-height: 640px;
+        }
+
+        .screen {
+          min-height: 620px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="intro" aria-labelledby="page-title">
+        <div class="intro-row">
+          <div>
+            <h1 id="page-title">WideNote Todos Tab 交互候选</h1>
+            <p class="lead">
+              这里只画 Todos Tab 内部的交互，不讨论 Timeline、Home 或其他入口。
+              四个方案都保留 source-linked derived output 的边界：行动项可以完成，
+              日程候选先只是本地建议，不直接写系统日历或提醒。
+            </p>
+            <div class="principles" aria-label="设计约束">
+              <span class="principle">行动项 / 日程候选分清</span>
+              <span class="principle">已完成可见且可恢复</span>
+              <span class="principle">层级先用语义子任务</span>
+              <span class="principle">不先做外部同步</span>
+            </div>
+          </div>
+          <aside class="recommendation">
+            <strong>推荐：B-lite</strong>
+            <span>
+              先做待办 Tab 的 Briefing 骨架：类型明确、日期分组、完成区、
+              来源引用。子任务进度作为第二期。
+            </span>
+          </aside>
+        </div>
+      </section>
+
+      <section class="board" aria-label="交互候选">
+        <article class="option">
+          <header class="option-header">
+            <div class="option-kicker">Candidate A</div>
+            <div class="option-title">
+              <span class="marker a">A</span>
+              <h2>增量 Todo Center</h2>
+            </div>
+            <p class="option-copy">
+              最小改动：用分段控件把未完成、日程候选、已完成拆开。
+              它能止血，但层级和进度感较弱。
+            </p>
+          </header>
+
+          <div class="phone">
+            <div class="screen">
+              <div class="status">
+                <span>09:41</span>
+                <span>WideNote</span>
+              </div>
+              <div class="appbar">
+                <div class="title-block">
+                  <div class="screen-title">待办</div>
+                  <div class="screen-subtitle">3 个行动 · 2 个日程 · 5 个完成</div>
+                </div>
+                <div class="icon-actions" aria-label="工具">
+                  <button class="icon-button" aria-label="筛选">≡</button>
+                  <button class="icon-button" aria-label="更多">⋯</button>
+                </div>
+              </div>
+              <div class="content">
+                <div class="summary-row">
+                  <div class="metric">
+                    <span class="metric-value">3</span>
+                    <span class="metric-label">待处理</span>
+                  </div>
+                  <div class="metric">
+                    <span class="metric-value">2</span>
+                    <span class="metric-label">日程候选</span>
+                  </div>
+                  <div class="metric">
+                    <span class="metric-value">5</span>
+                    <span class="metric-label">已完成</span>
+                  </div>
+                </div>
+                <div class="segmented" role="tablist" aria-label="待办视图">
+                  <button class="segment active">待处理</button>
+                  <button class="segment">日程</button>
+                  <button class="segment">已完成</button>
+                </div>
+
+                <div class="section">
+                  <div class="section-head">
+                    <div class="section-title">待处理行动</div>
+                    <div class="section-meta">按更新时间</div>
+                  </div>
+                  <div class="item-list">
+                    <div class="item">
+                      <span class="check"></span>
+                      <div class="item-main">
+                        <div class="item-title">复核会议纪要里的预算结论</div>
+                        <div class="item-detail">
+                          <span class="pill green">行动项</span>
+                          <span class="pill">来源：会议摘录</span>
+                        </div>
+                      </div>
+                      <button class="item-action">完成</button>
+                    </div>
+                    <div class="item">
+                      <span class="check"></span>
+                      <div class="item-main">
+                        <div class="item-title">给 Alice 发新版报价草案</div>
+                        <div class="item-detail">
+                          <span class="pill green">行动项</span>
+                          <span class="pill amber">高优先级</span>
+                        </div>
+                      </div>
+                      <button class="item-action">完成</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="section">
+                  <div class="section-head">
+                    <div class="section-title">日程候选</div>
+                    <div class="section-meta">不可勾选</div>
+                  </div>
+                  <div class="item-list">
+                    <div class="item">
+                      <span class="event">◇</span>
+                      <div class="item-main">
+                        <div class="item-title">明天 10:00 跟进签约</div>
+                        <div class="item-detail">
+                          <span class="pill blue">日程候选</span>
+                          <span class="pill">来源：电话记录</span>
+                        </div>
+                      </div>
+                      <button class="item-action">查看</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="section">
+                  <div class="section-head">
+                    <div class="section-title">已完成</div>
+                    <div class="section-meta">最近 5 条</div>
+                  </div>
+                  <div class="item-list">
+                    <div class="item">
+                      <span class="done">✓</span>
+                      <div class="item-main">
+                        <div class="item-title done-text">确认备份权限边界</div>
+                        <div class="item-detail">
+                          <span class="pill green">今天 09:12</span>
+                        </div>
+                      </div>
+                      <button class="item-action">恢复</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <nav class="bottom-tab" aria-label="底部 Tab">
+                <div class="tab-item"><span class="tab-icon">⌂</span><span>首页</span></div>
+                <div class="tab-item active"><span class="tab-icon">✓</span><span>待办</span></div>
+                <div class="tab-item"><span class="tab-icon">◌</span><span>设置</span></div>
+              </nav>
+            </div>
+          </div>
+
+          <div class="notes">
+            <div class="note"><strong>适合</strong><span>快速修现状，先把完成区补回来。</span></div>
+            <div class="note"><strong>问题</strong><span>还是列表拼接，缺少明确的“今天要处理什么”。</span></div>
+          </div>
+        </article>
+
+        <article class="option">
+          <header class="option-header">
+            <div class="option-kicker">Candidate B</div>
+            <div class="option-title">
+              <span class="marker b">B</span>
+              <h2>Briefing 待办页</h2>
+            </div>
+            <p class="option-copy">
+              推荐方向：Todos Tab 自身成为今日行动 briefing。
+              行动、日程候选、进行中、已完成都在同一个任务视野里。
+            </p>
+          </header>
+
+          <div class="phone">
+            <div class="screen">
+              <div class="status">
+                <span>09:41</span>
+                <span>WideNote</span>
+              </div>
+              <div class="appbar">
+                <div class="title-block">
+                  <div class="screen-title">待办</div>
+                  <div class="screen-subtitle">今天 3 项 · 1 个日程 · 2 个进行中</div>
+                </div>
+                <div class="icon-actions" aria-label="工具">
+                  <button class="icon-button" aria-label="搜索">⌕</button>
+                  <button class="icon-button" aria-label="更多">⋯</button>
+                </div>
+              </div>
+              <div class="content">
+                <div class="focus">
+                  <div class="focus-top">
+                    <span class="check"></span>
+                    <div class="item-main">
+                      <div class="item-title">签证材料准备</div>
+                      <div class="item-detail">
+                        <span class="pill amber">重要</span>
+                        <span class="pill green">2/5 子项</span>
+                        <span class="pill">来源：周计划</span>
+                      </div>
+                    </div>
+                    <button class="item-action">展开</button>
+                  </div>
+                  <div class="progress" aria-label="进度 40%">
+                    <span style="width: 40%"></span>
+                  </div>
+                  <div class="subtasks">
+                    <div class="subtask">
+                      <span class="mini-done">✓</span>
+                      <span>填申请表</span>
+                    </div>
+                    <div class="subtask">
+                      <span class="mini-done">✓</span>
+                      <span>整理护照扫描件</span>
+                    </div>
+                    <div class="subtask">
+                      <span class="mini-check"></span>
+                      <span>打印确认页</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="section">
+                  <div class="section-head">
+                    <div class="section-title">今天</div>
+                    <div class="section-meta">按时间线索</div>
+                  </div>
+                  <div class="item-list">
+                    <div class="item">
+                      <span class="event">◇</span>
+                      <div class="item-main">
+                        <div class="item-title">14:30 牙医预约候选</div>
+                        <div class="item-detail">
+                          <span class="pill blue">日程候选</span>
+                          <span class="pill">不显示完成框</span>
+                        </div>
+                      </div>
+                      <button class="item-action">处理</button>
+                    </div>
+                    <div class="item">
+                      <span class="check"></span>
+                      <div class="item-main">
+                        <div class="item-title">发布清单复核</div>
+                        <div class="item-detail">
+                          <span class="pill green">行动项</span>
+                          <span class="pill amber">今晚</span>
+                        </div>
+                      </div>
+                      <button class="item-action">完成</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="section">
+                  <div class="section-head">
+                    <div class="section-title">本周</div>
+                    <div class="section-meta">2 项</div>
+                  </div>
+                  <div class="item-list">
+                    <div class="item compact">
+                      <span class="check"></span>
+                      <div class="item-main">
+                        <div class="item-title">整理发布后的复盘笔记</div>
+                        <div class="item-detail">
+                          <span class="pill">来源：产品会议</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="item compact">
+                      <span class="check"></span>
+                      <div class="item-main">
+                        <div class="item-title">补齐测试矩阵中的边界项</div>
+                        <div class="item-detail">
+                          <span class="pill green">进行中</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="section">
+                  <div class="section-head">
+                    <div class="section-title">已完成</div>
+                    <div class="section-meta">显示最近</div>
+                  </div>
+                  <div class="item-list">
+                    <div class="item">
+                      <span class="done">✓</span>
+                      <div class="item-main">
+                        <div class="item-title done-text">提交预算草案</div>
+                        <div class="item-detail">
+                          <span class="pill green">今天 09:12</span>
+                        </div>
+                      </div>
+                      <button class="item-action">恢复</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <nav class="bottom-tab" aria-label="底部 Tab">
+                <div class="tab-item"><span class="tab-icon">⌂</span><span>首页</span></div>
+                <div class="tab-item active"><span class="tab-icon">✓</span><span>待办</span></div>
+                <div class="tab-item"><span class="tab-icon">◌</span><span>设置</span></div>
+              </nav>
+            </div>
+          </div>
+
+          <div class="notes">
+            <div class="note"><strong>适合</strong><span>作为第一主方案，既有状态清晰度，也不越界。</span></div>
+            <div class="note"><strong>一期</strong><span>先做日期桶、完成区、类型标识；子任务放第二步。</span></div>
+          </div>
+        </article>
+
+        <article class="option">
+          <header class="option-header">
+            <div class="option-kicker">Candidate C</div>
+            <div class="option-title">
+              <span class="marker c">C</span>
+              <h2>Omi 式任务管理</h2>
+            </div>
+            <p class="option-copy">
+              更像完整任务 App：搜索、日期桶、编辑面板、缩进层级、手动添加。
+              操作强，但对 WideNote 来说第一期偏重。
+            </p>
+          </header>
+
+          <div class="phone">
+            <div class="screen">
+              <div class="status">
+                <span>09:41</span>
+                <span>WideNote</span>
+              </div>
+              <div class="appbar">
+                <div class="title-block">
+                  <div class="screen-title">待办</div>
+                  <div class="screen-subtitle">按截止时间管理</div>
+                </div>
+                <div class="icon-actions" aria-label="工具">
+                  <button class="icon-button" aria-label="选择">☑</button>
+                  <button class="icon-button" aria-label="更多">⋯</button>
+                </div>
+              </div>
+              <div class="content">
+                <label class="search">
+                  <span>⌕</span>
+                  <input value="搜索行动项" aria-label="搜索行动项" />
+                </label>
+
+                <div class="item-list">
+                  <div class="bucket">
+                    <strong>逾期</strong>
+                    <span>2 项</span>
+                  </div>
+                  <div class="item">
+                    <span class="check"></span>
+                    <div class="item-main">
+                      <div class="item-title">修复登录页回归</div>
+                      <div class="item-detail">
+                        <span class="pill rose">昨天</span>
+                        <span class="pill">来源：测试记录</span>
+                      </div>
+                    </div>
+                    <span class="drag">≡</span>
+                  </div>
+                  <div class="item indent-1 compact">
+                    <span class="check"></span>
+                    <div class="item-main">
+                      <div class="item-title">补 widget test</div>
+                      <div class="item-detail">
+                        <span class="pill">子项缩进</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="item indent-1 compact">
+                    <span class="check"></span>
+                    <div class="item-main">
+                      <div class="item-title">复核 Kimi 意见</div>
+                    </div>
+                  </div>
+
+                  <div class="bucket">
+                    <strong>今天</strong>
+                    <span>4 项</span>
+                  </div>
+                  <div class="item">
+                    <span class="check"></span>
+                    <div class="item-main">
+                      <div class="item-title">发布清单</div>
+                      <div class="item-detail">
+                        <span class="pill amber">23:59</span>
+                      </div>
+                    </div>
+                    <span class="drag">≡</span>
+                  </div>
+
+                  <div class="bucket">
+                    <strong>明天</strong>
+                    <span>1 项</span>
+                  </div>
+                  <div class="item">
+                    <span class="event">◇</span>
+                    <div class="item-main">
+                      <div class="item-title">10:00 产品评审候选</div>
+                      <div class="item-detail">
+                        <span class="pill blue">可转换</span>
+                      </div>
+                    </div>
+                    <button class="item-action">转为任务</button>
+                  </div>
+                </div>
+
+                <div class="sheet" aria-label="编辑面板预览">
+                  <div class="sheet-handle"></div>
+                  <div class="item-title">编辑行动项</div>
+                  <div class="field">
+                    <label>内容</label>
+                    <div class="field-value">发布清单</div>
+                  </div>
+                  <div class="field">
+                    <label>截止时间</label>
+                    <div class="field-value">今天 23:59</div>
+                  </div>
+                </div>
+              </div>
+              <button class="floating-add" aria-label="新增">+</button>
+              <nav class="bottom-tab" aria-label="底部 Tab">
+                <div class="tab-item"><span class="tab-icon">⌂</span><span>首页</span></div>
+                <div class="tab-item active"><span class="tab-icon">✓</span><span>待办</span></div>
+                <div class="tab-item"><span class="tab-icon">◌</span><span>设置</span></div>
+              </nav>
+            </div>
+          </div>
+
+          <div class="notes">
+            <div class="note"><strong>适合</strong><span>如果明确要把 Todos 做成完整任务管理器。</span></div>
+            <div class="note"><strong>风险</strong><span>手动排序、缩进、新增、删除会冲淡 derived output 边界。</span></div>
+          </div>
+        </article>
+
+        <article class="option">
+          <header class="option-header">
+            <div class="option-kicker">Candidate D</div>
+            <div class="option-title">
+              <span class="marker d">D</span>
+              <h2>Briefing / Manage 双模式</h2>
+            </div>
+            <p class="option-copy">
+              默认简报模式，切到管理模式后出现搜索、排序、批量处理。
+              能力最全，但第一版认知负担最高。
+            </p>
+          </header>
+
+          <div class="phone">
+            <div class="screen">
+              <div class="status">
+                <span>09:41</span>
+                <span>WideNote</span>
+              </div>
+              <div class="appbar">
+                <div class="title-block">
+                  <div class="screen-title">待办</div>
+                  <div class="screen-subtitle">简报优先，可切换管理</div>
+                </div>
+                <div class="icon-actions" aria-label="工具">
+                  <button class="icon-button" aria-label="搜索">⌕</button>
+                  <button class="icon-button" aria-label="更多">⋯</button>
+                </div>
+              </div>
+              <div class="content">
+                <div class="mode-switch" role="tablist" aria-label="视图模式">
+                  <button class="active">简报</button>
+                  <button>管理</button>
+                </div>
+
+                <div class="split-preview">
+                  <div class="mini-toolbar">
+                    <span>简报模式</span>
+                    <span>今日焦点</span>
+                  </div>
+                  <div class="focus">
+                    <div class="focus-top">
+                      <span class="check"></span>
+                      <div class="item-main">
+                        <div class="item-title">完成发布前检查</div>
+                        <div class="item-detail">
+                          <span class="pill amber">重要</span>
+                          <span class="pill green">3/4 子项</span>
+                        </div>
+                      </div>
+                      <button class="item-action">查看</button>
+                    </div>
+                    <div class="progress" aria-label="进度 75%">
+                      <span style="width: 75%"></span>
+                    </div>
+                  </div>
+
+                  <div class="item-list">
+                    <div class="bucket">
+                      <strong>今天</strong>
+                      <span>简报排序</span>
+                    </div>
+                    <div class="item">
+                      <span class="event">◇</span>
+                      <div class="item-main">
+                        <div class="item-title">16:00 评审会候选</div>
+                        <div class="item-detail">
+                          <span class="pill blue">日程候选</span>
+                        </div>
+                      </div>
+                      <button class="item-action">处理</button>
+                    </div>
+                    <div class="item">
+                      <span class="check"></span>
+                      <div class="item-main">
+                        <div class="item-title">合并 QA 记录</div>
+                        <div class="item-detail">
+                          <span class="pill">来源：测试会话</span>
+                        </div>
+                      </div>
+                      <button class="item-action">完成</button>
+                    </div>
+                  </div>
+
+                  <div class="mini-toolbar">
+                    <span>管理模式预览</span>
+                    <span>搜索 · 选择 · 排序</span>
+                  </div>
+                  <div class="item-list">
+                    <div class="item compact">
+                      <span class="drag">≡</span>
+                      <div class="item-main">
+                        <div class="item-title">拖动排序、批量完成、隐藏已完成</div>
+                        <div class="item-detail">
+                          <span class="pill violet">二级模式</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <nav class="bottom-tab" aria-label="底部 Tab">
+                <div class="tab-item"><span class="tab-icon">⌂</span><span>首页</span></div>
+                <div class="tab-item active"><span class="tab-icon">✓</span><span>待办</span></div>
+                <div class="tab-item"><span class="tab-icon">◌</span><span>设置</span></div>
+              </nav>
+            </div>
+          </div>
+
+          <div class="notes">
+            <div class="note"><strong>适合</strong><span>后期同时需要简报视角和强管理能力。</span></div>
+            <div class="note"><strong>风险</strong><span>两套模式要共享状态模型，第一版会变重。</span></div>
+          </div>
+        </article>
+      </section>
+
+      <section class="verdict" aria-labelledby="verdict-title">
+        <h2 id="verdict-title">推荐拆法</h2>
+        <div class="verdict-grid">
+          <div class="verdict-item">
+            <strong>第一期：B-lite</strong>
+            <span>
+              Todos Tab 内做日期分组、已完成区、行动/日程候选强区分、
+              source chip 和 priority/time cue。
+            </span>
+          </div>
+          <div class="verdict-item">
+            <strong>第二期：语义层级</strong>
+            <span>
+              用 subtasks 做父子结构和进度，不先用 Omi 式手动缩进当主模型。
+            </span>
+          </div>
+          <div class="verdict-item">
+            <strong>暂缓：任务管理器化</strong>
+            <span>
+              搜索、手动新增、拖拽排序、外部同步可以后置，等产品边界确认后再进。
+            </span>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

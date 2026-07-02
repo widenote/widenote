@@ -602,8 +602,23 @@ final class ContextPacketBuilder {
   ) {
     final title = _firstText(todo.payload, const <String>['title', 'text']);
     final body = _firstText(todo.payload, const <String>['body', 'summary']);
+    final metadata = _todoMetadata(todo);
     final content = _truncate(
-      _lines(<String>['Todo (${todo.status})', title, if (body != title) body]),
+      _lines(<String>[
+        'Todo (${todo.status})',
+        title,
+        if (body != title) body,
+        if (metadata['suggestion_kind'] != null)
+          'Kind: ${metadata['suggestion_kind']}',
+        if (metadata['due_at'] != null) 'Due: ${metadata['due_at']}',
+        if (metadata['scheduled_start'] != null)
+          'Scheduled: ${metadata['scheduled_start']}',
+        if (metadata['priority'] != null) 'Priority: ${metadata['priority']}',
+        if (metadata['completed_at'] != null)
+          'Completed at: ${metadata['completed_at']}',
+        if (_listValue(metadata['subtasks']).isNotEmpty)
+          'Subtasks: ${_subtaskSummary(metadata['subtasks'])}',
+      ]),
       _derivedExcerptLimit,
     );
     if (content.trim().isEmpty || content == 'Todo (${todo.status})') {
@@ -624,6 +639,7 @@ final class ContextPacketBuilder {
           'excerpt': _excerpt(content),
         },
       ],
+      'metadata': metadata,
       'redactions': const <Object?>[],
       'sensitivity': 'low',
     };
@@ -1322,6 +1338,42 @@ JsonMap _todoSourceVersion(TodoRecord todo) {
   };
 }
 
+JsonMap _todoMetadata(TodoRecord todo) {
+  return <String, Object?>{
+    'status': todo.status,
+    'suggestion_kind': todo.payload['suggestion_kind'],
+    'suggestion_confidence': todo.payload['suggestion_confidence'],
+    'suggestion_reason': todo.payload['suggestion_reason'],
+    'due_at': todo.payload['due_at'],
+    'due_label': todo.payload['due_label'],
+    'scheduled_at_label': todo.payload['scheduled_at_label'],
+    'scheduled_start': todo.payload['scheduled_start'],
+    'scheduled_end': todo.payload['scheduled_end'],
+    'priority': todo.payload['priority'],
+    'sort_order': todo.payload['sort_order'],
+    'indent_level': todo.payload['indent_level'],
+    'completed_at': todo.payload['completed_at'],
+    'completed_by': todo.payload['completed_by'],
+    'user_overrides': _listValue(todo.payload['user_overrides']),
+    'subtasks': _listValue(todo.payload['subtasks']),
+  };
+}
+
+String _subtaskSummary(Object? value) {
+  final subtasks = _listValue(value)
+      .whereType<Map>()
+      .map((entry) => entry.cast<String, Object?>())
+      .where((entry) => _firstText(entry, const <String>['title']).isNotEmpty)
+      .toList(growable: false);
+  if (subtasks.isEmpty) {
+    return '';
+  }
+  final completed = subtasks
+      .where((entry) => entry['completed'] == true)
+      .length;
+  return '$completed/${subtasks.length}';
+}
+
 JsonMap _artifactSourceRef(DerivedArtifactRecord artifact) {
   return _sourceRef(
     'artifact',
@@ -1557,6 +1609,13 @@ String _firstText(JsonMap payload, List<String> keys) {
     }
   }
   return '';
+}
+
+List<Object?> _listValue(Object? value) {
+  if (value is List) {
+    return List<Object?>.unmodifiable(value);
+  }
+  return const <Object?>[];
 }
 
 String? _safeFileName(String? value) {

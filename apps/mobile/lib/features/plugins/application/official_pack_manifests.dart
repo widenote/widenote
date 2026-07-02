@@ -238,7 +238,7 @@ const officialPackManifestMaps = <String, Map<String, Object?>>{
         'runtime': 'native',
         'run_mode': 'auto',
         'name': 'Todo Loop Agent',
-        'prompt_ref': 'todo.suggestion.v1',
+        'prompt_ref': 'todo.suggestion.v2',
         'model_profile_ref': 'local_or_user_selected_model',
         'permissions': <String>['model.complete', 'todo.suggest'],
         'tools': <String>['todo.suggest'],

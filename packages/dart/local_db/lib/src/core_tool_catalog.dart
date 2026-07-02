@@ -674,6 +674,15 @@ final class LocalDbCoreToolCatalog {
         'source_refs',
         'source_event_id',
         'source_capture_id',
+        'due_at',
+        'due_label',
+        'scheduled_at_label',
+        'scheduled_start',
+        'scheduled_end',
+        'priority',
+        'sort_order',
+        'indent_level',
+        'subtasks',
       });
       final refs = _sourceRefsInput(input);
       if (refs.isEmpty) {
@@ -684,15 +693,51 @@ final class LocalDbCoreToolCatalog {
         );
       }
       final now = _clock().toUtc();
+      final priority = _todoPriority(input['priority']);
+      final subtasks = _todoSubtasks(input['subtasks']);
       final record = TodoRecord(
         id: _optionalString(input['id'], 'id') ?? _nextId('todo_suggestion'),
         sourceEventId: _firstSourceId(refs, 'event'),
         sourceCaptureId: _firstSourceId(refs, 'capture'),
         status: 'suggested',
         payload: <String, Object?>{
+          'todo_schema_version': 1,
           'title': _requiredString(input, 'title'),
           if (_optionalString(input['body'], 'body') != null)
             'body': _optionalString(input['body'], 'body'),
+          if (_optionalString(input['due_at'], 'due_at') != null)
+            'due_at': _optionalString(input['due_at'], 'due_at'),
+          if (_optionalString(input['due_label'], 'due_label') != null)
+            'due_label': _optionalString(input['due_label'], 'due_label'),
+          if (_optionalString(
+                input['scheduled_at_label'],
+                'scheduled_at_label',
+              ) !=
+              null)
+            'scheduled_at_label': _optionalString(
+              input['scheduled_at_label'],
+              'scheduled_at_label',
+            ),
+          if (_optionalString(input['scheduled_start'], 'scheduled_start') !=
+              null)
+            'scheduled_start': _optionalString(
+              input['scheduled_start'],
+              'scheduled_start',
+            ),
+          if (_optionalString(input['scheduled_end'], 'scheduled_end') != null)
+            'scheduled_end': _optionalString(
+              input['scheduled_end'],
+              'scheduled_end',
+            ),
+          if (priority != null) 'priority': priority,
+          if (_optionalInt(input['sort_order'], 'sort_order') != null)
+            'sort_order': _optionalInt(input['sort_order'], 'sort_order'),
+          if (_optionalInt(input['indent_level'], 'indent_level') != null)
+            'indent_level': _optionalInt(
+              input['indent_level'],
+              'indent_level',
+            )!.clamp(0, 3),
+          if (subtasks.isNotEmpty) 'subtasks': subtasks,
           'source_refs': refs,
           'agent_generated': true,
           'review_state': 'needs_review',
@@ -1044,6 +1089,21 @@ JsonMap _todoOutput(TodoRecord todo) {
     'status': todo.status,
     'title': todo.payload['title'],
     'body': todo.payload['body'],
+    'suggestion_kind': todo.payload['suggestion_kind'],
+    'suggestion_confidence': todo.payload['suggestion_confidence'],
+    'suggestion_reason': todo.payload['suggestion_reason'],
+    'due_at': todo.payload['due_at'],
+    'due_label': todo.payload['due_label'],
+    'scheduled_at_label': todo.payload['scheduled_at_label'],
+    'scheduled_start': todo.payload['scheduled_start'],
+    'scheduled_end': todo.payload['scheduled_end'],
+    'priority': todo.payload['priority'],
+    'sort_order': todo.payload['sort_order'],
+    'indent_level': todo.payload['indent_level'],
+    'completed_at': todo.payload['completed_at'],
+    'completed_by': todo.payload['completed_by'],
+    'user_overrides': _listValue(todo.payload['user_overrides']),
+    'subtasks': _listValue(todo.payload['subtasks']),
     'source_event_id': todo.sourceEventId,
     'source_capture_id': todo.sourceCaptureId,
     'source_refs': sourceRefs,
@@ -1174,7 +1234,7 @@ JsonMap _knowledgeOutput(String kind, DateTime updatedAt, JsonMap value) {
 }
 
 bool _isReadableTodo(TodoRecord todo) {
-  return todo.status != 'completed' && todo.status != 'deleted';
+  return !_terminalStatuses.contains(todo.status);
 }
 
 bool _isReadableArtifact(DerivedArtifactRecord artifact) {
@@ -2336,6 +2396,73 @@ String? _optionalString(Object? value, String field) {
   }
   final trimmed = value.trim();
   return trimmed.isEmpty ? null : trimmed;
+}
+
+int? _optionalInt(Object? value, String field) {
+  if (value == null) {
+    return null;
+  }
+  if (value is int) {
+    return value;
+  }
+  if (value is double) {
+    return value.round();
+  }
+  if (value is String) {
+    return int.tryParse(value.trim());
+  }
+  throw _ToolInputException(
+    'invalid_input',
+    '$field must be an integer.',
+    details: <String, Object?>{'field': field},
+  );
+}
+
+String? _todoPriority(Object? value) {
+  final priority = _optionalString(value, 'priority');
+  return switch (priority) {
+    'high' => 'high',
+    'medium' => 'medium',
+    'low' => 'low',
+    null => null,
+    _ => throw _ToolInputException(
+      'invalid_input',
+      'priority must be high, medium, or low.',
+      details: <String, Object?>{'field': 'priority'},
+    ),
+  };
+}
+
+JsonList _todoSubtasks(Object? value) {
+  if (value == null) {
+    return const <Object?>[];
+  }
+  if (value is! List) {
+    throw _ToolInputException(
+      'invalid_input',
+      'subtasks must be an array.',
+      details: const <String, Object?>{'field': 'subtasks'},
+    );
+  }
+  final subtasks = <Object?>[];
+  for (final item in value) {
+    if (item is! Map) {
+      continue;
+    }
+    final map = _normalizeMap(item);
+    final title = _optionalString(map['title'], 'subtasks.title');
+    if (title == null) {
+      continue;
+    }
+    subtasks.add(<String, Object?>{
+      'id':
+          _optionalString(map['id'], 'subtasks.id') ??
+          'subtask-${subtasks.length + 1}',
+      'title': title,
+      'completed': map['completed'] == true,
+    });
+  }
+  return subtasks;
 }
 
 bool _optionalBool(Object? value, String field, {required bool defaultValue}) {

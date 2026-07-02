@@ -1,5 +1,5 @@
 const captureMemoryPromptRef = 'capture.memory_candidate.v2';
-const todoSuggestionPromptRef = 'todo.suggestion.v1';
+const todoSuggestionPromptRef = 'todo.suggestion.v2';
 const pkmProfilePromptRef = 'pkm.profile_entry.v1';
 
 const captureMemoryPromptCaptureTextMarker = 'Capture text:';
@@ -58,12 +58,15 @@ String buildTodoSuggestionPrompt({
     'Output:',
     '- Return exactly one JSON object and nothing else.',
     '- Do not wrap the JSON in Markdown, code fences, bullets, headings, or commentary.',
-    '- Shape: {"kind":"quiet","title":"","confidence":"high","reason":"ordinary_record","scheduled_at_label":null}',
+    '- Shape: {"kind":"quiet","title":"","confidence":"high","reason":"ordinary_record","scheduled_at_label":null,"due_label":null,"priority":null,"subtasks":[]}',
     '- kind must be one of: action, schedule, quiet.',
     '- title: for action or schedule, a concise user-facing label under 80 characters. For quiet, use an empty string.',
     '- confidence must be one of: high, medium, low.',
     '- reason: short machine-readable explanation such as explicit_action, explicit_schedule, ordinary_record, ambiguous, or insufficient_evidence.',
     '- scheduled_at_label: copy only the explicit date/time/time cue from the source for schedule; otherwise null.',
+    '- due_label: copy only an explicit due date/time/time cue for action items; otherwise null. Do not calculate dates.',
+    '- priority: high, medium, low, or null. Only use high/medium/low when the source explicitly states urgency or importance.',
+    '- subtasks: optional array of concise checklist children only when the source explicitly lists steps; each item should be {"title":"...","completed":false}. Otherwise use [].',
     '- If unsure whether this is actionable, choose quiet with confidence low or medium.',
     '',
     'Source event id: $sourceEventId',

@@ -4,11 +4,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:widenote_local_db/widenote_local_db.dart';
 import 'package:widenote_mobile/app/local_database.dart';
+import 'package:widenote_mobile/features/todos/application/todo_controller.dart';
+import 'package:widenote_mobile/features/todos/presentation/todo_detail_page.dart';
 import 'package:widenote_mobile/features/todos/presentation/todos_page.dart';
 import 'package:widenote_mobile/l10n/l10n.dart';
 
 void main() {
-  testWidgets('todos page completes and hides a source-linked todo', (
+  testWidgets('todos page completes, keeps, and reopens a source-linked todo', (
     tester,
   ) async {
     final database = WideNoteLocalDatabase.inMemory();
@@ -23,12 +25,37 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(database.todos.readById('todo-page-1')!.status, 'completed');
-    expect(find.byKey(const Key('todo-row-todo-page-1')), findsNothing);
+    expect(
+      database.todos.readById('todo-page-1')!.payload['completed_at'],
+      isA<String>(),
+    );
+    expect(find.byKey(const Key('todo-row-todo-page-1')), findsOneWidget);
+    expect(find.text('Completed'), findsWidgets);
+    expect(
+      find.byKey(const Key('todo-completed-at-todo-page-1')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('todo-reopen-todo-page-1')), findsOneWidget);
+    final completedTitle = tester.widget<Text>(
+      find.text('Review source-linked todo'),
+    );
+    expect(completedTitle.style?.decoration, TextDecoration.lineThrough);
+    final completedBody = tester.widget<Text>(
+      find.text('Keep source-linked context.'),
+    );
+    expect(completedBody.style?.decoration, TextDecoration.lineThrough);
 
-    database.todos.updateStatus('todo-page-1', 'open');
-    await tester.pumpWidget(const SizedBox.shrink());
-    await _pumpTodosPage(tester, database);
-    expect(find.text('Suggested action'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('todo-reopen-todo-page-1')));
+    await tester.pumpAndSettle();
+
+    expect(database.todos.readById('todo-page-1')!.status, 'open');
+    expect(
+      database.todos
+          .readById('todo-page-1')!
+          .payload
+          .containsKey('completed_at'),
+      isFalse,
+    );
 
     await tester.tap(find.byKey(const Key('todo-source-todo-page-1')));
     await tester.pumpAndSettle();
@@ -76,6 +103,88 @@ void main() {
     );
     expect(find.text('Schedule candidate'), findsOneWidget);
     expect(find.text('Time cue: tomorrow'), findsOneWidget);
+  });
+
+  testWidgets('todo detail page edits local metadata', (tester) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    _seedTodo(database);
+    await _pumpTodosPage(tester, database);
+
+    await tester.tap(find.byKey(const Key('todo-row-todo-page-1')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('todo-detail-page')), findsOneWidget);
+
+    await tester.enterText(
+      find.byKey(const Key('todo-detail-title-field')),
+      'Updated detail title',
+    );
+    await tester.tap(find.byKey(const Key('todo-detail-save-title')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('todo-priority-medium')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('todo-due-tomorrow')));
+    await tester.pumpAndSettle();
+    await tester.drag(
+      find.byKey(const Key('todo-detail-scroll')),
+      const Offset(0, -240),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('todo-indent-increase')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('todo-sort-later')));
+    await tester.pumpAndSettle();
+
+    final record = database.todos.readById('todo-page-1')!;
+    expect(record.payload['title'], 'Updated detail title');
+    expect(record.payload['priority'], 'medium');
+    expect(record.payload['due_at'], isA<String>());
+    expect(record.payload['indent_level'], 1);
+    expect(record.payload['sort_order'], 100);
+  });
+
+  testWidgets('todo detail page reopens completed rows with crossed subtasks', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    _seedCompletedTodo(database);
+    await _pumpTodosPage(tester, database);
+
+    await tester.tap(find.byKey(const Key('todo-row-todo-completed-page')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('todo-detail-page')), findsOneWidget);
+    expect(
+      find.text(
+        'Completed tasks stay at the bottom. Reopen to move this task back to active buckets.',
+      ),
+      findsOneWidget,
+    );
+    await tester.drag(
+      find.byKey(const Key('todo-detail-scroll')),
+      const Offset(0, -280),
+    );
+    await tester.pumpAndSettle();
+    final subtask = tester.widget<Text>(
+      find.byKey(const Key('todo-detail-subtask-subtask-draft')),
+    );
+    expect(subtask.style?.decoration, TextDecoration.lineThrough);
+    await tester.drag(
+      find.byKey(const Key('todo-detail-scroll')),
+      const Offset(0, 280),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.byKey(const Key('todo-detail-toggle-todo-completed-page')),
+    );
+    await tester.pumpAndSettle();
+
+    final record = database.todos.readById('todo-completed-page')!;
+    expect(record.status, 'open');
+    expect(record.payload.containsKey('completed_at'), isFalse);
   });
 
   testWidgets('todos page pull-to-refresh reloads local todo rows', (
@@ -131,6 +240,11 @@ Future<void> _pumpTodosPage(
         builder: (context, state) => const Scaffold(body: TodosPage()),
       ),
       GoRoute(
+        path: '/todos/:todoId',
+        builder: (context, state) =>
+            TodoDetailPage(todoId: state.pathParameters['todoId'] ?? ''),
+      ),
+      GoRoute(
         path: '/timeline/items/:itemId',
         builder: (context, state) => Scaffold(
           key: const Key('todo-source-destination'),
@@ -142,7 +256,10 @@ Future<void> _pumpTodosPage(
   addTearDown(router.dispose);
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [localDatabaseProvider.overrideWithValue(database)],
+      overrides: [
+        localDatabaseProvider.overrideWithValue(database),
+        todoNowProvider.overrideWithValue(DateTime(2026, 7, 3, 9)),
+      ],
       child: MaterialApp.router(
         locale: locale,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -167,6 +284,7 @@ void _seedTodo(WideNoteLocalDatabase database) {
         'suggestion_kind': 'action',
         'suggestion_confidence': 'high',
         'suggestion_reason': 'explicit_action',
+        'body': 'Keep source-linked context.',
       },
       createdAt: now,
       updatedAt: now,
@@ -190,6 +308,36 @@ void _seedSchedule(WideNoteLocalDatabase database) {
         'scheduled_at_label': 'tomorrow',
       },
       createdAt: now,
+      updatedAt: now,
+    ),
+  );
+}
+
+void _seedCompletedTodo(WideNoteLocalDatabase database) {
+  final now = DateTime.utc(2026, 7, 2, 15);
+  database.todos.insert(
+    TodoRecord(
+      id: 'todo-completed-page',
+      sourceCaptureId: 'capture-completed-page',
+      status: 'completed',
+      payload: const <String, Object?>{
+        'title': 'Completed launch task',
+        'source_label': 'source: capture-completed-page',
+        'status_label': 'suggested action',
+        'suggestion_kind': 'action',
+        'suggestion_confidence': 'high',
+        'suggestion_reason': 'explicit_action',
+        'completed_at': '2026-07-02T15:00:00.000Z',
+        'completed_by': 'user',
+        'subtasks': <Object?>[
+          <String, Object?>{
+            'id': 'subtask-draft',
+            'title': 'Draft launch note',
+            'completed': false,
+          },
+        ],
+      },
+      createdAt: now.subtract(const Duration(hours: 2)),
       updatedAt: now,
     ),
   );

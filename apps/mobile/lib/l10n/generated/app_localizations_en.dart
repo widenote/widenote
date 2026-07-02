@@ -1229,6 +1229,141 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get todoSearchHint => 'Search tasks';
+
+  @override
+  String get todoSummaryOpen => 'Open';
+
+  @override
+  String get todoSummarySchedule => 'Schedule';
+
+  @override
+  String get todoSummaryCompleted => 'Done';
+
+  @override
+  String get todoNoMatches => 'No matching tasks.';
+
+  @override
+  String get todoBucketOverdue => 'Overdue';
+
+  @override
+  String get todoBucketToday => 'Today';
+
+  @override
+  String get todoBucketTomorrow => 'Tomorrow';
+
+  @override
+  String get todoBucketLater => 'Later';
+
+  @override
+  String get todoBucketNoDeadline => 'No deadline';
+
+  @override
+  String get todoBucketScheduleCandidates => 'Schedule candidates';
+
+  @override
+  String get todoBucketCompleted => 'Completed';
+
+  @override
+  String get todoCompletedEmpty => 'No completed tasks yet.';
+
+  @override
+  String get todoPriorityNone => 'None';
+
+  @override
+  String get todoPriorityLow => 'Low';
+
+  @override
+  String get todoPriorityMedium => 'Medium';
+
+  @override
+  String get todoPriorityHigh => 'High';
+
+  @override
+  String get todoDueNone => 'No date';
+
+  @override
+  String get todoDueToday => 'Today';
+
+  @override
+  String get todoDueTomorrow => 'Tomorrow';
+
+  @override
+  String get todoDueLater => 'Later';
+
+  @override
+  String todoDueLabel(String date) {
+    return 'Due: $date';
+  }
+
+  @override
+  String todoSubtaskProgress(int completed, int total) {
+    return '$completed/$total subtasks';
+  }
+
+  @override
+  String get todoDetailTitle => 'Task detail';
+
+  @override
+  String get todoDetailMissing => 'This task is no longer available.';
+
+  @override
+  String get todoDetailContent => 'Content';
+
+  @override
+  String get todoDetailTitleField => 'Title';
+
+  @override
+  String get todoDetailSaveTitle => 'Save title';
+
+  @override
+  String get todoDetailStatus => 'Status';
+
+  @override
+  String todoCompletedAtLabel(String date) {
+    return 'Completed: $date';
+  }
+
+  @override
+  String get todoDetailScheduleNotice =>
+      'Schedule candidates are local suggestions and are not completed like action items.';
+
+  @override
+  String get todoDetailCompletedNotice =>
+      'Completed tasks stay at the bottom. Reopen to move this task back to active buckets.';
+
+  @override
+  String get todoDetailMetadata => 'Task metadata';
+
+  @override
+  String get todoDetailPriority => 'Priority';
+
+  @override
+  String get todoDetailDue => 'Due date';
+
+  @override
+  String todoDetailIndent(int level) {
+    return 'Indent level $level';
+  }
+
+  @override
+  String todoDetailSort(int order) {
+    return 'Sort order $order';
+  }
+
+  @override
+  String get todoDetailSubtasks => 'Subtasks';
+
+  @override
+  String get todoDetailNoSubtasks => 'No structured subtasks.';
+
+  @override
+  String get todoDetailSource => 'Source';
+
+  @override
+  String get todoDetailOpenSource => 'Open source';
+
+  @override
   String get timelineTitle => 'Timeline';
 
   @override

@@ -1095,6 +1095,139 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get todoSearchHint => '搜索待办';
+
+  @override
+  String get todoSummaryOpen => '未完成';
+
+  @override
+  String get todoSummarySchedule => '日程';
+
+  @override
+  String get todoSummaryCompleted => '完成';
+
+  @override
+  String get todoNoMatches => '没有匹配的待办。';
+
+  @override
+  String get todoBucketOverdue => '逾期';
+
+  @override
+  String get todoBucketToday => '今天';
+
+  @override
+  String get todoBucketTomorrow => '明天';
+
+  @override
+  String get todoBucketLater => '稍后';
+
+  @override
+  String get todoBucketNoDeadline => '无日期';
+
+  @override
+  String get todoBucketScheduleCandidates => '日程候选';
+
+  @override
+  String get todoBucketCompleted => '已完成';
+
+  @override
+  String get todoCompletedEmpty => '还没有已完成待办。';
+
+  @override
+  String get todoPriorityNone => '无';
+
+  @override
+  String get todoPriorityLow => '低';
+
+  @override
+  String get todoPriorityMedium => '中';
+
+  @override
+  String get todoPriorityHigh => '高';
+
+  @override
+  String get todoDueNone => '无日期';
+
+  @override
+  String get todoDueToday => '今天';
+
+  @override
+  String get todoDueTomorrow => '明天';
+
+  @override
+  String get todoDueLater => '稍后';
+
+  @override
+  String todoDueLabel(String date) {
+    return '截止：$date';
+  }
+
+  @override
+  String todoSubtaskProgress(int completed, int total) {
+    return '$completed/$total 个子项';
+  }
+
+  @override
+  String get todoDetailTitle => '待办详情';
+
+  @override
+  String get todoDetailMissing => '这个待办已不可用。';
+
+  @override
+  String get todoDetailContent => '内容';
+
+  @override
+  String get todoDetailTitleField => '标题';
+
+  @override
+  String get todoDetailSaveTitle => '保存标题';
+
+  @override
+  String get todoDetailStatus => '状态';
+
+  @override
+  String todoCompletedAtLabel(String date) {
+    return '完成：$date';
+  }
+
+  @override
+  String get todoDetailScheduleNotice => '日程候选只是本地建议，不像行动项一样勾选完成。';
+
+  @override
+  String get todoDetailCompletedNotice => '已完成待办会沉到底部；重新打开后会回到未完成分组。';
+
+  @override
+  String get todoDetailMetadata => '任务信息';
+
+  @override
+  String get todoDetailPriority => '优先级';
+
+  @override
+  String get todoDetailDue => '截止日期';
+
+  @override
+  String todoDetailIndent(int level) {
+    return '缩进层级 $level';
+  }
+
+  @override
+  String todoDetailSort(int order) {
+    return '排序值 $order';
+  }
+
+  @override
+  String get todoDetailSubtasks => '子任务';
+
+  @override
+  String get todoDetailNoSubtasks => '没有结构化子任务。';
+
+  @override
+  String get todoDetailSource => '来源';
+
+  @override
+  String get todoDetailOpenSource => '打开来源';
+
+  @override
   String get timelineTitle => '时间线';
 
   @override

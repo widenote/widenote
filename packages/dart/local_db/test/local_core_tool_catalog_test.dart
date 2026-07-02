@@ -702,6 +702,19 @@ void main() {
           'body': 'Check source refs and runtime permissions.',
           'source_capture_id': 'capture-todo',
           'source_event_id': 'event-todo',
+          'due_at': '2026-07-03T18:00:00.000Z',
+          'due_label': 'today evening',
+          'priority': 'high',
+          'sort_order': 42,
+          'indent_level': 8,
+          'subtasks': <Object?>[
+            <String, Object?>{
+              'id': 'subtask-review',
+              'title': 'Review schema surface',
+              'completed': true,
+            },
+            <String, Object?>{'title': 'Check context packet'},
+          ],
         },
         runId: 'run-todo',
       );
@@ -714,7 +727,21 @@ void main() {
       expect(todo.sourceEventId, 'event-todo');
       expect(todo.payload['review_state'], 'needs_review');
       expect(todo.payload['source_run_id'], 'run-todo');
+      expect(todo.payload['todo_schema_version'], 1);
+      expect(todo.payload['due_at'], '2026-07-03T18:00:00.000Z');
+      expect(todo.payload['due_label'], 'today evening');
+      expect(todo.payload['priority'], 'high');
+      expect(todo.payload['sort_order'], 42);
+      expect(todo.payload['indent_level'], 3);
+      expect((todo.payload['subtasks']! as List), hasLength(2));
       expect((todo.payload['source_refs']! as List), isNotEmpty);
+      final outputTodo = output['todo']! as Map;
+      expect(outputTodo['priority'], 'high');
+      expect(outputTodo['indent_level'], 3);
+      expect(
+        outputTodo['subtasks'],
+        isA<List>().having((list) => list.length, 'length', 2),
+      );
 
       final countBeforeMissing = database.todos.readAll().length;
       final missingRefs = await _invoke(
@@ -725,6 +752,54 @@ void main() {
       expect(missingRefs['success'], isFalse);
       expect((missingRefs['error']! as Map)['code'], 'missing_source_refs');
       expect(database.todos.readAll(), hasLength(countBeforeMissing));
+    });
+
+    test('knowledge read keeps completed todos visible to agents', () async {
+      final now = DateTime.utc(2026, 7, 3, 12);
+      database.todos.insert(
+        TodoRecord(
+          id: 'todo-completed-readable',
+          sourceCaptureId: 'capture-completed',
+          sourceEventId: 'event-completed',
+          status: 'completed',
+          payload: const <String, Object?>{
+            'title': 'Review completed task context',
+            'suggestion_kind': 'action',
+            'completed_at': '2026-07-03T11:30:00.000Z',
+            'completed_by': 'user',
+            'priority': 'medium',
+            'source_refs': <Object?>[
+              <String, Object?>{'kind': 'capture', 'id': 'capture-completed'},
+              <String, Object?>{'kind': 'event', 'id': 'event-completed'},
+            ],
+          },
+          createdAt: now.subtract(const Duration(hours: 1)),
+          updatedAt: now,
+        ),
+      );
+      database.todos.insert(
+        TodoRecord(
+          id: 'todo-deleted-hidden',
+          status: 'deleted',
+          payload: const <String, Object?>{'title': 'Hidden deleted todo'},
+          createdAt: now,
+          updatedAt: now,
+        ),
+      );
+      LocalDbCoreToolCatalog(database).registerInto(registry);
+
+      final output = await _invoke(
+        registry,
+        LocalDbCoreToolCatalog.knowledgeReadTool,
+        const <String, Object?>{'kind': 'todo', 'limit': 10},
+      );
+
+      expect(output['success'], isTrue);
+      final encoded = jsonEncode(output);
+      expect(encoded, contains('Review completed task context'));
+      expect(encoded, contains('2026-07-03T11:30:00.000Z'));
+      expect(encoded, contains('medium'));
+      expect(encoded, isNot(contains('Hidden deleted todo')));
     });
 
     test(
