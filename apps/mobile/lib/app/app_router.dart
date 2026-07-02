@@ -14,6 +14,7 @@ import '../features/plugins/presentation/permission_gate_page.dart';
 import '../features/plugins/presentation/plugins_page.dart';
 import '../features/recap/presentation/daily_recap_page.dart';
 import '../features/settings/presentation/settings_page.dart';
+import '../features/system_permissions/presentation/system_permissions_page.dart';
 import '../features/timeline/presentation/card_detail_page.dart';
 import '../features/timeline/presentation/timeline_item_detail_page.dart';
 import '../features/timeline/presentation/timeline_page.dart';
@@ -95,6 +96,12 @@ GoRouter createAppRouter({String initialLocation = '/'}) {
                     name: 'settings-permissions',
                     pageBuilder: (context, state) =>
                         _noTransitionPage(state, const PermissionGatePage()),
+                  ),
+                  GoRoute(
+                    path: 'system-permissions',
+                    name: 'settings-system-permissions',
+                    pageBuilder: (context, state) =>
+                        _noTransitionPage(state, const SystemPermissionsPage()),
                   ),
                   GoRoute(
                     path: 'model-providers',

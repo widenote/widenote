@@ -105,6 +105,15 @@ class _ControlSurface extends ConsumerWidget {
           ),
           const Divider(height: 20),
           _ControlRow(
+            key: const Key('settings-system-permissions-entry'),
+            icon: Icons.app_settings_alt_outlined,
+            title: l10n.settingsSystemPermissionsTitle,
+            subtitle: l10n.settingsSystemPermissionsSubtitle,
+            status: l10n.settingsSystemPermissionsStatus,
+            onTap: () => context.push('/settings/system-permissions'),
+          ),
+          const Divider(height: 20),
+          _ControlRow(
             key: const Key('settings-model-providers-entry'),
             icon: Icons.memory_outlined,
             title: l10n.settingsModelProvidersTitle,

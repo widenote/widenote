@@ -429,6 +429,9 @@
       }
     }
   },
+  "settingsSystemPermissionsTitle": "系统权限",
+  "settingsSystemPermissionsSubtitle": "检查相机、麦克风、定位、媒体、文件和日历访问。",
+  "settingsSystemPermissionsStatus": "设备",
   "settingsModelProvidersTitle": "模型提供商",
   "settingsModelProvidersSubtitle": "为运行时和 Agent Pack 配置本地或自带密钥的模型访问。",
   "settingsTranscriptionTitle": "语音转写",
@@ -458,6 +461,55 @@
       }
     }
   },
+  "systemPermissionsTitle": "系统权限",
+  "systemPermissionsSubtitle": "复核 App 级设备权限，需要时直接跳到对应系统设置。",
+  "systemPermissionsBackTooltip": "从系统权限返回",
+  "systemPermissionsLoading": "正在检查权限",
+  "systemPermissionsError": "暂时无法读取权限状态",
+  "systemPermissionsSummaryTitle": "设备状态",
+  "systemPermissionsSummary": "{grantedCount} 项就绪 / {reviewCount} 项需关注",
+  "@systemPermissionsSummary": {
+    "placeholders": {
+      "grantedCount": {
+        "type": "int"
+      },
+      "reviewCount": {
+        "type": "int"
+      }
+    }
+  },
+  "systemPermissionsPlatformAndroid": "Android",
+  "systemPermissionsPlatformIos": "iOS",
+  "systemPermissionsPlatformOther": "仅移动端",
+  "systemPermissionsRefreshAction": "刷新",
+  "systemPermissionsDeviceAccessTitle": "App 访问",
+  "systemPermissionsStatusGranted": "已允许",
+  "systemPermissionsStatusLimited": "部分允许",
+  "systemPermissionsStatusDenied": "未允许",
+  "systemPermissionsStatusPermanentlyDenied": "需设置",
+  "systemPermissionsStatusRestricted": "受限制",
+  "systemPermissionsStatusNotRequired": "选择器",
+  "systemPermissionsStatusNotConfigured": "未启用",
+  "systemPermissionsStatusNotSupported": "不支持",
+  "systemPermissionsStatusUnknown": "未知",
+  "systemPermissionsStatusServiceOff": "服务关闭",
+  "systemPermissionsActionRequest": "请求",
+  "systemPermissionsActionManage": "管理",
+  "systemPermissionsActionOpenSettings": "设置",
+  "systemPermissionsLocationServiceOffBody": "系统定位服务当前关闭。",
+  "systemPermissionsCameraTitle": "相机",
+  "systemPermissionsCameraSubtitle": "仅在拍摄本地照片附件时使用。",
+  "systemPermissionsMicrophoneTitle": "麦克风",
+  "systemPermissionsMicrophoneSubtitle": "仅在保存本地语音记录时使用。",
+  "systemPermissionsLocationTitle": "定位",
+  "systemPermissionsLocationSubtitle": "开启位置上下文后，仅用于前台 GPS 元数据。",
+  "systemPermissionsPhotosTitle": "照片与媒体",
+  "systemPermissionsPhotosSubtitle": "在 iOS 上复核本地媒体附件使用的照片库访问。",
+  "systemPermissionsPhotosAndroidSubtitle": "在 Android 上，WideNote 使用系统照片选择器，不申请广泛媒体权限。",
+  "systemPermissionsFilesTitle": "文件",
+  "systemPermissionsFilesSubtitle": "备份和导入使用系统文档选择器，不申请广泛文件访问。",
+  "systemPermissionsCalendarTitle": "日历",
+  "systemPermissionsCalendarSubtitle": "系统日历读写会等后续权限决策落地后再启用。",
   "pluginsTitle": "插件",
   "pluginsSubtitle": "管理权限、模型、备份和追踪的插件控制入口。",
   "pluginsControlEntriesTitle": "控制入口",

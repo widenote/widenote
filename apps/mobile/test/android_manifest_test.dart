@@ -30,6 +30,11 @@ void main() {
       contents,
       isNot(contains('android.permission.READ_EXTERNAL_STORAGE')),
     );
+    expect(contents, isNot(contains('android.permission.READ_MEDIA_IMAGES')));
+    expect(contents, isNot(contains('android.permission.READ_MEDIA_VIDEO')));
+    expect(contents, isNot(contains('android.permission.READ_MEDIA_AUDIO')));
+    expect(contents, isNot(contains('android.permission.READ_CALENDAR')));
+    expect(contents, isNot(contains('android.permission.WRITE_CALENDAR')));
   });
 
   test('Android flavors separate development and production packages', () {

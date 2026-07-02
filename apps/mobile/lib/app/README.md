@@ -53,8 +53,9 @@ All other pages are child pages:
 - Timeline children: `/timeline/search`, `/timeline/cards/:cardId`,
   `/timeline/items/:itemId`
 - Settings children: `/settings/permissions`,
-  `/settings/model-providers`, `/settings/transcription`,
-  `/settings/location`, `/settings/backup`, `/settings/traces`
+  `/settings/system-permissions`, `/settings/model-providers`,
+  `/settings/transcription`, `/settings/location`, `/settings/backup`,
+  `/settings/traces`
 - Plugins children: `/plugins/packs`, `/plugins/permissions`,
   `/plugins/model-providers`, `/plugins/backup`, `/plugins/traces`
 
