@@ -55,12 +55,35 @@ final class RecordedModelProviderHttpRequest {
     });
   }
 
+  Uri get redactedEndpoint {
+    if (endpoint.queryParametersAll.isEmpty) {
+      return endpoint;
+    }
+    final redactedQuery = <String, Object>{};
+    for (final entry in endpoint.queryParametersAll.entries) {
+      final values = _isSensitiveQueryParameter(entry.key)
+          ? List<String>.filled(entry.value.length, '<redacted>')
+          : entry.value;
+      redactedQuery[entry.key] = values.length == 1 ? values.single : values;
+    }
+    return endpoint.replace(queryParameters: redactedQuery);
+  }
+
   @override
   String toString() {
     return 'RecordedModelProviderHttpRequest(method: $method, '
-        'endpoint: $endpoint, '
+        'endpoint: $redactedEndpoint, '
         'headers: $redactedHeaders, body: $body, timeout: $timeout)';
   }
+}
+
+bool _isSensitiveQueryParameter(String key) {
+  final normalized = key.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+  return normalized == 'key' ||
+      normalized == 'apikey' ||
+      normalized == 'token' ||
+      normalized == 'accesstoken' ||
+      normalized == 'authorization';
 }
 
 final class FakeModelProviderHttpClient implements ModelProviderHttpClient {

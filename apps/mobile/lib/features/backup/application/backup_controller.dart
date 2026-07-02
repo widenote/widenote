@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 
@@ -10,10 +11,14 @@ import 'package:widenote_local_db/widenote_local_db.dart';
 import '../../../app/local_database.dart';
 import '../../../app/model_client.dart';
 import '../../capture/application/capture_controller.dart';
+import '../../location/application/location_settings_controller.dart';
+import '../../location/domain/location_context.dart';
 import '../../memory/application/memory_controller.dart';
 import '../../model_providers/application/model_provider_settings_controller.dart';
 import '../../timeline/application/timeline_repository.dart';
 import '../../todos/application/todo_controller.dart';
+import '../../transcription/transcription_service.dart';
+import '../../transcription/transcription_settings.dart';
 
 final backupServiceProvider = Provider<LocalBackupService>((ref) {
   return LocalBackupService(ref.watch(localDatabaseProvider));
@@ -22,6 +27,28 @@ final backupServiceProvider = Provider<LocalBackupService>((ref) {
 final backupFileStoreProvider = Provider<BackupFileStore>((ref) {
   return AppSupportBackupFileStore(
     supportDirectory: ref.watch(appSupportDirectoryProvider),
+    supportSettingsLoader: () async {
+      final locationSettings = await ref
+          .read(locationSettingsRepositoryProvider)
+          .load();
+      final voiceSettings = await ref
+          .read(voiceTranscriptionSettingsRepositoryProvider)
+          .load();
+      final mimoApiKey = await ref
+          .read(transcriptionCredentialStoreProvider)
+          .readMimoAsrApiKey();
+      return BackupSupportSettingsBundle(
+        locationSettings: locationSettings,
+        hasVoiceTranscriptionSettings: true,
+        voiceTranscriptionSettings: voiceSettings.copyWith(
+          localModelState: LocalTranscriptionModelState.notDownloaded,
+          downloadProgress: 0,
+          clearError: true,
+        ),
+        hasMimoAsrApiKey: mimoApiKey != null && mimoApiKey.trim().isNotEmpty,
+        mimoAsrApiKey: mimoApiKey?.trim(),
+      );
+    },
   );
 });
 
@@ -70,23 +97,102 @@ final class BackupImportPayload {
     required this.sourceLabel,
     this.stagingDirectory,
     this.mediaFiles = const <LocalBackupDirectoryArchiveExtractedFile>[],
+    this.supportSettings = const BackupSupportSettingsBundle(),
   });
 
   final LocalDataBackup backup;
   final String sourceLabel;
   final String? stagingDirectory;
   final List<LocalBackupDirectoryArchiveExtractedFile> mediaFiles;
+  final BackupSupportSettingsBundle supportSettings;
+}
+
+typedef BackupSupportSettingsLoader =
+    Future<BackupSupportSettingsBundle> Function();
+
+const _backupLocationSettingsPath = 'config/location_context.wnconfig';
+const _backupVoiceSettingsPath = 'config/voice_transcription.wnconfig';
+const _backupMimoSecretPath = 'secrets/voice_transcription_mimo.wnsecret';
+
+final class BackupSupportSettingsBundle {
+  const BackupSupportSettingsBundle({
+    this.locationSettings,
+    this.hasVoiceTranscriptionSettings = false,
+    this.voiceTranscriptionSettings,
+    this.hasMimoAsrApiKey = false,
+    this.mimoAsrApiKey,
+  });
+
+  final LocationCaptureSettings? locationSettings;
+  final bool hasVoiceTranscriptionSettings;
+  final VoiceTranscriptionSettings? voiceTranscriptionSettings;
+  final bool hasMimoAsrApiKey;
+  final String? mimoAsrApiKey;
+
+  bool get isEmpty =>
+      locationSettings == null &&
+      !hasVoiceTranscriptionSettings &&
+      !hasMimoAsrApiKey;
+
+  Map<String, String> toSupportFiles() {
+    final files = <String, String>{};
+    final location = locationSettings;
+    if (location != null) {
+      files[_backupLocationSettingsPath] = jsonEncode(
+        location.toJson(includeSecrets: true),
+      );
+    }
+    final voice = voiceTranscriptionSettings;
+    if (hasVoiceTranscriptionSettings && voice != null) {
+      files[_backupVoiceSettingsPath] = jsonEncode(voice.toJson());
+    }
+    final mimoKey = mimoAsrApiKey?.trim();
+    if (hasMimoAsrApiKey && mimoKey != null && mimoKey.isNotEmpty) {
+      files[_backupMimoSecretPath] = jsonEncode(<String, Object?>{
+        'mimo_asr_api_key': mimoKey,
+      });
+    }
+    return files;
+  }
+
+  static Future<BackupSupportSettingsBundle> readFromDirectory(
+    String stagingDirectory,
+  ) async {
+    final location = await _readJsonMapFile(
+      p.join(stagingDirectory, _backupLocationSettingsPath),
+    );
+    final voice = await _readJsonMapFile(
+      p.join(stagingDirectory, _backupVoiceSettingsPath),
+    );
+    final mimo = await _readJsonMapFile(
+      p.join(stagingDirectory, _backupMimoSecretPath),
+    );
+    return BackupSupportSettingsBundle(
+      locationSettings: location == null
+          ? null
+          : LocationCaptureSettings.fromJson(location),
+      hasVoiceTranscriptionSettings: voice != null,
+      voiceTranscriptionSettings: voice == null
+          ? null
+          : VoiceTranscriptionSettings.fromJson(voice),
+      hasMimoAsrApiKey: mimo != null,
+      mimoAsrApiKey: _stringValue(mimo?['mimo_asr_api_key']),
+    );
+  }
 }
 
 final class AppSupportBackupFileStore implements BackupFileStore {
   const AppSupportBackupFileStore({
     Directory? supportDirectory,
     BackupExportPlatform platform = const BackupExportPlatform(),
+    BackupSupportSettingsLoader? supportSettingsLoader,
   }) : _supportDirectory = supportDirectory,
-       _platform = platform;
+       _platform = platform,
+       _supportSettingsLoader = supportSettingsLoader;
 
   final Directory? _supportDirectory;
   final BackupExportPlatform _platform;
+  final BackupSupportSettingsLoader? _supportSettingsLoader;
 
   @override
   Future<BackupFileResult> shareExport({
@@ -140,6 +246,9 @@ final class AppSupportBackupFileStore implements BackupFileStore {
         '${LocalBackupArchiveCodec.fileExtension}';
     final mediaFiles = await _mediaFilesForBackup(backup);
     final databasePath = await _databasePath();
+    final supportSettings =
+        await _supportSettingsLoader?.call() ??
+        const BackupSupportSettingsBundle();
     try {
       final result = await Isolate.run(
         () => _writeBackupDirectoryArchive(
@@ -151,6 +260,7 @@ final class AppSupportBackupFileStore implements BackupFileStore {
             localDbSchemaVersion: backup.manifest.localDbSchemaVersion,
             recordCounts: backup.manifest.recordCounts,
             mediaFiles: mediaFiles,
+            supportFiles: supportSettings.toSupportFiles(),
           ),
         ),
       );
@@ -187,6 +297,10 @@ final class AppSupportBackupFileStore implements BackupFileStore {
           ),
         ),
       );
+      final supportSettings =
+          await BackupSupportSettingsBundle.readFromDirectory(
+            stagingDirectory.path,
+          );
       final snapshot = WideNoteLocalDatabase.openPath(result.databasePath);
       try {
         final backup = LocalBackupService(
@@ -197,6 +311,7 @@ final class AppSupportBackupFileStore implements BackupFileStore {
           sourceLabel: archivePath,
           stagingDirectory: stagingDirectory.path,
           mediaFiles: result.mediaFiles,
+          supportSettings: supportSettings,
         );
       } finally {
         snapshot.close();
@@ -541,6 +656,7 @@ final class BackupController extends Notifier<BackupState> {
       prepared = state.preparedImport;
       if (prepared != null) {
         await store.restorePreparedMedia(prepared);
+        await _restoreSupportSettings(prepared.supportSettings);
       }
       final report = prepared == null
           ? ref
@@ -650,8 +766,46 @@ final class BackupController extends Notifier<BackupState> {
       ..invalidate(todoControllerProvider)
       ..invalidate(memoryControllerProvider)
       ..invalidate(modelProviderSettingsControllerProvider)
+      ..invalidate(locationSettingsControllerProvider)
+      ..invalidate(voiceTranscriptionSettingsControllerProvider)
       ..invalidate(modelClientProvider)
       ..invalidate(chatModelClientProvider);
+  }
+
+  Future<void> _restoreSupportSettings(
+    BackupSupportSettingsBundle supportSettings,
+  ) async {
+    if (supportSettings.isEmpty) {
+      return;
+    }
+    final locationSettings = supportSettings.locationSettings;
+    if (locationSettings != null) {
+      await ref.read(locationSettingsRepositoryProvider).save(locationSettings);
+    }
+    if (supportSettings.hasVoiceTranscriptionSettings) {
+      final settings = supportSettings.voiceTranscriptionSettings;
+      if (settings != null) {
+        await ref
+            .read(voiceTranscriptionSettingsRepositoryProvider)
+            .save(settings);
+      }
+    }
+    if (supportSettings.hasMimoAsrApiKey) {
+      final key = supportSettings.mimoAsrApiKey?.trim();
+      if (key != null && key.isNotEmpty) {
+        await ref
+            .read(transcriptionCredentialStoreProvider)
+            .writeMimoAsrApiKey(key);
+      } else {
+        await ref
+            .read(transcriptionCredentialStoreProvider)
+            .deleteMimoAsrApiKey();
+      }
+    } else if (supportSettings.hasVoiceTranscriptionSettings) {
+      await ref
+          .read(transcriptionCredentialStoreProvider)
+          .deleteMimoAsrApiKey();
+    }
   }
 }
 
@@ -663,6 +817,28 @@ String _backupErrorDetails(Object error) {
     StateError() => 'Backup conflicts with local data.',
     _ => 'Unexpected backup error.',
   };
+}
+
+Future<Map<String, Object?>?> _readJsonMapFile(String path) async {
+  final file = File(path);
+  if (!await file.exists()) {
+    return null;
+  }
+  final decoded = jsonDecode(await file.readAsString());
+  if (decoded is Map<String, Object?>) {
+    return decoded;
+  }
+  if (decoded is Map) {
+    return decoded.cast<String, Object?>();
+  }
+  throw FormatException('Backup support file is not an object: $path.');
+}
+
+String? _stringValue(Object? value) {
+  if (value is String && value.trim().isNotEmpty) {
+    return value.trim();
+  }
+  return null;
 }
 
 String _fileStamp(DateTime value) {
@@ -703,6 +879,7 @@ final class _BackupDirectoryArchiveWriteJob {
     required this.localDbSchemaVersion,
     required this.recordCounts,
     required this.mediaFiles,
+    required this.supportFiles,
   });
 
   final String sourceDatabasePath;
@@ -712,6 +889,7 @@ final class _BackupDirectoryArchiveWriteJob {
   final int localDbSchemaVersion;
   final Map<String, int> recordCounts;
   final List<_BackupDirectoryMediaFile> mediaFiles;
+  final Map<String, String> supportFiles;
 }
 
 final class _BackupDirectoryArchiveWriteResult {
@@ -745,6 +923,13 @@ Future<_BackupDirectoryArchiveWriteResult> _writeBackupDirectoryArchive(
     );
     await target.parent.create(recursive: true);
     await File(mediaFile.sourcePath).copy(target.path);
+  }
+  for (final entry in job.supportFiles.entries) {
+    final target = File(
+      p.joinAll(<String>[job.stagingDirectory, ...entry.key.split('/')]),
+    );
+    await target.parent.create(recursive: true);
+    await target.writeAsString(entry.value);
   }
   final result = await LocalBackupDirectoryArchiveCodec.writeArchive(
     sourceDirectory: job.stagingDirectory,

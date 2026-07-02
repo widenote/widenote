@@ -247,6 +247,40 @@ void main() {
     expect(find.textContaining('safe: visible'), findsOneWidget);
   });
 
+  testWidgets('agent console shows persisted prompt and tool details', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    database.traceEvents.insert(
+      _trace(
+        'trace-raw',
+        'runtime.tool.completed',
+        runId: 'run-raw',
+        taskId: 'task-raw',
+        eventId: 'capture-raw',
+        payload: const <String, Object?>{
+          'trace_type': 'tool',
+          'raw_prompt': 'Summarize the capture exactly.',
+          'raw_tool_input': <String, Object?>{'query': 'timeline today'},
+          'raw_tool_result': <String, Object?>{'count': 3},
+          'api_key': 'SHOULD_NOT_RENDER',
+        },
+      ),
+    );
+
+    await _pumpTraceConsole(tester, database);
+    await _tap(tester, const Key('trace-console-row-trace-raw'));
+
+    expect(
+      find.textContaining('raw_prompt: Summarize the capture exactly.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('timeline today'), findsOneWidget);
+    expect(find.textContaining('raw_tool_result'), findsOneWidget);
+    expect(find.textContaining('count'), findsOneWidget);
+    expect(find.textContaining('SHOULD_NOT_RENDER'), findsNothing);
+  });
+
   testWidgets('agent console source detail returns with system back', (
     tester,
   ) async {

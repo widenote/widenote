@@ -44,10 +44,10 @@ final class MimoAsrProvider implements AudioTranscriptionProvider {
 
   @override
   Future<void> prepare() async {
-    if (!_settings.remoteConsentGranted) {
+    if (!_settings.mimoAsrEnabled) {
       throw const TranscriptionException(
         code: TranscriptionFailureCode.remoteDisabled,
-        message: 'Remote ASR is disabled until consent is granted.',
+        message: 'MiMo ASR is disabled until it is selected and consented.',
       );
     }
     final apiKey = await _credentialStore.readMimoAsrApiKey();

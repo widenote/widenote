@@ -38,9 +38,10 @@ sharing explicit and reviewable.
   coordinates must not be shown by default in timeline rows or settings status.
 - Users must be able to stop future capture and clear saved capture-location
   facts from existing records.
-- AMap API keys are credentials. They live in secure storage and must not enter
-  `.widenote` backups, Owner Export, logs, fixtures, screenshots, automated
-  review prompts, PR descriptions, or generated docs.
+- AMap API keys are credentials. They live in secure storage. ADR-0016 allows
+  them only in full, secret-bearing `.widenote` backups for direct-use restore;
+  they must not enter Owner Export, safe projections, logs, fixtures,
+  screenshots, automated review prompts, PR descriptions, or generated docs.
 
 ## Consequences
 
@@ -50,7 +51,8 @@ sharing explicit and reviewable.
 - AMap setup requires Settings copy that explains third-party coordinate
   sharing.
 - Backup/export and future sync work must treat location context as sensitive
-  user data and preserve the credential boundary.
+  user data and preserve the full-backup versus safe-export credential
+  boundary.
 - Future map, route, insight, or Agent Pack behavior should consume
   `fact_metadata.location` or a future public schema derived from it rather
   than reading private UI state.
@@ -69,4 +71,5 @@ sharing explicit and reviewable.
 ## References
 
 - `docs/research/2026-07-01-location-context-amap-kimi-review.md`
+- `docs/decisions/0016-restore-ready-logs-backups-and-asr.md`
 - `apps/mobile/lib/features/location/README.md`

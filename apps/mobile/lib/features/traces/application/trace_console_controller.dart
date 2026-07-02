@@ -571,7 +571,6 @@ const _sensitiveExactValues = <String>{
   'instructions',
   'prompt',
   'raw_input',
-  'raw_prompt',
   'capture_body',
   'raw_capture_body',
   'attachment_path',
@@ -582,7 +581,7 @@ const _sensitiveExactValues = <String>{
 };
 
 final _sensitivePattern = RegExp(
-  r'(api[_-]?key|authorization|bearer|token|secret|credential|oauth|raw[_-]?prompt|raw[_-]?capture|attachment[_-]?path|file[_-]?path|raw[_-]?media|media[_-]?bytes)',
+  r'(api[_-]?key|authorization|bearer|token|secret|credential|oauth|raw[_-]?capture|attachment[_-]?path|file[_-]?path|raw[_-]?media|media[_-]?bytes)',
   caseSensitive: false,
 );
 

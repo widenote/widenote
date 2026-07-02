@@ -75,11 +75,11 @@ void main() {
     expect(find.text('备份'), findsWidgets);
     expect(find.text('创建 .widenote 备份'), findsOneWidget);
     expect(
-      find.textContaining('完整 .widenote 备份会包含 Provider Key'),
+      find.textContaining('完整 .widenote 备份会包含 Provider、AMap'),
       findsOneWidget,
     );
     expect(
-      find.textContaining('恢复 SQLite 快照、采集媒体文件和 Provider Key'),
+      find.textContaining('恢复 SQLite 快照、采集媒体文件、Provider Key'),
       findsOneWidget,
     );
   });

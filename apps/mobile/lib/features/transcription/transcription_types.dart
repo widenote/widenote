@@ -17,6 +17,7 @@ enum TranscriptStatus {
 enum TranscriptionProviderKind {
   localSenseVoice('local_sensevoice'),
   mimoAsr('mimo_asr'),
+  disabled('disabled'),
   fake('fake');
 
   const TranscriptionProviderKind(this.wireName);
@@ -25,6 +26,7 @@ enum TranscriptionProviderKind {
 }
 
 enum TranscriptionFailureCode {
+  providerDisabled('provider_disabled'),
   modelMissing('model_missing'),
   modelCorrupted('model_corrupted'),
   modelInitFailed('model_init_failed'),

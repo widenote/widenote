@@ -46,10 +46,12 @@ Markdown projections remain no-secret surfaces. The encrypted-full envelope
 remains a future path for stronger secret-bearing portability.
 
 Local/offline ASR is the default. Remote ASR, including MiMo or another
-declared-host provider, is available only after explicit opt-in. After opt-in,
-remote ASR is the automatic fallback when local ASR fails, and the user also
-gets a manual retry entrypoint. Remote ASR uses the accepted permission names
-`audio.upload.remote_asr` and `network.call.declared_host`.
+declared-host provider, is available only after explicit opt-in. This ADR
+originally accepted automatic remote fallback after local ASR failure. ADR-0016
+supersedes that relationship: Local SenseVoice and MiMo ASR are now explicit
+user-selected engines, with manual MiMo retry remaining an explicit action.
+Remote ASR uses the accepted permission names `audio.upload.remote_asr` and
+`network.call.declared_host`.
 
 Transcripts are `audio_transcript` derived artifacts. Transcript readiness,
 failure, and correction use public transcript events under `packages/schemas`.
@@ -92,9 +94,10 @@ Including media bytes in `.widenote` backup preserves source truth in the
 artifact users can already open and restore. The provider credential boundary
 for the backup artifact follows ADR-0013.
 
-Automatic remote fallback after explicit opt-in gives users recovery from local
-ASR failure without silently exporting audio. The accepted permission vocabulary
-keeps remote upload and host access reviewable and revocable.
+ADR-0016 replaces automatic remote fallback with explicit engine selection to
+avoid silent upload after migration or local ASR failure. The accepted
+permission vocabulary keeps remote upload and host access reviewable and
+revocable.
 
 Using an Agent Pack for correction keeps the responsibility inspectable through
 manifest, permission, event, and trace contracts. It also prevents correction

@@ -209,6 +209,53 @@ void main() {
     );
   });
 
+  testWidgets('provider dialog validates draft before saving with saved key', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    final connectionService = _QueueConnectionTestService([
+      ModelProviderConnectionTestResult.success(
+        usedLiveAdapter: false,
+        message: 'OpenAI connection test succeeded.',
+      ),
+    ]);
+    await _pumpSettings(
+      tester,
+      database: database,
+      overrides: [
+        modelProviderConnectionTestServiceProvider.overrideWithValue(
+          connectionService,
+        ),
+      ],
+    );
+
+    await _addProvider(
+      tester,
+      displayName: 'Team OpenAI',
+      endpoint: 'https://example.invalid/v1/chat/completions',
+      model: 'team-chat',
+    );
+
+    await tester.tap(find.byKey(const Key('provider-edit-team-openai')));
+    await tester.pumpAndSettle();
+    await _setCustomModel(tester, 'draft-chat');
+    await tester.ensureVisible(
+      find.byKey(const Key('provider-test-draft-button')),
+    );
+    await tester.tap(find.byKey(const Key('provider-test-draft-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('provider-draft-test-result')), findsOneWidget);
+    expect(find.text('OpenAI connection test succeeded.'), findsOneWidget);
+    expect(connectionService.requests.single.model, 'draft-chat');
+    expect(connectionService.requests.single.apiKey, _runtimeCredential());
+    expect(
+      database.modelProviderConfigs.readById('team-openai')!.model,
+      'team-chat',
+    );
+  });
+
   testWidgets('provider settings deletes a non-default provider', (
     tester,
   ) async {
@@ -668,11 +715,13 @@ final class _QueueConnectionTestService
   ) : _results = Queue<ModelProviderConnectionTestResult>.of(results);
 
   final Queue<ModelProviderConnectionTestResult> _results;
+  final List<ModelProviderConfig> requests = <ModelProviderConfig>[];
 
   @override
   Future<ModelProviderConnectionTestResult> test(
     ModelProviderConfig config,
   ) async {
+    requests.add(config);
     return _results.removeFirst();
   }
 }

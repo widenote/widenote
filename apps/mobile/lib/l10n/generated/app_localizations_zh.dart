@@ -1301,7 +1301,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsPrivacyBackupBody =>
-      '完整 .widenote 备份会包含模型提供商 API Key，恢复后可直接继续使用；请把备份文件保存在可信位置。';
+      '完整 .widenote 备份会包含模型提供商和 allowlist 安全存储 Key，恢复后可直接继续使用已配置功能；请把备份文件保存在可信位置。';
 
   @override
   String get settingsPrivacyBackupStatus => '完整备份';
@@ -1337,7 +1337,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsTranscriptionTitle => '语音转写';
 
   @override
-  String get settingsTranscriptionSubtitle => '配置实时预览、本地 ASR、MiMo 兜底和转写校正。';
+  String get settingsTranscriptionSubtitle =>
+      '配置本地 SenseVoice、MiMo ASR、实时预览和转写校正。';
 
   @override
   String get settingsTranscriptionStatusLoading => '加载中';
@@ -1346,7 +1347,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsTranscriptionStatusLocal => '本地';
 
   @override
-  String get settingsTranscriptionStatusRemote => '远端';
+  String get settingsTranscriptionStatusRemote => 'MiMo';
 
   @override
   String get settingsTranscriptionStatusNeedsSetup => '待配置';
@@ -2226,6 +2227,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get voiceSettingsStatusTitle => '状态';
 
   @override
+  String get voiceSettingsEngineTitle => '转写引擎';
+
+  @override
+  String get voiceSettingsEngineDescription => '为新的转写任务选择唯一一条 ASR 路径。';
+
+  @override
+  String get voiceSettingsEngineLocal => '本地 SenseVoice';
+
+  @override
+  String get voiceSettingsEngineMimo => 'MiMo ASR';
+
+  @override
+  String get voiceSettingsEngineDisabled => '关闭';
+
+  @override
   String get voiceSettingsLocalModelTitle => '本地模型';
 
   @override
@@ -2264,7 +2280,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get voiceSettingsModelDeleted => '本地 ASR 模型已删除。';
 
   @override
-  String get voiceSettingsRemoteFallbackTitle => '远端兜底';
+  String get voiceSettingsRemoteFallbackTitle => '当前引擎';
 
   @override
   String get voiceSettingsRemoteEnabled => '已启用';
@@ -2286,17 +2302,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get voiceSettingsPreviewSwitchSubtitle => '保存的 WAV 仍是来源事实。';
 
   @override
-  String get voiceSettingsRemoteTitle => 'MiMo ASR 兜底';
+  String get voiceSettingsRemoteTitle => 'MiMo ASR';
 
   @override
   String get voiceSettingsRemoteDescription =>
-      '本地模型无法转写时，WideNote 可以在授权后把保存的 WAV 上传到配置的 MiMo 兼容端点。';
+      '只有选择 MiMo 引擎或手动用 MiMo 重试时，才会使用配置的 MiMo 兼容端点。';
 
   @override
-  String get voiceSettingsRemoteConsentTitle => '允许远端 ASR 兜底';
+  String get voiceSettingsRemoteConsentTitle => '允许 MiMo 音频上传';
 
   @override
-  String get voiceSettingsRemoteConsentSubtitle => '音频上传只用于转写兜底和手动重试。';
+  String get voiceSettingsRemoteConsentSubtitle =>
+      '音频上传只用于已选择的 MiMo 引擎和手动 MiMo 重试。';
 
   @override
   String get voiceSettingsEndpointLabel => '端点';
@@ -2333,7 +2350,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get voiceSettingsRetryTitle => '手动重试';
 
   @override
-  String get voiceSettingsRetryDescription => '用远端 ASR 路径重试失败或需要复核的转写。';
+  String get voiceSettingsRetryDescription => '用 MiMo ASR 路径重试失败或需要复核的转写。';
 
   @override
   String get voiceSettingsRetryButton => '重试失败转写';
@@ -2425,11 +2442,12 @@ class AppLocalizationsZh extends AppLocalizations {
       '导出会创建一个整目录压缩的 .widenote 归档，可以交给其他 App 打开，也可以保存到你选择的位置。';
 
   @override
-  String get backupSecretWarning => '完整备份会包含模型提供商 API Key，请只保存到可信位置。';
+  String get backupSecretWarning =>
+      '完整备份会包含模型提供商和 allowlist 安全存储 Key，请只保存到可信位置。';
 
   @override
   String get backupRestoreBoundary =>
-      '.widenote 归档会恢复 SQLite 快照、采集媒体文件和 Provider Key。';
+      '.widenote 归档会恢复 SQLite 快照、采集媒体文件、Provider Key 和 allowlist 应用设置。';
 
   @override
   String get backupOwnerExportBoundary =>
@@ -2437,7 +2455,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get backupFullSecretBoundary =>
-      '完整 .widenote 备份会包含 Provider Key，恢复后可直接使用已配置的模型提供商。';
+      '完整 .widenote 备份会包含 Provider、AMap 和 MiMo ASR Key，恢复后可直接使用已配置功能。';
 
   @override
   String backupLegacyProviderCredentialReentryCount(int count) {

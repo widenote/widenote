@@ -48,6 +48,8 @@ widenote-backup/
   manifest.properties
   data/widenote.sqlite
   media/capture_media/**
+  config/**      # allowlisted app settings, added by ADR-0016
+  secrets/**     # allowlisted secure-storage credentials, added by ADR-0016
 ```
 
 The mobile implementation must run compression, SQLite snapshotting, extraction,
@@ -99,6 +101,8 @@ Negative:
 ## Follow-ups
 
 - Keep JSON/Markdown projections secret-free and covered by tests.
+- See ADR-0016 for the allowlisted secure-storage settings and credentials
+  that may join provider keys in the full `.widenote` archive.
 - Add an encrypted backup envelope only through a future ADR/RFC that defines
   key management, restore UX, and migration behavior.
 - Avoid logging, indexing, previewing, or sending `.widenote` contents to

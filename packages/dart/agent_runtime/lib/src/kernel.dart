@@ -1100,10 +1100,15 @@ final class RuntimeKernel {
     };
   }
 
-  Object? _safeTraceValue(MapEntry<String, Object?> entry) {
+  Object? _safeTraceValue(
+    MapEntry<String, Object?> entry, {
+    bool preserveStrings = false,
+  }) {
     final value = entry.value;
+    final preserveRaw =
+        preserveStrings || _rawTraceDetailKeys.contains(entry.key);
     if (value is String) {
-      return _limitedTraceString(value);
+      return preserveRaw ? value : _limitedTraceString(value);
     }
     if (value is Map) {
       return <String, Object?>{
@@ -1114,6 +1119,7 @@ final class RuntimeKernel {
                 nested.key as String,
                 nested.value as Object?,
               ),
+              preserveStrings: preserveRaw,
             ),
       };
     }
@@ -1121,10 +1127,13 @@ final class RuntimeKernel {
       return value
           .map((item) {
             if (item is String) {
-              return _limitedTraceString(item);
+              return preserveRaw ? item : _limitedTraceString(item);
             }
             if (item is Map) {
-              return _safeTraceValue(MapEntry<String, Object?>('item', item));
+              return _safeTraceValue(
+                MapEntry<String, Object?>('item', item),
+                preserveStrings: preserveRaw,
+              );
             }
             return item;
           })
@@ -1548,6 +1557,14 @@ final class RuntimeKernel {
   }
 }
 
+const _rawTraceDetailKeys = <String>{
+  'raw_prompt',
+  'raw_model_response',
+  'raw_tool_input',
+  'raw_tool_result',
+  'raw_tool_failure',
+};
+
 String _safeTraceError(String value) {
   var redacted = value.replaceAllMapped(
     RegExp(
@@ -1629,6 +1646,7 @@ final class _PermissionCheckedModelClient implements ModelClient {
         'trace_type': 'model',
         'call_state': 'requested',
         'prompt_length': request.prompt.length,
+        'raw_prompt': request.prompt,
         'context_keys': contextKeys,
       },
     );
@@ -1669,7 +1687,9 @@ final class _PermissionCheckedModelClient implements ModelClient {
           'trace_type': 'model',
           'call_state': 'completed',
           'prompt_length': request.prompt.length,
+          'raw_prompt': request.prompt,
           'response_length': response.text.length,
+          'raw_model_response': response.text,
           'duration_ms': stopwatch.elapsedMilliseconds,
           ..._modelUsageTraceDetails(response.raw),
         },
@@ -1689,6 +1709,7 @@ final class _PermissionCheckedModelClient implements ModelClient {
           'trace_type': 'model',
           'call_state': 'failed',
           'prompt_length': request.prompt.length,
+          'raw_prompt': request.prompt,
           'duration_ms': stopwatch.elapsedMilliseconds,
           'error_type': error.runtimeType.toString(),
         },
@@ -1835,6 +1856,7 @@ final class _RuntimeToolInvoker implements ToolInvoker {
         agentId: agentId,
         details: <String, Object?>{
           ..._toolTraceDetails(name, null, inputKeys),
+          'raw_tool_input': input,
           'error_code': 'tool_undeclared',
           'declared_tools': _sorted(declaredTools),
         },
@@ -1854,7 +1876,10 @@ final class _RuntimeToolInvoker implements ToolInvoker {
       runId: runId,
       packId: packId,
       agentId: agentId,
-      details: _toolTraceDetails(name, definition, inputKeys),
+      details: <String, Object?>{
+        ..._toolTraceDetails(name, definition, inputKeys),
+        'raw_tool_input': input,
+      },
     );
     if (definition == null) {
       await trace(
@@ -1867,6 +1892,7 @@ final class _RuntimeToolInvoker implements ToolInvoker {
         agentId: agentId,
         details: <String, Object?>{
           ..._toolTraceDetails(name, definition, inputKeys),
+          'raw_tool_input': input,
           'error_code': 'tool_not_found',
         },
       );
@@ -1892,6 +1918,7 @@ final class _RuntimeToolInvoker implements ToolInvoker {
         agentId: agentId,
         details: <String, Object?>{
           ..._toolTraceDetails(name, definition, inputKeys),
+          'raw_tool_input': input,
           'trace_type': 'permission_checked',
           'missing_permissions': missing,
         },
@@ -1930,6 +1957,14 @@ final class _RuntimeToolInvoker implements ToolInvoker {
       agentId: agentId,
       details: <String, Object?>{
         ..._toolTraceDetails(name, definition, inputKeys),
+        'raw_tool_input': input,
+        if (result.isOk) ...<String, Object?>{
+          'result_keys': _sorted(result.value.keys),
+          'raw_tool_result': result.value,
+        } else ...<String, Object?>{
+          'failure_message': result.failure.message,
+          'raw_tool_failure': result.failure.details,
+        },
         'error_code': result.isErr ? result.failure.code : null,
       },
     );
@@ -1952,6 +1987,7 @@ final class _RuntimeToolInvoker implements ToolInvoker {
         agentId: agentId,
         details: <String, Object?>{
           ..._toolTraceDetails(definition.name, definition, inputKeys),
+          'raw_tool_input': input,
           'error_code': 'unsupported_tool',
         },
       );
@@ -1975,6 +2011,7 @@ final class _RuntimeToolInvoker implements ToolInvoker {
         agentId: agentId,
         details: <String, Object?>{
           ..._toolTraceDetails(definition.name, definition, inputKeys),
+          'raw_tool_input': input,
           'error_code': 'run_mode_denied',
           'denial_reason': 'incompatible_run_mode',
         },
@@ -1997,6 +2034,7 @@ final class _RuntimeToolInvoker implements ToolInvoker {
         agentId: agentId,
         details: <String, Object?>{
           ..._toolTraceDetails(definition.name, definition, inputKeys),
+          'raw_tool_input': input,
           'error_code': 'run_mode_denied',
           'denial_reason': 'read_only_mode',
         },
@@ -2059,6 +2097,7 @@ final class _RuntimeToolInvoker implements ToolInvoker {
         agentId: agentId,
         details: <String, Object?>{
           ..._approvalTraceDetails(request),
+          'raw_tool_input': input,
           'error_code': 'approval_unavailable',
         },
       );
@@ -2077,7 +2116,10 @@ final class _RuntimeToolInvoker implements ToolInvoker {
       runId: runId,
       packId: packId,
       agentId: agentId,
-      details: _approvalTraceDetails(request),
+      details: <String, Object?>{
+        ..._approvalTraceDetails(request),
+        'raw_tool_input': input,
+      },
     );
 
     final ApprovalDecision decision;
@@ -2094,6 +2136,7 @@ final class _RuntimeToolInvoker implements ToolInvoker {
         agentId: agentId,
         details: <String, Object?>{
           ..._approvalTraceDetails(request),
+          'raw_tool_input': input,
           'error_code': 'approval_failed',
           'error_type': error.runtimeType.toString(),
         },
@@ -2123,6 +2166,7 @@ final class _RuntimeToolInvoker implements ToolInvoker {
       agentId: agentId,
       details: <String, Object?>{
         ..._approvalTraceDetails(request),
+        'raw_tool_input': input,
         'decision_state': decision.state.name,
       },
     );

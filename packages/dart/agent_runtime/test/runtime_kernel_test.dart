@@ -609,7 +609,7 @@ void main() {
     ]);
   });
 
-  test('model traces usage metadata without storing prompt text', () async {
+  test('model traces usage metadata with raw prompt and response', () async {
     final store = InMemoryEventStore();
     final traceSink = InMemoryTraceSink();
     final model = _UsageModel();
@@ -661,14 +661,15 @@ void main() {
     );
 
     expect(requested.details['prompt_length'], 'Use a model.'.length);
-    expect(requested.details.values.join(' '), isNot(contains('Use a model.')));
+    expect(requested.details['raw_prompt'], 'Use a model.');
     expect(completed.details['provider_id'], 'fake.byok');
     expect(completed.details['model'], 'fake-large');
     expect(completed.details['input_tokens'], 11);
     expect(completed.details['output_tokens'], 7);
     expect(completed.details['total_tokens'], 18);
     expect(completed.details['estimated_cost_usd'], 0.0042);
-    expect(completed.details.values.join(' '), isNot(contains('Use a model.')));
+    expect(completed.details['raw_prompt'], 'Use a model.');
+    expect(completed.details['raw_model_response'], 'usage visible');
   });
 
   test('agent tool invocation is permission checked', () async {
@@ -713,6 +714,21 @@ void main() {
 
     final insights = await store.readByType(WnEventTypes.insightCreated);
     expect(insights.single.payload['tool_echo'], 'hello');
+
+    final traces = await traceSink.readAll();
+    final requested = traces.singleWhere(
+      (trace) => trace.name == 'runtime.tool.requested',
+    );
+    final completed = traces.singleWhere(
+      (trace) => trace.name == 'runtime.tool.completed',
+    );
+    expect(requested.details['raw_tool_input'], <String, Object?>{
+      'value': 'hello',
+    });
+    expect(completed.details['result_keys'], <String>['echo']);
+    expect(completed.details['raw_tool_result'], <String, Object?>{
+      'echo': 'hello',
+    });
   });
 
   test('handler failure marks task and run failed with error trace', () async {

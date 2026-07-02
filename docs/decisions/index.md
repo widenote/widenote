@@ -18,6 +18,7 @@
 | [ADR-0013](./0013-preserve-provider-credentials-in-widenote-backups.md) | Preserve provider credentials in WideNote backup archives | accepted | 2026-07-01 |
 | [ADR-0014](./0014-accept-location-capture-boundaries.md) | Accept location capture boundaries | accepted | 2026-07-01 |
 | [ADR-0015](./0015-use-hierarchical-mobile-navigation.md) | Use hierarchical mobile navigation outside bottom tabs | accepted | 2026-07-02 |
+| [ADR-0016](./0016-restore-ready-logs-backups-and-asr.md) | Make logs, backups, provider validation, and ASR restore-ready | accepted | 2026-07-02 |
 
 ## RFC Status
 

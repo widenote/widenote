@@ -47,7 +47,7 @@ void main() {
     expect(denied.details['tool_access'], 'write');
     expect(denied.details['tool_risk'], 'low');
     expect(denied.details['input_keys'], <String>['value']);
-    expect(_traceDetailsText(traces), isNot(contains('private-tool-input')));
+    _expectRawToolInput(denied);
   });
 
   test('read-only mode rejects external and high-risk tools', () async {
@@ -131,7 +131,16 @@ void main() {
         'runtime.tool.approval_denied',
       ]),
     );
-    expect(_traceDetailsText(traces), isNot(contains('private-tool-input')));
+    _expectRawToolInput(
+      traces.singleWhere(
+        (trace) => trace.name == 'runtime.tool.approval_requested',
+      ),
+    );
+    _expectRawToolInput(
+      traces.singleWhere(
+        (trace) => trace.name == 'runtime.tool.approval_denied',
+      ),
+    );
   });
 
   test('confirm mode executes tool after approval', () async {
@@ -409,7 +418,16 @@ void main() {
         pending.single.expiresAt,
         pending.single.requestedAt.add(const Duration(minutes: 15)),
       );
-      expect(_traceDetailsText(traces), isNot(contains('private-tool-input')));
+      _expectRawToolInput(
+        traces.singleWhere(
+          (trace) => trace.name == 'runtime.tool.approval_requested',
+        ),
+      );
+      _expectRawToolInput(
+        traces.singleWhere(
+          (trace) => trace.name == 'runtime.tool.approval_pending',
+        ),
+      );
       expect(
         traces.map((trace) => trace.name),
         containsAll(<String>[
@@ -618,8 +636,10 @@ Future<void> _publishCapture(RuntimeKernel kernel) {
   );
 }
 
-String _traceDetailsText(List<RuntimeTrace> traces) {
-  return traces.map((trace) => trace.details).join(' ');
+void _expectRawToolInput(RuntimeTrace trace) {
+  expect(trace.details['raw_tool_input'], <String, Object?>{
+    'value': 'private-tool-input',
+  });
 }
 
 final class _ToolCallingHandler implements AgentHandler {

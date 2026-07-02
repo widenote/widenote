@@ -12,13 +12,15 @@ const List<TranscriptionModelDownloadFile>
 defaultSenseVoiceDownloadFiles = <TranscriptionModelDownloadFile>[
   TranscriptionModelDownloadFile(
     url:
-        'https://huggingface.co/csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2024-07-17/resolve/main/model.int8.onnx',
+        'https://hf-mirror.com/k2-fsa/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/resolve/main/model.int8.onnx',
     relativePath: '$defaultSenseVoiceModelDirectory/model.int8.onnx',
+    expectedMinBytes: 80 * 1024 * 1024,
   ),
   TranscriptionModelDownloadFile(
     url:
-        'https://huggingface.co/csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2024-07-17/resolve/main/tokens.txt',
+        'https://hf-mirror.com/k2-fsa/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/resolve/main/tokens.txt',
     relativePath: '$defaultSenseVoiceModelDirectory/tokens.txt',
+    expectedMinBytes: 1024,
   ),
 ];
 
@@ -26,10 +28,12 @@ final class TranscriptionModelDownloadFile {
   const TranscriptionModelDownloadFile({
     required this.url,
     required this.relativePath,
+    this.expectedMinBytes,
   });
 
   final String url;
   final String relativePath;
+  final int? expectedMinBytes;
 }
 
 abstract interface class TranscriptionModelFileDownloader {
@@ -204,7 +208,7 @@ final class TranscriptionDownloadManager {
       }
       await part.rename(modelRoot.path);
       await File(p.join(modelRoot.path, 'manifest.json')).writeAsString(
-        '{"model":"$defaultSenseVoiceModelDirectory","source":"huggingface"}',
+        '{"model":"$defaultSenseVoiceModelDirectory","source":"hf-mirror"}',
       );
       await File(p.join(modelRoot.path, 'READY')).writeAsString('ready');
       final ready = await _settingsRepository.load();
@@ -310,6 +314,11 @@ final class TranscriptionDownloadManager {
       final downloaded = File(p.join(part.path, file.relativePath));
       if (!downloaded.existsSync() || downloaded.lengthSync() == 0) {
         throw FileSystemException('Downloaded model file is missing.');
+      }
+      final expectedMinBytes = file.expectedMinBytes;
+      if (expectedMinBytes != null &&
+          downloaded.lengthSync() < expectedMinBytes) {
+        throw FileSystemException('Downloaded model file is incomplete.');
       }
     }
   }

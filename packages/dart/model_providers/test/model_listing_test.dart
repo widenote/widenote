@@ -108,6 +108,11 @@ void main() {
         'https://generativelanguage.googleapis.com/v1beta/models?key=credential',
       );
       expect(
+        http.requests.single.redactedEndpoint.queryParameters['key'],
+        '<redacted>',
+      );
+      expect(http.requests.single.toString(), isNot(contains('credential')));
+      expect(
         http.requests.single.headers.containsKey('authorization'),
         isFalse,
       );

@@ -13,6 +13,87 @@ import 'package:widenote_mobile/features/transcription/transcription_types.dart'
 import 'package:widenote_mobile/l10n/l10n.dart';
 
 void main() {
+  test('legacy remote fallback setting migrates to local engine', () {
+    final settings = VoiceTranscriptionSettings.fromJson(
+      const <String, Object?>{
+        'provider_mode': 'local_first_remote_auto',
+        'remote_consent_granted': true,
+      },
+    );
+
+    expect(settings.engine, VoiceTranscriptionEngine.localSenseVoice);
+    expect(settings.remoteAsrEnabled, isFalse);
+    expect(settings.remoteConsentGranted, isFalse);
+  });
+
+  testWidgets('engine selector persists explicit alternatives', (tester) async {
+    final database = localdb.WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    final repository = MemoryVoiceTranscriptionSettingsRepository(
+      const VoiceTranscriptionSettings(
+        engine: VoiceTranscriptionEngine.localSenseVoice,
+        remoteConsentGranted: true,
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          localDatabaseProvider.overrideWithValue(database),
+          voiceTranscriptionSettingsRepositoryProvider.overrideWithValue(
+            repository,
+          ),
+          transcriptionCredentialStoreProvider.overrideWithValue(
+            MemoryTranscriptionCredentialStore(),
+          ),
+        ],
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: VoiceTranscriptionSettingsPage()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final engineControl = find.byKey(
+      const Key('voice-transcription-engine-control'),
+    );
+    await tester.scrollUntilVisible(
+      engineControl,
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.descendant(of: engineControl, matching: find.text('MiMo ASR')),
+    );
+    await tester.pumpAndSettle();
+    var saved = await repository.load();
+    expect(saved.engine, VoiceTranscriptionEngine.xiaomiMimo);
+    expect(saved.remoteConsentGranted, isTrue);
+
+    await tester.tap(
+      find.descendant(of: engineControl, matching: find.text('Off')),
+    );
+    await tester.pumpAndSettle();
+    saved = await repository.load();
+    expect(saved.engine, VoiceTranscriptionEngine.disabled);
+    expect(saved.remoteConsentGranted, isFalse);
+
+    await tester.tap(
+      find.descendant(
+        of: engineControl,
+        matching: find.text('Local SenseVoice'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    saved = await repository.load();
+    expect(saved.engine, VoiceTranscriptionEngine.localSenseVoice);
+    expect(saved.remoteConsentGranted, isFalse);
+  });
+
   testWidgets(
     'voice settings persists controls and retries failed transcripts',
     (tester) async {
@@ -62,14 +143,20 @@ void main() {
       expect(find.text('Voice Transcription'), findsWidgets);
       expect(find.text('ready'), findsOneWidget);
 
-      await tester.ensureVisible(find.byKey(const Key('voice-preview-switch')));
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('voice-preview-switch')),
+        180,
+        scrollable: find.byType(Scrollable).first,
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('voice-preview-switch')));
       await tester.pumpAndSettle();
       expect((await repository.load()).realtimePreviewEnabled, isFalse);
 
-      await tester.ensureVisible(
+      await tester.scrollUntilVisible(
         find.byKey(const Key('voice-remote-consent-switch')),
+        180,
+        scrollable: find.byType(Scrollable).first,
       );
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('voice-remote-consent-switch')));

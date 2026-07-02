@@ -29,7 +29,9 @@ MIMO, Ollama, and custom compatible endpoints. Endpoint fields remain editable
 for account-specific regions and gateways. The model field is a dropdown: users
 can fetch official provider model lists, choose an available model, or fall
 back to a custom model id when a gateway/account does not return the desired
-model. Widget tests override the model-list service with a deterministic
+model. The same dialog also exposes a user-triggered draft connection test
+before save; draft test status is UI-only and is not persisted as provider
+configuration. Widget tests override the model-list service with a deterministic
 offline/fake implementation; real model-list requests are user-triggered only.
 
 ## Public Surface
@@ -59,4 +61,5 @@ None.
 
 - `packages/dart/model_providers/README.md`
 - `docs/rfcs/model-provider-settings.md`
+- `docs/decisions/0016-restore-ready-logs-backups-and-asr.md`
 - `docs/architecture/engineering-rules.md`

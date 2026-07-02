@@ -15,8 +15,9 @@ the local database after an explicit replace-all confirmation.
   truth for backup schema, validation, import, export, and migration rejection.
 - Defaults to a compressed `.widenote` directory archive with
   `manifest.properties`, a full SQLite snapshot, and local capture media files.
-  Provider credential values are preserved so restore can use configured model
-  providers immediately.
+  Provider credential values and allowlisted app-owned secure-storage settings
+  are preserved so restore can use configured model providers, AMap reverse
+  geocoding, and MiMo ASR immediately.
 - Runs archive compression and decompression off the main Flutter isolate, and
   imports the extracted SQLite snapshot from a staging directory.
 - Includes local capture media bytes in the `.widenote` archive when the
@@ -27,8 +28,10 @@ the local database after an explicit replace-all confirmation.
   External `.widenote` opens load the file into the Backup page and wait for the
   same destructive replace-all confirmation as in-app import.
 - Treats `.widenote` archives as secret-bearing local files because provider
-  API keys and provider payload fields are included. The UI tells users to keep
-  backups in a trusted destination.
+  API keys, allowlisted secure-storage credentials, and provider payload fields
+  are included. The UI tells users to keep backups in a trusted destination.
+- Excludes local ASR model files from backup; restored devices must redownload
+  local SenseVoice model files before local ASR can run.
 - Keeps legacy JSON and Markdown projections out of the default mobile restore
   path; those projections remain safe/no-secret compatibility surfaces in the
   local DB package.
@@ -48,8 +51,9 @@ the local database after an explicit replace-all confirmation.
 ## User-Tested Boundaries
 
 - `.widenote` archives restore records, Memory, todos, provider credentials,
-  pack installation state, permission grants, runtime state, context cache rows
-  when present, traces, and local capture media files.
+  allowlisted secure settings, pack installation state, permission grants,
+  runtime state, context cache rows when present, traces, and local capture
+  media files.
 - Full SQLite snapshots preserve provider API key values and provider payload
   fields so restored provider settings are immediately usable.
 - Android and iOS register `.widenote` as an app-openable backup file type.

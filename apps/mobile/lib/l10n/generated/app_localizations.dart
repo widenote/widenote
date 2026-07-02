@@ -2489,7 +2489,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsPrivacyBackupBody.
   ///
   /// In en, this message translates to:
-  /// **'Full .widenote backups include provider API keys so restore can use model providers immediately. Keep backup files in a trusted location.'**
+  /// **'Full .widenote backups include provider and allowlisted secure-storage keys so restore can use configured features immediately. Keep backup files in a trusted location.'**
   String get settingsPrivacyBackupBody;
 
   /// No description provided for @settingsPrivacyBackupStatus.
@@ -2552,7 +2552,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsTranscriptionSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Configure live preview, local ASR, MiMo fallback, and transcript correction.'**
+  /// **'Configure local SenseVoice, MiMo ASR, live preview, and transcript correction.'**
   String get settingsTranscriptionSubtitle;
 
   /// No description provided for @settingsTranscriptionStatusLoading.
@@ -2570,7 +2570,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsTranscriptionStatusRemote.
   ///
   /// In en, this message translates to:
-  /// **'remote'**
+  /// **'MiMo'**
   String get settingsTranscriptionStatusRemote;
 
   /// No description provided for @settingsTranscriptionStatusNeedsSetup.
@@ -4047,6 +4047,36 @@ abstract class AppLocalizations {
   /// **'Status'**
   String get voiceSettingsStatusTitle;
 
+  /// No description provided for @voiceSettingsEngineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcription engine'**
+  String get voiceSettingsEngineTitle;
+
+  /// No description provided for @voiceSettingsEngineDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose exactly one ASR path for new transcripts.'**
+  String get voiceSettingsEngineDescription;
+
+  /// No description provided for @voiceSettingsEngineLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'Local SenseVoice'**
+  String get voiceSettingsEngineLocal;
+
+  /// No description provided for @voiceSettingsEngineMimo.
+  ///
+  /// In en, this message translates to:
+  /// **'MiMo ASR'**
+  String get voiceSettingsEngineMimo;
+
+  /// No description provided for @voiceSettingsEngineDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get voiceSettingsEngineDisabled;
+
   /// No description provided for @voiceSettingsLocalModelTitle.
   ///
   /// In en, this message translates to:
@@ -4116,7 +4146,7 @@ abstract class AppLocalizations {
   /// No description provided for @voiceSettingsRemoteFallbackTitle.
   ///
   /// In en, this message translates to:
-  /// **'Remote fallback'**
+  /// **'Selected engine'**
   String get voiceSettingsRemoteFallbackTitle;
 
   /// No description provided for @voiceSettingsRemoteEnabled.
@@ -4158,25 +4188,25 @@ abstract class AppLocalizations {
   /// No description provided for @voiceSettingsRemoteTitle.
   ///
   /// In en, this message translates to:
-  /// **'MiMo ASR fallback'**
+  /// **'MiMo ASR'**
   String get voiceSettingsRemoteTitle;
 
   /// No description provided for @voiceSettingsRemoteDescription.
   ///
   /// In en, this message translates to:
-  /// **'When the local model cannot transcribe, WideNote can upload the saved WAV to the configured MiMo-compatible endpoint after consent.'**
+  /// **'Use the configured MiMo-compatible endpoint only when MiMo is the selected engine or you manually retry with MiMo.'**
   String get voiceSettingsRemoteDescription;
 
   /// No description provided for @voiceSettingsRemoteConsentTitle.
   ///
   /// In en, this message translates to:
-  /// **'Allow remote ASR fallback'**
+  /// **'Allow MiMo audio upload'**
   String get voiceSettingsRemoteConsentTitle;
 
   /// No description provided for @voiceSettingsRemoteConsentSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Audio upload is used only for transcription fallback and manual retry.'**
+  /// **'Audio upload is used only for the selected MiMo engine and manual MiMo retry.'**
   String get voiceSettingsRemoteConsentSubtitle;
 
   /// No description provided for @voiceSettingsEndpointLabel.
@@ -4248,7 +4278,7 @@ abstract class AppLocalizations {
   /// No description provided for @voiceSettingsRetryDescription.
   ///
   /// In en, this message translates to:
-  /// **'Retry failed or review-needed transcripts with the remote ASR path.'**
+  /// **'Retry failed or review-needed transcripts with the MiMo ASR path.'**
   String get voiceSettingsRetryDescription;
 
   /// No description provided for @voiceSettingsRetryButton.
@@ -4422,13 +4452,13 @@ abstract class AppLocalizations {
   /// No description provided for @backupSecretWarning.
   ///
   /// In en, this message translates to:
-  /// **'Full backups include provider API keys. Keep .widenote files somewhere you trust.'**
+  /// **'Full backups include provider and allowlisted secure-storage keys. Keep .widenote files somewhere you trust.'**
   String get backupSecretWarning;
 
   /// No description provided for @backupRestoreBoundary.
   ///
   /// In en, this message translates to:
-  /// **'The .widenote archive restores a SQLite snapshot, capture media files, and provider API keys.'**
+  /// **'The .widenote archive restores a SQLite snapshot, capture media files, provider API keys, and allowlisted app settings.'**
   String get backupRestoreBoundary;
 
   /// No description provided for @backupOwnerExportBoundary.
@@ -4440,7 +4470,7 @@ abstract class AppLocalizations {
   /// No description provided for @backupFullSecretBoundary.
   ///
   /// In en, this message translates to:
-  /// **'Full .widenote backups include provider API keys so restore can use configured providers immediately.'**
+  /// **'Full .widenote backups include provider, AMap, and MiMo ASR keys so restore can use configured features immediately.'**
   String get backupFullSecretBoundary;
 
   /// No description provided for @backupLegacyProviderCredentialReentryCount.

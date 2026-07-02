@@ -54,7 +54,7 @@ void main() {
     });
 
     test(
-      'local failure falls back to remote when consent is granted',
+      'selected MiMo engine uses remote provider without local fallback',
       () async {
         final database = localdb.WideNoteLocalDatabase.inMemory();
         addTearDown(database.close);
@@ -62,6 +62,7 @@ void main() {
         final service = _service(
           database,
           settings: const VoiceTranscriptionSettings(
+            engine: VoiceTranscriptionEngine.xiaomiMimo,
             remoteConsentGranted: true,
           ),
           localProvider: const _FailingTranscriptionProvider(
@@ -78,22 +79,24 @@ void main() {
 
         expect(result.status, TranscriptStatus.active);
         expect(result.providerId, 'fake_remote');
-        expect(result.metadata['fallback_from'], 'model_missing');
         final artifact = database.derivedArtifacts.readById(
           'artifact.capture-1.voice-1.audio_transcript',
         )!;
         expect(artifact.payload['provider_kind'], 'mimo_asr');
-        expect(artifact.payload['fallback_from'], 'model_missing');
+        expect(artifact.payload['fallback_from'], isNull);
       },
     );
 
-    test('remote fallback without credential records safe failure', () async {
+    test('selected MiMo without credential records safe failure', () async {
       final database = localdb.WideNoteLocalDatabase.inMemory();
       addTearDown(database.close);
       _seedVoiceAttachment(database);
       final service = _service(
         database,
-        settings: const VoiceTranscriptionSettings(remoteConsentGranted: true),
+        settings: const VoiceTranscriptionSettings(
+          engine: VoiceTranscriptionEngine.xiaomiMimo,
+          remoteConsentGranted: true,
+        ),
         localProvider: const _FailingTranscriptionProvider(
           TranscriptionFailureCode.modelMissing,
         ),
@@ -112,6 +115,33 @@ void main() {
       )!;
       expect(artifact.payload['error_code'], 'remote_credential_missing');
       expect(artifact.payload.toString(), isNot(contains('sk-')));
+    });
+
+    test('local engine does not upload after local failure', () async {
+      final database = localdb.WideNoteLocalDatabase.inMemory();
+      addTearDown(database.close);
+      _seedVoiceAttachment(database);
+      final service = _service(
+        database,
+        settings: const VoiceTranscriptionSettings(
+          engine: VoiceTranscriptionEngine.localSenseVoice,
+          remoteConsentGranted: true,
+        ),
+        localProvider: const _FailingTranscriptionProvider(
+          TranscriptionFailureCode.modelMissing,
+        ),
+        remoteProvider: _FakeTranscriptionProvider(
+          id: 'fake_remote',
+          kind: TranscriptionProviderKind.mimoAsr,
+          resultText: 'Should not upload.',
+        ),
+      );
+
+      final result = await service.transcribeAttachment('voice-1');
+
+      expect(result.status, TranscriptStatus.failed);
+      expect(result.providerKind, TranscriptionProviderKind.localSenseVoice);
+      expect(result.errorCode, TranscriptionFailureCode.modelMissing);
     });
 
     test('correction auto-applies safe high-confidence patches', () async {
@@ -177,6 +207,7 @@ void main() {
       final service = _service(
         database,
         settings: const VoiceTranscriptionSettings(
+          engine: VoiceTranscriptionEngine.xiaomiMimo,
           remoteConsentGranted: true,
           correctionMode: TranscriptCorrectionMode.disabled,
         ),
@@ -238,6 +269,7 @@ void main() {
         );
         final provider = MimoAsrProvider(
           settings: const VoiceTranscriptionSettings(
+            engine: VoiceTranscriptionEngine.xiaomiMimo,
             remoteConsentGranted: true,
           ),
           credentialStore: credentialStore,

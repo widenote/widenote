@@ -472,9 +472,11 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
   late final TextEditingController _apiKeyController;
   List<String> _availableModels = const <String>[];
   bool _isFetchingModels = false;
+  bool _isTestingDraft = false;
   bool _isCustomModel = false;
   bool _clearSavedKey = false;
   String? _localError;
+  ProviderConnectionSnapshot? _draftConnection;
 
   @override
   void initState() {
@@ -650,6 +652,27 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
                   },
                 ),
               ],
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: OutlinedButton.icon(
+                  key: const Key('provider-test-draft-button'),
+                  onPressed: _isTestingDraft
+                      ? null
+                      : () => unawaited(_testDraftProvider()),
+                  icon: _isTestingDraft
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.network_check),
+                  label: Text(l10n.providerActionTestConnection),
+                ),
+              ),
+              if (_draftConnection != null) ...[
+                const SizedBox(height: 8),
+                _ConnectionLine(connection: _draftConnection!),
+              ],
               if (_localError != null) ...[
                 const SizedBox(height: 12),
                 _ErrorLine(
@@ -682,6 +705,7 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
       _modelController.text = kind.defaultModel;
       _availableModels = const <String>[];
       _isCustomModel = false;
+      _draftConnection = null;
       _localError = null;
     });
   }
@@ -746,20 +770,10 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
 
   Future<void> _saveProvider() async {
     final l10n = context.l10n;
-    final endpoint = Uri.tryParse(_endpointController.text.trim());
-    if (endpoint == null) {
-      setState(() => _localError = l10n.providerInvalidEndpoint);
+    final config = _draftConfig(l10n);
+    if (config == null) {
       return;
     }
-
-    final config = ModelProviderConfig(
-      id: widget.existing?.id ?? _newProviderId(_nameController.text),
-      kind: _kind,
-      displayName: _nameController.text.trim(),
-      endpoint: endpoint,
-      model: _modelController.text.trim(),
-      apiKey: _nextApiKey(),
-    );
     final saved = await ref
         .read(modelProviderSettingsControllerProvider.notifier)
         .saveProvider(config, requireApiKey: !_clearSavedKey);
@@ -775,6 +789,56 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
     setState(() {
       _localError = state?.errorMessage ?? l10n.providerSaveFailed;
     });
+  }
+
+  Future<void> _testDraftProvider() async {
+    if (_isTestingDraft) {
+      return;
+    }
+    final l10n = context.l10n;
+    final config = _draftConfig(l10n);
+    if (config == null) {
+      return;
+    }
+    setState(() {
+      _isTestingDraft = true;
+      _draftConnection = ProviderConnectionSnapshot(
+        status: ProviderConnectionStatus.testing,
+        message: l10n.providerTestingConnectionMessage,
+      );
+      _localError = null;
+    });
+    final result = await ref
+        .read(modelProviderSettingsControllerProvider.notifier)
+        .testDraftProvider(config);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _isTestingDraft = false;
+      _draftConnection = ProviderConnectionSnapshot(
+        status: result.succeeded
+            ? ProviderConnectionStatus.succeeded
+            : ProviderConnectionStatus.failed,
+        message: result.message,
+      );
+    });
+  }
+
+  ModelProviderConfig? _draftConfig(AppLocalizations l10n) {
+    final endpoint = Uri.tryParse(_endpointController.text.trim());
+    if (endpoint == null) {
+      setState(() => _localError = l10n.providerInvalidEndpoint);
+      return null;
+    }
+    return ModelProviderConfig(
+      id: widget.existing?.id ?? _newProviderId(_nameController.text),
+      kind: _kind,
+      displayName: _nameController.text.trim(),
+      endpoint: endpoint,
+      model: _modelController.text.trim(),
+      apiKey: _nextApiKey(),
+    );
   }
 
   String _nextApiKey() {
@@ -1034,4 +1098,47 @@ class _ErrorLine extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ConnectionLine extends StatelessWidget {
+  const _ConnectionLine({required this.connection});
+
+  final ProviderConnectionSnapshot connection;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final colorScheme = Theme.of(context).colorScheme;
+    final color = switch (connection.status) {
+      ProviderConnectionStatus.succeeded => colorScheme.primary,
+      ProviderConnectionStatus.failed => colorScheme.error,
+      ProviderConnectionStatus.testing => colorScheme.onSurfaceVariant,
+      ProviderConnectionStatus.idle => colorScheme.onSurfaceVariant,
+    };
+    return Row(
+      key: const Key('provider-draft-test-result'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(_connectionIcon(connection.status), size: 16, color: color),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            localizedProviderConnectionMessage(l10n, connection.message),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: color),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+IconData _connectionIcon(ProviderConnectionStatus status) {
+  return switch (status) {
+    ProviderConnectionStatus.succeeded => Icons.check_circle_outline,
+    ProviderConnectionStatus.failed => Icons.error_outline,
+    ProviderConnectionStatus.testing => Icons.sync,
+    ProviderConnectionStatus.idle => Icons.radio_button_unchecked,
+  };
 }

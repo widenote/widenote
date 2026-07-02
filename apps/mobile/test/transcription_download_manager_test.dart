@@ -86,6 +86,16 @@ void main() {
       supportDirectory: temp,
       settingsRepository: repository,
       downloader: const _FakeModelDownloader(),
+      files: const <TranscriptionModelDownloadFile>[
+        TranscriptionModelDownloadFile(
+          url: 'https://example.invalid/model.int8.onnx',
+          relativePath: '$defaultSenseVoiceModelDirectory/model.int8.onnx',
+        ),
+        TranscriptionModelDownloadFile(
+          url: 'https://example.invalid/tokens.txt',
+          relativePath: '$defaultSenseVoiceModelDirectory/tokens.txt',
+        ),
+      ],
     );
 
     final snapshot = await manager.downloadDefaultModel();

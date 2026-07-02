@@ -35,5 +35,8 @@ local record fact metadata:
   data is marked as a provider-derived fact, not raw user truth.
 - User-facing lists default to coarse display and users can clear saved
   capture-location facts.
-- AMap API keys are credentials and must stay out of backups, Owner Export,
-  logs, fixtures, external review prompts, PR descriptions, and generated docs.
+- AMap API keys are credentials. They may be included only in full,
+  secret-bearing `.widenote` backups so restore can use reverse geocoding
+  immediately. They must stay out of Owner Export, safe projections, logs,
+  fixtures, screenshots, external review prompts, PR descriptions, and
+  generated docs.
