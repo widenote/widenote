@@ -230,24 +230,21 @@ class WideNoteShell extends ConsumerWidget {
 
   // Index 2 is the center Record action; it opens capture and is not routable.
   static const _paths = ['/', '/chat', '', '/todos', '/plugins'];
+  static const _bottomNavigationPaths = {'/', '/chat', '/todos', '/plugins'};
 
   int get _selectedIndex {
-    if (location.startsWith('/chat')) {
-      return 1;
-    }
-    if (location.startsWith('/todos')) {
-      return 3;
-    }
-    if (location.startsWith('/plugins')) {
-      return 4;
-    }
-    return 0;
+    return switch (location) {
+      '/chat' => 1,
+      '/todos' => 3,
+      '/plugins' => 4,
+      _ => 0,
+    };
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final showBottomNavigationBar = !location.startsWith('/chat/session/');
+    final showBottomNavigationBar = _bottomNavigationPaths.contains(location);
     return Scaffold(
       body: SafeArea(child: child),
       bottomNavigationBar: showBottomNavigationBar

@@ -9,6 +9,7 @@ owners: []
 tags: [mobile, navigation, ux]
 supersedes: []
 superseded_by:
+  - ./0019-hide-bottom-tabs-on-mobile-child-pages.md
 sources:
   - ../research/2026-07-02-mobile-navigation-kimi-review.md
 ---
@@ -25,6 +26,11 @@ roots and delegate back to the platform.
 The product should feel local, inspectable, and safe to explore. A user opening
 a control page, source detail, timeline search, backup surface, or trace view
 should be able to return to the page that owns it before the app exits.
+
+Supersession note: ADR-0019 partially supersedes this ADR only for bottom-tab
+visibility on child pages. This ADR remains accepted for route hierarchy,
+declared parents, push-versus-replacement navigation, contextual source links,
+and direct-link back-stack construction.
 
 ## Decision
 

@@ -68,12 +68,18 @@ void main() {
     expect(find.text('模型提供商'), findsWidgets);
     expect(find.text('添加提供商'), findsOneWidget);
     expect(find.text('尚未配置模型'), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
 
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    await tester.pumpAndSettle();
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    await tester.pumpAndSettle();
     await _openTab(tester, const Key('tab-plugins'));
     await tester.tap(find.byKey(const Key('backup-entry')));
     await tester.pumpAndSettle();
     expect(find.text('备份'), findsWidgets);
     expect(find.text('创建 .widenote 备份'), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
     expect(
       find.textContaining('完整 .widenote 备份会包含 Provider、AMap'),
       findsOneWidget,

@@ -34,6 +34,11 @@ database code live under `packages/`.
 - `features/traces/TraceConsolePage` and `TraceRawLogsPage`
 - localizations under `l10n/`
 
+The app shell shows bottom tabs only for the four peer route roots: `/`,
+`/chat`, `/todos`, and `/plugins`. All other pages under this tree are
+hierarchical child pages and should render without bottom tabs while preserving
+their parent back stack.
+
 ## Generated Artifacts
 
 Flutter localization bindings are generated into `l10n/generated/` from ARB
