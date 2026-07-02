@@ -509,6 +509,45 @@ void main() {
     expect(find.text('4 enabled'), findsOneWidget);
   });
 
+  testWidgets('pack library hides app-owned internal installations', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    final installedAt = DateTime.utc(2026, 7, 2, 8);
+    database.packInstallations.insert(
+      PackInstallationRecord(
+        packId: 'chat',
+        name: 'Chat',
+        version: '0.1.0',
+        publisher: 'widenote',
+        edition: 'app_owned',
+        status: 'enabled',
+        runtimeStatus: 'idle',
+        entrypointKind: 'native',
+        requestedPermissions: const <Object?>['memory.read'],
+        manifest: const <String, Object?>{
+          'id': 'chat',
+          'name': 'Chat',
+          'version': '0.1.0',
+        },
+        installedAt: installedAt,
+        updatedAt: installedAt,
+      ),
+    );
+
+    await _pumpLocalizedPage(
+      tester,
+      const PackLibraryPage(),
+      database: database,
+    );
+
+    expect(database.packInstallations.readById('chat'), isNotNull);
+    expect(find.text('Chat'), findsNothing);
+    expect(find.byKey(const Key('pack-card-chat')), findsNothing);
+    expect(find.text('4 enabled'), findsOneWidget);
+  });
+
   test('pack disable rebuilds capture runtime without disabled pack', () async {
     final database = WideNoteLocalDatabase.inMemory();
     addTearDown(database.close);

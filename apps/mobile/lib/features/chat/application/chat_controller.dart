@@ -8,6 +8,7 @@ import '../../../shared/text_preview.dart';
 import '../domain/chat_models.dart';
 import 'chat_assistant.dart';
 import 'chat_context.dart';
+import 'chat_read_only_tool_loop.dart';
 import 'chat_repository.dart';
 import 'local_chat_context_source.dart';
 import 'local_chat_repository.dart';
@@ -39,6 +40,14 @@ final chatReadOnlyToolRegistryProvider = Provider<runtime.ToolRegistry>((ref) {
   return registry;
 });
 
+final chatPermissionBrokerProvider = Provider<runtime.PermissionBroker>((ref) {
+  final database = ref.watch(localDatabaseProvider);
+  _seedChatReadOnlyPermissionGrants(database);
+  return runtime.InMemoryPermissionBroker(
+    store: LocalDbPermissionStore(database),
+  );
+});
+
 final chatAssistantProvider = Provider<ChatAssistant>((ref) {
   final model = ref.watch(chatModelClientProvider);
   if (model == null) {
@@ -47,6 +56,7 @@ final chatAssistantProvider = Provider<ChatAssistant>((ref) {
   return ModelBackedChatAssistant(
     model: model,
     toolRegistry: ref.watch(chatReadOnlyToolRegistryProvider),
+    permissionBroker: ref.watch(chatPermissionBrokerProvider),
     labels: ref.watch(chatContextLabelsProvider),
   );
 });
@@ -548,4 +558,63 @@ ChatSession? _sessionById(List<ChatSession> sessions, String sessionId) {
 
 bool _isDefaultSessionTitle(String title) {
   return title == chatDefaultSessionTitle;
+}
+
+const _chatReadOnlyPermissionIds = <String>{
+  LocalDbCoreToolCatalog.semanticSearchQueryTool,
+  LocalDbCoreToolCatalog.contextPacketBuildTool,
+  LocalDbCoreToolCatalog.memoryReadTool,
+  LocalDbCoreToolCatalog.timelineReadTool,
+  LocalDbCoreToolCatalog.knowledgeReadTool,
+  LocalDbCoreToolCatalog.traceReadTool,
+};
+
+void _seedChatReadOnlyPermissionGrants(WideNoteLocalDatabase database) {
+  final now = DateTime.now().toUtc();
+  if (database.packInstallations.readById(chatReadOnlyPackId) == null) {
+    database.packInstallations.insert(
+      PackInstallationRecord(
+        packId: chatReadOnlyPackId,
+        name: 'Chat',
+        version: '0.1.0',
+        publisher: 'widenote',
+        edition: 'app_owned',
+        status: 'enabled',
+        runtimeStatus: 'idle',
+        entrypointKind: 'native',
+        requestedPermissions: <Object?>[..._chatReadOnlyPermissionIds],
+        manifest: const <String, Object?>{
+          'id': chatReadOnlyPackId,
+          'name': 'Chat',
+          'version': '0.1.0',
+        },
+        payload: const <String, Object?>{'source': 'mobile_chat_read_only'},
+        installedAt: now,
+        updatedAt: now,
+      ),
+    );
+  }
+  for (final permission in _chatReadOnlyPermissionIds) {
+    if (database.permissionGrants.readByPackAndPermission(
+          chatReadOnlyPackId,
+          permission,
+        ) !=
+        null) {
+      continue;
+    }
+    database.permissionGrants.insert(
+      PermissionGrantRecord(
+        id: 'permission:$chatReadOnlyPackId:$permission',
+        packId: chatReadOnlyPackId,
+        permissionId: permission,
+        status: runtime.PermissionDecisionState.granted.name,
+        grantKind: 'built_in_default',
+        grantedAt: now,
+        reason: 'built_in_default',
+        payload: const <String, Object?>{'source': 'mobile_chat_read_only'},
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+  }
 }

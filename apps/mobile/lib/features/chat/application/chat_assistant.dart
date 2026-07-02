@@ -23,12 +23,14 @@ final class ModelBackedChatAssistant implements ChatAssistant {
   const ModelBackedChatAssistant({
     required this.model,
     this.toolRegistry,
+    this.permissionBroker,
     this.labels = const ChatContextLabels.english(),
     this.maxSources = 6,
   });
 
   final runtime.ModelClient model;
   final runtime.ToolRegistry? toolRegistry;
+  final runtime.PermissionBroker? permissionBroker;
   final ChatContextLabels labels;
   final int maxSources;
 
@@ -40,6 +42,7 @@ final class ModelBackedChatAssistant implements ChatAssistant {
         return await ChatReadOnlyToolLoop(
           model: model,
           toolRegistry: registry,
+          permissionBroker: permissionBroker,
           labels: labels,
           maxSources: maxSources,
         ).answer(prompt);

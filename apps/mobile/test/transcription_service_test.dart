@@ -39,6 +39,13 @@ void main() {
       expect(artifact.body, result.text);
       expect(artifact.payload['provider_id'], 'fake_local');
       expect(
+        artifact.payload['transcript_event_id'],
+        'transcript.voice-1.fake_local',
+      );
+      final payloadSourceRefs = artifact.payload['source_refs'];
+      expect(payloadSourceRefs, isA<List<Object?>>());
+      expect(payloadSourceRefs, isNotEmpty);
+      expect(
         artifact.sourceRefs.whereType<Map>().any(
           (ref) => ref['kind'] == 'capture' && ref['id'] == 'capture-1',
         ),
@@ -190,7 +197,20 @@ void main() {
       expect(artifact.payload['correction_status'], 'auto_applied');
       expect(artifact.payload['correction_auto_applied'], isTrue);
       expect(
+        artifact.payload['correction_revision_kind'],
+        'inline_audio_transcript_artifact',
+      );
+      expect(artifact.payload['correction_event_id'], 'correction.voice-1');
+      final payloadSourceRefs = artifact.payload['source_refs'];
+      expect(payloadSourceRefs, isA<List<Object?>>());
+      expect(
         artifact.sourceRefs.whereType<Map>().any(
+          (ref) => ref['kind'] == 'event' && ref['id'] == 'correction.voice-1',
+        ),
+        isTrue,
+      );
+      expect(
+        (payloadSourceRefs! as List<Object?>).whereType<Map>().any(
           (ref) => ref['kind'] == 'event' && ref['id'] == 'correction.voice-1',
         ),
         isTrue,

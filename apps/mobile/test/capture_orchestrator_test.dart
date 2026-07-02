@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
+import 'package:widenote_cards/widenote_cards.dart' as cards;
 import 'package:widenote_core/widenote_core.dart';
 import 'package:widenote_memory/memory.dart' as memory;
 import 'package:widenote_mobile/features/capture/application/capture_agent_prompts.dart';
@@ -90,6 +91,62 @@ void main() {
     },
   );
 
+  test('official transcript correction event keeps source refs', () async {
+    final orchestrator = CaptureOrchestrator.local(
+      clock: TickingWnClock(DateTime.utc(2026, 7, 2, 3)),
+      idGenerator: SequenceWnIdGenerator(seed: 'transcript-pack'),
+    );
+    final transcriptPack = orchestrator.debugRegisteredPacks().singleWhere(
+      (pack) => pack.id == 'pack.transcript_correction',
+    );
+    final eventStore = runtime.InMemoryEventStore();
+    final traceSink = runtime.InMemoryTraceSink();
+    final permissions = runtime.InMemoryPermissionBroker()
+      ..grantAll(transcriptPack.id, transcriptPack.requiredPermissions);
+    final kernel = runtime.RuntimeKernel(
+      eventStore: eventStore,
+      traceSink: traceSink,
+      permissionBroker: permissions,
+      toolRegistry: runtime.InMemoryToolRegistry(),
+      idGenerator: SequenceWnIdGenerator(seed: 'transcript-event'),
+      clock: TickingWnClock(DateTime.utc(2026, 7, 2, 3, 1)),
+      model: runtime.FakeModel(),
+      deviceId: 'test-device',
+    )..registerPack(transcriptPack);
+
+    final transcript = await kernel.publish(
+      const runtime.WnEventDraft(
+        type: runtime.WnEventTypes.transcriptCreated,
+        actor: runtime.WnActor.system,
+        subjectRef: runtime.SubjectRef(kind: 'transcript', id: 'transcript-1'),
+        payload: <String, Object?>{
+          'transcript_id': 'transcript-1',
+          'source_capture_id': 'capture-1',
+          'source_attachment_id': 'voice-1',
+          'correction_status': 'auto_applied',
+          'correction_patches': <Object?>[],
+        },
+      ),
+    );
+
+    final corrected = (await eventStore.readByType(
+      runtime.WnEventTypes.transcriptCorrected,
+    )).single;
+    final sourceRefs = corrected.payload['source_refs'];
+
+    expect(corrected.causationId, transcript.id);
+    expect(sourceRefs, isA<List<Object?>>());
+    expect(
+      _sourceRefIds(sourceRefs! as List<Object?>),
+      containsAll(<String>[
+        'transcript-1',
+        transcript.id,
+        'voice-1',
+        'capture-1',
+      ]),
+    );
+  });
+
   test('quick capture runs runtime and silently auto-accepts Memory', () async {
     final model = _SequenceMetadataModel(
       responses: <String>[
@@ -158,6 +215,12 @@ void main() {
         runtime.WnEventTypes.artifactCreated,
       ]),
     );
+    final captureEvent = result.events.singleWhere(
+      (event) => event.type == runtime.WnEventTypes.captureCreated,
+    );
+    final captureSourceRefs = captureEvent.payload['source_refs'];
+    expect(captureSourceRefs, isA<List<Object?>>());
+    expect(captureSourceRefs, isNotEmpty);
     _expectEventOrigin(
       result.events,
       runtime.WnEventTypes.memoryProposed,
@@ -190,6 +253,17 @@ void main() {
       runtime.WnEventTypes.todoSuggested,
       packId: 'pack.todo',
       agentId: 'agent.todo_loop',
+    );
+    final todoEvent = result.events.singleWhere(
+      (event) => event.type == runtime.WnEventTypes.todoSuggested,
+    );
+    expect(
+      _sourceRefIds(todoEvent.payload['source_refs']! as List<Object?>),
+      containsAll(<String>[result.record.id, sourceEventId]),
+    );
+    expect(
+      _sourceRefIds(result.todo.sourceRefs),
+      containsAll(<String>[result.record.id, sourceEventId]),
     );
     _expectEventOrigin(
       result.events,
@@ -282,6 +356,168 @@ void main() {
       isNot(contains('pack.pkm_library')),
     );
   });
+
+  test(
+    'official native pack without permission does not execute or write output',
+    () async {
+      final eventStore = runtime.InMemoryEventStore();
+      final traceSink = runtime.InMemoryTraceSink();
+      final model = _SequenceMetadataModel(
+        responses: <String>['Should not be requested.'],
+      );
+      final orchestrator = CaptureOrchestrator.local(
+        eventStore: eventStore,
+        traceSink: traceSink,
+        permissionBroker: runtime.InMemoryPermissionBroker(),
+        autoGrantOfficialPermissions: false,
+        clock: TickingWnClock(DateTime.utc(2026, 7, 2, 3)),
+        idGenerator: SequenceWnIdGenerator(seed: 'missing-grant'),
+        model: model,
+        enabledPackIds: const <String>['pack.default'],
+      );
+
+      final result = await orchestrator.processCapture(
+        'No official native output should be written without grants.',
+        captureId: 'capture-missing-grant',
+      );
+
+      expect(model.requests, isEmpty);
+      expect(result.memoryGenerated, isFalse);
+      expect(result.acceptedMemoryCount, 0);
+      expect(result.reviewMemoryCount, 0);
+      expect(result.eventTypes, <String>[runtime.WnEventTypes.captureCreated]);
+      expect((await eventStore.readAll()).map((event) => event.type), <String>[
+        runtime.WnEventTypes.captureCreated,
+      ]);
+      final traceNames = (await traceSink.readAll())
+          .map((trace) => trace.name)
+          .toList(growable: false);
+      expect(traceNames, contains('runtime.permission.denied'));
+      expect(traceNames, isNot(contains('runtime.run.started')));
+      expect(traceNames, isNot(contains('runtime.handler.output')));
+    },
+  );
+
+  test(
+    'untrusted related events do not materialize mobile-private projections',
+    () async {
+      final eventStore = runtime.InMemoryEventStore();
+      final sink = _RecordingKnowledgeSink();
+      final now = DateTime.utc(2026, 7, 2, 3, 30);
+      const subject = runtime.SubjectRef(
+        kind: 'capture',
+        id: 'capture-untrusted',
+      );
+      final capture = _runtimeEvent(
+        id: 'evt-untrusted-capture',
+        type: runtime.WnEventTypes.captureCreated,
+        actor: runtime.WnActor.user,
+        subjectRef: subject,
+        payload: const <String, Object?>{
+          'text': 'Community output must not become private writes.',
+        },
+        createdAt: now,
+      );
+      final sourceRefs = <Object?>[
+        <String, Object?>{'kind': 'capture', 'id': subject.id},
+        <String, Object?>{'kind': 'event', 'id': capture.id},
+      ];
+
+      await eventStore.appendAll(<runtime.WnEvent>[
+        capture,
+        _runtimeEvent(
+          id: 'evt-community-memory',
+          type: runtime.WnEventTypes.memoryProposed,
+          actor: runtime.WnActor.agent,
+          packId: 'pack.community',
+          agentId: 'agent.memory_writer',
+          subjectRef: subject,
+          payload: <String, Object?>{
+            'text': 'Community memory should stay event-only.',
+            'source_capture_id': subject.id,
+            'source_event_id': capture.id,
+            'source_refs': sourceRefs,
+          },
+          causationId: capture.id,
+          correlationId: capture.id,
+          createdAt: now.add(const Duration(seconds: 1)),
+        ),
+        _runtimeEvent(
+          id: 'evt-spoofed-official-memory',
+          type: runtime.WnEventTypes.memoryProposed,
+          actor: runtime.WnActor.agent,
+          packId: 'pack.default',
+          agentId: 'agent.capture_loop',
+          subjectRef: subject,
+          payload: <String, Object?>{
+            'text': 'Spoofed official attribution lacks runtime output.',
+            'source_capture_id': subject.id,
+            'source_event_id': capture.id,
+            'source_refs': sourceRefs,
+          },
+          causationId: capture.id,
+          correlationId: capture.id,
+          createdAt: now.add(const Duration(seconds: 2)),
+        ),
+        _runtimeEvent(
+          id: 'evt-community-todo',
+          type: runtime.WnEventTypes.todoSuggested,
+          actor: runtime.WnActor.agent,
+          packId: 'pack.community',
+          agentId: 'agent.todo_writer',
+          subjectRef: subject,
+          payload: <String, Object?>{
+            'text': 'Community todo should stay event-only.',
+            'source_event_id': capture.id,
+          },
+          causationId: capture.id,
+          correlationId: capture.id,
+          createdAt: now.add(const Duration(seconds: 3)),
+        ),
+        _runtimeEvent(
+          id: 'evt-community-artifact',
+          type: runtime.WnEventTypes.artifactCreated,
+          actor: runtime.WnActor.agent,
+          packId: 'pack.community',
+          agentId: 'agent.artifact_writer',
+          subjectRef: subject,
+          payload: <String, Object?>{
+            'artifact_id': 'artifact.community',
+            'artifact_kind': 'community_projection',
+            'title': 'Community artifact',
+            'body': 'This should not be saved as a private artifact.',
+            'source_capture_id': subject.id,
+            'source_event_id': capture.id,
+            'source_refs': sourceRefs,
+          },
+          causationId: capture.id,
+          correlationId: capture.id,
+          createdAt: now.add(const Duration(seconds: 4)),
+        ),
+      ]);
+
+      final orchestrator = CaptureOrchestrator.local(
+        eventStore: eventStore,
+        knowledgeSink: sink,
+        clock: TickingWnClock(now),
+        idGenerator: SequenceWnIdGenerator(seed: 'untrusted-projection'),
+        enabledPackIds: const <String>[],
+      );
+
+      final result = await orchestrator.materializePublishedCapture(subject.id);
+
+      expect(result, isNotNull);
+      expect(result!.eventTypes, contains(runtime.WnEventTypes.memoryProposed));
+      expect(result.eventTypes, contains(runtime.WnEventTypes.todoSuggested));
+      expect(result.eventTypes, contains(runtime.WnEventTypes.artifactCreated));
+      expect(result.memoryGenerated, isFalse);
+      expect(result.memoryItem.title, 'memory.not_generated');
+      expect(result.acceptedMemoryCount, 0);
+      expect(result.reviewMemoryCount, 0);
+      expect(result.todo.isSuggested, isFalse);
+      expect(sink.artifacts, isEmpty);
+    },
+  );
 
   test('todo agent uses model schedule output without local parsing', () async {
     final orchestrator = CaptureOrchestrator.local(
@@ -1020,6 +1256,47 @@ final class _UndeclaredOutputAgent implements runtime.AgentHandler {
       ],
     );
   }
+}
+
+final class _RecordingKnowledgeSink implements CaptureKnowledgeSink {
+  final artifacts = <CaptureDerivedArtifact>[];
+
+  @override
+  Future<void> save(cards.MemoryFirstCardBundle bundle) async {}
+
+  @override
+  Future<void> saveArtifacts(List<CaptureDerivedArtifact> artifacts) async {
+    this.artifacts.addAll(artifacts);
+  }
+}
+
+runtime.WnEvent _runtimeEvent({
+  required String id,
+  required String type,
+  required runtime.WnActor actor,
+  required DateTime createdAt,
+  Map<String, Object?> payload = const <String, Object?>{},
+  String? packId,
+  String? agentId,
+  runtime.SubjectRef? subjectRef,
+  String? causationId,
+  String? correlationId,
+}) {
+  return runtime.WnEvent(
+    id: id,
+    type: type,
+    schemaVersion: 1,
+    actor: actor,
+    packId: packId,
+    agentId: agentId,
+    subjectRef: subjectRef,
+    payload: payload,
+    privacy: runtime.WnPrivacy.localOnly,
+    causationId: causationId,
+    correlationId: correlationId,
+    deviceId: 'test-device',
+    createdAt: createdAt,
+  );
 }
 
 void _expectEventOrigin(

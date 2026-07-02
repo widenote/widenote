@@ -163,6 +163,114 @@ void main() {
     expect(rejected.details['event_type'], WnEventTypes.insightCreated);
   });
 
+  test(
+    'artifact and transcript correction outputs receive caused-by source refs',
+    () async {
+      final store = InMemoryEventStore();
+      final traceSink = InMemoryTraceSink();
+      final kernel = _blankKernel(store: store, traceSink: traceSink)
+        ..registerPack(
+          const AgentPack(
+            id: 'pack.derived',
+            name: 'Derived output pack',
+            version: '0.1.0',
+            subscriptions: <Subscription>[
+              Subscription(
+                id: 'sub.derived',
+                agentId: 'agent.derived',
+                eventTypes: <String>{WnEventTypes.captureCreated},
+              ),
+            ],
+            agentDefinitions: <String, AgentDefinition>{
+              'agent.derived': AgentDefinition(
+                id: 'agent.derived',
+                outputEvents: <String>{
+                  WnEventTypes.artifactCreated,
+                  WnEventTypes.transcriptCorrected,
+                },
+              ),
+            },
+            agents: <String, AgentHandler>{
+              'agent.derived': _MissingSourceRefsDerivedOutputHandler(),
+            },
+          ),
+        );
+
+      final capture = await kernel.publish(
+        const WnEventDraft(
+          type: WnEventTypes.captureCreated,
+          actor: WnActor.user,
+          payload: <String, Object?>{'text': 'Create derived outputs.'},
+        ),
+      );
+
+      final outputs = (await store.readAll()).skip(1).toList(growable: false);
+      expect(outputs.map((event) => event.type), <String>[
+        WnEventTypes.artifactCreated,
+        WnEventTypes.transcriptCorrected,
+      ]);
+      for (final output in outputs) {
+        final sourceRefs = output.payload['source_refs']! as List<Object?>;
+        expect(sourceRefs, hasLength(1));
+        expect(sourceRefs.single, containsPair('kind', 'event'));
+        expect(sourceRefs.single, containsPair('id', capture.id));
+      }
+    },
+  );
+
+  test(
+    'transcript correction output with malformed source refs is rejected',
+    () async {
+      final store = InMemoryEventStore();
+      final traceSink = InMemoryTraceSink();
+      final kernel = _blankKernel(store: store, traceSink: traceSink)
+        ..registerPack(
+          const AgentPack(
+            id: 'pack.transcript',
+            name: 'Transcript correction pack',
+            version: '0.1.0',
+            subscriptions: <Subscription>[
+              Subscription(
+                id: 'sub.transcript',
+                agentId: 'agent.transcript',
+                eventTypes: <String>{WnEventTypes.transcriptCreated},
+              ),
+            ],
+            agentDefinitions: <String, AgentDefinition>{
+              'agent.transcript': AgentDefinition(
+                id: 'agent.transcript',
+                outputEvents: <String>{WnEventTypes.transcriptCorrected},
+              ),
+            },
+            agents: <String, AgentHandler>{
+              'agent.transcript': _MalformedTranscriptSourceRefsHandler(),
+            },
+          ),
+        );
+
+      await kernel.publish(
+        const WnEventDraft(
+          type: WnEventTypes.transcriptCreated,
+          actor: WnActor.system,
+          subjectRef: SubjectRef(kind: 'transcript', id: 'transcript-1'),
+          payload: <String, Object?>{'transcript_id': 'transcript-1'},
+        ),
+      );
+
+      expect(await store.readByType(WnEventTypes.transcriptCorrected), isEmpty);
+      expect(kernel.tasks.single.status, RuntimeTaskStatus.failed);
+      expect(kernel.runs.single.status, RuntimeRunStatus.failed);
+      expect(kernel.runs.single.error, contains('without valid source refs'));
+
+      final rejected = (await traceSink.readAll()).singleWhere(
+        (trace) =>
+            trace.name == 'runtime.handler.output_rejected' &&
+            trace.details['error_code'] == 'invalid_source_refs',
+      );
+      expect(rejected.details['event_type'], WnEventTypes.transcriptCorrected);
+    },
+  );
+
   test('unmatched event appends without creating a task or run', () async {
     final store = InMemoryEventStore();
     final traceSink = InMemoryTraceSink();
@@ -2227,6 +2335,29 @@ void main() {
     },
   );
 
+  test('native manifest bridge rejects community native handlers', () {
+    final communityManifest = _defaultManifest(
+      id: 'pack.community',
+      edition: 'community',
+    );
+
+    expect(
+      () => const AgentPackManifestBridge().buildNativePack(
+        communityManifest,
+        nativeHandlers: <String, AgentHandler>{
+          'agent.capture_loop': _CountingHandler(),
+        },
+      ),
+      throwsA(
+        isA<ArgumentError>().having(
+          (error) => '$error',
+          'message',
+          contains('only accepts official manifests'),
+        ),
+      ),
+    );
+  });
+
   test(
     'permission broker persists decisions and revoke gates queued/future tasks',
     () async {
@@ -3038,6 +3169,58 @@ final class _MalformedSourceRefsHandler implements AgentHandler {
   }
 }
 
+final class _MissingSourceRefsDerivedOutputHandler implements AgentHandler {
+  const _MissingSourceRefsDerivedOutputHandler();
+
+  @override
+  Future<AgentHandlerResult> handle(AgentContext context, WnEvent event) async {
+    return AgentHandlerResult(
+      events: <WnEventDraft>[
+        context.emit(
+          type: WnEventTypes.artifactCreated,
+          payload: const <String, Object?>{
+            'artifact_id': 'artifact.without.refs',
+            'artifact_kind': 'test_artifact',
+            'title': 'Missing refs artifact',
+            'body': 'Runtime should attach caused-by source refs.',
+          },
+        ),
+        context.emit(
+          type: WnEventTypes.transcriptCorrected,
+          payload: const <String, Object?>{
+            'source_transcript_id': 'transcript-1',
+            'status': 'recorded',
+            'patches': <Object?>[],
+          },
+        ),
+      ],
+    );
+  }
+}
+
+final class _MalformedTranscriptSourceRefsHandler implements AgentHandler {
+  const _MalformedTranscriptSourceRefsHandler();
+
+  @override
+  Future<AgentHandlerResult> handle(AgentContext context, WnEvent event) async {
+    return AgentHandlerResult(
+      events: <WnEventDraft>[
+        context.emit(
+          type: WnEventTypes.transcriptCorrected,
+          payload: const <String, Object?>{
+            'source_transcript_id': 'transcript-1',
+            'status': 'recorded',
+            'patches': <Object?>[],
+            'source_refs': <Object?>[
+              <String, Object?>{'kind': 'event'},
+            ],
+          },
+        ),
+      ],
+    );
+  }
+}
+
 final class _TraceThrowingHandler implements AgentHandler {
   const _TraceThrowingHandler();
 
@@ -3115,6 +3298,8 @@ WnEvent _eventFixture({required String id, required String type}) {
 }
 
 AgentPackManifestSnapshot _defaultManifest({
+  String id = 'pack.default',
+  String edition = 'official',
   Iterable<String> outputEvents = const <String>[
     WnEventTypes.cardCreated,
     WnEventTypes.memoryProposed,
@@ -3122,12 +3307,12 @@ AgentPackManifestSnapshot _defaultManifest({
   ],
 }) {
   return AgentPackManifestSnapshot.fromJson(<String, Object?>{
-    'id': 'pack.default',
+    'id': id,
     'name': 'Default Capture Loop',
     'version': '0.1.0',
     'schema_version': 1,
     'publisher': 'widenote',
-    'edition': 'official',
+    'edition': edition,
     'permissions': <Object?>[
       ModelPermissions.complete,
       'card.write',

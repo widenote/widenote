@@ -2656,6 +2656,8 @@ const _sourceRefRequiredOutputTypes = <String>{
   WnEventTypes.cardCreated,
   WnEventTypes.insightCreated,
   WnEventTypes.todoSuggested,
+  WnEventTypes.artifactCreated,
+  WnEventTypes.transcriptCorrected,
 };
 
 const _approvalRequestTtl = Duration(minutes: 15);

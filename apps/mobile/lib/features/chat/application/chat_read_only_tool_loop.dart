@@ -12,20 +12,25 @@ final class ChatReadOnlyToolLoop {
   const ChatReadOnlyToolLoop({
     required runtime.ModelClient model,
     required runtime.ToolRegistry toolRegistry,
+    runtime.PermissionBroker? permissionBroker,
     required ChatContextLabels labels,
+    this.packId = chatReadOnlyPackId,
     Set<String> declaredReadTools = _defaultDeclaredReadTools,
     this.maxToolRounds = 2,
     this.maxToolCalls = 4,
     this.maxSources = 6,
   }) : _model = model,
        _toolRegistry = toolRegistry,
+       _permissionBroker = permissionBroker,
        _labels = labels,
        _declaredReadTools = declaredReadTools;
 
   final runtime.ModelClient _model;
   final runtime.ToolRegistry _toolRegistry;
+  final runtime.PermissionBroker? _permissionBroker;
   final ChatContextLabels _labels;
   final Set<String> _declaredReadTools;
+  final String packId;
   final int maxToolRounds;
   final int maxToolCalls;
   final int maxSources;
@@ -308,11 +313,20 @@ $toolResultsJson
         'Tool is not registered in the local runtime.',
       );
     }
+    final missingPermissions = await _missingPermissions(definition);
+    if (missingPermissions.isNotEmpty) {
+      return _toolFailureResult(
+        name,
+        'permission_denied',
+        'Tool requires permissions that are not granted.',
+        details: <String, Object?>{'missing_permissions': missingPermissions},
+      );
+    }
 
     try {
       final result = await _toolRegistry.invoke(
         runtime.ToolInvocation(
-          packId: 'chat',
+          packId: packId,
           runId: runId,
           toolName: name,
           input: call.input,
@@ -330,6 +344,20 @@ $toolResultsJson
         'Tool invocation threw before returning a result.',
       );
     }
+  }
+
+  Future<List<String>> _missingPermissions(
+    runtime.ToolDefinition definition,
+  ) async {
+    final requiredPermissions = definition.requiredPermissions;
+    if (requiredPermissions.isEmpty) {
+      return const <String>[];
+    }
+    final broker = _permissionBroker;
+    if (broker == null) {
+      return List<String>.unmodifiable(requiredPermissions);
+    }
+    return broker.missingPermissions(packId, requiredPermissions);
   }
 
   _ToolExecutionResult _toolSuccessResult(String name, core.JsonMap output) {
@@ -359,14 +387,19 @@ $toolResultsJson
   _ToolExecutionResult _toolFailureResult(
     String name,
     String code,
-    String message,
-  ) {
+    String message, {
+    core.JsonMap details = const <String, Object?>{},
+  }) {
     final denied = _deniedCodes.contains(code);
     return _ToolExecutionResult(
       modelVisibleResult: <String, Object?>{
         'name': name,
         'success': false,
-        'error': <String, Object?>{'code': code, 'message': message},
+        'error': <String, Object?>{
+          'code': code,
+          'message': message,
+          if (details.isNotEmpty) 'details': details,
+        },
       },
       sourceRefs: const <ChatSourceRef>[],
       summary: ChatToolSummary(
@@ -600,6 +633,8 @@ bool _looksLikeJsonObject(String text) {
   return text.startsWith('{') && text.endsWith('}');
 }
 
+const chatReadOnlyPackId = 'chat';
+
 final _validToolName = RegExp(r'^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$');
 
 const _defaultDeclaredReadTools = <String>{
@@ -617,6 +652,7 @@ const _deniedCodes = <String>{
   'malformed_tool_call_json',
   'malformed_tool_input',
   'malformed_tool_name',
+  'permission_denied',
   'run_mode_denied',
   'tool_not_declared',
 };

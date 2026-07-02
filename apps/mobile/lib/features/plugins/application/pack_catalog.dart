@@ -252,7 +252,8 @@ final class PackLibraryController extends Notifier<PackLibraryState> {
   PackLibraryState _load(WideNoteLocalDatabase database) {
     final installationsById = <String, PackInstallationRecord>{
       for (final installation in database.packInstallations.readAll())
-        installation.packId: installation,
+        if (!_isAppOwnedInternalInstallation(installation))
+          installation.packId: installation,
     };
     final ordered = <PackInstallationRecord>[
       for (final id in officialPackManifestIds)
@@ -328,6 +329,10 @@ final class PackLibraryController extends Notifier<PackLibraryState> {
       lastFailure: failures.isEmpty ? null : failures.first,
     );
   }
+}
+
+bool _isAppOwnedInternalInstallation(PackInstallationRecord installation) {
+  return installation.edition == 'app_owned';
 }
 
 final class PermissionGateController extends Notifier<PermissionGateState> {

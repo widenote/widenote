@@ -5,9 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
 import 'package:widenote_local_db/widenote_local_db.dart';
+import 'package:widenote_mobile/app/local_database.dart';
 import 'package:widenote_mobile/features/chat/application/chat_assistant.dart';
 import 'package:widenote_mobile/features/chat/application/chat_context.dart';
 import 'package:widenote_mobile/features/chat/application/chat_controller.dart';
+import 'package:widenote_mobile/features/chat/application/chat_read_only_tool_loop.dart';
 import 'package:widenote_mobile/features/chat/application/chat_repository.dart';
 import 'package:widenote_mobile/features/chat/application/local_chat_context_source.dart';
 import 'package:widenote_mobile/features/chat/application/local_chat_repository.dart';
@@ -289,6 +291,56 @@ void main() {
       'memory-1',
     ]);
   });
+
+  test(
+    'chat permission broker seeds only app-owned read permissions',
+    () async {
+      final database = WideNoteLocalDatabase.inMemory();
+      addTearDown(database.close);
+      final container = ProviderContainer(
+        overrides: <Override>[
+          localDatabaseProvider.overrideWithValue(database),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final broker = container.read(chatPermissionBrokerProvider);
+
+      for (final permission in _chatReadToolPermissions) {
+        expect(
+          await broker.isGranted(chatReadOnlyPackId, permission),
+          isTrue,
+          reason: '$permission should be granted to Chat read-only runs.',
+        );
+      }
+      expect(
+        await broker.isGranted(
+          chatReadOnlyPackId,
+          LocalDbCoreToolCatalog.memoryProposeTool,
+        ),
+        isFalse,
+      );
+
+      final installation = database.packInstallations.readById(
+        chatReadOnlyPackId,
+      );
+      expect(installation, isNotNull);
+      expect(
+        installation!.requestedPermissions,
+        containsAll(<Object?>[..._chatReadToolPermissions]),
+      );
+      expect(
+        installation.requestedPermissions,
+        isNot(contains(LocalDbCoreToolCatalog.memoryProposeTool)),
+      );
+      expect(
+        database.permissionGrants
+            .readByPack(chatReadOnlyPackId)
+            .map((grant) => grant.permissionId),
+        unorderedEquals(_chatReadToolPermissions),
+      );
+    },
+  );
 
   test(
     'local context source maps Context Packet citations into compact sources',
@@ -644,6 +696,9 @@ void main() {
             ModelBackedChatAssistant(
               model: model,
               toolRegistry: registry,
+              permissionBroker: _chatPermissionBroker(const <String>{
+                LocalDbCoreToolCatalog.semanticSearchQueryTool,
+              }),
               labels: const ChatContextLabels.english(),
             ),
           ),
@@ -680,6 +735,141 @@ void main() {
       expect(model.requests.first.context['run_id'], assistant.runId);
       expect(model.requests.last.prompt, contains('"success": true'));
       expect(model.requests.last.prompt, contains('memory-1'));
+    },
+  );
+
+  test(
+    'read-only tool loop denies ungranted read tools without invocation',
+    () async {
+      var toolCalls = 0;
+      final registry = runtime.InMemoryToolRegistry()
+        ..register(
+          runtime.ToolDefinition(
+            name: LocalDbCoreToolCatalog.memoryReadTool,
+            description: 'Test memory reader.',
+            requiredPermissions: const <String>{
+              LocalDbCoreToolCatalog.memoryReadTool,
+            },
+            handler: (invocation) async {
+              toolCalls += 1;
+              return const <String, Object?>{
+                'items': <Object?>[],
+                'source_refs': <Object?>[],
+              };
+            },
+          ),
+        );
+      final model = _ScriptedModelClient(
+        responses: <String>[
+          jsonEncode(<String, Object?>{
+            'tool_calls': <Object?>[
+              <String, Object?>{
+                'name': LocalDbCoreToolCatalog.memoryReadTool,
+                'input': const <String, Object?>{'limit': 1},
+              },
+            ],
+          }),
+          'The memory read was denied.',
+        ],
+      );
+
+      final reply =
+          await ModelBackedChatAssistant(
+            model: model,
+            toolRegistry: registry,
+            permissionBroker: runtime.InMemoryPermissionBroker(),
+          ).answer(
+            const ChatAssistantPrompt(
+              question: 'Read memory without permission.',
+              sources: <ChatSource>[],
+              runId: 'chat-run-missing-permission',
+            ),
+          );
+
+      expect(toolCalls, 0);
+      expect(reply.toolSummaries.single.name, 'memory.read');
+      expect(reply.toolSummaries.single.status, 'denied');
+      expect(reply.toolSummaries.single.errorCode, 'permission_denied');
+      expect(model.requests.last.prompt, contains('permission_denied'));
+      expect(model.requests.last.prompt, contains('missing_permissions'));
+      expect(model.requests.last.prompt, contains('memory.read'));
+    },
+  );
+
+  test(
+    'read-only tool loop executes granted semantic context and memory reads',
+    () async {
+      final database = WideNoteLocalDatabase.inMemory();
+      addTearDown(database.close);
+      final now = DateTime.utc(2026, 6, 29, 9, 30);
+      _seedChatPacketContext(database, now);
+      final beforeTruth = _canonicalTruthSnapshot(database);
+      final registry = runtime.InMemoryToolRegistry();
+      LocalDbCoreToolCatalog(database).registerInto(registry);
+      final model = _ScriptedModelClient(
+        responses: <String>[
+          jsonEncode(<String, Object?>{
+            'tool_calls': <Object?>[
+              <String, Object?>{
+                'name': LocalDbCoreToolCatalog.semanticSearchQueryTool,
+                'input': <String, Object?>{
+                  'query': 'Lin launch source todo?',
+                  'limit': 3,
+                },
+              },
+              <String, Object?>{
+                'name': LocalDbCoreToolCatalog.contextPacketBuildTool,
+                'input': <String, Object?>{
+                  'surface': 'chat',
+                  'max_items': 3,
+                  'permission_mode': 'local_only',
+                  'permissions': <Object?>['memory.read', 'record.read'],
+                },
+              },
+              <String, Object?>{
+                'name': LocalDbCoreToolCatalog.memoryReadTool,
+                'input': const <String, Object?>{'limit': 3},
+              },
+            ],
+          }),
+          jsonEncode(<String, Object?>{
+            'answer':
+                'Granted read tools found Lin launch context '
+                '(memory/memory-1).',
+          }),
+        ],
+      );
+
+      final reply =
+          await ModelBackedChatAssistant(
+            model: model,
+            toolRegistry: registry,
+            permissionBroker: _chatPermissionBroker(const <String>{
+              LocalDbCoreToolCatalog.semanticSearchQueryTool,
+              LocalDbCoreToolCatalog.contextPacketBuildTool,
+              LocalDbCoreToolCatalog.memoryReadTool,
+            }),
+          ).answer(
+            const ChatAssistantPrompt(
+              question: 'Use granted read tools.',
+              sources: <ChatSource>[],
+              runId: 'chat-run-granted-reads',
+            ),
+          );
+
+      expect(_canonicalTruthSnapshot(database), beforeTruth);
+      expect(reply.toolSummaries.map((summary) => summary.name), <String>[
+        LocalDbCoreToolCatalog.semanticSearchQueryTool,
+        LocalDbCoreToolCatalog.contextPacketBuildTool,
+        LocalDbCoreToolCatalog.memoryReadTool,
+      ]);
+      expect(
+        reply.toolSummaries.map((summary) => summary.status),
+        everyElement('completed'),
+      );
+      expect(reply.sourceRefs.map((ref) => ref.kind), contains('memory'));
+      expect(model.requests.last.prompt, contains('"success": true'));
+      expect(model.requests.last.prompt, isNot(contains('permission_denied')));
     },
   );
 
@@ -940,6 +1130,23 @@ const _zhChatContextLabels = ChatContextLabels(
   fileSourceLabel: '文件',
   genericSourceLabel: '来源',
 );
+
+const _chatReadToolPermissions = <String>{
+  LocalDbCoreToolCatalog.semanticSearchQueryTool,
+  LocalDbCoreToolCatalog.contextPacketBuildTool,
+  LocalDbCoreToolCatalog.memoryReadTool,
+  LocalDbCoreToolCatalog.timelineReadTool,
+  LocalDbCoreToolCatalog.knowledgeReadTool,
+  LocalDbCoreToolCatalog.traceReadTool,
+};
+
+runtime.InMemoryPermissionBroker _chatPermissionBroker(
+  Iterable<String> permissions,
+) {
+  final broker = runtime.InMemoryPermissionBroker();
+  broker.grantAll(chatReadOnlyPackId, permissions);
+  return broker;
+}
 
 void _seedChatPacketContext(WideNoteLocalDatabase database, DateTime now) {
   database.captures.insert(
