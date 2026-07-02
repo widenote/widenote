@@ -132,6 +132,8 @@ Uri _openAiModelsEndpoint(Uri endpoint) {
     segments = segments.take(segments.length - 2).toList(growable: true);
   } else if (segments.isNotEmpty && segments.last == 'chat') {
     segments = segments.take(segments.length - 1).toList(growable: true);
+  } else if (segments.isNotEmpty && segments.last == 'responses') {
+    segments = segments.take(segments.length - 1).toList(growable: true);
   }
   return endpoint.replace(pathSegments: <String>[...segments, 'models']);
 }
@@ -220,14 +222,39 @@ Map<String, String> _modelListHeaders(ModelProviderConfig config) {
       // MiniMax's Messages endpoint documents Bearer auth, while its
       // Anthropic-compatible Models endpoint documents X-Api-Key.
       headers['X-Api-Key'] = config.apiKey;
+    } else if (_usesMimoApiKeyHeader(config)) {
+      headers['api-key'] = config.apiKey;
+      headers['anthropic-version'] = '2023-06-01';
+    } else if (_usesAnthropicBearerAuthorization(config)) {
+      headers['authorization'] = 'Bearer ${config.apiKey}';
+      headers['anthropic-version'] = '2023-06-01';
     } else {
       headers['x-api-key'] = config.apiKey;
       headers['anthropic-version'] = '2023-06-01';
     }
     return headers;
   }
-  headers['authorization'] = 'Bearer ${config.apiKey}';
+  if (_usesMimoApiKeyHeader(config)) {
+    headers['api-key'] = config.apiKey;
+  } else {
+    headers['authorization'] = 'Bearer ${config.apiKey}';
+  }
   return headers;
+}
+
+bool _usesMimoApiKeyHeader(ModelProviderConfig config) {
+  return config.kind == ModelProviderKind.mimo ||
+      config.endpoint.host.toLowerCase().contains('xiaomimimo');
+}
+
+bool _usesAnthropicBearerAuthorization(ModelProviderConfig config) {
+  if (config.kind.usesAnthropicBearerAuthorization) {
+    return true;
+  }
+  final host = config.endpoint.host.toLowerCase();
+  return host.contains('moonshot') ||
+      host.contains('kimi') ||
+      host.contains('minimax');
 }
 
 List<String> _parseModels(ModelProviderKind kind, Object? body) {

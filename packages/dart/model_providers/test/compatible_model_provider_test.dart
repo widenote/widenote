@@ -186,6 +186,37 @@ void main() {
       );
     });
 
+    test('sends MIMO OpenAI-compatible requests with api-key header', () async {
+      final http = FakeModelProviderHttpClient(
+        responses: <ModelProviderHttpResponse>[_openAiTextResponse('MIMO OK')],
+      );
+      final provider = OpenAiCompatibleModelProvider(
+        config: ModelProviderConfig.preset(
+          id: 'mimo-openai',
+          kind: ModelProviderKind.openAiCompatible,
+          endpoint: Uri.parse('https://token-plan-cn.xiaomimimo.com/v1'),
+          model: 'mimo-v2.5-pro',
+          apiKey: _runtimeCredential(),
+          accessMode: ModelProviderAccessMode.tokenPlan,
+        ),
+        httpClient: http,
+      );
+
+      final response = await provider.complete(ModelRequest.text('hello'));
+
+      expect(response.text, 'MIMO OK');
+      expect(
+        http.requests.single.endpoint.toString(),
+        'https://token-plan-cn.xiaomimimo.com/v1/chat/completions',
+      );
+      expect(http.requests.single.headers['api-key'], _runtimeCredential());
+      expect(
+        http.requests.single.headers.containsKey('authorization'),
+        isFalse,
+      );
+      expect(http.requests.single.redactedHeaders['api-key'], '<redacted>');
+    });
+
     test('accepts base endpoints by appending chat completions path', () async {
       final http = FakeModelProviderHttpClient(
         responses: <ModelProviderHttpResponse>[
@@ -271,6 +302,67 @@ void main() {
     });
   });
 
+  group('OpenAiResponsesModelProvider', () {
+    test('constructs responses request and parses output text usage', () async {
+      final http = FakeModelProviderHttpClient(
+        responses: <ModelProviderHttpResponse>[
+          ModelProviderHttpResponse(
+            statusCode: 200,
+            body: <String, Object?>{
+              'id': 'response-1',
+              'model': 'gpt-4.1-mini',
+              'status': 'completed',
+              'output': <Object?>[
+                <String, Object?>{
+                  'content': <Object?>[
+                    <String, Object?>{
+                      'type': 'output_text',
+                      'text': 'Responses OK',
+                    },
+                  ],
+                },
+              ],
+              'usage': <String, Object?>{'input_tokens': 6, 'output_tokens': 2},
+            },
+          ),
+        ],
+      );
+      final provider = OpenAiResponsesModelProvider(
+        config: ModelProviderConfig.preset(
+          id: 'openai-responses',
+          kind: ModelProviderKind.openAiResponses,
+          apiKey: _runtimeCredential(),
+        ),
+        httpClient: http,
+      );
+
+      final response = await provider.complete(
+        const ModelRequest(
+          messages: <ModelMessage>[
+            ModelMessage(role: ModelMessageRole.system, content: 'Be brief.'),
+            ModelMessage(role: ModelMessageRole.user, content: 'Say OK.'),
+          ],
+          metadata: <String, Object?>{'source': 'responses-test'},
+        ),
+      );
+
+      final request = http.requests.single;
+      expect(
+        request.endpoint.toString(),
+        'https://api.openai.com/v1/responses',
+      );
+      expect(request.headers['authorization'], startsWith('Bearer '));
+      expect(request.body['model'], 'gpt-4.1-mini');
+      expect(request.body['max_output_tokens'], 1024);
+      expect(request.body['metadata'], <String, Object?>{
+        'source': 'responses-test',
+      });
+      expect(response.text, 'Responses OK');
+      expect(response.usage.totalTokens, 8);
+      expect(response.metadata['status'], 'completed');
+    });
+  });
+
   group('AnthropicCompatibleModelProvider', () {
     test('constructs messages request and parses multi-part text', () async {
       final http = FakeModelProviderHttpClient(
@@ -308,8 +400,9 @@ void main() {
 
       final request = http.requests.single;
       expect(request.headers['anthropic-version'], '2023-06-01');
-      expect(request.headers['x-api-key'], isNotEmpty);
-      expect(request.redactedHeaders['x-api-key'], '<redacted>');
+      expect(request.headers['api-key'], isNotEmpty);
+      expect(request.headers.containsKey('x-api-key'), isFalse);
+      expect(request.redactedHeaders['api-key'], '<redacted>');
       expect(request.body['thinking'], <String, Object?>{'type': 'disabled'});
       expect(request.body['max_tokens'], 1024);
       expect(request.body['system'], 'Be useful.');
@@ -367,7 +460,7 @@ void main() {
           config: _config(
             ModelProviderKind.mimo,
             endpoint: Uri.parse(
-              'https://token-plan-sgp.xiaomimimo.com/anthropic/v1/messages',
+              'https://token-plan-cn.xiaomimimo.com/anthropic',
             ),
           ),
           httpClient: http,
@@ -399,7 +492,7 @@ void main() {
         );
         expect(
           http.requests[1].endpoint.toString(),
-          'https://token-plan-sgp.xiaomimimo.com/anthropic/v1/messages',
+          'https://token-plan-cn.xiaomimimo.com/anthropic/v1/messages',
         );
         expect(
           http.requests[2].endpoint.toString(),
@@ -473,14 +566,62 @@ void main() {
             request.endpoint.toString(),
             'https://api.deepseek.com/anthropic/v1/messages',
           );
-          expect(request.headers['x-api-key'], _runtimeCredential());
-          expect(request.headers['authorization'], isNull);
+          expect(
+            request.headers['authorization'],
+            'Bearer ${_runtimeCredential()}',
+          );
+          expect(request.headers['x-api-key'], isNull);
           expect(request.headers['anthropic-version'], '2023-06-01');
           expect(request.body['model'], 'deepseek-v4-flash');
           expect(request.body['thinking'], <String, Object?>{
             'type': 'disabled',
           });
         }
+      },
+    );
+
+    test(
+      'uses api-key header for Xiaomi MIMO Anthropic-compatible API',
+      () async {
+        final http = FakeModelProviderHttpClient(
+          responses: <ModelProviderHttpResponse>[
+            ModelProviderHttpResponse(
+              statusCode: 200,
+              body: <String, Object?>{
+                'content': <Object?>[
+                  <String, Object?>{'type': 'text', 'text': 'MIMO OK'},
+                ],
+              },
+            ),
+          ],
+        );
+        final provider = AnthropicCompatibleModelProvider(
+          config: ModelProviderConfig.preset(
+            id: 'mimo-token',
+            kind: ModelProviderKind.mimo,
+            endpoint: Uri.parse(
+              'https://token-plan-cn.xiaomimimo.com/anthropic',
+            ),
+            apiKey: _runtimeCredential(),
+            accessMode: ModelProviderAccessMode.tokenPlan,
+          ),
+          httpClient: http,
+        );
+
+        final response = await provider.complete(ModelRequest.text('hello'));
+
+        expect(response.text, 'MIMO OK');
+        expect(
+          http.requests.single.endpoint.toString(),
+          'https://token-plan-cn.xiaomimimo.com/anthropic/v1/messages',
+        );
+        expect(http.requests.single.headers['api-key'], _runtimeCredential());
+        expect(http.requests.single.headers.containsKey('x-api-key'), isFalse);
+        expect(
+          http.requests.single.headers.containsKey('authorization'),
+          isFalse,
+        );
+        expect(http.requests.single.redactedHeaders['api-key'], '<redacted>');
       },
     );
 
@@ -551,6 +692,15 @@ void main() {
         }
       },
     );
+
+    test('routes OpenAI Responses preset through Responses adapter', () {
+      final provider = modelProviderFromConfig(
+        config: _config(ModelProviderKind.openAiResponses),
+        httpClient: FakeModelProviderHttpClient(),
+      );
+
+      expect(provider, isA<OpenAiResponsesModelProvider>());
+    });
 
     test(
       'routes Anthropic-compatible provider presets through Anthropic adapter',

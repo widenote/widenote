@@ -2781,6 +2781,100 @@ class AppLocalizationsEn extends AppLocalizations {
   String get providerFieldProviderType => 'Provider type';
 
   @override
+  String get providerPresetSelectionHelper =>
+      'Choose the entry that matches the protocol and plan. Token Plan keys cannot be mixed with normal API keys.';
+
+  @override
+  String get providerAccessModeApiKey => 'API key';
+
+  @override
+  String get providerAccessModeTokenPlan => 'Token Plan';
+
+  @override
+  String get providerAccessModeCodingPlan => 'Coding Plan';
+
+  @override
+  String get providerAccessModeLocal => 'Local';
+
+  @override
+  String get providerPresetOpenAiChat => 'OpenAI Chat Completions';
+
+  @override
+  String get providerPresetOpenAiResponses => 'OpenAI Responses API';
+
+  @override
+  String get providerPresetAnthropicApi => 'Anthropic Claude API';
+
+  @override
+  String get providerPresetGeminiApi => 'Google Gemini API';
+
+  @override
+  String get providerPresetOpenRouterApi => 'OpenRouter';
+
+  @override
+  String get providerPresetDeepSeekOpenAi => 'DeepSeek (OpenAI API)';
+
+  @override
+  String get providerPresetDeepSeekAnthropic => 'DeepSeek (Anthropic API)';
+
+  @override
+  String get providerPresetKimiGlobal => 'Kimi (global API)';
+
+  @override
+  String get providerPresetKimiChina => 'Kimi (China API)';
+
+  @override
+  String get providerPresetKimiCode => 'Kimi Code API';
+
+  @override
+  String get providerPresetQwenChina => 'Alibaba Qwen (China)';
+
+  @override
+  String get providerPresetQwenInternational => 'Alibaba Qwen (International)';
+
+  @override
+  String get providerPresetDoubaoApi => 'Volcengine Doubao API';
+
+  @override
+  String get providerPresetDoubaoCoding => 'Volcengine Coding Plan';
+
+  @override
+  String get providerPresetZhipuApi => 'Zhipu GLM API';
+
+  @override
+  String get providerPresetZhipuCoding => 'Zhipu GLM Coding Plan';
+
+  @override
+  String get providerPresetMiniMaxOpenAiToken => 'MiniMax Token Plan (OpenAI)';
+
+  @override
+  String get providerPresetMiniMaxAnthropicToken =>
+      'MiniMax Token Plan (Anthropic)';
+
+  @override
+  String get providerPresetMimoOpenAiApi => 'Xiaomi MIMO API (OpenAI)';
+
+  @override
+  String get providerPresetMimoAnthropicApi => 'Xiaomi MIMO API (Anthropic)';
+
+  @override
+  String get providerPresetMimoOpenAiTokenCn =>
+      'Xiaomi MIMO Token Plan CN (OpenAI)';
+
+  @override
+  String get providerPresetMimoAnthropicTokenCn =>
+      'Xiaomi MIMO Token Plan CN (Anthropic)';
+
+  @override
+  String get providerPresetOllamaLocal => 'Ollama local';
+
+  @override
+  String get providerPresetCustomOpenAi => 'Custom OpenAI-compatible';
+
+  @override
+  String get providerPresetCustomAnthropic => 'Custom Anthropic-compatible';
+
+  @override
   String get providerFieldDisplayName => 'Display name';
 
   @override

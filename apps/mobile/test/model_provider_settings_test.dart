@@ -94,7 +94,7 @@ void main() {
         displayName: 'Kimi Main',
         endpoint: 'https://example.invalid/v1/chat/completions',
         model: 'kimi-chat',
-        kindLabel: 'Kimi',
+        kindLabel: 'Kimi (global API)',
       );
 
       await tester.tap(find.byKey(const Key('provider-default-kimi-main')));
@@ -256,7 +256,7 @@ void main() {
       displayName: 'Kimi Main',
       endpoint: 'https://example.invalid/v1/chat/completions',
       model: 'kimi-chat',
-      kindLabel: 'Kimi',
+      kindLabel: 'Kimi (global API)',
     );
     await tester.tap(find.byKey(const Key('provider-default-kimi-main')));
     await tester.pumpAndSettle();
@@ -302,7 +302,7 @@ void main() {
       displayName: 'Kimi Main',
       endpoint: 'https://example.invalid/v1/chat/completions',
       model: 'kimi-chat',
-      kindLabel: 'Kimi',
+      kindLabel: 'Kimi (global API)',
     );
 
     await _deleteProvider(tester, 'team-openai');
@@ -335,7 +335,7 @@ void main() {
       displayName: 'Kimi Main',
       endpoint: 'https://example.invalid/v1/chat/completions',
       model: 'kimi-chat',
-      kindLabel: 'Kimi',
+      kindLabel: 'Kimi（国际 API）',
     );
 
     await tester.ensureVisible(
@@ -362,24 +362,27 @@ void main() {
     await tester.tap(find.byKey(const Key('provider-kind-field')));
     await tester.pumpAndSettle();
 
-    expect(find.text('OpenAI'), findsWidgets);
-    expect(find.text('Anthropic Claude'), findsOneWidget);
-    expect(find.text('Google Gemini'), findsOneWidget);
-    expect(find.text('OpenRouter'), findsOneWidget);
-    expect(find.text('DeepSeek'), findsOneWidget);
-    expect(find.text('Alibaba Qwen'), findsOneWidget);
-    expect(find.text('Volcengine Doubao'), findsOneWidget);
+    expect(find.text('OpenAI Chat Completions'), findsWidgets);
+    expect(find.text('OpenAI Responses API'), findsWidgets);
+    expect(find.text('Anthropic Claude API'), findsWidgets);
+    expect(find.text('Google Gemini API'), findsWidgets);
+    expect(find.text('OpenRouter'), findsWidgets);
+    expect(find.text('DeepSeek (OpenAI API)'), findsWidgets);
+    expect(find.text('DeepSeek (Anthropic API)'), findsWidgets);
 
-    await tester.drag(find.byType(Scrollable).last, const Offset(0, -280));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Zhipu GLM'), findsOneWidget);
-    expect(find.text('MiniMax'), findsOneWidget);
-    expect(find.text('Ollama'), findsOneWidget);
-    expect(find.text('OpenAI-compatible'), findsOneWidget);
-    expect(find.text('Anthropic-compatible'), findsOneWidget);
-    expect(find.text('Xiaomi MIMO'), findsOneWidget);
-    expect(find.text('Kimi'), findsOneWidget);
+    for (final label in <String>[
+      'Alibaba Qwen (China)',
+      'Volcengine Coding Plan',
+      'Zhipu GLM Coding Plan',
+      'MiniMax Token Plan (Anthropic)',
+      'Xiaomi MIMO Token Plan CN (Anthropic)',
+      'Ollama local',
+      'Custom OpenAI-compatible',
+      'Custom Anthropic-compatible',
+    ]) {
+      await _scrollDropdownUntilVisible(tester, label);
+      expect(find.text(label), findsWidgets);
+    }
     expect(find.text('Fake Model Provider'), findsNothing);
     expect(find.text('fake-model'), findsNothing);
   });
@@ -393,18 +396,18 @@ void main() {
 
     await tester.tap(find.byKey(const Key('provider-add-button')));
     await tester.pumpAndSettle();
-    await _selectProviderKind(tester, 'Google Gemini');
+    await _selectProviderKind(tester, 'Google Gemini API');
 
-    expect(_fieldText(tester, 'provider-name-field'), 'Google Gemini');
+    expect(_fieldText(tester, 'provider-name-field'), 'Google Gemini API');
     expect(
       _fieldText(tester, 'provider-endpoint-field'),
       'https://generativelanguage.googleapis.com/v1beta/openai',
     );
     expect(_selectedModel(tester), 'gemini-3.5-flash');
 
-    await _selectProviderKind(tester, 'Anthropic Claude');
+    await _selectProviderKind(tester, 'Anthropic Claude API');
 
-    expect(_fieldText(tester, 'provider-name-field'), 'Anthropic Claude');
+    expect(_fieldText(tester, 'provider-name-field'), 'Anthropic Claude API');
     expect(
       _fieldText(tester, 'provider-endpoint-field'),
       'https://api.anthropic.com',
@@ -420,21 +423,24 @@ void main() {
     );
     expect(_selectedModel(tester), 'openrouter/auto');
 
-    await _selectProviderKind(tester, 'DeepSeek');
+    await _selectProviderKind(tester, 'DeepSeek (Anthropic API)');
 
-    expect(_fieldText(tester, 'provider-name-field'), 'DeepSeek');
+    expect(
+      _fieldText(tester, 'provider-name-field'),
+      'DeepSeek (Anthropic API)',
+    );
     expect(
       _fieldText(tester, 'provider-endpoint-field'),
       'https://api.deepseek.com/anthropic',
     );
     expect(_selectedModel(tester), 'deepseek-v4-flash');
 
-    await _selectProviderKind(tester, 'Kimi');
+    await _selectProviderKind(tester, 'Kimi (China API)');
 
-    expect(_fieldText(tester, 'provider-name-field'), 'Kimi');
+    expect(_fieldText(tester, 'provider-name-field'), 'Kimi (China API)');
     expect(
       _fieldText(tester, 'provider-endpoint-field'),
-      'https://api.moonshot.ai/v1',
+      'https://api.moonshot.cn/v1',
     );
     expect(_selectedModel(tester), 'kimi-k2.6');
   });
@@ -464,7 +470,7 @@ void main() {
 
     await tester.tap(find.byKey(const Key('provider-add-button')));
     await tester.pumpAndSettle();
-    await _selectProviderKind(tester, 'DeepSeek');
+    await _selectProviderKind(tester, 'DeepSeek (Anthropic API)');
     await tester.enterText(
       find.byKey(const Key('provider-api-key-field')),
       _runtimeCredential(),
@@ -480,9 +486,63 @@ void main() {
     await tester.tap(find.byKey(const Key('provider-save-button')));
     await tester.pumpAndSettle();
 
-    final persisted = database.modelProviderConfigs.readById('deepseek')!;
+    final persisted = database.modelProviderConfigs.readById(
+      'deepseek-anthropic-api',
+    )!;
     expect(persisted.model, 'deepseek-reasoner');
+    expect(persisted.payload['access_mode'], 'api_key');
     expect(find.textContaining('deepseek-reasoner'), findsWidgets);
+  });
+
+  testWidgets('provider presets persist token plan access mode', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    await _pumpSettings(tester, database: database);
+
+    await tester.tap(find.byKey(const Key('provider-add-button')));
+    await tester.pumpAndSettle();
+    await _selectProviderKind(tester, 'Xiaomi MIMO Token Plan CN (Anthropic)');
+    await tester.enterText(
+      find.byKey(const Key('provider-api-key-field')),
+      _runtimeCredential(),
+    );
+    await tester.tap(find.byKey(const Key('provider-save-button')));
+    await tester.pumpAndSettle();
+
+    final persisted = database.modelProviderConfigs.readById(
+      'xiaomi-mimo-token-plan-cn-anthropic',
+    )!;
+    expect(persisted.providerKind, ModelProviderKind.mimo.name);
+    expect(
+      persisted.endpoint,
+      'https://token-plan-cn.xiaomimimo.com/anthropic',
+    );
+    expect(persisted.payload['access_mode'], 'token_plan');
+    expect(find.text('Token Plan'), findsWidgets);
+  });
+
+  testWidgets('localized provider names use preset key ids when needed', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    await _pumpSettings(tester, database: database, locale: const Locale('zh'));
+
+    await tester.tap(find.byKey(const Key('provider-add-button')));
+    await tester.pumpAndSettle();
+    await _selectProviderKind(tester, '火山方舟豆包 API');
+    await tester.enterText(
+      find.byKey(const Key('provider-api-key-field')),
+      _runtimeCredential(),
+    );
+    await tester.tap(find.byKey(const Key('provider-save-button')));
+    await tester.pumpAndSettle();
+
+    final persisted = database.modelProviderConfigs.readById('doubao-api')!;
+    expect(persisted.displayName, '火山方舟豆包 API');
+    expect(find.byKey(const Key('provider-row-doubao-api')), findsOneWidget);
   });
 
   testWidgets('provider model fetch failure keeps custom fallback', (
@@ -509,7 +569,7 @@ void main() {
 
     await tester.tap(find.byKey(const Key('provider-add-button')));
     await tester.pumpAndSettle();
-    await _selectProviderKind(tester, 'Kimi');
+    await _selectProviderKind(tester, 'Kimi (global API)');
     await tester.enterText(
       find.byKey(const Key('provider-api-key-field')),
       _runtimeCredential(),
@@ -537,7 +597,9 @@ void main() {
     await tester.tap(find.byKey(const Key('provider-save-button')));
     await tester.pumpAndSettle();
 
-    final persisted = database.modelProviderConfigs.readById('kimi')!;
+    final persisted = database.modelProviderConfigs.readById(
+      'kimi-global-api',
+    )!;
     expect(persisted.model, 'kimi-private-gateway-model');
   });
 
@@ -550,7 +612,7 @@ void main() {
 
     await tester.tap(find.byKey(const Key('provider-add-button')));
     await tester.pumpAndSettle();
-    await _selectProviderKind(tester, 'Ollama');
+    await _selectProviderKind(tester, 'Ollama local');
     expect(
       find.text(
         'Optional for this provider; fill it only if your local server requires one.',
@@ -561,12 +623,12 @@ void main() {
     await tester.tap(find.byKey(const Key('provider-save-button')));
     await tester.pumpAndSettle();
 
-    final persisted = database.modelProviderConfigs.readById('ollama')!;
+    final persisted = database.modelProviderConfigs.readById('ollama-local')!;
     expect(persisted.providerKind, ModelProviderKind.ollama.name);
     expect(persisted.hasApiKey, isFalse);
     expect(persisted.apiKey, isEmpty);
-    expect(find.byKey(const Key('provider-row-ollama')), findsOneWidget);
-    expect(find.text('Using Ollama'), findsOneWidget);
+    expect(find.byKey(const Key('provider-row-ollama-local')), findsOneWidget);
+    expect(find.text('Using Ollama local'), findsOneWidget);
   });
 
   testWidgets('provider dialog fields use regular non-password keyboards', (
@@ -636,7 +698,7 @@ void main() {
       displayName: 'Kimi Main',
       endpoint: 'https://example.invalid/v1/chat/completions',
       model: 'kimi-chat',
-      kindLabel: 'Kimi',
+      kindLabel: 'Kimi (global API)',
     );
 
     await tester.tap(find.byKey(const Key('provider-test-kimi-main')));
@@ -839,13 +901,25 @@ Future<void> _setCustomModel(WidgetTester tester, String model) async {
 Future<void> _selectProviderKind(WidgetTester tester, String label) async {
   await tester.tap(find.byKey(const Key('provider-kind-field')));
   await tester.pumpAndSettle();
+  await _scrollDropdownUntilVisible(tester, label);
+  final labelFinder = find.text(label).last;
+  final labelRect = tester.getRect(labelFinder);
+  await tester.tapAt(Offset(labelRect.left + 4, labelRect.center.dy));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _scrollDropdownUntilVisible(
+  WidgetTester tester,
+  String label,
+) async {
   for (var attempt = 0; attempt < 8; attempt += 1) {
-    if (find.text(label).evaluate().isNotEmpty) {
-      break;
+    final labelFinder = find.text(label);
+    if (labelFinder.evaluate().isNotEmpty) {
+      await tester.ensureVisible(labelFinder.last);
+      await tester.pumpAndSettle();
+      return;
     }
     await tester.drag(find.byType(Scrollable).last, const Offset(0, -280));
     await tester.pumpAndSettle();
   }
-  await tester.tap(find.text(label).last);
-  await tester.pumpAndSettle();
 }

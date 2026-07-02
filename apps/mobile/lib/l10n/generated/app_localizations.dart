@@ -4587,6 +4587,186 @@ abstract class AppLocalizations {
   /// **'Provider type'**
   String get providerFieldProviderType;
 
+  /// No description provided for @providerPresetSelectionHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the entry that matches the protocol and plan. Token Plan keys cannot be mixed with normal API keys.'**
+  String get providerPresetSelectionHelper;
+
+  /// No description provided for @providerAccessModeApiKey.
+  ///
+  /// In en, this message translates to:
+  /// **'API key'**
+  String get providerAccessModeApiKey;
+
+  /// No description provided for @providerAccessModeTokenPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Token Plan'**
+  String get providerAccessModeTokenPlan;
+
+  /// No description provided for @providerAccessModeCodingPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Coding Plan'**
+  String get providerAccessModeCodingPlan;
+
+  /// No description provided for @providerAccessModeLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'Local'**
+  String get providerAccessModeLocal;
+
+  /// No description provided for @providerPresetOpenAiChat.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenAI Chat Completions'**
+  String get providerPresetOpenAiChat;
+
+  /// No description provided for @providerPresetOpenAiResponses.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenAI Responses API'**
+  String get providerPresetOpenAiResponses;
+
+  /// No description provided for @providerPresetAnthropicApi.
+  ///
+  /// In en, this message translates to:
+  /// **'Anthropic Claude API'**
+  String get providerPresetAnthropicApi;
+
+  /// No description provided for @providerPresetGeminiApi.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Gemini API'**
+  String get providerPresetGeminiApi;
+
+  /// No description provided for @providerPresetOpenRouterApi.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenRouter'**
+  String get providerPresetOpenRouterApi;
+
+  /// No description provided for @providerPresetDeepSeekOpenAi.
+  ///
+  /// In en, this message translates to:
+  /// **'DeepSeek (OpenAI API)'**
+  String get providerPresetDeepSeekOpenAi;
+
+  /// No description provided for @providerPresetDeepSeekAnthropic.
+  ///
+  /// In en, this message translates to:
+  /// **'DeepSeek (Anthropic API)'**
+  String get providerPresetDeepSeekAnthropic;
+
+  /// No description provided for @providerPresetKimiGlobal.
+  ///
+  /// In en, this message translates to:
+  /// **'Kimi (global API)'**
+  String get providerPresetKimiGlobal;
+
+  /// No description provided for @providerPresetKimiChina.
+  ///
+  /// In en, this message translates to:
+  /// **'Kimi (China API)'**
+  String get providerPresetKimiChina;
+
+  /// No description provided for @providerPresetKimiCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Kimi Code API'**
+  String get providerPresetKimiCode;
+
+  /// No description provided for @providerPresetQwenChina.
+  ///
+  /// In en, this message translates to:
+  /// **'Alibaba Qwen (China)'**
+  String get providerPresetQwenChina;
+
+  /// No description provided for @providerPresetQwenInternational.
+  ///
+  /// In en, this message translates to:
+  /// **'Alibaba Qwen (International)'**
+  String get providerPresetQwenInternational;
+
+  /// No description provided for @providerPresetDoubaoApi.
+  ///
+  /// In en, this message translates to:
+  /// **'Volcengine Doubao API'**
+  String get providerPresetDoubaoApi;
+
+  /// No description provided for @providerPresetDoubaoCoding.
+  ///
+  /// In en, this message translates to:
+  /// **'Volcengine Coding Plan'**
+  String get providerPresetDoubaoCoding;
+
+  /// No description provided for @providerPresetZhipuApi.
+  ///
+  /// In en, this message translates to:
+  /// **'Zhipu GLM API'**
+  String get providerPresetZhipuApi;
+
+  /// No description provided for @providerPresetZhipuCoding.
+  ///
+  /// In en, this message translates to:
+  /// **'Zhipu GLM Coding Plan'**
+  String get providerPresetZhipuCoding;
+
+  /// No description provided for @providerPresetMiniMaxOpenAiToken.
+  ///
+  /// In en, this message translates to:
+  /// **'MiniMax Token Plan (OpenAI)'**
+  String get providerPresetMiniMaxOpenAiToken;
+
+  /// No description provided for @providerPresetMiniMaxAnthropicToken.
+  ///
+  /// In en, this message translates to:
+  /// **'MiniMax Token Plan (Anthropic)'**
+  String get providerPresetMiniMaxAnthropicToken;
+
+  /// No description provided for @providerPresetMimoOpenAiApi.
+  ///
+  /// In en, this message translates to:
+  /// **'Xiaomi MIMO API (OpenAI)'**
+  String get providerPresetMimoOpenAiApi;
+
+  /// No description provided for @providerPresetMimoAnthropicApi.
+  ///
+  /// In en, this message translates to:
+  /// **'Xiaomi MIMO API (Anthropic)'**
+  String get providerPresetMimoAnthropicApi;
+
+  /// No description provided for @providerPresetMimoOpenAiTokenCn.
+  ///
+  /// In en, this message translates to:
+  /// **'Xiaomi MIMO Token Plan CN (OpenAI)'**
+  String get providerPresetMimoOpenAiTokenCn;
+
+  /// No description provided for @providerPresetMimoAnthropicTokenCn.
+  ///
+  /// In en, this message translates to:
+  /// **'Xiaomi MIMO Token Plan CN (Anthropic)'**
+  String get providerPresetMimoAnthropicTokenCn;
+
+  /// No description provided for @providerPresetOllamaLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'Ollama local'**
+  String get providerPresetOllamaLocal;
+
+  /// No description provided for @providerPresetCustomOpenAi.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom OpenAI-compatible'**
+  String get providerPresetCustomOpenAi;
+
+  /// No description provided for @providerPresetCustomAnthropic.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Anthropic-compatible'**
+  String get providerPresetCustomAnthropic;
+
   /// No description provided for @providerFieldDisplayName.
   ///
   /// In en, this message translates to:

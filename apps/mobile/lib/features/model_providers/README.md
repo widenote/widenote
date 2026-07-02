@@ -23,19 +23,21 @@ never printed; editing a provider keeps the saved key when the key field is
 left blank, and the edit dialog can explicitly clear the saved key.
 
 The add/edit dialog exposes common provider presets so most users can choose a
-service, paste a key, and save. Presets include OpenAI, Anthropic Claude,
-Google Gemini, OpenRouter, DeepSeek, Kimi, Qwen, Doubao, Zhipu GLM, MiniMax,
-MIMO, Ollama, and custom compatible endpoints. Endpoint fields remain editable
-for account-specific regions and gateways. The DeepSeek preset uses the
-Anthropic-compatible `/anthropic` endpoint and `deepseek-v4-flash`; users who
-need OpenAI-compatible DeepSeek gateways should choose a custom
-OpenAI-compatible provider. The model field is a dropdown: users can fetch
-official provider model lists, choose an available model, or fall back to a
-custom model id when a gateway/account does not return the desired model. The
-same dialog also exposes a user-triggered draft connection test before save;
-draft test status is UI-only and is not persisted as provider configuration.
-Widget tests override the model-list service with a deterministic offline/fake
-implementation; real model-list requests are user-triggered only.
+service, pick the right account plan, paste a key, and save. Presets include
+OpenAI Chat Completions, OpenAI Responses, Anthropic Claude, Google Gemini,
+OpenRouter, DeepSeek, Kimi, Qwen, Doubao, Zhipu GLM, MiniMax, MIMO, Ollama,
+and custom compatible endpoints. Domestic providers with plan-specific
+endpoints show separate pay-as-you-go API key, Token Plan, Coding Plan, or
+local access tags. Endpoint fields remain editable for account-specific
+regions, workspaces, and gateways.
+
+The model field is a dropdown: users can fetch official provider model lists,
+choose an available model, or fall back to a custom model id when a
+gateway/account does not return the desired model. The same dialog also exposes
+a user-triggered draft connection test before save; draft test status is
+UI-only and is not persisted as provider configuration. Widget tests override
+the model-list service with a deterministic offline/fake implementation; real
+model-list requests are user-triggered only.
 
 ## Public Surface
 

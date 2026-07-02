@@ -515,6 +515,7 @@ ModelProviderConfig? _configFromRecord(ModelProviderConfigRecord record) {
     endpoint: Uri.parse(record.endpoint),
     model: record.model,
     apiKey: record.apiKey,
+    accessMode: _accessModeFromRecord(record) ?? kind.defaultAccessMode,
     capabilities: _capabilitiesFromRecord(record),
   );
 }
@@ -581,6 +582,20 @@ Set<ModelCapability> _capabilitiesFromRecord(ModelProviderConfigRecord record) {
   return capabilities;
 }
 
+ModelProviderAccessMode? _accessModeFromRecord(
+  ModelProviderConfigRecord record,
+) {
+  final value = record.payload['access_mode'];
+  if (value is! String || value.trim().isEmpty) {
+    return null;
+  }
+  try {
+    return modelProviderAccessModeFromWireName(value);
+  } on StateError {
+    return null;
+  }
+}
+
 ModelProviderConfigRecord _recordFromConfig(
   ModelProviderConfig config, {
   required bool hasApiKey,
@@ -600,7 +615,10 @@ ModelProviderConfigRecord _recordFromConfig(
     capabilities: config.capabilities
         .map((capability) => capability.name)
         .toList(),
-    payload: const <String, Object?>{'secret_storage': 'local_db_backup'},
+    payload: <String, Object?>{
+      'secret_storage': 'local_db_backup',
+      'access_mode': config.effectiveAccessMode.wireName,
+    },
     createdAt: createdAt,
     updatedAt: updatedAt,
   );

@@ -2,6 +2,7 @@ import 'model_provider.dart';
 
 enum ModelProviderKind {
   openAi,
+  openAiResponses,
   anthropic,
   gemini,
   openRouter,
@@ -26,10 +27,26 @@ enum ModelProviderConfigIssue {
   missingApiKey,
 }
 
+enum ModelProviderAccessMode { apiKey, tokenPlan, codingPlan, local }
+
+ModelProviderAccessMode modelProviderAccessModeFromWireName(String value) {
+  final normalized = value.replaceAll('-', '_');
+  return switch (normalized) {
+    'api_key' || 'apiKey' || 'byok' => ModelProviderAccessMode.apiKey,
+    'token_plan' || 'tokenPlan' => ModelProviderAccessMode.tokenPlan,
+    'coding_plan' || 'codingPlan' => ModelProviderAccessMode.codingPlan,
+    'local' => ModelProviderAccessMode.local,
+    _ => throw StateError('Unknown model provider access mode: $value'),
+  };
+}
+
 ModelProviderKind modelProviderKindFromWireName(String value) {
   final normalized = value.replaceAll('-', '_');
   return switch (normalized) {
     'openai' || 'open_ai' || 'openAi' => ModelProviderKind.openAi,
+    'openai_responses' ||
+    'open_ai_responses' ||
+    'openAiResponses' => ModelProviderKind.openAiResponses,
     'anthropic' => ModelProviderKind.anthropic,
     'gemini' => ModelProviderKind.gemini,
     'openrouter' ||
@@ -56,6 +73,7 @@ extension ModelProviderKindDetails on ModelProviderKind {
   String get wireName {
     return switch (this) {
       ModelProviderKind.openAi => 'openai',
+      ModelProviderKind.openAiResponses => 'openai_responses',
       ModelProviderKind.anthropic => 'anthropic',
       ModelProviderKind.gemini => 'gemini',
       ModelProviderKind.openRouter => 'openrouter',
@@ -76,6 +94,7 @@ extension ModelProviderKindDetails on ModelProviderKind {
     return switch (this) {
       ModelProviderKind.openAiCompatible => 'OpenAI-compatible',
       ModelProviderKind.openAi => 'OpenAI',
+      ModelProviderKind.openAiResponses => 'OpenAI Responses',
       ModelProviderKind.anthropicCompatible => 'Anthropic-compatible',
       ModelProviderKind.anthropic => 'Anthropic Claude',
       ModelProviderKind.gemini => 'Google Gemini',
@@ -94,6 +113,9 @@ extension ModelProviderKindDetails on ModelProviderKind {
   Uri get defaultEndpoint {
     return switch (this) {
       ModelProviderKind.openAi => Uri.parse('https://api.openai.com/v1'),
+      ModelProviderKind.openAiResponses => Uri.parse(
+        'https://api.openai.com/v1',
+      ),
       ModelProviderKind.openAiCompatible => Uri.parse(
         'https://api.openai.com/v1/chat/completions',
       ),
@@ -109,7 +131,7 @@ extension ModelProviderKindDetails on ModelProviderKind {
         'https://api.deepseek.com/anthropic',
       ),
       ModelProviderKind.mimo => Uri.parse(
-        'https://token-plan-sgp.xiaomimimo.com/anthropic/v1/messages',
+        'https://api.xiaomimimo.com/anthropic',
       ),
       ModelProviderKind.kimi => Uri.parse('https://api.moonshot.ai/v1'),
       ModelProviderKind.qwen => Uri.parse(
@@ -129,6 +151,7 @@ extension ModelProviderKindDetails on ModelProviderKind {
   String get defaultModel {
     return switch (this) {
       ModelProviderKind.openAi => 'gpt-4.1-mini',
+      ModelProviderKind.openAiResponses => 'gpt-4.1-mini',
       ModelProviderKind.openAiCompatible => 'openai-compatible-chat',
       ModelProviderKind.anthropic => 'claude-sonnet-5',
       ModelProviderKind.anthropicCompatible => 'anthropic-compatible-chat',
@@ -153,6 +176,7 @@ extension ModelProviderKindDetails on ModelProviderKind {
       ModelProviderKind.miniMax ||
       ModelProviderKind.mimo => true,
       ModelProviderKind.openAi ||
+      ModelProviderKind.openAiResponses ||
       ModelProviderKind.openAiCompatible ||
       ModelProviderKind.gemini ||
       ModelProviderKind.openRouter ||
@@ -173,8 +197,26 @@ extension ModelProviderKindDetails on ModelProviderKind {
 
   bool get usesAnthropicBearerAuthorization {
     return switch (this) {
-      ModelProviderKind.miniMax => true,
+      ModelProviderKind.deepSeek || ModelProviderKind.miniMax => true,
       _ => false,
+    };
+  }
+
+  ModelProviderAccessMode get defaultAccessMode {
+    return switch (this) {
+      ModelProviderKind.ollama => ModelProviderAccessMode.local,
+      _ => ModelProviderAccessMode.apiKey,
+    };
+  }
+}
+
+extension ModelProviderAccessModeDetails on ModelProviderAccessMode {
+  String get wireName {
+    return switch (this) {
+      ModelProviderAccessMode.apiKey => 'api_key',
+      ModelProviderAccessMode.tokenPlan => 'token_plan',
+      ModelProviderAccessMode.codingPlan => 'coding_plan',
+      ModelProviderAccessMode.local => 'local',
     };
   }
 }
@@ -188,6 +230,7 @@ final class ModelProviderConfig {
     required this.model,
     this.apiKey = '',
     this.maxOutputTokens = 1024,
+    this.accessMode,
     this.capabilities = const <ModelCapability>{
       ModelCapability.chat,
       ModelCapability.completion,
@@ -202,6 +245,7 @@ final class ModelProviderConfig {
     String? model,
     String apiKey = '',
     int maxOutputTokens = 1024,
+    ModelProviderAccessMode? accessMode,
   }) {
     return ModelProviderConfig(
       id: id,
@@ -211,6 +255,7 @@ final class ModelProviderConfig {
       model: model ?? kind.defaultModel,
       apiKey: apiKey,
       maxOutputTokens: maxOutputTokens,
+      accessMode: accessMode ?? kind.defaultAccessMode,
     );
   }
 
@@ -221,7 +266,11 @@ final class ModelProviderConfig {
   final String model;
   final String apiKey;
   final int maxOutputTokens;
+  final ModelProviderAccessMode? accessMode;
   final Set<ModelCapability> capabilities;
+
+  ModelProviderAccessMode get effectiveAccessMode =>
+      accessMode ?? kind.defaultAccessMode;
 
   ModelProviderConfig copyWith({
     String? id,
@@ -231,6 +280,7 @@ final class ModelProviderConfig {
     String? model,
     String? apiKey,
     int? maxOutputTokens,
+    ModelProviderAccessMode? accessMode,
     Set<ModelCapability>? capabilities,
   }) {
     return ModelProviderConfig(
@@ -241,6 +291,7 @@ final class ModelProviderConfig {
       model: model ?? this.model,
       apiKey: apiKey ?? this.apiKey,
       maxOutputTokens: maxOutputTokens ?? this.maxOutputTokens,
+      accessMode: accessMode ?? this.accessMode,
       capabilities: capabilities ?? this.capabilities,
     );
   }
@@ -274,6 +325,7 @@ final class ModelProviderConfig {
       'display_name': displayName,
       'endpoint': endpoint.toString(),
       'model': model,
+      'access_mode': effectiveAccessMode.wireName,
       'max_output_tokens': maxOutputTokens,
       'capabilities': capabilities
           .map((capability) => capability.wireName)
