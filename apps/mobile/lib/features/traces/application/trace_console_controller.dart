@@ -11,6 +11,17 @@ final traceConsoleControllerProvider =
       TraceConsoleController.new,
     );
 
+final rawTraceViewModelProvider = Provider.family<RawTraceViewModel?, String>((
+  ref,
+  traceId,
+) {
+  final trace = ref.watch(localDatabaseProvider).traceEvents.readById(traceId);
+  if (trace == null) {
+    return null;
+  }
+  return _rawTraceViewModelFromRecord(trace);
+});
+
 enum AgentConsoleFilter { all, active, failed, denied, blocked }
 
 final class TraceConsoleController extends Notifier<TraceConsoleSnapshot> {
@@ -123,14 +134,32 @@ final class TraceConsoleSnapshot {
   }
 
   List<AgentConsoleRun> get filteredRuns {
+    return runsForFilter(filter);
+  }
+
+  List<AgentConsoleRun> runsForFilter(AgentConsoleFilter filter) {
     return runs
         .where((run) => _matchesFilter(run.status, filter))
         .toList(growable: false);
   }
 
   List<AgentConsoleTask> get filteredTasks {
+    return tasksForFilter(filter);
+  }
+
+  List<AgentConsoleTask> tasksForFilter(AgentConsoleFilter filter) {
     return tasks
         .where((task) => _matchesFilter(task.status, filter))
+        .toList(growable: false);
+  }
+
+  List<TraceConsoleItem> get filteredItems {
+    return itemsForFilter(filter);
+  }
+
+  List<TraceConsoleItem> itemsForFilter(AgentConsoleFilter filter) {
+    return items
+        .where((item) => _matchesFilter(item.status, filter))
         .toList(growable: false);
   }
 }
@@ -313,6 +342,33 @@ final class TracePayloadEntry {
   final bool isValueRedacted;
 }
 
+@immutable
+final class RawTraceViewModel {
+  const RawTraceViewModel({
+    required this.id,
+    required this.title,
+    required this.message,
+    required this.payloadJson,
+    required this.redactedPayloadFieldCount,
+    required this.metadata,
+  });
+
+  final String id;
+  final String title;
+  final String message;
+  final String payloadJson;
+  final int redactedPayloadFieldCount;
+  final List<RawTraceField> metadata;
+}
+
+@immutable
+final class RawTraceField {
+  const RawTraceField({required this.key, required this.value});
+
+  final String key;
+  final String value;
+}
+
 AgentConsoleRun _runFromRecord(
   RuntimeRunRecord run, {
   required AgentConsoleTask? task,
@@ -375,6 +431,56 @@ TraceConsoleItem _traceItemFromRecord(TraceEventRecord trace) {
     delegation: _delegationFromPayload(trace.payload),
     payloadEntries: payload.entries,
     redactedPayloadFieldCount: payload.redactedCount,
+  );
+}
+
+RawTraceViewModel _rawTraceViewModelFromRecord(TraceEventRecord trace) {
+  final payload = _rawDisplayPayload(trace.payload);
+  return RawTraceViewModel(
+    id: trace.id,
+    title: _traceTitle(trace),
+    message: trace.message,
+    payloadJson: const JsonEncoder.withIndent('  ').convert(payload.value),
+    redactedPayloadFieldCount: payload.redactedCount,
+    metadata: <RawTraceField>[
+      RawTraceField(key: 'id', value: trace.id),
+      RawTraceField(key: 'name', value: trace.name),
+      RawTraceField(key: 'trace_type', value: trace.traceType),
+      RawTraceField(key: 'level', value: trace.level),
+      RawTraceField(key: 'severity', value: trace.severity),
+      RawTraceField(key: 'status', value: trace.status),
+      RawTraceField(key: 'run_id', value: _rawDisplayValue(trace.runId)),
+      RawTraceField(
+        key: 'source_event_id',
+        value: _rawDisplayValue(trace.sourceEventId),
+      ),
+      RawTraceField(
+        key: 'source_run_id',
+        value: _rawDisplayValue(trace.sourceRunId),
+      ),
+      RawTraceField(
+        key: 'source_task_id',
+        value: _rawDisplayValue(trace.sourceTaskId),
+      ),
+      RawTraceField(key: 'pack_id', value: _rawDisplayValue(trace.packId)),
+      RawTraceField(key: 'agent_id', value: _rawDisplayValue(trace.agentId)),
+      RawTraceField(
+        key: 'parent_trace_id',
+        value: _rawDisplayValue(trace.parentTraceId),
+      ),
+      RawTraceField(
+        key: 'duration_ms',
+        value: _rawDisplayValue(trace.durationMs),
+      ),
+      RawTraceField(
+        key: 'schema_version',
+        value: trace.schemaVersion.toString(),
+      ),
+      RawTraceField(
+        key: 'created_at',
+        value: trace.createdAt.toUtc().toIso8601String(),
+      ),
+    ],
   );
 }
 
@@ -585,6 +691,77 @@ final _sensitivePattern = RegExp(
   caseSensitive: false,
 );
 
+_RawDisplayPayload _rawDisplayPayload(JsonMap payload) {
+  final value = <String, Object?>{};
+  var redactedCount = 0;
+  final keys = payload.keys.toList()..sort();
+  for (final key in keys) {
+    if (_isHighRiskRawField(key)) {
+      value[key] = '[redacted]';
+      redactedCount += 1;
+      continue;
+    }
+    final child = _rawDisplayValueForPayload(payload[key]);
+    value[key] = child.value;
+    redactedCount += child.redactedCount;
+  }
+  return _RawDisplayPayload(value: value, redactedCount: redactedCount);
+}
+
+_RawDisplayPayload _rawDisplayValueForPayload(Object? value) {
+  if (value is String) {
+    if (_isHighRiskRawField(value)) {
+      return const _RawDisplayPayload(value: '[redacted]', redactedCount: 1);
+    }
+    return _RawDisplayPayload(value: value, redactedCount: 0);
+  }
+  if (value is Map) {
+    final safe = <String, Object?>{};
+    var redactedCount = 0;
+    final entries = value.entries.toList()
+      ..sort((a, b) => '${a.key}'.compareTo('${b.key}'));
+    for (final entry in entries) {
+      final key = '${entry.key}';
+      if (_isHighRiskRawField(key)) {
+        safe[key] = '[redacted]';
+        redactedCount += 1;
+        continue;
+      }
+      final child = _rawDisplayValueForPayload(entry.value);
+      safe[key] = child.value;
+      redactedCount += child.redactedCount;
+    }
+    return _RawDisplayPayload(value: safe, redactedCount: redactedCount);
+  }
+  if (value is Iterable) {
+    final safe = <Object?>[];
+    var redactedCount = 0;
+    for (final childValue in value) {
+      final child = _rawDisplayValueForPayload(childValue);
+      safe.add(child.value);
+      redactedCount += child.redactedCount;
+    }
+    return _RawDisplayPayload(value: safe, redactedCount: redactedCount);
+  }
+  return _RawDisplayPayload(value: value, redactedCount: 0);
+}
+
+bool _isHighRiskRawField(String value) {
+  return _rawDisplayRedactionPattern.hasMatch(value);
+}
+
+String _rawDisplayValue(Object? value) {
+  if (value == null) {
+    return 'null';
+  }
+  return '$value';
+}
+
+final _rawDisplayRedactionPattern = RegExp(
+  r'(api[_-]?key|authorization|bearer|token|secret|credential|oauth|attachment[_-]?path|file[_-]?path|storage[_-]?path|raw[_-]?media|media[_-]?bytes)',
+  caseSensitive: false,
+);
+
 String? _payloadString(Object? value) {
   if (value is String) {
     return value;
@@ -615,5 +792,12 @@ final class _RedactedPayloadValue {
 
   final String text;
   final bool isRedacted;
+  final int redactedCount;
+}
+
+final class _RawDisplayPayload {
+  const _RawDisplayPayload({required this.value, required this.redactedCount});
+
+  final Object? value;
   final int redactedCount;
 }

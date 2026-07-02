@@ -55,9 +55,11 @@ All other pages are child pages:
 - Settings children: `/settings/permissions`,
   `/settings/system-permissions`, `/settings/model-providers`,
   `/settings/transcription`, `/settings/location`, `/settings/backup`,
-  `/settings/traces`
+  `/settings/traces`, `/settings/traces/agents`,
+  `/settings/traces/raw/:traceId`
 - Plugins children: `/plugins/packs`, `/plugins/permissions`,
-  `/plugins/model-providers`, `/plugins/backup`, `/plugins/traces`
+  `/plugins/model-providers`, `/plugins/backup`, `/plugins/traces`,
+  `/plugins/traces/agents`, `/plugins/traces/raw/:traceId`
 
 UI controls that open direct child pages should use push-style navigation.
 Shortcuts that skip an intermediate parent should construct the declared parent

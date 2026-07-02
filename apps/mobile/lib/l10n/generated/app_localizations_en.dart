@@ -2355,6 +2355,73 @@ class AppLocalizationsEn extends AppLocalizations {
   String get traceConsoleRedactedValue => '[redacted]';
 
   @override
+  String get traceConsoleEventsFilteredEmpty =>
+      'No log events match this filter.';
+
+  @override
+  String get traceConsoleBackTooltip => 'Back from Log Center';
+
+  @override
+  String get agentConsoleAgentsTitle => 'Agent runs';
+
+  @override
+  String get agentConsoleAgentsSubtitle =>
+      'Inspect local runs, tasks, disabled controls, and per-run trace summaries.';
+
+  @override
+  String get agentConsoleAgentsEntryTitle => 'Agent runs and tasks';
+
+  @override
+  String get agentConsoleAgentsEntryBody =>
+      'Open the longer run and task lists on their own page.';
+
+  @override
+  String get agentConsoleOpenAgentsButton => 'Open runs';
+
+  @override
+  String get traceRawOpenButton => 'View raw log';
+
+  @override
+  String get traceRawTitle => 'Raw log';
+
+  @override
+  String get traceRawSubtitle => 'Local-only runtime evidence for this trace.';
+
+  @override
+  String get traceRawWarningTitle => 'Local private log';
+
+  @override
+  String get traceRawWarningBody =>
+      'Raw prompt and tool data may appear here. This page does not provide copy, share, or export actions, and it must not be used for external review.';
+
+  @override
+  String get traceRawNotFoundTitle => 'Raw log unavailable';
+
+  @override
+  String get traceRawNotFoundBody =>
+      'This trace was not found in local storage.';
+
+  @override
+  String get traceRawMetadataTitle => 'Metadata';
+
+  @override
+  String get traceRawMessageTitle => 'Raw message';
+
+  @override
+  String get traceRawPayloadTitle => 'Raw payload';
+
+  @override
+  String traceRawPolicyRedactedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count credential, path, or media fields masked by policy',
+      one: '1 credential, path, or media field masked by policy',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get providerSettingsTitle => 'Model Providers';
 
   @override
