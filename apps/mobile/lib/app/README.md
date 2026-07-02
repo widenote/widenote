@@ -34,6 +34,41 @@ orchestration behavior.
 - `localTraceSinkProvider`
 - `localMemoryRepositoryProvider`
 
+## Navigation Contract
+
+The app shell owns the mobile route hierarchy.
+
+Bottom tab roots are peers:
+
+- `/`: Home / quick capture
+- `/chat`: Chat
+- `/todos`: Todos
+- `/plugins`: Agent Packs and runtime controls
+
+The center Record item is an action that opens capture from Home, not a route.
+
+All other pages are child pages:
+
+- Home children: `/timeline`, `/memory`, `/recap`, `/settings`
+- Timeline children: `/timeline/search`, `/timeline/cards/:cardId`,
+  `/timeline/items/:itemId`
+- Settings children: `/settings/permissions`,
+  `/settings/model-providers`, `/settings/transcription`,
+  `/settings/location`, `/settings/backup`, `/settings/traces`
+- Plugins children: `/plugins/packs`, `/plugins/permissions`,
+  `/plugins/model-providers`, `/plugins/backup`, `/plugins/traces`
+
+UI controls that open direct child pages should use push-style navigation.
+Shortcuts that skip an intermediate parent should construct the declared parent
+stack. Bottom tab switches should use replacement-style navigation. Direct
+links to child pages must still return through the declared parent on system
+back. Contextual source links may preserve the visible source page as the
+immediate back target.
+
 ## Generated Artifacts
 
 None.
+
+## Related Context
+
+- `docs/decisions/0015-use-hierarchical-mobile-navigation.md`

@@ -264,7 +264,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     _showFeedback(
       context.l10n.captureSavedMessage,
       actionLabel: context.l10n.captureOpenTimelineAction,
-      onAction: () => context.go('/timeline'),
+      onAction: () => context.push('/timeline'),
     );
     FocusScope.of(context).unfocus();
     if (closeComposer) {
@@ -721,7 +721,7 @@ class _RecordsSection extends StatelessWidget {
       title: l10n.homeRecentRecordsTitle,
       trailing: TextButton(
         key: const Key('open-timeline-button'),
-        onPressed: () => context.go('/timeline'),
+        onPressed: () => context.push('/timeline'),
         child: Text(l10n.homeOpenAllRecordsAction),
       ),
       child: records.isEmpty

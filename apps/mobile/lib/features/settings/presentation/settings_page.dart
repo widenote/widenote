@@ -101,7 +101,7 @@ class _ControlSurface extends ConsumerWidget {
               builtInPermissions.length,
               deferredHighRiskPermissions.length,
             ),
-            onTap: () => context.go('/settings/permissions'),
+            onTap: () => context.push('/settings/permissions'),
           ),
           const Divider(height: 20),
           _ControlRow(
@@ -110,7 +110,7 @@ class _ControlSurface extends ConsumerWidget {
             title: l10n.settingsModelProvidersTitle,
             subtitle: l10n.settingsModelProvidersSubtitle,
             status: _providerStatus(l10n, providerState),
-            onTap: () => context.go('/settings/model-providers'),
+            onTap: () => context.push('/settings/model-providers'),
           ),
           const Divider(height: 20),
           _ControlRow(
@@ -119,7 +119,7 @@ class _ControlSurface extends ConsumerWidget {
             title: l10n.settingsTranscriptionTitle,
             subtitle: l10n.settingsTranscriptionSubtitle,
             status: _transcriptionStatus(l10n, voiceSettings),
-            onTap: () => context.go('/settings/transcription'),
+            onTap: () => context.push('/settings/transcription'),
           ),
           const Divider(height: 20),
           _ControlRow(
@@ -128,7 +128,7 @@ class _ControlSurface extends ConsumerWidget {
             title: l10n.settingsLocationTitle,
             subtitle: l10n.settingsLocationSubtitle,
             status: _locationStatus(l10n, locationSettings),
-            onTap: () => context.go('/settings/location'),
+            onTap: () => context.push('/settings/location'),
           ),
           const Divider(height: 20),
           _ControlRow(
@@ -137,7 +137,7 @@ class _ControlSurface extends ConsumerWidget {
             title: l10n.settingsBackupTitle,
             subtitle: l10n.settingsBackupSubtitle,
             status: _backupStatus(l10n, backupState),
-            onTap: () => context.go('/settings/backup'),
+            onTap: () => context.push('/settings/backup'),
           ),
           const Divider(height: 20),
           _ControlRow(
@@ -149,7 +149,7 @@ class _ControlSurface extends ConsumerWidget {
               traceSnapshot.items.length,
               traceSnapshot.warningCount,
             ),
-            onTap: () => context.go('/settings/traces'),
+            onTap: () => context.push('/settings/traces'),
           ),
         ],
       ),

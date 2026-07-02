@@ -46,7 +46,7 @@ class _ControlList extends ConsumerWidget {
             title: l10n.pluginsPackLibraryTitle,
             subtitle: l10n.pluginsPackLibrarySubtitle,
             status: l10n.pluginsPackLibraryStatus,
-            onTap: () => context.go('/plugins/packs'),
+            onTap: () => context.push('/plugins/packs'),
           ),
           const Divider(height: 20),
           _ControlRow(
@@ -55,7 +55,7 @@ class _ControlList extends ConsumerWidget {
             title: l10n.pluginsPermissionGateTitle,
             subtitle: l10n.pluginsPermissionGateSubtitle,
             status: l10n.pluginsPermissionGateStatus,
-            onTap: () => context.go('/plugins/permissions'),
+            onTap: () => context.push('/plugins/permissions'),
           ),
           const Divider(height: 20),
           _ControlRow(
@@ -64,7 +64,7 @@ class _ControlList extends ConsumerWidget {
             title: l10n.pluginsModelProviderTitle,
             subtitle: l10n.pluginsModelProviderSubtitle,
             status: _providerStatus(l10n, providerState),
-            onTap: () => context.go('/plugins/model-providers'),
+            onTap: () => context.push('/plugins/model-providers'),
           ),
           const Divider(height: 20),
           _ControlRow(
@@ -73,7 +73,7 @@ class _ControlList extends ConsumerWidget {
             title: l10n.pluginsBackupTitle,
             subtitle: l10n.pluginsBackupSubtitle,
             status: l10n.pluginsBackupStatus,
-            onTap: () => context.go('/plugins/backup'),
+            onTap: () => context.push('/plugins/backup'),
           ),
           const Divider(height: 20),
           _ControlRow(
@@ -82,7 +82,7 @@ class _ControlList extends ConsumerWidget {
             title: l10n.pluginsTraceConsoleTitle,
             subtitle: l10n.pluginsTraceConsoleSubtitle,
             status: l10n.pluginsTraceConsoleStatus,
-            onTap: () => context.go('/plugins/traces'),
+            onTap: () => context.push('/plugins/traces'),
           ),
         ],
       ),
