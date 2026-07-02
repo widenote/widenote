@@ -23,9 +23,9 @@ import '../features/traces/presentation/trace_console_page.dart';
 import '../features/transcription/presentation/voice_transcription_settings_page.dart';
 import '../l10n/l10n.dart';
 
-GoRouter createAppRouter() {
+GoRouter createAppRouter({String initialLocation = '/'}) {
   return GoRouter(
-    initialLocation: '/',
+    initialLocation: initialLocation,
     routes: [
       ShellRoute(
         builder: (context, state, child) {
@@ -37,98 +37,108 @@ GoRouter createAppRouter() {
             name: 'home',
             pageBuilder: (context, state) =>
                 _noTransitionPage(state, const HomePage()),
-          ),
-          GoRoute(
-            path: '/timeline',
-            name: 'timeline',
-            pageBuilder: (context, state) =>
-                _noTransitionPage(state, const TimelinePage()),
-          ),
-          GoRoute(
-            path: '/timeline/search',
-            name: 'timeline-search',
-            pageBuilder: (context, state) =>
-                _noTransitionPage(state, const TimelineSearchPage()),
-          ),
-          GoRoute(
-            path: '/timeline/cards/:cardId',
-            name: 'card-detail',
-            pageBuilder: (context, state) => _noTransitionPage(
-              state,
-              CardDetailPage(cardId: state.pathParameters['cardId'] ?? ''),
-            ),
-          ),
-          GoRoute(
-            path: '/timeline/items/:itemId',
-            name: 'timeline-item-detail',
-            pageBuilder: (context, state) => _noTransitionPage(
-              state,
-              TimelineItemDetailPage(
-                itemId: state.pathParameters['itemId'] ?? '',
+            routes: [
+              GoRoute(
+                path: 'timeline',
+                name: 'timeline',
+                pageBuilder: (context, state) =>
+                    _noTransitionPage(state, const TimelinePage()),
+                routes: [
+                  GoRoute(
+                    path: 'search',
+                    name: 'timeline-search',
+                    pageBuilder: (context, state) =>
+                        _noTransitionPage(state, const TimelineSearchPage()),
+                  ),
+                  GoRoute(
+                    path: 'cards/:cardId',
+                    name: 'card-detail',
+                    pageBuilder: (context, state) => _noTransitionPage(
+                      state,
+                      CardDetailPage(
+                        cardId: state.pathParameters['cardId'] ?? '',
+                      ),
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'items/:itemId',
+                    name: 'timeline-item-detail',
+                    pageBuilder: (context, state) => _noTransitionPage(
+                      state,
+                      TimelineItemDetailPage(
+                        itemId: state.pathParameters['itemId'] ?? '',
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
+              GoRoute(
+                path: 'memory',
+                name: 'memory',
+                pageBuilder: (context, state) =>
+                    _noTransitionPage(state, const MemoryPage()),
+              ),
+              GoRoute(
+                path: 'recap',
+                name: 'daily-recap',
+                pageBuilder: (context, state) =>
+                    _noTransitionPage(state, const DailyRecapPage()),
+              ),
+              GoRoute(
+                path: 'settings',
+                name: 'settings',
+                pageBuilder: (context, state) =>
+                    _noTransitionPage(state, const SettingsPage()),
+                routes: [
+                  GoRoute(
+                    path: 'permissions',
+                    name: 'settings-permissions',
+                    pageBuilder: (context, state) =>
+                        _noTransitionPage(state, const PermissionGatePage()),
+                  ),
+                  GoRoute(
+                    path: 'model-providers',
+                    name: 'settings-model-providers',
+                    pageBuilder: (context, state) => _noTransitionPage(
+                      state,
+                      const ModelProviderSettingsPage(),
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'transcription',
+                    name: 'settings-transcription',
+                    pageBuilder: (context, state) => _noTransitionPage(
+                      state,
+                      const VoiceTranscriptionSettingsPage(),
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'location',
+                    name: 'settings-location',
+                    pageBuilder: (context, state) =>
+                        _noTransitionPage(state, const LocationSettingsPage()),
+                  ),
+                  GoRoute(
+                    path: 'backup',
+                    name: 'settings-backup',
+                    pageBuilder: (context, state) =>
+                        _noTransitionPage(state, const BackupPage()),
+                  ),
+                  GoRoute(
+                    path: 'traces',
+                    name: 'settings-traces',
+                    pageBuilder: (context, state) =>
+                        _noTransitionPage(state, const TraceConsolePage()),
+                  ),
+                ],
+              ),
+            ],
           ),
           GoRoute(
             path: '/chat',
             name: 'chat',
             pageBuilder: (context, state) =>
                 _noTransitionPage(state, const ChatPage()),
-          ),
-          GoRoute(
-            path: '/memory',
-            name: 'memory',
-            pageBuilder: (context, state) =>
-                _noTransitionPage(state, const MemoryPage()),
-          ),
-          GoRoute(
-            path: '/recap',
-            name: 'daily-recap',
-            pageBuilder: (context, state) =>
-                _noTransitionPage(state, const DailyRecapPage()),
-          ),
-          GoRoute(
-            path: '/settings',
-            name: 'settings',
-            pageBuilder: (context, state) =>
-                _noTransitionPage(state, const SettingsPage()),
-          ),
-          GoRoute(
-            path: '/settings/permissions',
-            name: 'settings-permissions',
-            pageBuilder: (context, state) =>
-                _noTransitionPage(state, const PermissionGatePage()),
-          ),
-          GoRoute(
-            path: '/settings/model-providers',
-            name: 'settings-model-providers',
-            pageBuilder: (context, state) =>
-                _noTransitionPage(state, const ModelProviderSettingsPage()),
-          ),
-          GoRoute(
-            path: '/settings/transcription',
-            name: 'settings-transcription',
-            pageBuilder: (context, state) => _noTransitionPage(
-              state,
-              const VoiceTranscriptionSettingsPage(),
-            ),
-          ),
-          GoRoute(
-            path: '/settings/location',
-            name: 'settings-location',
-            pageBuilder: (context, state) =>
-                _noTransitionPage(state, const LocationSettingsPage()),
-          ),
-          GoRoute(
-            path: '/settings/backup',
-            name: 'settings-backup',
-            pageBuilder: (context, state) =>
-                _noTransitionPage(state, const BackupPage()),
-          ),
-          GoRoute(
-            path: '/settings/traces',
-            name: 'settings-traces',
-            pageBuilder: (context, state) =>
-                _noTransitionPage(state, const TraceConsolePage()),
           ),
           GoRoute(
             path: '/todos',
@@ -141,36 +151,38 @@ GoRouter createAppRouter() {
             name: 'plugins',
             pageBuilder: (context, state) =>
                 _noTransitionPage(state, const PluginsPage()),
-          ),
-          GoRoute(
-            path: '/plugins/packs',
-            name: 'pack-library',
-            pageBuilder: (context, state) =>
-                _noTransitionPage(state, const PackLibraryPage()),
-          ),
-          GoRoute(
-            path: '/plugins/permissions',
-            name: 'permission-gate',
-            pageBuilder: (context, state) =>
-                _noTransitionPage(state, const PermissionGatePage()),
-          ),
-          GoRoute(
-            path: '/plugins/model-providers',
-            name: 'model-providers',
-            pageBuilder: (context, state) =>
-                _noTransitionPage(state, const ModelProviderSettingsPage()),
-          ),
-          GoRoute(
-            path: '/plugins/backup',
-            name: 'backup',
-            pageBuilder: (context, state) =>
-                _noTransitionPage(state, const BackupPage()),
-          ),
-          GoRoute(
-            path: '/plugins/traces',
-            name: 'trace-console',
-            pageBuilder: (context, state) =>
-                _noTransitionPage(state, const TraceConsolePage()),
+            routes: [
+              GoRoute(
+                path: 'packs',
+                name: 'pack-library',
+                pageBuilder: (context, state) =>
+                    _noTransitionPage(state, const PackLibraryPage()),
+              ),
+              GoRoute(
+                path: 'permissions',
+                name: 'permission-gate',
+                pageBuilder: (context, state) =>
+                    _noTransitionPage(state, const PermissionGatePage()),
+              ),
+              GoRoute(
+                path: 'model-providers',
+                name: 'model-providers',
+                pageBuilder: (context, state) =>
+                    _noTransitionPage(state, const ModelProviderSettingsPage()),
+              ),
+              GoRoute(
+                path: 'backup',
+                name: 'backup',
+                pageBuilder: (context, state) =>
+                    _noTransitionPage(state, const BackupPage()),
+              ),
+              GoRoute(
+                path: 'traces',
+                name: 'trace-console',
+                pageBuilder: (context, state) =>
+                    _noTransitionPage(state, const TraceConsolePage()),
+              ),
+            ],
           ),
         ],
       ),
@@ -190,7 +202,8 @@ class WideNoteShell extends ConsumerWidget {
   final String location;
   final Widget child;
 
-  static const _paths = ['/', '/chat', '/record', '/todos', '/plugins'];
+  // Index 2 is the center Record action; it opens capture and is not routable.
+  static const _paths = ['/', '/chat', '', '/todos', '/plugins'];
 
   int get _selectedIndex {
     if (location.startsWith('/chat')) {
@@ -205,66 +218,46 @@ class WideNoteShell extends ConsumerWidget {
     return 0;
   }
 
-  bool get _isPluginsChildRoute {
-    return location.startsWith('/plugins/');
-  }
-
-  bool get _isSettingsChildRoute {
-    return location.startsWith('/settings/');
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    return PopScope<Object?>(
-      canPop: !_isPluginsChildRoute && !_isSettingsChildRoute,
-      onPopInvokedWithResult: (didPop, result) {
-        if (!didPop && _isPluginsChildRoute) {
-          context.go('/plugins');
-          return;
-        }
-        if (!didPop && _isSettingsChildRoute) {
-          context.go('/settings');
-        }
-      },
-      child: Scaffold(
-        body: SafeArea(child: child),
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: _selectedIndex,
-          onDestinationSelected: (index) => _openTab(context, ref, index),
-          destinations: [
-            NavigationDestination(
-              key: const Key('tab-home'),
-              icon: const Icon(Icons.home_outlined),
-              selectedIcon: const Icon(Icons.home),
-              label: l10n.tabHome,
-            ),
-            NavigationDestination(
-              key: const Key('tab-chat'),
-              icon: const Icon(Icons.forum_outlined),
-              selectedIcon: const Icon(Icons.forum),
-              label: l10n.tabChat,
-            ),
-            NavigationDestination(
-              key: const Key('tab-record-action'),
-              icon: const Icon(Icons.add_circle_outline),
-              selectedIcon: const Icon(Icons.add_circle),
-              label: l10n.tabRecord,
-            ),
-            NavigationDestination(
-              key: const Key('tab-todos'),
-              icon: const Icon(Icons.checklist_outlined),
-              selectedIcon: const Icon(Icons.checklist),
-              label: l10n.tabTodos,
-            ),
-            NavigationDestination(
-              key: const Key('tab-plugins'),
-              icon: const Icon(Icons.extension_outlined),
-              selectedIcon: const Icon(Icons.extension),
-              label: l10n.tabPlugins,
-            ),
-          ],
-        ),
+    return Scaffold(
+      body: SafeArea(child: child),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: (index) => _openTab(context, ref, index),
+        destinations: [
+          NavigationDestination(
+            key: const Key('tab-home'),
+            icon: const Icon(Icons.home_outlined),
+            selectedIcon: const Icon(Icons.home),
+            label: l10n.tabHome,
+          ),
+          NavigationDestination(
+            key: const Key('tab-chat'),
+            icon: const Icon(Icons.forum_outlined),
+            selectedIcon: const Icon(Icons.forum),
+            label: l10n.tabChat,
+          ),
+          NavigationDestination(
+            key: const Key('tab-record-action'),
+            icon: const Icon(Icons.add_circle_outline),
+            selectedIcon: const Icon(Icons.add_circle),
+            label: l10n.tabRecord,
+          ),
+          NavigationDestination(
+            key: const Key('tab-todos'),
+            icon: const Icon(Icons.checklist_outlined),
+            selectedIcon: const Icon(Icons.checklist),
+            label: l10n.tabTodos,
+          ),
+          NavigationDestination(
+            key: const Key('tab-plugins'),
+            icon: const Icon(Icons.extension_outlined),
+            selectedIcon: const Icon(Icons.extension),
+            label: l10n.tabPlugins,
+          ),
+        ],
       ),
     );
   }

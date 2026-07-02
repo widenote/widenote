@@ -812,7 +812,7 @@ class _ErrorBanner extends StatelessWidget {
               children: [
                 TextButton.icon(
                   key: const Key('chat-open-log-center-button'),
-                  onPressed: () => context.go('/settings/traces'),
+                  onPressed: () => context.push('/settings/traces'),
                   icon: const Icon(Icons.receipt_long_outlined),
                   label: Text(l10n.traceConsoleOpenButton),
                 ),

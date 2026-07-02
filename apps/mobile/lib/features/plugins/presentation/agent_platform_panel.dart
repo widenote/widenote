@@ -53,7 +53,7 @@ class AgentPlatformPanel extends ConsumerWidget {
                 ),
                 OutlinedButton.icon(
                   key: const Key('agent-platform-open-traces-button'),
-                  onPressed: () => context.go('/plugins/traces'),
+                  onPressed: () => context.push('/plugins/traces'),
                   icon: const Icon(Icons.account_tree_outlined),
                   label: Text(l10n.traceConsoleOpenButton),
                 ),

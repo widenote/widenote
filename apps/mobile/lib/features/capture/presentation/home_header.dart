@@ -51,7 +51,7 @@ class HomeHeader extends StatelessWidget {
             IconButton.outlined(
               key: const Key('open-timeline-search-button'),
               tooltip: l10n.homeSearchTooltip,
-              onPressed: () => context.push('/timeline/search'),
+              onPressed: () => context.go('/timeline/search'),
               icon: const Icon(Icons.search),
             ),
             IconButton.outlined(
