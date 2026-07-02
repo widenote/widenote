@@ -82,9 +82,9 @@ or secret-bearing files were sent to external review.
   engine; manual MiMo retry remains an explicit action.
 - WideNote local model download URLs now point at the SenseVoice 2024 int8
   mirror used by Memex evidence, with minimum-size verification before ready.
-- Memex evidence points to the same SenseVoice 2024 int8 model with a domestic
-  mirror:
-  `https://hf-mirror.com/k2-fsa/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/resolve/main/model.int8.onnx`
+- Memex evidence points to the same SenseVoice 2024 int8 model with the
+  domestic mirror used by its `WhisperService`:
+  `https://hf-mirror.com/csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/resolve/main/model.int8.onnx`
   and `tokens.txt`.
 - Memex also keeps a global GitHub release tar source:
   `https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2024-07-17.tar.bz2`.

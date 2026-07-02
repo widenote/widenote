@@ -8,21 +8,23 @@ import 'transcription_settings.dart';
 const String defaultSenseVoiceModelDirectory =
     'sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2024-07-17';
 
-const List<TranscriptionModelDownloadFile>
-defaultSenseVoiceDownloadFiles = <TranscriptionModelDownloadFile>[
-  TranscriptionModelDownloadFile(
-    url:
-        'https://hf-mirror.com/k2-fsa/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/resolve/main/model.int8.onnx',
-    relativePath: '$defaultSenseVoiceModelDirectory/model.int8.onnx',
-    expectedMinBytes: 80 * 1024 * 1024,
-  ),
-  TranscriptionModelDownloadFile(
-    url:
-        'https://hf-mirror.com/k2-fsa/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/resolve/main/tokens.txt',
-    relativePath: '$defaultSenseVoiceModelDirectory/tokens.txt',
-    expectedMinBytes: 1024,
-  ),
-];
+const String defaultSenseVoiceHfMirrorBaseUrl =
+    'https://hf-mirror.com/csukuangfj/'
+    'sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/resolve/main';
+
+const List<TranscriptionModelDownloadFile> defaultSenseVoiceDownloadFiles =
+    <TranscriptionModelDownloadFile>[
+      TranscriptionModelDownloadFile(
+        url: '$defaultSenseVoiceHfMirrorBaseUrl/model.int8.onnx',
+        relativePath: '$defaultSenseVoiceModelDirectory/model.int8.onnx',
+        expectedMinBytes: 200 * 1024 * 1024,
+      ),
+      TranscriptionModelDownloadFile(
+        url: '$defaultSenseVoiceHfMirrorBaseUrl/tokens.txt',
+        relativePath: '$defaultSenseVoiceModelDirectory/tokens.txt',
+        expectedMinBytes: 250 * 1024,
+      ),
+    ];
 
 final class TranscriptionModelDownloadFile {
   const TranscriptionModelDownloadFile({
