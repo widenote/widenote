@@ -1486,6 +1486,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get settingsSystemPermissionsTitle => 'System Permissions';
+
+  @override
+  String get settingsSystemPermissionsSubtitle =>
+      'Check camera, microphone, location, photos, files, and calendar access.';
+
+  @override
+  String get settingsSystemPermissionsStatus => 'device';
+
+  @override
   String get settingsModelProvidersTitle => 'Model Providers';
 
   @override
@@ -1547,6 +1557,134 @@ class AppLocalizationsEn extends AppLocalizations {
   String settingsTraceConsoleStatusSummary(int eventCount, int warningCount) {
     return '$eventCount events / $warningCount warnings';
   }
+
+  @override
+  String get systemPermissionsTitle => 'System Permissions';
+
+  @override
+  String get systemPermissionsSubtitle =>
+      'Review app-level device permissions and jump to the right system setting when needed.';
+
+  @override
+  String get systemPermissionsBackTooltip => 'Back from System Permissions';
+
+  @override
+  String get systemPermissionsLoading => 'Checking permissions';
+
+  @override
+  String get systemPermissionsError => 'Permission status unavailable';
+
+  @override
+  String get systemPermissionsSummaryTitle => 'Device status';
+
+  @override
+  String systemPermissionsSummary(int grantedCount, int reviewCount) {
+    return '$grantedCount ready / $reviewCount need attention';
+  }
+
+  @override
+  String get systemPermissionsPlatformAndroid => 'Android';
+
+  @override
+  String get systemPermissionsPlatformIos => 'iOS';
+
+  @override
+  String get systemPermissionsPlatformOther => 'mobile only';
+
+  @override
+  String get systemPermissionsRefreshAction => 'Refresh';
+
+  @override
+  String get systemPermissionsDeviceAccessTitle => 'App access';
+
+  @override
+  String get systemPermissionsStatusGranted => 'allowed';
+
+  @override
+  String get systemPermissionsStatusLimited => 'limited';
+
+  @override
+  String get systemPermissionsStatusDenied => 'not allowed';
+
+  @override
+  String get systemPermissionsStatusPermanentlyDenied => 'settings';
+
+  @override
+  String get systemPermissionsStatusRestricted => 'restricted';
+
+  @override
+  String get systemPermissionsStatusNotRequired => 'picker';
+
+  @override
+  String get systemPermissionsStatusNotConfigured => 'not enabled';
+
+  @override
+  String get systemPermissionsStatusNotSupported => 'unsupported';
+
+  @override
+  String get systemPermissionsStatusUnknown => 'unknown';
+
+  @override
+  String get systemPermissionsStatusServiceOff => 'service off';
+
+  @override
+  String get systemPermissionsActionRequest => 'Request';
+
+  @override
+  String get systemPermissionsActionManage => 'Manage';
+
+  @override
+  String get systemPermissionsActionOpenSettings => 'Settings';
+
+  @override
+  String get systemPermissionsLocationServiceOffBody =>
+      'Location services are off at the system level.';
+
+  @override
+  String get systemPermissionsCameraTitle => 'Camera';
+
+  @override
+  String get systemPermissionsCameraSubtitle =>
+      'Used only when you capture a local photo attachment.';
+
+  @override
+  String get systemPermissionsMicrophoneTitle => 'Microphone';
+
+  @override
+  String get systemPermissionsMicrophoneSubtitle =>
+      'Used only when you save local voice recordings.';
+
+  @override
+  String get systemPermissionsLocationTitle => 'Location';
+
+  @override
+  String get systemPermissionsLocationSubtitle =>
+      'Used only for foreground GPS metadata after Location Context is enabled.';
+
+  @override
+  String get systemPermissionsPhotosTitle => 'Photos & Media';
+
+  @override
+  String get systemPermissionsPhotosSubtitle =>
+      'On iOS, review selected photo library access for local media attachments.';
+
+  @override
+  String get systemPermissionsPhotosAndroidSubtitle =>
+      'On Android, WideNote uses the system photo picker without broad media permission.';
+
+  @override
+  String get systemPermissionsFilesTitle => 'Files';
+
+  @override
+  String get systemPermissionsFilesSubtitle =>
+      'Backups and imports use system document pickers without broad file access.';
+
+  @override
+  String get systemPermissionsCalendarTitle => 'Calendar';
+
+  @override
+  String get systemPermissionsCalendarSubtitle =>
+      'System calendar read/write is not enabled until a follow-up permission decision lands.';
 
   @override
   String get pluginsTitle => 'Packs';

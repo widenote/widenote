@@ -17,6 +17,24 @@ void main() {
     expect(contents, isNot(contains('NSLocationAlwaysUsageDescription')));
   });
 
+  test('iOS permission_handler macros stay scoped to used permissions', () {
+    final podfile = File('ios/Podfile');
+
+    expect(podfile.existsSync(), isTrue);
+    final contents = podfile.readAsStringSync();
+    expect(contents, contains("'PERMISSION_CAMERA=1'"));
+    expect(contents, contains("'PERMISSION_MICROPHONE=1'"));
+    expect(contents, contains("'PERMISSION_PHOTOS=1'"));
+    expect(contents, contains("'PERMISSION_LOCATION_WHENINUSE=1'"));
+    expect(contents, contains("'PERMISSION_LOCATION=0'"));
+    expect(contents, contains("'PERMISSION_EVENTS=0'"));
+    expect(contents, contains("'PERMISSION_EVENTS_FULL_ACCESS=0'"));
+    expect(contents, contains("'PERMISSION_REMINDERS=0'"));
+    expect(contents, contains("'PERMISSION_NOTIFICATIONS=0'"));
+    expect(contents, contains("'PERMISSION_MEDIA_LIBRARY=0'"));
+    expect(contents, contains("'PERMISSION_BLUETOOTH=0'"));
+  });
+
   test('iOS app registers and handles .widenote backup documents', () {
     final infoPlist = File('ios/Runner/Info.plist');
     final appDelegate = File('ios/Runner/AppDelegate.swift');

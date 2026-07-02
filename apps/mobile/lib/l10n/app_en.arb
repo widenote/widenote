@@ -712,6 +712,9 @@
       }
     }
   },
+  "settingsSystemPermissionsTitle": "System Permissions",
+  "settingsSystemPermissionsSubtitle": "Check camera, microphone, location, photos, files, and calendar access.",
+  "settingsSystemPermissionsStatus": "device",
   "settingsModelProvidersTitle": "Model Providers",
   "settingsModelProvidersSubtitle": "Configure local or BYOK model access for runtime and Agent Packs.",
   "settingsTranscriptionTitle": "Voice Transcription",
@@ -741,6 +744,55 @@
       }
     }
   },
+  "systemPermissionsTitle": "System Permissions",
+  "systemPermissionsSubtitle": "Review app-level device permissions and jump to the right system setting when needed.",
+  "systemPermissionsBackTooltip": "Back from System Permissions",
+  "systemPermissionsLoading": "Checking permissions",
+  "systemPermissionsError": "Permission status unavailable",
+  "systemPermissionsSummaryTitle": "Device status",
+  "systemPermissionsSummary": "{grantedCount} ready / {reviewCount} need attention",
+  "@systemPermissionsSummary": {
+    "placeholders": {
+      "grantedCount": {
+        "type": "int"
+      },
+      "reviewCount": {
+        "type": "int"
+      }
+    }
+  },
+  "systemPermissionsPlatformAndroid": "Android",
+  "systemPermissionsPlatformIos": "iOS",
+  "systemPermissionsPlatformOther": "mobile only",
+  "systemPermissionsRefreshAction": "Refresh",
+  "systemPermissionsDeviceAccessTitle": "App access",
+  "systemPermissionsStatusGranted": "allowed",
+  "systemPermissionsStatusLimited": "limited",
+  "systemPermissionsStatusDenied": "not allowed",
+  "systemPermissionsStatusPermanentlyDenied": "settings",
+  "systemPermissionsStatusRestricted": "restricted",
+  "systemPermissionsStatusNotRequired": "picker",
+  "systemPermissionsStatusNotConfigured": "not enabled",
+  "systemPermissionsStatusNotSupported": "unsupported",
+  "systemPermissionsStatusUnknown": "unknown",
+  "systemPermissionsStatusServiceOff": "service off",
+  "systemPermissionsActionRequest": "Request",
+  "systemPermissionsActionManage": "Manage",
+  "systemPermissionsActionOpenSettings": "Settings",
+  "systemPermissionsLocationServiceOffBody": "Location services are off at the system level.",
+  "systemPermissionsCameraTitle": "Camera",
+  "systemPermissionsCameraSubtitle": "Used only when you capture a local photo attachment.",
+  "systemPermissionsMicrophoneTitle": "Microphone",
+  "systemPermissionsMicrophoneSubtitle": "Used only when you save local voice recordings.",
+  "systemPermissionsLocationTitle": "Location",
+  "systemPermissionsLocationSubtitle": "Used only for foreground GPS metadata after Location Context is enabled.",
+  "systemPermissionsPhotosTitle": "Photos & Media",
+  "systemPermissionsPhotosSubtitle": "On iOS, review selected photo library access for local media attachments.",
+  "systemPermissionsPhotosAndroidSubtitle": "On Android, WideNote uses the system photo picker without broad media permission.",
+  "systemPermissionsFilesTitle": "Files",
+  "systemPermissionsFilesSubtitle": "Backups and imports use system document pickers without broad file access.",
+  "systemPermissionsCalendarTitle": "Calendar",
+  "systemPermissionsCalendarSubtitle": "System calendar read/write is not enabled until a follow-up permission decision lands.",
   "pluginsTitle": "Packs",
   "pluginsSubtitle": "Pack controls for permissions, models, backup, and logs.",
   "pluginsControlEntriesTitle": "Control entries",

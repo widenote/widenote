@@ -2531,6 +2531,24 @@ abstract class AppLocalizations {
     int deferredCount,
   );
 
+  /// No description provided for @settingsSystemPermissionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'System Permissions'**
+  String get settingsSystemPermissionsTitle;
+
+  /// No description provided for @settingsSystemPermissionsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check camera, microphone, location, photos, files, and calendar access.'**
+  String get settingsSystemPermissionsSubtitle;
+
+  /// No description provided for @settingsSystemPermissionsStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'device'**
+  String get settingsSystemPermissionsStatus;
+
   /// No description provided for @settingsModelProvidersTitle.
   ///
   /// In en, this message translates to:
@@ -2644,6 +2662,240 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{eventCount} events / {warningCount} warnings'**
   String settingsTraceConsoleStatusSummary(int eventCount, int warningCount);
+
+  /// No description provided for @systemPermissionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'System Permissions'**
+  String get systemPermissionsTitle;
+
+  /// No description provided for @systemPermissionsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review app-level device permissions and jump to the right system setting when needed.'**
+  String get systemPermissionsSubtitle;
+
+  /// No description provided for @systemPermissionsBackTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Back from System Permissions'**
+  String get systemPermissionsBackTooltip;
+
+  /// No description provided for @systemPermissionsLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking permissions'**
+  String get systemPermissionsLoading;
+
+  /// No description provided for @systemPermissionsError.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission status unavailable'**
+  String get systemPermissionsError;
+
+  /// No description provided for @systemPermissionsSummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Device status'**
+  String get systemPermissionsSummaryTitle;
+
+  /// No description provided for @systemPermissionsSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{grantedCount} ready / {reviewCount} need attention'**
+  String systemPermissionsSummary(int grantedCount, int reviewCount);
+
+  /// No description provided for @systemPermissionsPlatformAndroid.
+  ///
+  /// In en, this message translates to:
+  /// **'Android'**
+  String get systemPermissionsPlatformAndroid;
+
+  /// No description provided for @systemPermissionsPlatformIos.
+  ///
+  /// In en, this message translates to:
+  /// **'iOS'**
+  String get systemPermissionsPlatformIos;
+
+  /// No description provided for @systemPermissionsPlatformOther.
+  ///
+  /// In en, this message translates to:
+  /// **'mobile only'**
+  String get systemPermissionsPlatformOther;
+
+  /// No description provided for @systemPermissionsRefreshAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get systemPermissionsRefreshAction;
+
+  /// No description provided for @systemPermissionsDeviceAccessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'App access'**
+  String get systemPermissionsDeviceAccessTitle;
+
+  /// No description provided for @systemPermissionsStatusGranted.
+  ///
+  /// In en, this message translates to:
+  /// **'allowed'**
+  String get systemPermissionsStatusGranted;
+
+  /// No description provided for @systemPermissionsStatusLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'limited'**
+  String get systemPermissionsStatusLimited;
+
+  /// No description provided for @systemPermissionsStatusDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'not allowed'**
+  String get systemPermissionsStatusDenied;
+
+  /// No description provided for @systemPermissionsStatusPermanentlyDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'settings'**
+  String get systemPermissionsStatusPermanentlyDenied;
+
+  /// No description provided for @systemPermissionsStatusRestricted.
+  ///
+  /// In en, this message translates to:
+  /// **'restricted'**
+  String get systemPermissionsStatusRestricted;
+
+  /// No description provided for @systemPermissionsStatusNotRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'picker'**
+  String get systemPermissionsStatusNotRequired;
+
+  /// No description provided for @systemPermissionsStatusNotConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'not enabled'**
+  String get systemPermissionsStatusNotConfigured;
+
+  /// No description provided for @systemPermissionsStatusNotSupported.
+  ///
+  /// In en, this message translates to:
+  /// **'unsupported'**
+  String get systemPermissionsStatusNotSupported;
+
+  /// No description provided for @systemPermissionsStatusUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'unknown'**
+  String get systemPermissionsStatusUnknown;
+
+  /// No description provided for @systemPermissionsStatusServiceOff.
+  ///
+  /// In en, this message translates to:
+  /// **'service off'**
+  String get systemPermissionsStatusServiceOff;
+
+  /// No description provided for @systemPermissionsActionRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Request'**
+  String get systemPermissionsActionRequest;
+
+  /// No description provided for @systemPermissionsActionManage.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage'**
+  String get systemPermissionsActionManage;
+
+  /// No description provided for @systemPermissionsActionOpenSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get systemPermissionsActionOpenSettings;
+
+  /// No description provided for @systemPermissionsLocationServiceOffBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Location services are off at the system level.'**
+  String get systemPermissionsLocationServiceOffBody;
+
+  /// No description provided for @systemPermissionsCameraTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get systemPermissionsCameraTitle;
+
+  /// No description provided for @systemPermissionsCameraSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Used only when you capture a local photo attachment.'**
+  String get systemPermissionsCameraSubtitle;
+
+  /// No description provided for @systemPermissionsMicrophoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone'**
+  String get systemPermissionsMicrophoneTitle;
+
+  /// No description provided for @systemPermissionsMicrophoneSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Used only when you save local voice recordings.'**
+  String get systemPermissionsMicrophoneSubtitle;
+
+  /// No description provided for @systemPermissionsLocationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get systemPermissionsLocationTitle;
+
+  /// No description provided for @systemPermissionsLocationSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Used only for foreground GPS metadata after Location Context is enabled.'**
+  String get systemPermissionsLocationSubtitle;
+
+  /// No description provided for @systemPermissionsPhotosTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos & Media'**
+  String get systemPermissionsPhotosTitle;
+
+  /// No description provided for @systemPermissionsPhotosSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'On iOS, review selected photo library access for local media attachments.'**
+  String get systemPermissionsPhotosSubtitle;
+
+  /// No description provided for @systemPermissionsPhotosAndroidSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'On Android, WideNote uses the system photo picker without broad media permission.'**
+  String get systemPermissionsPhotosAndroidSubtitle;
+
+  /// No description provided for @systemPermissionsFilesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Files'**
+  String get systemPermissionsFilesTitle;
+
+  /// No description provided for @systemPermissionsFilesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Backups and imports use system document pickers without broad file access.'**
+  String get systemPermissionsFilesSubtitle;
+
+  /// No description provided for @systemPermissionsCalendarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar'**
+  String get systemPermissionsCalendarTitle;
+
+  /// No description provided for @systemPermissionsCalendarSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'System calendar read/write is not enabled until a follow-up permission decision lands.'**
+  String get systemPermissionsCalendarSubtitle;
 
   /// No description provided for @pluginsTitle.
   ///

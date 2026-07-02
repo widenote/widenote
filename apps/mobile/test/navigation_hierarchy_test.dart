@@ -6,8 +6,11 @@ import 'package:widenote_mobile/app/app_router.dart';
 import 'package:widenote_mobile/app/app_theme.dart';
 import 'package:widenote_mobile/app/local_database.dart';
 import 'package:widenote_mobile/features/location/application/location_settings_controller.dart';
+import 'package:widenote_mobile/features/system_permissions/application/system_permissions_controller.dart';
 import 'package:widenote_mobile/app/widenote_app.dart';
 import 'package:widenote_mobile/l10n/l10n.dart';
+
+import 'support/fake_system_permission_adapter.dart';
 
 void main() {
   testWidgets('timeline child pages return through timeline before home', (
@@ -162,6 +165,7 @@ void main() {
       _SelectedTabCase(path: '/', selectedIndex: 0),
       _SelectedTabCase(path: '/timeline/search', selectedIndex: 0),
       _SelectedTabCase(path: '/settings/model-providers', selectedIndex: 0),
+      _SelectedTabCase(path: '/settings/system-permissions', selectedIndex: 0),
       _SelectedTabCase(path: '/chat', selectedIndex: 1),
       _SelectedTabCase(path: '/todos', selectedIndex: 3),
       _SelectedTabCase(path: '/plugins/packs', selectedIndex: 4),
@@ -225,6 +229,12 @@ void main() {
       _DeepLinkCase(
         path: '/settings/permissions',
         pageKey: Key('permission-gate-page'),
+        firstParentKey: Key('settings-page'),
+        secondParentKey: Key('home-page'),
+      ),
+      _DeepLinkCase(
+        path: '/settings/system-permissions',
+        pageKey: Key('system-permissions-page'),
         firstParentKey: Key('settings-page'),
         secondParentKey: Key('home-page'),
       ),
@@ -400,6 +410,9 @@ Future<void> _pumpWideNoteApp(WidgetTester tester) async {
         locationSettingsRepositoryProvider.overrideWithValue(
           InMemoryLocationSettingsRepository(),
         ),
+        systemPermissionAdapterProvider.overrideWithValue(
+          FakeSystemPermissionAdapter.ready(),
+        ),
       ],
       child: const WideNoteApp(locale: Locale('en')),
     ),
@@ -424,6 +437,9 @@ Future<void> _pumpRoute(
         localDatabaseProvider.overrideWithValue(database),
         locationSettingsRepositoryProvider.overrideWithValue(
           InMemoryLocationSettingsRepository(),
+        ),
+        systemPermissionAdapterProvider.overrideWithValue(
+          FakeSystemPermissionAdapter.ready(),
         ),
       ],
       child: MaterialApp.router(

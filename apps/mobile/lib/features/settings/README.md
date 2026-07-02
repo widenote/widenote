@@ -15,7 +15,8 @@ backup/restore, log inspection, and display status.
   permission counts, provider configuration state, backup state, log counts,
   and current locale.
 - Links to existing feature pages for permission review, provider setup,
-  backup/restore, and log center instead of duplicating their behavior.
+  system permission review, backup/restore, and log center instead of duplicating
+  their behavior.
 - Does not own backup codecs, model-provider persistence, permission schemas,
   trace storage, or locale persistence.
 
@@ -24,6 +25,7 @@ backup/restore, log inspection, and display status.
 - Flutter Material
 - `flutter_riverpod`
 - `go_router`
+- `features/system_permissions` for app-level permission status
 - `features/model_providers` for provider status chips
 - Existing `plugins`, `backup`, and `traces` read models and presentation routes
 

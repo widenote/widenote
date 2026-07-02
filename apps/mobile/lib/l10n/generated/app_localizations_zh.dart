@@ -1327,6 +1327,15 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get settingsSystemPermissionsTitle => '系统权限';
+
+  @override
+  String get settingsSystemPermissionsSubtitle => '检查相机、麦克风、定位、媒体、文件和日历访问。';
+
+  @override
+  String get settingsSystemPermissionsStatus => '设备';
+
+  @override
   String get settingsModelProvidersTitle => '模型提供商';
 
   @override
@@ -1386,6 +1395,126 @@ class AppLocalizationsZh extends AppLocalizations {
   String settingsTraceConsoleStatusSummary(int eventCount, int warningCount) {
     return '$eventCount 事件 / $warningCount 警告';
   }
+
+  @override
+  String get systemPermissionsTitle => '系统权限';
+
+  @override
+  String get systemPermissionsSubtitle => '复核 App 级设备权限，需要时直接跳到对应系统设置。';
+
+  @override
+  String get systemPermissionsBackTooltip => '从系统权限返回';
+
+  @override
+  String get systemPermissionsLoading => '正在检查权限';
+
+  @override
+  String get systemPermissionsError => '暂时无法读取权限状态';
+
+  @override
+  String get systemPermissionsSummaryTitle => '设备状态';
+
+  @override
+  String systemPermissionsSummary(int grantedCount, int reviewCount) {
+    return '$grantedCount 项就绪 / $reviewCount 项需关注';
+  }
+
+  @override
+  String get systemPermissionsPlatformAndroid => 'Android';
+
+  @override
+  String get systemPermissionsPlatformIos => 'iOS';
+
+  @override
+  String get systemPermissionsPlatformOther => '仅移动端';
+
+  @override
+  String get systemPermissionsRefreshAction => '刷新';
+
+  @override
+  String get systemPermissionsDeviceAccessTitle => 'App 访问';
+
+  @override
+  String get systemPermissionsStatusGranted => '已允许';
+
+  @override
+  String get systemPermissionsStatusLimited => '部分允许';
+
+  @override
+  String get systemPermissionsStatusDenied => '未允许';
+
+  @override
+  String get systemPermissionsStatusPermanentlyDenied => '需设置';
+
+  @override
+  String get systemPermissionsStatusRestricted => '受限制';
+
+  @override
+  String get systemPermissionsStatusNotRequired => '选择器';
+
+  @override
+  String get systemPermissionsStatusNotConfigured => '未启用';
+
+  @override
+  String get systemPermissionsStatusNotSupported => '不支持';
+
+  @override
+  String get systemPermissionsStatusUnknown => '未知';
+
+  @override
+  String get systemPermissionsStatusServiceOff => '服务关闭';
+
+  @override
+  String get systemPermissionsActionRequest => '请求';
+
+  @override
+  String get systemPermissionsActionManage => '管理';
+
+  @override
+  String get systemPermissionsActionOpenSettings => '设置';
+
+  @override
+  String get systemPermissionsLocationServiceOffBody => '系统定位服务当前关闭。';
+
+  @override
+  String get systemPermissionsCameraTitle => '相机';
+
+  @override
+  String get systemPermissionsCameraSubtitle => '仅在拍摄本地照片附件时使用。';
+
+  @override
+  String get systemPermissionsMicrophoneTitle => '麦克风';
+
+  @override
+  String get systemPermissionsMicrophoneSubtitle => '仅在保存本地语音记录时使用。';
+
+  @override
+  String get systemPermissionsLocationTitle => '定位';
+
+  @override
+  String get systemPermissionsLocationSubtitle => '开启位置上下文后，仅用于前台 GPS 元数据。';
+
+  @override
+  String get systemPermissionsPhotosTitle => '照片与媒体';
+
+  @override
+  String get systemPermissionsPhotosSubtitle => '在 iOS 上复核本地媒体附件使用的照片库访问。';
+
+  @override
+  String get systemPermissionsPhotosAndroidSubtitle =>
+      '在 Android 上，WideNote 使用系统照片选择器，不申请广泛媒体权限。';
+
+  @override
+  String get systemPermissionsFilesTitle => '文件';
+
+  @override
+  String get systemPermissionsFilesSubtitle => '备份和导入使用系统文档选择器，不申请广泛文件访问。';
+
+  @override
+  String get systemPermissionsCalendarTitle => '日历';
+
+  @override
+  String get systemPermissionsCalendarSubtitle => '系统日历读写会等后续权限决策落地后再启用。';
 
   @override
   String get pluginsTitle => '插件';

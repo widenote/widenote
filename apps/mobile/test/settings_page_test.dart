@@ -8,7 +8,10 @@ import 'package:widenote_mobile/features/plugins/application/pack_catalog.dart';
 import 'package:widenote_mobile/app/widenote_app.dart';
 import 'package:widenote_mobile/features/location/application/location_settings_controller.dart';
 import 'package:widenote_mobile/features/settings/presentation/settings_page.dart';
+import 'package:widenote_mobile/features/system_permissions/application/system_permissions_controller.dart';
 import 'package:widenote_mobile/l10n/l10n.dart';
+
+import 'support/fake_system_permission_adapter.dart';
 
 void main() {
   testWidgets('home settings button opens Settings and closes back home', (
@@ -23,6 +26,7 @@ void main() {
     expect(find.text('Settings'), findsOneWidget);
     expect(find.text('Privacy'), findsOneWidget);
     expect(find.text('Privacy & Permissions'), findsOneWidget);
+    expect(find.text('System Permissions'), findsOneWidget);
     expect(find.text('Location Context'), findsOneWidget);
     expect(find.text('Model Providers'), findsOneWidget);
     expect(find.text('Backup & Restore'), findsOneWidget);
@@ -55,6 +59,11 @@ void main() {
       tester,
       entryKey: const Key('settings-permissions-entry'),
       pageKey: const Key('permission-gate-page'),
+    );
+    await _openChildAndReturn(
+      tester,
+      entryKey: const Key('settings-system-permissions-entry'),
+      pageKey: const Key('system-permissions-page'),
     );
     await _openChildAndReturn(
       tester,
@@ -132,6 +141,11 @@ void main() {
         locale: const Locale('en'),
       );
 
+      _expectButtonSemantics(
+        tester,
+        const Key('settings-system-permissions-entry'),
+        'System Permissions',
+      );
       _expectButtonSemantics(
         tester,
         const Key('settings-location-entry'),
@@ -239,6 +253,9 @@ Future<void> _pumpApp(WidgetTester tester) async {
         locationSettingsRepositoryProvider.overrideWithValue(
           InMemoryLocationSettingsRepository(),
         ),
+        systemPermissionAdapterProvider.overrideWithValue(
+          FakeSystemPermissionAdapter.ready(),
+        ),
       ],
       child: const WideNoteApp(locale: Locale('en')),
     ),
@@ -258,6 +275,9 @@ Future<void> _pumpSettingsPage(
         localDatabaseProvider.overrideWithValue(database),
         locationSettingsRepositoryProvider.overrideWithValue(
           InMemoryLocationSettingsRepository(),
+        ),
+        systemPermissionAdapterProvider.overrideWithValue(
+          FakeSystemPermissionAdapter.ready(),
         ),
       ],
       child: MaterialApp(
