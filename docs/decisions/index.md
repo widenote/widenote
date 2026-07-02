@@ -21,6 +21,7 @@
 | [ADR-0016](./0016-restore-ready-logs-backups-and-asr.md) | Make logs, backups, provider validation, and ASR restore-ready | accepted | 2026-07-02 |
 | [ADR-0017](./0017-accept-continuous-capture-background-processing.md) | Accept continuous capture background processing | accepted | 2026-07-02 |
 | [ADR-0018](./0018-accept-durable-agent-work-queue.md) | Accept durable agent work queue | accepted | 2026-07-02 |
+| [ADR-0019](./0019-hide-bottom-tabs-on-mobile-child-pages.md) | Hide Bottom Tabs On Mobile Child Pages | accepted | 2026-07-03 |
 
 ## RFC Status
 
@@ -44,3 +45,8 @@ Supersession note: [ADR-0016](./0016-restore-ready-logs-backups-and-asr.md)
 partially supersedes [ADR-0012](./0012-accept-voice-transcription-and-correction-boundaries.md)
 for automatic remote ASR fallback only; ADR-0012 remains accepted for the other
 voice transcription and correction boundaries.
+
+Supersession note: [ADR-0019](./0019-hide-bottom-tabs-on-mobile-child-pages.md)
+partially supersedes [ADR-0015](./0015-use-hierarchical-mobile-navigation.md)
+for bottom-tab visibility on child pages only; ADR-0015 remains accepted for
+route hierarchy and back-stack construction.

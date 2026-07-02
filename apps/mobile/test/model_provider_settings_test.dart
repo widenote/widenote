@@ -55,10 +55,7 @@ void main() {
       find.byKey(const Key('model-provider-settings-page')),
       findsOneWidget,
     );
-    expect(
-      tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
-      0,
-    );
+    expect(find.byType(NavigationBar), findsNothing);
     expect(find.text('Runtime model access'), findsOneWidget);
     expect(find.text('Using MIMO Main'), findsOneWidget);
 

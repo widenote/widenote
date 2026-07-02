@@ -103,22 +103,26 @@ void main() {
     await tester.tap(find.byKey(const Key('chat-open-log-center-button')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('trace-console-page')), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
 
     expect(await tester.binding.handlePopRoute(), isTrue);
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('chat-session-page')), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
 
     await _pumpRoute(tester, '/todos', seed: _seedTodo);
     await tester.tap(find.byKey(const Key('todo-source-todo-nav-1')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('timeline-item-detail-page')), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
 
     expect(await tester.binding.handlePopRoute(), isTrue);
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('todos-page')), findsOneWidget);
+    expect(find.byType(NavigationBar), findsOneWidget);
   });
 
-  testWidgets('tab switches reset child stacks instead of preserving pages', (
+  testWidgets('child pages hide bottom tabs until returning to route roots', (
     tester,
   ) async {
     await _pumpWideNoteApp(tester);
@@ -130,27 +134,32 @@ void main() {
     await tester.tap(find.byKey(const Key('timeline-search-button')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('timeline-search-page')), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
+
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('timeline-page')), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
+
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('home-page')), findsOneWidget);
+    expect(find.byType(NavigationBar), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('tab-chat')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('chat-page')), findsOneWidget);
-    expect(find.byKey(const Key('timeline-search-page')), findsNothing);
-
-    expect(await tester.binding.handlePopRoute(), isFalse);
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('chat-page')), findsOneWidget);
   });
 
-  testWidgets('record action returns from child page to home capture sheet', (
+  testWidgets('record action opens capture sheet from a tab route root', (
     tester,
   ) async {
     await _pumpWideNoteApp(tester);
 
-    await tester.ensureVisible(find.byKey(const Key('open-timeline-button')));
+    await tester.tap(find.byKey(const Key('tab-chat')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('open-timeline-button')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('timeline-page')), findsOneWidget);
+    expect(find.byKey(const Key('chat-page')), findsOneWidget);
+    expect(find.byType(NavigationBar), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('tab-record-action')));
     await tester.pumpAndSettle();
@@ -158,26 +167,54 @@ void main() {
     expect(find.byKey(const Key('capture-sheet')), findsOneWidget);
   });
 
-  testWidgets('bottom navigation highlights durable route owners', (
+  testWidgets('bottom navigation only appears on tab route roots', (
     tester,
   ) async {
-    const cases = <_SelectedTabCase>[
+    const rootCases = <_SelectedTabCase>[
       _SelectedTabCase(path: '/', selectedIndex: 0),
-      _SelectedTabCase(path: '/timeline/search', selectedIndex: 0),
-      _SelectedTabCase(path: '/settings/model-providers', selectedIndex: 0),
-      _SelectedTabCase(path: '/settings/system-permissions', selectedIndex: 0),
       _SelectedTabCase(path: '/chat', selectedIndex: 1),
       _SelectedTabCase(path: '/todos', selectedIndex: 3),
-      _SelectedTabCase(path: '/plugins/packs', selectedIndex: 4),
+      _SelectedTabCase(path: '/plugins', selectedIndex: 4),
     ];
 
-    for (final routeCase in cases) {
+    for (final routeCase in rootCases) {
       await _pumpRoute(tester, routeCase.path);
       expect(
         tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
         routeCase.selectedIndex,
         reason: routeCase.path,
       );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    }
+
+    const childPaths = <String>[
+      '/timeline',
+      '/timeline/search',
+      '/timeline/cards/missing-card',
+      '/timeline/items/missing-item',
+      '/memory',
+      '/recap',
+      '/settings',
+      '/settings/permissions',
+      '/settings/system-permissions',
+      '/settings/model-providers',
+      '/settings/transcription',
+      '/settings/location',
+      '/settings/backup',
+      '/settings/traces',
+      '/settings/traces/agents',
+      '/settings/traces/events',
+      '/settings/traces/raw',
+      '/settings/traces/raw/missing-trace',
+      '/chat/session/missing-session',
+      '/plugins/packs',
+    ];
+
+    for (final childPath in childPaths) {
+      await _pumpRoute(tester, childPath);
+      expect(find.byType(NavigationBar), findsNothing, reason: childPath);
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpAndSettle();
@@ -425,11 +462,7 @@ void main() {
         findsOneWidget,
         reason: '${routeCase.entryKey}',
       );
-      expect(
-        tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
-        0,
-        reason: '${routeCase.entryKey}',
-      );
+      expect(find.byType(NavigationBar), findsNothing);
 
       expect(
         await tester.binding.handlePopRoute(),

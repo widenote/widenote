@@ -34,6 +34,11 @@ Current source layout:
 - `lib/features`: feature-owned UI and app-local controllers.
 - `lib/l10n`: Flutter localization resources and generated bindings.
 
+Mobile routing follows the current navigation contract: the bottom navigation
+bar is visible only on `/`, `/chat`, `/todos`, and `/plugins`. Other pages are
+hierarchical child pages that keep parent/system-back behavior without showing
+bottom tabs.
+
 The current client boots a device-local SQLite database at
 `local-data/widenote.sqlite` and injects `LocalDbEventStore`,
 `LocalDbTraceSink`, `LocalDbRuntimeStore`, `LocalDbPermissionStore`, and

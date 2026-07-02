@@ -23,6 +23,7 @@ historical decisions, rationale, and supersession history, use
 
 - [Current Architecture Contracts](./architecture/current-contracts.md)
 - [Operational Principles](./architecture/operational-principles.md)
+- [Mobile Child Page Bottom Tabs Kimi Review](./research/2026-07-03-mobile-child-page-tabs-kimi-review.md)
 - [Chat Session Management Plan](./research/2026-07-01-chat-session-management-plan.md)
 - [W7 Current Integration State](./research/2026-06-26-w7-current-integration-state.md) is dated integration evidence; use current contracts for the current target state.
 - [W7 Integration QA](./research/2026-06-26-w7-integration-qa.md)
