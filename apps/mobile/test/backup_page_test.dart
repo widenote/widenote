@@ -7,6 +7,10 @@ import 'package:widenote_local_db/widenote_local_db.dart';
 import 'package:widenote_mobile/app/local_database.dart';
 import 'package:widenote_mobile/features/backup/application/backup_controller.dart';
 import 'package:widenote_mobile/features/backup/presentation/backup_page.dart';
+import 'package:widenote_mobile/features/location/application/location_settings_controller.dart';
+import 'package:widenote_mobile/features/location/domain/location_context.dart';
+import 'package:widenote_mobile/features/transcription/transcription_service.dart';
+import 'package:widenote_mobile/features/transcription/transcription_settings.dart';
 import 'package:widenote_mobile/l10n/l10n.dart';
 
 void main() {
@@ -35,7 +39,7 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.textContaining('Full .widenote backups include provider API keys'),
+      find.textContaining('Full .widenote backups include provider, AMap'),
       findsOneWidget,
     );
     expect(
@@ -151,7 +155,17 @@ void main() {
     );
     await tester.drag(find.byType(Scrollable).first, const Offset(0, -120));
     await tester.pumpAndSettle();
+    await tester.drag(
+      find.byKey(const Key('backup-page')),
+      const Offset(0, -240),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('backup-import-file-button')));
+    await tester.pumpAndSettle();
+    await tester.drag(
+      find.byKey(const Key('backup-page')),
+      const Offset(0, -120),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('backup-import-button')));
     await tester.pumpAndSettle();
@@ -273,6 +287,73 @@ void main() {
     expect(provider.hasApiKey, isTrue);
     expect(provider.apiKey, _backupPageCredential());
     expect(find.byKey(const Key('backup-import-report')), findsOneWidget);
+  });
+
+  testWidgets('backup import restores allowlisted secure app settings', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(800, 900));
+    addTearDown(() async {
+      await tester.binding.setSurfaceSize(null);
+    });
+    final source = WideNoteLocalDatabase.inMemory();
+    final target = WideNoteLocalDatabase.inMemory();
+    final locationRepository = InMemoryLocationSettingsRepository();
+    final voiceRepository = MemoryVoiceTranscriptionSettingsRepository();
+    final credentials = MemoryTranscriptionCredentialStore('old-key');
+    _seedLocalData(source);
+    final fileStore = _MemoryBackupFileStore()
+      ..latestPayload = BackupImportPayload(
+        backup: LocalBackupService(
+          source,
+        ).exportBackup(mode: LocalBackupMode.full),
+        sourceLabel: '/tmp/widenote-backup.widenote',
+        supportSettings: const BackupSupportSettingsBundle(
+          locationSettings: LocationCaptureSettings(
+            saveGps: true,
+            useAmapReverseGeocode: true,
+            amapApiKey: 'amap-secret',
+          ),
+          hasVoiceTranscriptionSettings: true,
+          voiceTranscriptionSettings: VoiceTranscriptionSettings(
+            engine: VoiceTranscriptionEngine.xiaomiMimo,
+            remoteConsentGranted: true,
+            localModelState: LocalTranscriptionModelState.notDownloaded,
+          ),
+          hasMimoAsrApiKey: true,
+          mimoAsrApiKey: 'mimo-secret',
+        ),
+      );
+    await _pumpBackupPage(
+      tester,
+      database: target,
+      overrides: [
+        backupFileStoreProvider.overrideWithValue(fileStore),
+        locationSettingsRepositoryProvider.overrideWithValue(
+          locationRepository,
+        ),
+        voiceTranscriptionSettingsRepositoryProvider.overrideWithValue(
+          voiceRepository,
+        ),
+        transcriptionCredentialStoreProvider.overrideWithValue(credentials),
+      ],
+    );
+
+    await tester.tap(find.byKey(const Key('backup-import-file-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('backup-import-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('backup-confirm-replace-button')));
+    await tester.pumpAndSettle();
+
+    final location = await locationRepository.load();
+    expect(location.useAmapReverseGeocode, isTrue);
+    expect(location.amapApiKey, 'amap-secret');
+    final voice = await voiceRepository.load();
+    expect(voice.engine, VoiceTranscriptionEngine.xiaomiMimo);
+    expect(voice.remoteAsrEnabled, isTrue);
+    expect(voice.localModelState, LocalTranscriptionModelState.notDownloaded);
+    expect(await credentials.readMimoAsrApiKey(), 'mimo-secret');
   });
 
   testWidgets('backup import error recovers after valid file is selected', (

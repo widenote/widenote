@@ -134,9 +134,10 @@ current backup.
 excludes provider API key values while preserving provider metadata,
 default-provider state, and whether a key was present. `LocalBackupMode.full`
 is the user-facing `.widenote` directory-backup mode and preserves provider API
-key values for direct-use restore. `LocalBackupMode.encryptedFull` is reserved
-for a future encrypted full-backup envelope. Keys must stay out of logs,
-generated docs, test output, and automated review prompts.
+key values plus mobile-managed allowlisted support files for direct-use restore.
+`LocalBackupMode.encryptedFull` is reserved for a future encrypted full-backup
+envelope. Keys must stay out of logs, generated docs, test output, safe
+projections, and automated review prompts.
 
 `LocalBackupImportReport` summarizes restore effects for UI and QA without
 exposing backup contents. It reports backup mode, secret inclusion, restored

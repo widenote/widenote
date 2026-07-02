@@ -845,6 +845,11 @@ void main() {
         );
         await mediaFile.parent.create(recursive: true);
         await mediaFile.writeAsBytes(<int>[8, 6, 7, 5, 3, 0, 9]);
+        final supportFile = File(
+          '${staging.path}/config/location_context.wnconfig',
+        );
+        await supportFile.parent.create(recursive: true);
+        await supportFile.writeAsString('amap_key=secret');
 
         final archivePath = '${temp.path}/directory-backup.widenote';
         final writeResult = await LocalBackupDirectoryArchiveCodec.writeArchive(
@@ -869,6 +874,8 @@ void main() {
             LocalBackupDirectoryArchiveCodec.databasePath,
             '${LocalBackupDirectoryArchiveCodec.rootDirectory}/media/'
                 'capture_media/photos/demo.jpg',
+            '${LocalBackupDirectoryArchiveCodec.rootDirectory}/config/'
+                'location_context.wnconfig',
           ]),
         );
         expect(
@@ -895,6 +902,12 @@ void main() {
           0,
           9,
         ]);
+        expect(
+          await File(
+            '${temp.path}/directory-restore/config/location_context.wnconfig',
+          ).readAsString(),
+          'amap_key=secret',
+        );
 
         final snapshot = WideNoteLocalDatabase.openPath(extract.databasePath);
         addTearDown(snapshot.close);

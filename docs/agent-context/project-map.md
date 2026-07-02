@@ -30,6 +30,7 @@ It should stay short. It points to the right local context instead of duplicatin
 ## Research
 
 - `docs/research/2026-07-01-chat-session-management-plan.md`
+- `docs/research/2026-07-02-agent-console-provider-backup-asr-plan.md`
 - `docs/research/2026-07-01-android-backup-restore-interaction-plan.md`
 - `docs/research/2026-07-01-provider-presets-kimi-review.md`
 - `docs/research/2026-07-01-location-context-amap-kimi-review.md`

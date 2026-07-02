@@ -30,6 +30,16 @@ enum VoiceTranscriptionProviderMode {
   final String wireName;
 }
 
+enum VoiceTranscriptionEngine {
+  localSenseVoice('local_sensevoice'),
+  xiaomiMimo('xiaomi_mimo'),
+  disabled('disabled');
+
+  const VoiceTranscriptionEngine(this.wireName);
+
+  final String wireName;
+}
+
 enum TranscriptCorrectionMode {
   disabled('disabled'),
   suggestOnly('suggest_only'),
@@ -44,7 +54,8 @@ final class VoiceTranscriptionSettings {
   const VoiceTranscriptionSettings({
     this.localModelState = LocalTranscriptionModelState.notDownloaded,
     this.downloadProgress = 0,
-    this.providerMode = VoiceTranscriptionProviderMode.localFirstRemoteAuto,
+    this.providerMode = VoiceTranscriptionProviderMode.localOnly,
+    this.engine = VoiceTranscriptionEngine.localSenseVoice,
     this.realtimePreviewEnabled = true,
     this.language = 'auto',
     this.autoTranscribeMaxDurationMs = 5 * 60 * 1000,
@@ -60,6 +71,22 @@ final class VoiceTranscriptionSettings {
   });
 
   factory VoiceTranscriptionSettings.fromJson(Map<String, Object?> json) {
+    final rawEngine = _stringValue(json['engine']);
+    final oldProviderMode = _enumByWireName(
+      VoiceTranscriptionProviderMode.values,
+      json['provider_mode'],
+      fallback: VoiceTranscriptionProviderMode.localOnly,
+    );
+    final engine = rawEngine == null
+        ? _engineFromLegacyProviderMode(oldProviderMode)
+        : _enumByWireName(
+            VoiceTranscriptionEngine.values,
+            rawEngine,
+            fallback: VoiceTranscriptionEngine.localSenseVoice,
+          );
+    final remoteConsentGranted = rawEngine == null
+        ? false
+        : json['remote_consent_granted'] == true;
     return VoiceTranscriptionSettings(
       localModelState: _enumByWireName(
         LocalTranscriptionModelState.values,
@@ -67,11 +94,8 @@ final class VoiceTranscriptionSettings {
         fallback: LocalTranscriptionModelState.notDownloaded,
       ),
       downloadProgress: _intValue(json['download_progress']) ?? 0,
-      providerMode: _enumByWireName(
-        VoiceTranscriptionProviderMode.values,
-        json['provider_mode'],
-        fallback: VoiceTranscriptionProviderMode.localFirstRemoteAuto,
-      ),
+      providerMode: _providerModeForEngine(engine),
+      engine: engine,
       realtimePreviewEnabled: json['realtime_preview_enabled'] != false,
       language: _stringValue(json['language']) ?? 'auto',
       autoTranscribeMaxDurationMs:
@@ -79,7 +103,7 @@ final class VoiceTranscriptionSettings {
       remoteChunkMaxDurationMs:
           _intValue(json['remote_chunk_max_duration_ms']) ?? 120 * 1000,
       wifiOnlyModelDownload: json['wifi_only_model_download'] != false,
-      remoteConsentGranted: json['remote_consent_granted'] == true,
+      remoteConsentGranted: remoteConsentGranted,
       mimoAsrProviderId:
           _stringValue(json['mimo_asr_provider_id']) ?? 'mimo_asr',
       mimoAsrEndpoint:
@@ -99,6 +123,7 @@ final class VoiceTranscriptionSettings {
   final LocalTranscriptionModelState localModelState;
   final int downloadProgress;
   final VoiceTranscriptionProviderMode providerMode;
+  final VoiceTranscriptionEngine engine;
   final bool realtimePreviewEnabled;
   final String language;
   final int autoTranscribeMaxDurationMs;
@@ -113,13 +138,18 @@ final class VoiceTranscriptionSettings {
   final String? lastErrorMessage;
 
   bool get remoteAsrEnabled =>
-      remoteConsentGranted &&
-      providerMode == VoiceTranscriptionProviderMode.localFirstRemoteAuto;
+      remoteConsentGranted && engine == VoiceTranscriptionEngine.xiaomiMimo;
+
+  bool get mimoAsrEnabled => remoteAsrEnabled;
+
+  bool get localSenseVoiceEnabled =>
+      engine == VoiceTranscriptionEngine.localSenseVoice;
 
   VoiceTranscriptionSettings copyWith({
     LocalTranscriptionModelState? localModelState,
     int? downloadProgress,
     VoiceTranscriptionProviderMode? providerMode,
+    VoiceTranscriptionEngine? engine,
     bool? realtimePreviewEnabled,
     String? language,
     int? autoTranscribeMaxDurationMs,
@@ -134,10 +164,16 @@ final class VoiceTranscriptionSettings {
     String? lastErrorMessage,
     bool clearError = false,
   }) {
+    final nextEngine =
+        engine ??
+        (providerMode == null
+            ? this.engine
+            : _engineFromLegacyProviderMode(providerMode));
     return VoiceTranscriptionSettings(
       localModelState: localModelState ?? this.localModelState,
       downloadProgress: downloadProgress ?? this.downloadProgress,
-      providerMode: providerMode ?? this.providerMode,
+      providerMode: _providerModeForEngine(nextEngine),
+      engine: nextEngine,
       realtimePreviewEnabled:
           realtimePreviewEnabled ?? this.realtimePreviewEnabled,
       language: language ?? this.language,
@@ -163,6 +199,7 @@ final class VoiceTranscriptionSettings {
     return <String, Object?>{
       'local_model_state': localModelState.wireName,
       'download_progress': downloadProgress,
+      'engine': engine.wireName,
       'provider_mode': providerMode.wireName,
       'realtime_preview_enabled': realtimePreviewEnabled,
       'language': language,
@@ -305,6 +342,30 @@ final class MemoryTranscriptionCredentialStore
   Future<void> deleteMimoAsrApiKey() async {
     _apiKey = null;
   }
+}
+
+VoiceTranscriptionEngine _engineFromLegacyProviderMode(
+  VoiceTranscriptionProviderMode mode,
+) {
+  return switch (mode) {
+    VoiceTranscriptionProviderMode.localOnly ||
+    VoiceTranscriptionProviderMode.localFirstRemoteAuto ||
+    VoiceTranscriptionProviderMode.remoteDisabled =>
+      VoiceTranscriptionEngine.localSenseVoice,
+  };
+}
+
+VoiceTranscriptionProviderMode _providerModeForEngine(
+  VoiceTranscriptionEngine engine,
+) {
+  return switch (engine) {
+    VoiceTranscriptionEngine.localSenseVoice =>
+      VoiceTranscriptionProviderMode.localOnly,
+    VoiceTranscriptionEngine.xiaomiMimo =>
+      VoiceTranscriptionProviderMode.localFirstRemoteAuto,
+    VoiceTranscriptionEngine.disabled =>
+      VoiceTranscriptionProviderMode.remoteDisabled,
+  };
 }
 
 T _enumByWireName<T extends Enum>(

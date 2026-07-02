@@ -60,6 +60,8 @@ class _VoiceTranscriptionSettingsPageState
             const SizedBox(height: 16),
             _StatusSurface(settings: settings),
             const SizedBox(height: 12),
+            _EngineSurface(settings: settings),
+            const SizedBox(height: 12),
             _LocalModelSurface(
               settings: settings,
               downloading: _downloadingModel,
@@ -275,9 +277,7 @@ class _StatusSurface extends StatelessWidget {
           _InfoRow(
             icon: Icons.cloud_upload_outlined,
             title: l10n.voiceSettingsRemoteFallbackTitle,
-            value: settings.remoteAsrEnabled
-                ? l10n.voiceSettingsRemoteEnabled
-                : l10n.voiceSettingsRemoteDisabled,
+            value: _engineLabel(l10n, settings.engine),
           ),
           const Divider(height: 20),
           _InfoRow(
@@ -413,6 +413,60 @@ class _LocalModelSurface extends StatelessWidget {
   }
 }
 
+class _EngineSurface extends ConsumerWidget {
+  const _EngineSurface({required this.settings});
+
+  final VoiceTranscriptionSettings settings;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    return _Surface(
+      icon: Icons.alt_route_outlined,
+      title: l10n.voiceSettingsEngineTitle,
+      description: l10n.voiceSettingsEngineDescription,
+      child: SegmentedButton<VoiceTranscriptionEngine>(
+        key: const Key('voice-transcription-engine-control'),
+        segments: [
+          ButtonSegment<VoiceTranscriptionEngine>(
+            value: VoiceTranscriptionEngine.localSenseVoice,
+            icon: const Icon(Icons.offline_bolt_outlined),
+            label: Text(l10n.voiceSettingsEngineLocal),
+          ),
+          ButtonSegment<VoiceTranscriptionEngine>(
+            value: VoiceTranscriptionEngine.xiaomiMimo,
+            icon: const Icon(Icons.cloud_upload_outlined),
+            label: Text(l10n.voiceSettingsEngineMimo),
+          ),
+          ButtonSegment<VoiceTranscriptionEngine>(
+            value: VoiceTranscriptionEngine.disabled,
+            icon: const Icon(Icons.block_outlined),
+            label: Text(l10n.voiceSettingsEngineDisabled),
+          ),
+        ],
+        selected: <VoiceTranscriptionEngine>{settings.engine},
+        showSelectedIcon: false,
+        onSelectionChanged: (selection) {
+          final engine = selection.single;
+          unawaited(
+            ref
+                .read(voiceTranscriptionSettingsControllerProvider.notifier)
+                .saveSettings(
+                  settings.copyWith(
+                    engine: engine,
+                    remoteConsentGranted:
+                        engine == VoiceTranscriptionEngine.xiaomiMimo
+                        ? settings.remoteConsentGranted
+                        : false,
+                  ),
+                ),
+          );
+        },
+      ),
+    );
+  }
+}
+
 class _RemoteSurface extends ConsumerWidget {
   const _RemoteSurface({
     required this.settings,
@@ -440,7 +494,7 @@ class _RemoteSurface extends ConsumerWidget {
           SwitchListTile(
             key: const Key('voice-remote-consent-switch'),
             contentPadding: EdgeInsets.zero,
-            value: settings.remoteAsrEnabled,
+            value: settings.mimoAsrEnabled,
             title: Text(l10n.voiceSettingsRemoteConsentTitle),
             subtitle: Text(l10n.voiceSettingsRemoteConsentSubtitle),
             onChanged: (enabled) => unawaited(
@@ -448,9 +502,9 @@ class _RemoteSurface extends ConsumerWidget {
                   .read(voiceTranscriptionSettingsControllerProvider.notifier)
                   .saveSettings(
                     settings.copyWith(
-                      providerMode: enabled
-                          ? VoiceTranscriptionProviderMode.localFirstRemoteAuto
-                          : VoiceTranscriptionProviderMode.remoteDisabled,
+                      engine: enabled
+                          ? VoiceTranscriptionEngine.xiaomiMimo
+                          : VoiceTranscriptionEngine.localSenseVoice,
                       remoteConsentGranted: enabled,
                     ),
                   ),
@@ -717,5 +771,13 @@ String _correctionModeLabel(
     TranscriptCorrectionMode.suggestOnly => l10n.voiceSettingsCorrectionSuggest,
     TranscriptCorrectionMode.autoApplyHighConfidence =>
       l10n.voiceSettingsCorrectionAutoApply,
+  };
+}
+
+String _engineLabel(AppLocalizations l10n, VoiceTranscriptionEngine engine) {
+  return switch (engine) {
+    VoiceTranscriptionEngine.localSenseVoice => l10n.voiceSettingsEngineLocal,
+    VoiceTranscriptionEngine.xiaomiMimo => l10n.voiceSettingsEngineMimo,
+    VoiceTranscriptionEngine.disabled => l10n.voiceSettingsEngineDisabled,
   };
 }

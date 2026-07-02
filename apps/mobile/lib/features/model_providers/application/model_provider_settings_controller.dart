@@ -341,6 +341,12 @@ class ModelProviderSettingsController
     );
   }
 
+  Future<ModelProviderConnectionTestResult> testDraftProvider(
+    ModelProviderConfig provider,
+  ) {
+    return _testConnection(provider);
+  }
+
   Future<ModelProviderConnectionTestResult> _testConnection(
     ModelProviderConfig provider,
   ) async {

@@ -190,10 +190,12 @@ class _ControlSurface extends ConsumerWidget {
     if (settings == null) {
       return l10n.settingsTranscriptionStatusLoading;
     }
-    if (settings.remoteAsrEnabled) {
+    if (settings.engine == VoiceTranscriptionEngine.xiaomiMimo &&
+        settings.mimoAsrEnabled) {
       return l10n.settingsTranscriptionStatusRemote;
     }
-    if (settings.localModelState == LocalTranscriptionModelState.ready) {
+    if (settings.engine == VoiceTranscriptionEngine.localSenseVoice &&
+        settings.localModelState == LocalTranscriptionModelState.ready) {
       return l10n.settingsTranscriptionStatusLocal;
     }
     return l10n.settingsTranscriptionStatusNeedsSetup;

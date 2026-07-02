@@ -1459,7 +1459,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsPrivacyBackupBody =>
-      'Full .widenote backups include provider API keys so restore can use model providers immediately. Keep backup files in a trusted location.';
+      'Full .widenote backups include provider and allowlisted secure-storage keys so restore can use configured features immediately. Keep backup files in a trusted location.';
 
   @override
   String get settingsPrivacyBackupStatus => 'full backup';
@@ -1497,7 +1497,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsTranscriptionSubtitle =>
-      'Configure live preview, local ASR, MiMo fallback, and transcript correction.';
+      'Configure local SenseVoice, MiMo ASR, live preview, and transcript correction.';
 
   @override
   String get settingsTranscriptionStatusLoading => 'loading';
@@ -1506,7 +1506,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsTranscriptionStatusLocal => 'local';
 
   @override
-  String get settingsTranscriptionStatusRemote => 'remote';
+  String get settingsTranscriptionStatusRemote => 'MiMo';
 
   @override
   String get settingsTranscriptionStatusNeedsSetup => 'setup';
@@ -2495,6 +2495,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get voiceSettingsStatusTitle => 'Status';
 
   @override
+  String get voiceSettingsEngineTitle => 'Transcription engine';
+
+  @override
+  String get voiceSettingsEngineDescription =>
+      'Choose exactly one ASR path for new transcripts.';
+
+  @override
+  String get voiceSettingsEngineLocal => 'Local SenseVoice';
+
+  @override
+  String get voiceSettingsEngineMimo => 'MiMo ASR';
+
+  @override
+  String get voiceSettingsEngineDisabled => 'Off';
+
+  @override
   String get voiceSettingsLocalModelTitle => 'Local model';
 
   @override
@@ -2534,7 +2550,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get voiceSettingsModelDeleted => 'Local ASR model deleted.';
 
   @override
-  String get voiceSettingsRemoteFallbackTitle => 'Remote fallback';
+  String get voiceSettingsRemoteFallbackTitle => 'Selected engine';
 
   @override
   String get voiceSettingsRemoteEnabled => 'enabled';
@@ -2558,18 +2574,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'The saved WAV remains the source of truth.';
 
   @override
-  String get voiceSettingsRemoteTitle => 'MiMo ASR fallback';
+  String get voiceSettingsRemoteTitle => 'MiMo ASR';
 
   @override
   String get voiceSettingsRemoteDescription =>
-      'When the local model cannot transcribe, WideNote can upload the saved WAV to the configured MiMo-compatible endpoint after consent.';
+      'Use the configured MiMo-compatible endpoint only when MiMo is the selected engine or you manually retry with MiMo.';
 
   @override
-  String get voiceSettingsRemoteConsentTitle => 'Allow remote ASR fallback';
+  String get voiceSettingsRemoteConsentTitle => 'Allow MiMo audio upload';
 
   @override
   String get voiceSettingsRemoteConsentSubtitle =>
-      'Audio upload is used only for transcription fallback and manual retry.';
+      'Audio upload is used only for the selected MiMo engine and manual MiMo retry.';
 
   @override
   String get voiceSettingsEndpointLabel => 'Endpoint';
@@ -2608,7 +2624,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get voiceSettingsRetryDescription =>
-      'Retry failed or review-needed transcripts with the remote ASR path.';
+      'Retry failed or review-needed transcripts with the MiMo ASR path.';
 
   @override
   String get voiceSettingsRetryButton => 'Retry failed transcripts';
@@ -2705,11 +2721,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backupSecretWarning =>
-      'Full backups include provider API keys. Keep .widenote files somewhere you trust.';
+      'Full backups include provider and allowlisted secure-storage keys. Keep .widenote files somewhere you trust.';
 
   @override
   String get backupRestoreBoundary =>
-      'The .widenote archive restores a SQLite snapshot, capture media files, and provider API keys.';
+      'The .widenote archive restores a SQLite snapshot, capture media files, provider API keys, and allowlisted app settings.';
 
   @override
   String get backupOwnerExportBoundary =>
@@ -2717,7 +2733,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backupFullSecretBoundary =>
-      'Full .widenote backups include provider API keys so restore can use configured providers immediately.';
+      'Full .widenote backups include provider, AMap, and MiMo ASR keys so restore can use configured features immediately.';
 
   @override
   String backupLegacyProviderCredentialReentryCount(int count) {

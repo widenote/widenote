@@ -113,7 +113,7 @@ void main() {
     expect(find.text('full local'), findsOneWidget);
     expect(find.text('2 events / 1 warnings'), findsOneWidget);
     expect(
-      find.textContaining('Full .widenote backups include provider API keys'),
+      find.textContaining('Full .widenote backups include provider and'),
       findsOneWidget,
     );
     expect(find.text('Location Context'), findsOneWidget);

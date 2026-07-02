@@ -147,33 +147,19 @@ final class TranscriptionService {
   }) async {
     final attachment = _attachmentRef(attachmentId);
     final settings = await _settingsRepository.load();
-    _markTranscribing(attachment, providerKind: 'local');
-    TranscriptionResult result;
-    try {
-      result = await _localProvider(settings).transcribeAttachment(
-        attachment,
-        options: TranscriptionOptions(
-          language: settings.language,
-          allowRemoteFallback: settings.remoteAsrEnabled,
-          manualRemoteRetry: manualRemoteRetry,
-        ),
-      );
-    } on TranscriptionException catch (localError) {
-      if (!settings.remoteAsrEnabled && !manualRemoteRetry) {
-        result = _failedResult(
-          attachment,
-          localError,
-          providerId: 'local_sensevoice',
-        );
-      } else {
-        result = await _remoteFallback(
-          attachment,
-          settings,
-          localError: localError,
-          manualRemoteRetry: manualRemoteRetry,
-        );
-      }
-    }
+    final engine = manualRemoteRetry
+        ? VoiceTranscriptionEngine.xiaomiMimo
+        : settings.engine;
+    _markTranscribing(
+      attachment,
+      providerKind: _providerKindForEngine(engine).wireName,
+    );
+    final result = await _transcribeWithEngine(
+      attachment,
+      settings,
+      engine: engine,
+      manualRemoteRetry: manualRemoteRetry,
+    );
 
     final corrected = await _maybeCorrect(result, settings);
     _saveTranscriptArtifact(
@@ -186,6 +172,62 @@ final class TranscriptionService {
 
   Future<TranscriptionResult> retryRemote(String attachmentId) {
     return transcribeAttachment(attachmentId, manualRemoteRetry: true);
+  }
+
+  Future<TranscriptionResult> _transcribeWithEngine(
+    AudioAttachmentRef attachment,
+    VoiceTranscriptionSettings settings, {
+    required VoiceTranscriptionEngine engine,
+    required bool manualRemoteRetry,
+  }) async {
+    if (engine == VoiceTranscriptionEngine.disabled) {
+      return _failedResult(
+        attachment,
+        const TranscriptionException(
+          code: TranscriptionFailureCode.providerDisabled,
+          message: 'Voice transcription is disabled.',
+        ),
+        providerId: 'disabled',
+        providerKind: TranscriptionProviderKind.disabled,
+      );
+    }
+    if (engine == VoiceTranscriptionEngine.xiaomiMimo) {
+      try {
+        return await _remoteProvider(
+          settings.copyWith(engine: VoiceTranscriptionEngine.xiaomiMimo),
+        ).transcribeAttachment(
+          attachment,
+          options: TranscriptionOptions(
+            language: settings.language,
+            manualRemoteRetry: manualRemoteRetry,
+          ),
+        );
+      } on TranscriptionException catch (remoteError) {
+        return _failedResult(
+          attachment,
+          remoteError,
+          providerId: 'mimo_asr',
+          providerKind: TranscriptionProviderKind.mimoAsr,
+        );
+      }
+    }
+
+    try {
+      return await _localProvider(settings).transcribeAttachment(
+        attachment,
+        options: TranscriptionOptions(
+          language: settings.language,
+          allowRemoteFallback: false,
+          manualRemoteRetry: manualRemoteRetry,
+        ),
+      );
+    } on TranscriptionException catch (localError) {
+      return _failedResult(
+        attachment,
+        localError,
+        providerId: 'local_sensevoice',
+      );
+    }
   }
 
   Future<TranscriptRetrySummary> retryFailedTranscripts({
@@ -224,6 +266,13 @@ final class TranscriptionService {
 
   Stream<TranscriptionPreview> preview(Stream<AudioPcmChunk> samples) async* {
     final settings = await _settingsRepository.load();
+    if (settings.engine != VoiceTranscriptionEngine.localSenseVoice) {
+      yield const TranscriptionPreview(
+        status: TranscriptStatus.pending,
+        errorCode: TranscriptionFailureCode.streamUnavailable,
+      );
+      return;
+    }
     yield* _localProvider(settings).transcribeSamples(
       samples,
       options: TranscriptionOptions(language: settings.language),
@@ -280,49 +329,6 @@ final class TranscriptionService {
       credentialStore: _credentialStore,
       httpClient: httpClient,
     );
-  }
-
-  Future<TranscriptionResult> _remoteFallback(
-    AudioAttachmentRef attachment,
-    VoiceTranscriptionSettings settings, {
-    required TranscriptionException localError,
-    required bool manualRemoteRetry,
-  }) async {
-    try {
-      final result = await _remoteProvider(settings).transcribeAttachment(
-        attachment,
-        options: TranscriptionOptions(
-          language: settings.language,
-          manualRemoteRetry: manualRemoteRetry,
-        ),
-      );
-      return TranscriptionResult(
-        text: result.text,
-        status: result.status,
-        providerId: result.providerId,
-        providerKind: result.providerKind,
-        model: result.model,
-        durationMs: result.durationMs,
-        segments: result.segments,
-        confidence: result.confidence,
-        language: result.language,
-        rawAsrText: result.rawAsrText,
-        chunkCount: result.chunkCount,
-        metadata: <String, Object?>{
-          ...result.metadata,
-          'fallback_from': localError.code.wireName,
-          'manual_remote_retry': manualRemoteRetry,
-        },
-      );
-    } on TranscriptionException catch (remoteError) {
-      return _failedResult(
-        attachment,
-        remoteError,
-        providerId: 'mimo_asr',
-        providerKind: TranscriptionProviderKind.mimoAsr,
-        fallbackFrom: localError.code.wireName,
-      );
-    }
   }
 
   Future<_CorrectedTranscription> _maybeCorrect(
@@ -507,7 +513,9 @@ final class TranscriptionService {
       durationMs: attachment.durationMs,
       errorCode: error.code,
       errorMessageSafe: error.message,
-      metadata: <String, Object?>{'fallback_from': fallbackFrom},
+      metadata: fallbackFrom == null
+          ? const <String, Object?>{}
+          : <String, Object?>{'fallback_from': fallbackFrom},
     );
   }
 
@@ -544,6 +552,17 @@ final class TranscriptionService {
       localPath: localPath,
     );
   }
+}
+
+TranscriptionProviderKind _providerKindForEngine(
+  VoiceTranscriptionEngine engine,
+) {
+  return switch (engine) {
+    VoiceTranscriptionEngine.localSenseVoice =>
+      TranscriptionProviderKind.localSenseVoice,
+    VoiceTranscriptionEngine.xiaomiMimo => TranscriptionProviderKind.mimoAsr,
+    VoiceTranscriptionEngine.disabled => TranscriptionProviderKind.disabled,
+  };
 }
 
 bool _isRetryableTranscript(localdb.DerivedArtifactRecord artifact) {
