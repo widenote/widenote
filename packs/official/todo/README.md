@@ -25,7 +25,7 @@ The manifest declares:
 - Permission requests: `model.complete`, `todo.suggest`
 - Subscription: `wn.capture.created`
 - Native agent: `agent.todo_loop`
-- Prompt ref: `todo.suggestion.v1`
+- Prompt ref: `todo.suggestion.v2`
 - Retry policy: `max_attempts = 2`
 - Output event: `wn.todo.suggested`
 
@@ -39,6 +39,12 @@ returns `action` or `schedule`. Its payload includes:
 - `suggestion_confidence`: model confidence label
 - `suggestion_reason`: short machine-readable reason
 - `scheduled_at_label`: optional local time cue for schedule candidates
+- `due_at` / `due_label`: optional structured or copied due cue for action
+  items when the source explicitly provides one
+- `priority`: optional `high`, `medium`, or `low` label only when the source
+  explicitly states urgency or importance
+- `subtasks`: optional structured checklist children when the source explicitly
+  lists steps
 - `source_event_id` and runtime-added source refs
 
 Captures that are ordinary diary, state, observation, or product-note records

@@ -583,6 +583,84 @@
       }
     }
   },
+  "todoSearchHint": "Search tasks",
+  "todoSummaryOpen": "Open",
+  "todoSummarySchedule": "Schedule",
+  "todoSummaryCompleted": "Done",
+  "todoNoMatches": "No matching tasks.",
+  "todoBucketOverdue": "Overdue",
+  "todoBucketToday": "Today",
+  "todoBucketTomorrow": "Tomorrow",
+  "todoBucketLater": "Later",
+  "todoBucketNoDeadline": "No deadline",
+  "todoBucketScheduleCandidates": "Schedule candidates",
+  "todoBucketCompleted": "Completed",
+  "todoCompletedEmpty": "No completed tasks yet.",
+  "todoPriorityNone": "None",
+  "todoPriorityLow": "Low",
+  "todoPriorityMedium": "Medium",
+  "todoPriorityHigh": "High",
+  "todoDueNone": "No date",
+  "todoDueToday": "Today",
+  "todoDueTomorrow": "Tomorrow",
+  "todoDueLater": "Later",
+  "todoDueLabel": "Due: {date}",
+  "@todoDueLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "todoSubtaskProgress": "{completed}/{total} subtasks",
+  "@todoSubtaskProgress": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "todoDetailTitle": "Task detail",
+  "todoDetailMissing": "This task is no longer available.",
+  "todoDetailContent": "Content",
+  "todoDetailTitleField": "Title",
+  "todoDetailSaveTitle": "Save title",
+  "todoDetailStatus": "Status",
+  "todoCompletedAtLabel": "Completed: {date}",
+  "@todoCompletedAtLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "todoDetailScheduleNotice": "Schedule candidates are local suggestions and are not completed like action items.",
+  "todoDetailMetadata": "Task metadata",
+  "todoDetailPriority": "Priority",
+  "todoDetailDue": "Due date",
+  "todoDetailIndent": "Indent level {level}",
+  "@todoDetailIndent": {
+    "placeholders": {
+      "level": {
+        "type": "int"
+      }
+    }
+  },
+  "todoDetailSort": "Sort order {order}",
+  "@todoDetailSort": {
+    "placeholders": {
+      "order": {
+        "type": "int"
+      }
+    }
+  },
+  "todoDetailSubtasks": "Subtasks",
+  "todoDetailNoSubtasks": "No structured subtasks.",
+  "todoDetailSource": "Source",
+  "todoDetailOpenSource": "Open source",
   "timelineTitle": "Timeline",
   "timelineSubtitle": "Browse captures, cards, Memory, insights, and todos.",
   "timelineSearchTooltip": "Search timeline",

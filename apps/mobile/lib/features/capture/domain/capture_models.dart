@@ -110,6 +110,12 @@ class SourceTodo {
     this.confidenceLabel = 'low',
     this.reasonLabel,
     this.scheduledAtLabel,
+    this.dueAt,
+    this.dueLabel,
+    this.scheduledStart,
+    this.scheduledEnd,
+    this.priority,
+    this.subtasks = const <Object?>[],
     this.sourceCaptureId,
     this.sourceEventId,
     this.sourceRefs = const <Object?>[],
@@ -124,6 +130,12 @@ class SourceTodo {
   final String confidenceLabel;
   final String? reasonLabel;
   final String? scheduledAtLabel;
+  final String? dueAt;
+  final String? dueLabel;
+  final String? scheduledStart;
+  final String? scheduledEnd;
+  final String? priority;
+  final List<Object?> subtasks;
   final String? sourceCaptureId;
   final String? sourceEventId;
   final List<Object?> sourceRefs;

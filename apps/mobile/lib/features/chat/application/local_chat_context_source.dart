@@ -264,6 +264,10 @@ String? _sourceKind(JsonMap sourceRef, JsonMap section) {
 }
 
 bool _isCompletedTodoSection(JsonMap section) {
+  final metadata = section['metadata'];
+  if (metadata is Map && _string(metadata['status']) == 'completed') {
+    return true;
+  }
   final content = _string(section['content'])?.toLowerCase();
   return content != null && content.startsWith('todo (completed)');
 }

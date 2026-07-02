@@ -700,6 +700,77 @@ void main() {
       },
     );
 
+    test('todo sections expose structured metadata for agent context', () {
+      final now = DateTime.utc(2026, 7, 3, 12);
+      database.todos.insert(
+        TodoRecord(
+          id: 'todo-structured',
+          sourceCaptureId: 'capture-structured',
+          sourceEventId: 'event-structured',
+          status: 'completed',
+          payload: const <String, Object?>{
+            'title': 'Ship structured todo context',
+            'body': 'Keep list and detail metadata visible to agents.',
+            'suggestion_kind': 'action',
+            'suggestion_confidence': 'high',
+            'suggestion_reason': 'explicit_action',
+            'due_at': '2026-07-03T18:00:00.000Z',
+            'due_label': 'today evening',
+            'scheduled_start': '2026-07-03T17:30:00.000Z',
+            'priority': 'high',
+            'sort_order': 20,
+            'indent_level': 2,
+            'completed_at': '2026-07-03T11:45:00.000Z',
+            'completed_by': 'user',
+            'user_overrides': <Object?>['status', 'priority'],
+            'subtasks': <Object?>[
+              <String, Object?>{
+                'id': 'subtask-1',
+                'title': 'Review packet metadata',
+                'completed': true,
+              },
+              'malformed subtask entry',
+              <String, Object?>{'completed': false},
+            ],
+          },
+          createdAt: now.subtract(const Duration(hours: 2)),
+          updatedAt: now,
+        ),
+      );
+
+      final result = ContextPacketBuilder(database, clock: () => now).build(
+        const ContextPacketBuildRequest(
+          surface: 'chat',
+          cacheKey: 'todo-structured',
+          disclosureLevel: 'derived_summary',
+        ),
+      );
+
+      _expectContextPacketSchema(result.packet);
+      final section = _sections(result.packet).singleWhere(
+        (section) => section['id'] == 'section_todo_todo-structured',
+      );
+      expect(section['content'], contains('Todo (completed)'));
+      expect(section['content'], contains('Due: 2026-07-03T18:00:00.000Z'));
+      expect(section['content'], contains('Priority: high'));
+      expect(
+        section['content'],
+        contains('Completed at: 2026-07-03T11:45:00.000Z'),
+      );
+      expect(section['content'], contains('Subtasks: 1/1'));
+      final metadata = (section['metadata']! as Map).cast<String, Object?>();
+      expect(metadata['status'], 'completed');
+      expect(metadata['suggestion_kind'], 'action');
+      expect(metadata['due_label'], 'today evening');
+      expect(metadata['priority'], 'high');
+      expect(metadata['indent_level'], 2);
+      expect(metadata['user_overrides'], contains('priority'));
+      expect(
+        metadata['subtasks'],
+        isA<List>().having((list) => list.length, 'length', 3),
+      );
+    });
+
     test('recap local date is part of cache identity', () {
       final now = DateTime.utc(2026, 6, 26, 23, 55);
       _seedBasicContext(database, now);

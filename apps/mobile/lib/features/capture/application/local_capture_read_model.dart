@@ -115,6 +115,7 @@ final class LocalCaptureReadModelStore {
         sourceEventId: sourceEventId,
         status: _todoStatus(todo.statusLabel),
         payload: <String, Object?>{
+          'todo_schema_version': 1,
           'title': todo.title,
           'source_label': todo.sourceLabel,
           'status_label': todo.statusLabel,
@@ -123,6 +124,13 @@ final class LocalCaptureReadModelStore {
           if (todo.reasonLabel != null) 'suggestion_reason': todo.reasonLabel,
           if (todo.scheduledAtLabel != null)
             'scheduled_at_label': todo.scheduledAtLabel,
+          if (todo.dueAt != null) 'due_at': todo.dueAt,
+          if (todo.dueLabel != null) 'due_label': todo.dueLabel,
+          if (todo.scheduledStart != null)
+            'scheduled_start': todo.scheduledStart,
+          if (todo.scheduledEnd != null) 'scheduled_end': todo.scheduledEnd,
+          if (todo.priority != null) 'priority': todo.priority,
+          if (todo.subtasks.isNotEmpty) 'subtasks': todo.subtasks,
           'source_refs': sourceRefs,
         },
         createdAt: DateTime.now().toUtc(),
@@ -913,6 +921,14 @@ SourceTodo _todoView(localdb.TodoRecord record) {
         _string(record.payload['suggestion_reason']) ??
         'legacy_missing_suggestion_kind',
     scheduledAtLabel: _string(record.payload['scheduled_at_label']),
+    dueAt: _string(record.payload['due_at']),
+    dueLabel: _string(record.payload['due_label']),
+    scheduledStart: _string(record.payload['scheduled_start']),
+    scheduledEnd: _string(record.payload['scheduled_end']),
+    priority: _string(record.payload['priority']),
+    subtasks: record.payload['subtasks'] is List
+        ? List<Object?>.from(record.payload['subtasks']! as List)
+        : const <Object?>[],
     sourceCaptureId: record.sourceCaptureId,
     sourceEventId: record.sourceEventId,
     sourceRefs: sourceRefs,

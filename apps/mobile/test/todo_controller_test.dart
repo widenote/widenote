@@ -5,7 +5,7 @@ import 'package:widenote_mobile/app/local_database.dart';
 import 'package:widenote_mobile/features/todos/application/todo_controller.dart';
 
 void main() {
-  test('todo controller hides completed rows and can reopen durable rows', () {
+  test('todo controller keeps completed rows visible and can reopen them', () {
     final database = WideNoteLocalDatabase.inMemory();
     addTearDown(database.close);
     final now = DateTime.utc(2026, 6, 25, 8);
@@ -36,12 +36,20 @@ void main() {
         .read(todoControllerProvider.notifier)
         .complete('todo-controller-1');
 
-    expect(database.todos.readById('todo-controller-1')!.status, 'completed');
-    expect(container.read(todoControllerProvider).items, isEmpty);
+    final completedRecord = database.todos.readById('todo-controller-1')!;
+    expect(completedRecord.status, 'completed');
+    expect(completedRecord.payload['completed_at'], isA<String>());
+    expect(completedRecord.payload['completed_by'], 'user');
+    expect(
+      container.read(todoControllerProvider).completedItems.single.id,
+      'todo-controller-1',
+    );
 
     container.read(todoControllerProvider.notifier).reopen('todo-controller-1');
 
-    expect(database.todos.readById('todo-controller-1')!.status, 'open');
+    final reopenedRecord = database.todos.readById('todo-controller-1')!;
+    expect(reopenedRecord.status, 'open');
+    expect(reopenedRecord.payload.containsKey('completed_at'), isFalse);
     expect(
       container.read(todoControllerProvider).items.single.statusLabel,
       'suggested action',
@@ -155,6 +163,111 @@ void main() {
     expect(
       container.read(todoControllerProvider).items.single.id,
       'external-refresh-todo',
+    );
+  });
+
+  test('todo controller buckets and filters structured task metadata', () {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    final now = DateTime.utc(2026, 7, 3, 8);
+    void insertAction(String id, DateTime? dueAt, {String title = 'Task'}) {
+      database.todos.insert(
+        TodoRecord(
+          id: id,
+          sourceCaptureId: 'capture-$id',
+          payload: <String, Object?>{
+            'title': '$title $id',
+            'source_label': 'source: capture-$id',
+            'status_label': 'suggested action',
+            'suggestion_kind': 'action',
+            'suggestion_confidence': 'high',
+            'suggestion_reason': 'explicit_action',
+            if (dueAt != null) 'due_at': dueAt.toIso8601String(),
+            'priority': 'high',
+            'sort_order': 10,
+            'indent_level': 2,
+          },
+          createdAt: now,
+          updatedAt: now,
+        ),
+      );
+    }
+
+    insertAction('overdue', DateTime.utc(2026, 7, 2, 9));
+    insertAction('today', DateTime.utc(2026, 7, 3, 9));
+    insertAction('tomorrow', DateTime.utc(2026, 7, 4, 9));
+    insertAction('later', DateTime.utc(2026, 7, 9, 9), title: 'Launch');
+    insertAction('none', null);
+
+    final container = ProviderContainer(
+      overrides: [
+        localDatabaseProvider.overrideWithValue(database),
+        todoNowProvider.overrideWithValue(now),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final state = container.read(todoControllerProvider);
+    expect(state.overdueItems.single.id, 'overdue');
+    expect(state.todayItems.single.id, 'today');
+    expect(state.tomorrowItems.single.id, 'tomorrow');
+    expect(state.laterItems.single.id, 'later');
+    expect(state.noDeadlineItems.single.id, 'none');
+    expect(state.actionItems.first.priority, 'high');
+    expect(state.actionItems.first.indentLevel, 2);
+
+    container.read(todoControllerProvider.notifier).setSearchQuery('launch');
+
+    expect(
+      container.read(todoControllerProvider).actionItems.single.id,
+      'later',
+    );
+  });
+
+  test('todo controller updates local metadata as user overrides', () {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    final now = DateTime.utc(2026, 7, 3, 8);
+    database.todos.insert(
+      TodoRecord(
+        id: 'metadata-todo',
+        sourceCaptureId: 'capture-metadata',
+        payload: const <String, Object?>{
+          'title': 'Original title',
+          'source_label': 'source: capture-metadata',
+          'status_label': 'suggested action',
+          'suggestion_kind': 'action',
+          'suggestion_confidence': 'high',
+          'suggestion_reason': 'explicit_action',
+        },
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+    final container = ProviderContainer(
+      overrides: [
+        localDatabaseProvider.overrideWithValue(database),
+        todoNowProvider.overrideWithValue(now),
+      ],
+    );
+    addTearDown(container.dispose);
+    final controller = container.read(todoControllerProvider.notifier);
+
+    controller.updateTitle('metadata-todo', 'Updated title');
+    controller.setPriority('metadata-todo', 'medium');
+    controller.setDuePreset('metadata-todo', TodoDuePreset.tomorrow);
+    controller.increaseIndent('metadata-todo');
+    controller.moveLater('metadata-todo');
+
+    final record = database.todos.readById('metadata-todo')!;
+    expect(record.payload['title'], 'Updated title');
+    expect(record.payload['priority'], 'medium');
+    expect(record.payload['due_at'], isA<String>());
+    expect(record.payload['indent_level'], 1);
+    expect(record.payload['sort_order'], 100);
+    expect(
+      record.payload['user_overrides'],
+      containsAll(<String>['title', 'priority', 'due_at', 'indent_level']),
     );
   });
 }

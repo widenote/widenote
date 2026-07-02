@@ -697,6 +697,14 @@ final class CaptureOrchestrator {
       scheduledAtLabel: _nullableString(
         todoEvent.payload['scheduled_at_label'],
       ),
+      dueAt: _nullableString(todoEvent.payload['due_at']),
+      dueLabel: _nullableString(todoEvent.payload['due_label']),
+      scheduledStart: _nullableString(todoEvent.payload['scheduled_start']),
+      scheduledEnd: _nullableString(todoEvent.payload['scheduled_end']),
+      priority: _nullableString(todoEvent.payload['priority']),
+      subtasks: todoEvent.payload['subtasks'] is List
+          ? List<Object?>.from(todoEvent.payload['subtasks']! as List)
+          : const <Object?>[],
       sourceCaptureId: sourceCaptureId,
       sourceEventId: sourceEventId,
       sourceRefs: _todoSourceRefs(
@@ -1874,6 +1882,15 @@ final class _TodoAgent implements runtime.AgentHandler {
             'suggestion_reason': suggestion.reason,
             if (suggestion.scheduledAtLabel != null)
               'scheduled_at_label': suggestion.scheduledAtLabel,
+            if (suggestion.dueAt != null) 'due_at': suggestion.dueAt,
+            if (suggestion.dueLabel != null) 'due_label': suggestion.dueLabel,
+            if (suggestion.scheduledStart != null)
+              'scheduled_start': suggestion.scheduledStart,
+            if (suggestion.scheduledEnd != null)
+              'scheduled_end': suggestion.scheduledEnd,
+            if (suggestion.priority != null) 'priority': suggestion.priority,
+            if (suggestion.subtasks.isNotEmpty) 'subtasks': suggestion.subtasks,
+            'todo_schema_version': 1,
             'source_capture_id': subject.id,
             'source_event_id': event.id,
             'source_excerpt': previewText(text),
@@ -1922,7 +1939,13 @@ final class _TodoSuggestionEnvelope {
     required this.statusLabel,
     required this.confidence,
     required this.reason,
+    this.dueAt,
+    this.dueLabel,
     this.scheduledAtLabel,
+    this.scheduledStart,
+    this.scheduledEnd,
+    this.priority,
+    this.subtasks = const <Object?>[],
   });
 
   final String kind;
@@ -1930,7 +1953,13 @@ final class _TodoSuggestionEnvelope {
   final String statusLabel;
   final String confidence;
   final String reason;
+  final String? dueAt;
+  final String? dueLabel;
   final String? scheduledAtLabel;
+  final String? scheduledStart;
+  final String? scheduledEnd;
+  final String? priority;
+  final List<Object?> subtasks;
 
   bool get isSuggested => kind == 'action' || kind == 'schedule';
 }
@@ -1956,6 +1985,20 @@ _TodoSuggestionEnvelope _todoSuggestion(runtime.ModelResponse response) {
   final scheduledAtLabel =
       _metadataString(parsed, 'scheduled_at_label') ??
       _metadataString(raw, 'scheduled_at_label');
+  final dueAt =
+      _metadataString(parsed, 'due_at') ?? _metadataString(raw, 'due_at');
+  final dueLabel =
+      _metadataString(parsed, 'due_label') ?? _metadataString(raw, 'due_label');
+  final scheduledStart =
+      _metadataString(parsed, 'scheduled_start') ??
+      _metadataString(raw, 'scheduled_start');
+  final scheduledEnd =
+      _metadataString(parsed, 'scheduled_end') ??
+      _metadataString(raw, 'scheduled_end');
+  final priority = _normalizedTodoPriority(
+    _metadataString(parsed, 'priority') ?? _metadataString(raw, 'priority'),
+  );
+  final subtasks = _todoSubtasks(parsed?['subtasks'] ?? raw['subtasks']);
 
   if (kind == null || kind == 'quiet') {
     return _TodoSuggestionEnvelope(
@@ -1982,7 +2025,13 @@ _TodoSuggestionEnvelope _todoSuggestion(runtime.ModelResponse response) {
     statusLabel: kind == 'schedule' ? 'schedule candidate' : 'suggested action',
     confidence: confidence,
     reason: reason,
+    dueAt: dueAt,
+    dueLabel: dueLabel,
     scheduledAtLabel: scheduledAtLabel,
+    scheduledStart: scheduledStart,
+    scheduledEnd: scheduledEnd,
+    priority: priority,
+    subtasks: subtasks,
   );
 }
 
@@ -2002,6 +2051,38 @@ String? _normalizedTodoConfidence(String? value) {
     'low' => 'low',
     _ => null,
   };
+}
+
+String? _normalizedTodoPriority(String? value) {
+  return switch (value) {
+    'high' => 'high',
+    'medium' => 'medium',
+    'low' => 'low',
+    _ => null,
+  };
+}
+
+List<Object?> _todoSubtasks(Object? value) {
+  if (value is! List) {
+    return const <Object?>[];
+  }
+  final subtasks = <Object?>[];
+  for (final item in value) {
+    if (item is! Map) {
+      continue;
+    }
+    final map = item.cast<String, Object?>();
+    final title = _nullableString(map['title']);
+    if (title == null) {
+      continue;
+    }
+    subtasks.add(<String, Object?>{
+      'id': _nullableString(map['id']) ?? 'subtask-${subtasks.length + 1}',
+      'title': title,
+      'completed': map['completed'] == true,
+    });
+  }
+  return subtasks;
 }
 
 final class _TranscriptCorrectionAgent implements runtime.AgentHandler {
