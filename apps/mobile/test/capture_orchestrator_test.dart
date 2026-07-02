@@ -10,6 +10,14 @@ import 'package:widenote_mobile/features/capture/media/capture_media.dart';
 import 'package:widenote_mobile/features/plugins/application/official_pack_manifests.dart';
 
 const _corePackIds = <String>['pack.default', 'pack.todo'];
+const _todoQuietJson =
+    '{"kind":"quiet","title":"","confidence":"high","reason":"ordinary_record","scheduled_at_label":null}';
+const _todoActionJson =
+    '{"kind":"action","title":"Call Lin about WideNote source-linked todos","confidence":"high","reason":"explicit_action","scheduled_at_label":null}';
+const _todoScheduleJson =
+    '{"kind":"schedule","title":"Review launch issue tomorrow","confidence":"high","reason":"explicit_schedule","scheduled_at_label":"tomorrow"}';
+const _pkmLinJson =
+    '{"title":"Lin WideNote preference","summary":"Lin prefers source-linked WideNote todos.","topics":["WideNote","todos"],"people":["Lin"],"projects":["WideNote"],"source_excerpt":"Met Lin about WideNote source-linked todos.","confidence":"high","sensitivity":"low"}';
 
 void main() {
   test(
@@ -86,7 +94,8 @@ void main() {
     final model = _SequenceMetadataModel(
       responses: <String>[
         'Lin prefers source-linked WideNote todos.',
-        '{"title":"Lin WideNote preference","summary":"Lin prefers source-linked WideNote todos.","topics":["WideNote","todos"],"people":["Lin"],"projects":["WideNote"],"source_excerpt":"Met Lin about WideNote source-linked todos.","confidence":"high","sensitivity":"low"}',
+        _todoActionJson,
+        _pkmLinJson,
       ],
     );
     final orchestrator = CaptureOrchestrator.local(
@@ -96,7 +105,7 @@ void main() {
     );
 
     final result = await orchestrator.processCapture(
-      'Met Lin about WideNote source-linked todos.',
+      'Call Lin about WideNote source-linked todos.',
     );
 
     expect(result.record.status, 'Processed locally');
@@ -127,14 +136,16 @@ void main() {
       result.insights.map((insight) => insight.sourceLabel),
       everyElement(startsWith('source:')),
     );
-    expect(model.requests, hasLength(2));
-    expect(model.requests.first.prompt, contains('Met Lin'));
+    expect(model.requests, hasLength(3));
+    expect(model.requests.first.prompt, contains('Call Lin'));
     expect(
       model.requests.first.prompt,
       contains(captureMemoryPromptCaptureTextMarker),
     );
     expect(model.requests.first.prompt, contains('Return exactly one JSON'));
     expect(model.requests.first.context['prompt_ref'], captureMemoryPromptRef);
+    expect(model.requests[1].prompt, contains('WideNote Todo Loop Agent'));
+    expect(model.requests[1].context['prompt_ref'], todoSuggestionPromptRef);
     expect(model.requests.last.prompt, contains('PKM Personal Library Agent'));
     expect(model.requests.last.context['prompt_ref'], pkmProfilePromptRef);
     expect(
@@ -218,7 +229,7 @@ void main() {
 
   test('disabled PKM pack skips artifact output', () async {
     final model = _SequenceMetadataModel(
-      responses: <String>['Core capture memory only.'],
+      responses: <String>['Core capture memory only.', _todoQuietJson],
     );
     final orchestrator = CaptureOrchestrator.local(
       clock: TickingWnClock(DateTime.utc(2026, 6, 23, 1, 30)),
@@ -235,7 +246,7 @@ void main() {
       result.eventTypes,
       isNot(contains(runtime.WnEventTypes.artifactCreated)),
     );
-    expect(model.requests, hasLength(1));
+    expect(model.requests, hasLength(2));
     expect(
       result.traces
           .where((trace) => trace.label == 'runtime.run.completed')
@@ -250,6 +261,30 @@ void main() {
     );
   });
 
+  test('todo agent uses model schedule output without local parsing', () async {
+    final orchestrator = CaptureOrchestrator.local(
+      clock: TickingWnClock(DateTime.utc(2026, 6, 23, 1, 45)),
+      idGenerator: SequenceWnIdGenerator(seed: 'todo-schedule'),
+      model: _SequenceMetadataModel(
+        responses: <String>['Schedule memory.', _todoScheduleJson],
+      ),
+      enabledPackIds: _corePackIds,
+    );
+
+    final result = await orchestrator.processCapture(
+      'Launch planning note for the model to classify.',
+    );
+
+    expect(result.todo.isSchedule, isTrue);
+    expect(result.todo.statusLabel, 'schedule candidate');
+    expect(result.todo.scheduledAtLabel, 'tomorrow');
+    final todoEvent = result.events.singleWhere(
+      (event) => event.type == runtime.WnEventTypes.todoSuggested,
+    );
+    expect(todoEvent.payload['suggestion_kind'], 'schedule');
+    expect(todoEvent.payload['suggestion_reason'], 'explicit_schedule');
+  });
+
   test('fresh orchestrators do not reuse accepted Memory ids', () async {
     final repository = memory.InMemoryMemoryRepository();
     final first = CaptureOrchestrator.local(
@@ -257,7 +292,7 @@ void main() {
       idGenerator: SequenceWnIdGenerator(seed: 'restart'),
       memoryRepository: repository,
       model: _SequenceMetadataModel(
-        responses: <String>['First durable memory.'],
+        responses: <String>['First durable memory.', _todoQuietJson],
       ),
       enabledPackIds: _corePackIds,
     );
@@ -271,7 +306,7 @@ void main() {
       idGenerator: SequenceWnIdGenerator(seed: 'restart'),
       memoryRepository: repository,
       model: _SequenceMetadataModel(
-        responses: <String>['Second durable memory.'],
+        responses: <String>['Second durable memory.', _todoQuietJson],
       ),
       enabledPackIds: _corePackIds,
     );
@@ -332,9 +367,12 @@ void main() {
         'source mix insight',
       ]),
     );
-    expect(result.todo.isSuggested, isTrue);
-    expect(result.todo.statusLabel, 'suggested by agent');
-    expect(result.eventTypes, contains(runtime.WnEventTypes.todoSuggested));
+    expect(result.todo.isSuggested, isFalse);
+    expect(result.todo.statusLabel, 'not suggested');
+    expect(
+      result.eventTypes,
+      isNot(contains(runtime.WnEventTypes.todoSuggested)),
+    );
   });
 
   test('multiple captures do not duplicate registered pack runs', () async {
@@ -342,7 +380,12 @@ void main() {
       clock: TickingWnClock(DateTime.utc(2026, 6, 23, 6)),
       idGenerator: SequenceWnIdGenerator(seed: 'repeat'),
       model: _SequenceMetadataModel(
-        responses: <String>['First summary.', 'Second summary.'],
+        responses: <String>[
+          'First summary.',
+          _todoQuietJson,
+          'Second summary.',
+          _todoQuietJson,
+        ],
       ),
       enabledPackIds: _corePackIds,
     );
@@ -373,7 +416,7 @@ void main() {
         result.eventTypes.where(
           (type) => type == runtime.WnEventTypes.todoSuggested,
         ),
-        hasLength(1),
+        isEmpty,
       );
       expect(
         result.traces.where((trace) => trace.label == 'runtime.run.completed'),
@@ -473,7 +516,6 @@ void main() {
       final events = await eventStore.readAll();
       expect(events.map((event) => event.type), <String>[
         runtime.WnEventTypes.captureCreated,
-        runtime.WnEventTypes.todoSuggested,
       ]);
       expect(
         events.map((event) => event.type),
@@ -614,7 +656,7 @@ void main() {
     expect(memoryEvent.payload['sensitivity'], 'medium');
   });
 
-  test('local risk gate routes mislabeled health capture to review', () async {
+  test('mislabeled health capture is not rewritten by local keywords', () async {
     final orchestrator = CaptureOrchestrator.local(
       clock: TickingWnClock(DateTime.utc(2026, 6, 23, 5, 50)),
       idGenerator: SequenceWnIdGenerator(seed: 'local-health-risk'),
@@ -631,21 +673,16 @@ void main() {
       '如果连续三次都稳定，再把周末长跑加到 8 公里。',
     );
 
-    expect(result.memoryItem.statusLabel, 'needs review');
-    expect(result.reviewCandidate, isNotNull);
-    expect(result.acceptedMemoryCount, 0);
-    expect(result.reviewMemoryCount, 1);
-    expect(result.reviewCandidate!.typeLabel, contains('health'));
-    expect(result.reviewCandidate!.reasonLabel, contains('review_only_type'));
+    expect(result.memoryItem.statusLabel, 'auto-accepted');
+    expect(result.reviewCandidate, isNull);
+    expect(result.acceptedMemoryCount, 1);
+    expect(result.reviewMemoryCount, 0);
     final memoryEvent = result.events.singleWhere(
       (event) => event.type == runtime.WnEventTypes.memoryProposed,
     );
-    expect(memoryEvent.payload['memory_type'], 'health');
-    expect(memoryEvent.payload['sensitivity'], 'medium');
-    expect(
-      memoryEvent.payload['policy_reasons'],
-      containsAll(<String>['local_sensitive_detector', 'health_source']),
-    );
+    expect(memoryEvent.payload['memory_type'], 'task_context');
+    expect(memoryEvent.payload['sensitivity'], 'low');
+    expect(memoryEvent.payload['policy_reasons'], isNull);
   });
 
   test(
@@ -699,8 +736,9 @@ void main() {
         ((attachments.first! as Map)['raw_metadata']! as Map)['source_uri'],
         'fake://gallery/photo-sample.jpg',
       );
-      expect(model.requests.single.prompt, contains('Gallery photo'));
-      expect(model.requests.single.prompt, contains('Voice recording'));
+      expect(model.requests, hasLength(2));
+      expect(model.requests.first.prompt, contains('Gallery photo'));
+      expect(model.requests.first.prompt, contains('Voice recording'));
       expect(result.record.body, 'Compare clean-room capture inputs.');
     },
   );
@@ -757,12 +795,14 @@ void main() {
     final orchestrator = CaptureOrchestrator.local(
       clock: TickingWnClock(DateTime.utc(2026, 6, 23, 5)),
       idGenerator: SequenceWnIdGenerator(seed: 'capture-id'),
-      model: runtime.FakeModel(responses: <String>['Persisted record id.']),
+      model: runtime.FakeModel(
+        responses: <String>['Persisted record id.', _todoActionJson],
+      ),
       enabledPackIds: _corePackIds,
     );
 
     final result = await orchestrator.processCapture(
-      'Persist this capture id.',
+      'Review this capture id.',
       captureId: 'capture-row-1',
     );
 
@@ -780,7 +820,9 @@ void main() {
       model: _SequenceMetadataModel(
         responses: <String>[
           'The user pasted an API token.',
+          _todoQuietJson,
           'The user discussed medication timing.',
+          _todoQuietJson,
         ],
         metadata: const <Map<String, Object?>>[
           <String, Object?>{
@@ -788,11 +830,13 @@ void main() {
             'confidence': 'high',
             'sensitivity': 'high',
           },
+          <String, Object?>{},
           <String, Object?>{
             'memory_type': 'health',
             'confidence': 'medium',
             'sensitivity': 'high',
           },
+          <String, Object?>{},
         ],
       ),
       enabledPackIds: _corePackIds,

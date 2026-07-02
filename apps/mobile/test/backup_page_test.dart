@@ -464,7 +464,10 @@ void _seedLocalData(WideNoteLocalDatabase database) {
       payload: const <String, Object?>{
         'title': 'Review portable local backup',
         'source_label': 'source: capture-backup-page',
-        'status_label': 'suggested by agent',
+        'status_label': 'suggested action',
+        'suggestion_kind': 'action',
+        'suggestion_confidence': 'high',
+        'suggestion_reason': 'explicit_action',
       },
       createdAt: now,
       updatedAt: now,

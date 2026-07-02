@@ -1158,17 +1158,56 @@ class AppLocalizationsEn extends AppLocalizations {
       'The model is unavailable. Check provider settings or retry.';
 
   @override
-  String get todosTitle => 'Todos';
+  String get todosTitle => 'Actions';
 
   @override
   String get todosSubtitle =>
-      'Source-linked actions with visible record provenance.';
+      'Source-linked action items and schedule candidates, separated from ordinary records.';
 
   @override
   String get todosSurfaceTitle => 'Source-linked todos';
 
   @override
   String get todosEmpty => 'No source-linked todos yet.';
+
+  @override
+  String get todoActionsSectionTitle => 'Action items';
+
+  @override
+  String get todoActionsEmpty => 'No clear action items yet.';
+
+  @override
+  String get todoSchedulesSectionTitle => 'Schedule candidates';
+
+  @override
+  String get todoSchedulesEmpty => 'No schedule candidates yet.';
+
+  @override
+  String get todoStatusSuggestedAction => 'Suggested action';
+
+  @override
+  String get todoStatusScheduleCandidate => 'Schedule candidate';
+
+  @override
+  String get todoQuietTitle => 'Kept out of actions';
+
+  @override
+  String todoQuietSummary(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '# records did not have clear action or schedule intent. They stay on the timeline.',
+      one:
+          '# record did not have a clear action or schedule intent. It stays on the timeline.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String todoScheduledForLabel(String time) {
+    return 'Time cue: $time';
+  }
 
   @override
   String get timelineTitle => 'Timeline';

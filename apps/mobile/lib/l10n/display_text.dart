@@ -113,6 +113,9 @@ String localizedTodoTitle(AppLocalizations l10n, String title) {
   if (title.startsWith('Follow up: ')) {
     return l10n.todoFollowUpTitle(title.substring('Follow up: '.length));
   }
+  if (title.startsWith('Schedule: ')) {
+    return title.substring('Schedule: '.length);
+  }
   return switch (title) {
     'Review generated Memory before export' => l10n.todoSeedReviewMemory,
     'Confirm backup permission boundary' => l10n.todoSeedConfirmBackup,
@@ -125,6 +128,8 @@ String localizedTodoStatusLabel(AppLocalizations l10n, String statusLabel) {
   return switch (statusLabel.trim()) {
     'needs explicit permission' => l10n.todoStatusNeedsExplicitPermission,
     'suggested by agent' => l10n.todoStatusSuggestedByAgent,
+    'suggested action' => l10n.todoStatusSuggestedAction,
+    'schedule candidate' => l10n.todoStatusScheduleCandidate,
     'not suggested' => l10n.todoStatusNotSuggested,
     'open' => l10n.todoStatusOpen,
     'completed' => l10n.todoStatusCompleted,

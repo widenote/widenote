@@ -5,6 +5,7 @@ import { dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const TODO_PERMISSION = "todo.suggest";
+const TODO_PERMISSIONS = new Set(["model.complete", TODO_PERMISSION]);
 const TODO_OUTPUT_EVENT = "wn.todo.suggested";
 const MODEL_ROUTING_POLICIES = new Set([
   "app_default",
@@ -1085,16 +1086,18 @@ function validatePhaseOneGuardrails(manifest, agents, errors) {
       ? manifest.permissions
       : [];
     const invalidPackPermissions = packPermissions.filter(
-      (permission) => permission !== TODO_PERMISSION,
+      (permission) => !TODO_PERMISSIONS.has(permission),
     );
 
-    if (packPermissions.length === 0) {
-      errors.push(`pack.todo must request ${TODO_PERMISSION}`);
+    for (const permission of TODO_PERMISSIONS) {
+      if (!arrayIncludes(packPermissions, permission)) {
+        errors.push(`pack.todo must request ${permission}`);
+      }
     }
 
     for (const permission of invalidPackPermissions) {
       errors.push(
-        `pack.todo must only request ${TODO_PERMISSION}; found ${permission}`,
+        `pack.todo must only request model.complete and ${TODO_PERMISSION}; found ${permission}`,
       );
     }
 
@@ -1108,10 +1111,16 @@ function validatePhaseOneGuardrails(manifest, agents, errors) {
       }
 
       for (const permission of agent.permissions) {
-        if (permission !== TODO_PERMISSION) {
+        if (!TODO_PERMISSIONS.has(permission)) {
           errors.push(
-            `pack.todo agents[${index}] must only request ${TODO_PERMISSION}; found ${permission}`,
+            `pack.todo agents[${index}] must only request model.complete and ${TODO_PERMISSION}; found ${permission}`,
           );
+        }
+      }
+
+      for (const permission of TODO_PERMISSIONS) {
+        if (!arrayIncludes(agent.permissions, permission)) {
+          errors.push(`pack.todo agents[${index}] must request ${permission}`);
         }
       }
     });

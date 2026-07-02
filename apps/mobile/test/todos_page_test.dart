@@ -17,7 +17,7 @@ void main() {
     await _pumpTodosPage(tester, database);
 
     expect(find.byKey(const Key('todo-row-todo-page-1')), findsOneWidget);
-    expect(find.text('suggested by agent'), findsOneWidget);
+    expect(find.text('Suggested action'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('todo-checkbox-todo-page-1')));
     await tester.pumpAndSettle();
@@ -28,7 +28,7 @@ void main() {
     database.todos.updateStatus('todo-page-1', 'open');
     await tester.pumpWidget(const SizedBox.shrink());
     await _pumpTodosPage(tester, database);
-    expect(find.text('suggested by agent'), findsOneWidget);
+    expect(find.text('Suggested action'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('todo-source-todo-page-1')));
     await tester.pumpAndSettle();
@@ -51,9 +51,31 @@ void main() {
     _seedTodo(database);
     await _pumpTodosPage(tester, database, locale: const Locale('zh'));
 
-    expect(find.text('智能体建议'), findsOneWidget);
+    expect(find.text('智能体建议行动'), findsOneWidget);
     expect(find.text('来源：capture-todo-page'), findsOneWidget);
     expect(find.text('suggested by agent'), findsNothing);
+  });
+
+  testWidgets('todos page separates schedule candidates from actions', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    _seedSchedule(database);
+    await _pumpTodosPage(tester, database);
+
+    expect(find.text('Schedule candidates'), findsOneWidget);
+    expect(find.byKey(const Key('todo-row-schedule-page-1')), findsOneWidget);
+    expect(
+      find.byKey(const Key('todo-schedule-icon-schedule-page-1')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('todo-checkbox-schedule-page-1')),
+      findsNothing,
+    );
+    expect(find.text('Schedule candidate'), findsOneWidget);
+    expect(find.text('Time cue: tomorrow'), findsOneWidget);
   });
 }
 
@@ -102,7 +124,31 @@ void _seedTodo(WideNoteLocalDatabase database) {
       payload: const <String, Object?>{
         'title': 'Review source-linked todo',
         'source_label': 'source: capture-todo-page',
-        'status_label': 'suggested by agent',
+        'status_label': 'suggested action',
+        'suggestion_kind': 'action',
+        'suggestion_confidence': 'high',
+        'suggestion_reason': 'explicit_action',
+      },
+      createdAt: now,
+      updatedAt: now,
+    ),
+  );
+}
+
+void _seedSchedule(WideNoteLocalDatabase database) {
+  final now = DateTime.utc(2026, 6, 25, 11);
+  database.todos.insert(
+    TodoRecord(
+      id: 'schedule-page-1',
+      sourceCaptureId: 'capture-schedule-page',
+      payload: const <String, Object?>{
+        'title': 'Schedule: Fix launch bugs tomorrow',
+        'source_label': 'source: capture-schedule-page',
+        'status_label': 'schedule candidate',
+        'suggestion_kind': 'schedule',
+        'suggestion_confidence': 'high',
+        'suggestion_reason': 'explicit_schedule',
+        'scheduled_at_label': 'tomorrow',
       },
       createdAt: now,
       updatedAt: now,

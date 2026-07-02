@@ -35,11 +35,14 @@ files below as a mandatory full-repository reading checklist.
 
 For normal coding work, read in this order:
 
-1. `docs/architecture/current-contracts.md` for task-relevant current contracts
-2. `docs/agent-context/project-map.md` only when you need to locate the right
+1. `docs/architecture/operational-principles.md` when the task touches
+   cross-cutting triggers such as semantic behavior, source truth, privacy,
+   permissions, generated contracts, or user-visible AI output
+2. `docs/architecture/current-contracts.md` for task-relevant current contracts
+3. `docs/agent-context/project-map.md` only when you need to locate the right
    area or module
-3. The nearest area or module `README.md` for files you plan to touch
-4. Related ADRs or RFCs only when changing a contract, resolving ambiguity, or
+4. The nearest area or module `README.md` for files you plan to touch
+5. Related ADRs or RFCs only when changing a contract, resolving ambiguity, or
    needing historical rationale
 
 Use `docs/agent-context/START_HERE.md` for first-time repository orientation,
@@ -47,9 +50,11 @@ broad planning, or when you are lost. Use `docs/decisions/index.md` to locate
 relevant decisions. Use `widenote_project_brief.md` only when product intent is
 unclear.
 
-`docs/architecture/current-contracts.md` is the current target-state contract
-layer. ADRs and RFCs preserve historical decisions, tradeoffs, and provenance;
-the current contracts file states the state agents should maintain by default.
+`docs/architecture/operational-principles.md` is the lightweight preflight
+trigger list for cross-cutting rules. `docs/architecture/current-contracts.md`
+is the current target-state contract layer. ADRs and RFCs preserve historical
+decisions, tradeoffs, and provenance; the current contracts file states the
+state agents should maintain by default.
 
 For narrow edits, load only the context needed for the touched area. Do not make
 agents or humans read the whole repository by default.

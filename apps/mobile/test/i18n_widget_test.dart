@@ -25,8 +25,10 @@ void main() {
     expect(find.text('No local sessions yet.'), findsOneWidget);
 
     await _openTab(tester, const Key('tab-todos'));
-    expect(find.text('Source-linked todos'), findsOneWidget);
-    expect(find.text('No source-linked todos yet.'), findsOneWidget);
+    expect(find.text('Action items'), findsOneWidget);
+    expect(find.text('No clear action items yet.'), findsOneWidget);
+    expect(find.text('Schedule candidates'), findsOneWidget);
+    expect(find.text('No schedule candidates yet.'), findsOneWidget);
 
     await _openTab(tester, const Key('tab-plugins'));
     expect(find.text('Control entries'), findsOneWidget);
@@ -52,8 +54,10 @@ void main() {
     expect(find.text('还没有本地会话。'), findsOneWidget);
 
     await _openTab(tester, const Key('tab-todos'));
-    expect(find.text('来源关联待办'), findsOneWidget);
-    expect(find.text('还没有来源关联待办。'), findsOneWidget);
+    expect(find.text('行动项'), findsOneWidget);
+    expect(find.text('还没有明确行动项。'), findsOneWidget);
+    expect(find.text('日程候选'), findsOneWidget);
+    expect(find.text('还没有日程候选。'), findsOneWidget);
 
     await _openTab(tester, const Key('tab-plugins'));
     expect(find.text('控制入口'), findsOneWidget);

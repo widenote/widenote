@@ -25,24 +25,41 @@ class TodosPage extends ConsumerWidget {
         const SizedBox(height: 16),
         _Surface(
           icon: Icons.checklist_outlined,
-          title: l10n.todosSurfaceTitle,
-          child: _TodoList(todos: state.items),
+          title: l10n.todoActionsSectionTitle,
+          child: _TodoList(
+            todos: state.actionItems,
+            emptyText: l10n.todoActionsEmpty,
+          ),
         ),
+        const SizedBox(height: 12),
+        _Surface(
+          icon: Icons.event_note_outlined,
+          title: l10n.todoSchedulesSectionTitle,
+          child: _TodoList(
+            todos: state.scheduleItems,
+            emptyText: l10n.todoSchedulesEmpty,
+          ),
+        ),
+        if (state.quietCount > 0) ...[
+          const SizedBox(height: 12),
+          _QuietSummary(count: state.quietCount),
+        ],
       ],
     );
   }
 }
 
 class _TodoList extends StatelessWidget {
-  const _TodoList({required this.todos});
+  const _TodoList({required this.todos, required this.emptyText});
 
   final List<TodoListItem> todos;
+  final String emptyText;
 
   @override
   Widget build(BuildContext context) {
     if (todos.isEmpty) {
       return Text(
-        context.l10n.todosEmpty,
+        emptyText,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
           color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
@@ -70,11 +87,22 @@ class _TodoRow extends ConsumerWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Checkbox(
-          key: Key('todo-checkbox-${todo.id}'),
-          value: todo.isCompleted,
-          onChanged: (_) => _toggle(ref, todo),
-        ),
+        if (todo.isAction)
+          Checkbox(
+            key: Key('todo-checkbox-${todo.id}'),
+            value: todo.isCompleted,
+            onChanged: (_) => _toggle(ref, todo),
+          )
+        else
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+            child: Icon(
+              Icons.event_available_outlined,
+              key: Key('todo-schedule-icon-${todo.id}'),
+              size: 22,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
         Expanded(
           child: Padding(
             padding: const EdgeInsets.only(top: 8),
@@ -104,23 +132,33 @@ class _TodoRow extends ConsumerWidget {
                       icon: Icons.info_outline,
                       label: localizedTodoStatusLabel(l10n, todo.statusLabel),
                     ),
+                    if (todo.scheduledAtLabel != null)
+                      _Tag(
+                        key: Key('todo-schedule-${todo.id}'),
+                        icon: Icons.schedule_outlined,
+                        label: l10n.todoScheduledForLabel(
+                          todo.scheduledAtLabel!,
+                        ),
+                      ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                TextButton.icon(
-                  key: Key('todo-toggle-${todo.id}'),
-                  onPressed: () => _toggle(ref, todo),
-                  icon: Icon(
-                    todo.isCompleted
-                        ? Icons.refresh_outlined
-                        : Icons.check_circle_outline,
+                if (todo.isAction) ...[
+                  const SizedBox(height: 8),
+                  TextButton.icon(
+                    key: Key('todo-toggle-${todo.id}'),
+                    onPressed: () => _toggle(ref, todo),
+                    icon: Icon(
+                      todo.isCompleted
+                          ? Icons.refresh_outlined
+                          : Icons.check_circle_outline,
+                    ),
+                    label: Text(
+                      todo.isCompleted
+                          ? l10n.todoActionReopen
+                          : l10n.todoActionComplete,
+                    ),
                   ),
-                  label: Text(
-                    todo.isCompleted
-                        ? l10n.todoActionReopen
-                        : l10n.todoActionComplete,
-                  ),
-                ),
+                ],
               ],
             ),
           ),
@@ -136,6 +174,58 @@ class _TodoRow extends ConsumerWidget {
       return;
     }
     controller.complete(todo.id);
+  }
+}
+
+class _QuietSummary extends StatelessWidget {
+  const _QuietSummary({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              Icons.auto_awesome_motion_outlined,
+              size: 18,
+              color: colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.l10n.todoQuietTitle,
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    context.l10n.todoQuietSummary(count),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

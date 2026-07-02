@@ -80,7 +80,10 @@ void main() {
     );
 
     expect(todoManifest.id, 'pack.todo');
-    expect(todoManifest.requiredPermissions, <String>{'todo.suggest'});
+    expect(todoManifest.requiredPermissions, <String>{
+      ModelPermissions.complete,
+      'todo.suggest',
+    });
     expect(todoManifest.defaultRunMode, RunMode.auto);
     expect(
       todoManifest.toolDefinitions['todo.suggest']?.access,
