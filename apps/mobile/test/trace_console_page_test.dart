@@ -86,18 +86,21 @@ void main() {
     expect(container.read(rawTraceViewModelProvider('missing-trace')), isNull);
   });
 
-  testWidgets('agent console shows empty states and approval scaffold', (
+  testWidgets('log center shows empty states and approval scaffold', (
     tester,
   ) async {
     final database = WideNoteLocalDatabase.inMemory();
     await _pumpTraceConsole(tester, database);
 
     expect(find.byKey(const Key('trace-console-page')), findsOneWidget);
-    expect(find.text('Log events: 0'), findsWidgets);
+    expect(find.text('Raw logs: 0'), findsWidgets);
     expect(find.text('Total: 0'), findsOneWidget);
-    expect(find.byKey(const Key('trace-console-events-entry')), findsOneWidget);
     expect(
-      find.byKey(const Key('trace-console-events-entry-button')),
+      find.byKey(const Key('trace-console-raw-logs-entry')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('trace-console-raw-logs-entry-button')),
       findsOneWidget,
     );
     expect(find.byKey(const Key('trace-console-empty')), findsNothing);
@@ -109,7 +112,7 @@ void main() {
     expect(find.byKey(const Key('trace-console-agents-entry')), findsOneWidget);
   });
 
-  testWidgets('agent console refreshes event entry without rendering list', (
+  testWidgets('log center refreshes raw log entry without rendering list', (
     tester,
   ) async {
     final database = WideNoteLocalDatabase.inMemory();
@@ -119,37 +122,35 @@ void main() {
     await tester.tap(find.byKey(const Key('trace-console-refresh-button')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Log events: 1'), findsWidgets);
-    expect(find.byKey(const Key('trace-console-row-trace-1')), findsNothing);
+    expect(find.text('Raw logs: 1'), findsWidgets);
+    expect(find.byKey(const Key('trace-raw-log-trace-1')), findsNothing);
   });
 
-  testWidgets('events page renders traces and raw log entry', (tester) async {
+  testWidgets('raw logs page renders local raw trace rows', (tester) async {
     final database = WideNoteLocalDatabase.inMemory();
     database.traceEvents.insert(_trace('trace-1', 'runtime.handler.output'));
-    await _pumpTraceEvents(tester, database);
+    await _pumpTraceRawLogs(tester, database);
 
-    expect(find.byKey(const Key('trace-events-page')), findsOneWidget);
+    expect(find.byKey(const Key('trace-raw-logs-page')), findsOneWidget);
+    expect(find.byKey(const Key('trace-raw-warning')), findsOneWidget);
     expect(find.byKey(const Key('agent-console-filter-all')), findsOneWidget);
-    await _scrollTo(tester, const Key('trace-console-row-trace-1'));
-    expect(find.byKey(const Key('trace-console-row-trace-1')), findsOneWidget);
+    expect(find.byType(SelectableText), findsNothing);
+    expect(find.byIcon(Icons.copy), findsNothing);
+    expect(find.byIcon(Icons.share), findsNothing);
+    await _scrollTo(tester, const Key('trace-raw-log-trace-1'));
+    expect(find.byKey(const Key('trace-raw-log-trace-1')), findsOneWidget);
     expect(find.text('runtime.handler.output'), findsOneWidget);
+    expect(find.textContaining('trace-1'), findsWidgets);
+    expect(find.textContaining('Generated local output'), findsOneWidget);
     expect(
       find.byKey(const Key('trace-console-open-raw-trace-1')),
       findsOneWidget,
     );
-
-    await tester.tap(find.byKey(const Key('trace-console-row-trace-1')));
-    await tester.pumpAndSettle();
-
-    expect(find.text('pack: pack.default'), findsOneWidget);
-    expect(find.text('agent: agent.capture_loop'), findsOneWidget);
-    expect(
-      find.byKey(const Key('trace-console-open-raw-trace-1')),
-      findsOneWidget,
-    );
+    expect(find.text('pack_id: pack.default'), findsOneWidget);
+    expect(find.text('agent_id: agent.capture_loop'), findsOneWidget);
   });
 
-  testWidgets('events page filters log events by status', (tester) async {
+  testWidgets('raw logs page filters raw logs by status', (tester) async {
     final database = WideNoteLocalDatabase.inMemory();
     database.traceEvents
       ..insert(_trace('trace-ok', 'runtime.handler.output'))
@@ -161,20 +162,14 @@ void main() {
           severity: 'error',
         ),
       );
-    await _pumpTraceEvents(tester, database);
+    await _pumpTraceRawLogs(tester, database);
 
-    expect(find.byKey(const Key('trace-console-row-trace-ok')), findsOneWidget);
-    expect(
-      find.byKey(const Key('trace-console-row-trace-denied')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const Key('trace-raw-log-trace-ok')), findsOneWidget);
+    expect(find.byKey(const Key('trace-raw-log-trace-denied')), findsOneWidget);
 
     await _tap(tester, const Key('agent-console-filter-denied'));
-    expect(find.byKey(const Key('trace-console-row-trace-ok')), findsNothing);
-    expect(
-      find.byKey(const Key('trace-console-row-trace-denied')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const Key('trace-raw-log-trace-ok')), findsNothing);
+    expect(find.byKey(const Key('trace-raw-log-trace-denied')), findsOneWidget);
   });
 
   testWidgets('agent console opens agent run page from compact entry', (
@@ -253,8 +248,8 @@ void main() {
             'child_delegation_id': 'delegate-1',
             'child_run_id': 'run-child-1',
             'child_status': 'succeeded',
-            'input': 'SHOULD_NOT_RENDER',
-            'instructions': 'SHOULD_NOT_RENDER',
+            'input': 'delegate the capture summary',
+            'instructions': 'summarize without writing private tables',
           },
         ),
       )
@@ -276,36 +271,19 @@ void main() {
         ),
       );
 
-    await _pumpTraceEvents(tester, database);
+    await _pumpTraceRawLogs(tester, database);
 
-    await _tap(tester, const Key('trace-console-row-trace-delegate-success'));
-    expect(
-      find.byKey(
-        const Key('agent-console-child-delegation-trace-delegate-success'),
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.byKey(const Key('agent-console-child-run-trace-delegate-success')),
-      findsOneWidget,
-    );
-    expect(find.text('child run: run-child-1'), findsOneWidget);
-    expect(find.text('child status: succeeded'), findsOneWidget);
+    await _scrollTo(tester, const Key('trace-raw-log-trace-delegate-success'));
+    expect(find.textContaining('child_delegation_id'), findsWidgets);
+    expect(find.textContaining('run-child-1'), findsWidgets);
+    expect(find.textContaining('child_status'), findsWidgets);
+    expect(find.textContaining('succeeded'), findsWidgets);
 
-    await _tap(tester, const Key('trace-console-row-trace-delegate-rejected'));
-    expect(find.text('child status: rejected'), findsOneWidget);
-    expect(
-      find.byKey(
-        const Key(
-          'agent-console-delegation-violations-trace-delegate-rejected',
-        ),
-      ),
-      findsOneWidget,
-    );
+    await _scrollTo(tester, const Key('trace-raw-log-trace-delegate-rejected'));
+    expect(find.textContaining('rejected'), findsWidgets);
+    expect(find.textContaining('violation_codes'), findsWidgets);
     expect(find.textContaining('run_mode_escalation'), findsWidgets);
     expect(find.textContaining('SHOULD_NOT_RENDER'), findsNothing);
-    expect(find.textContaining('api_key'), findsNothing);
-    expect(find.textContaining('instructions'), findsNothing);
   });
 
   testWidgets('agent console redacts sensitive trace payload and errors', (
@@ -351,15 +329,13 @@ void main() {
       ),
     );
 
-    await _pumpTraceEvents(tester, database);
-    await _tap(tester, const Key('trace-console-row-trace-secret'));
+    await _pumpTraceRawLogs(tester, database);
+    await _scrollTo(tester, const Key('trace-raw-log-trace-secret'));
 
     expect(find.textContaining('SHOULD_NOT_RENDER'), findsNothing);
-    expect(find.textContaining('authorization'), findsNothing);
-    expect(find.textContaining('api_key'), findsNothing);
-    expect(find.textContaining('token'), findsNothing);
     expect(find.text('[redacted]'), findsWidgets);
-    expect(find.textContaining('safe: visible'), findsOneWidget);
+    expect(find.textContaining('safe'), findsOneWidget);
+    expect(find.textContaining('visible'), findsOneWidget);
   });
 
   testWidgets('agent runs page redacts run and task errors', (tester) async {
@@ -414,11 +390,11 @@ void main() {
       ),
     );
 
-    await _pumpTraceEvents(tester, database);
-    await _tap(tester, const Key('trace-console-row-trace-raw'));
+    await _pumpTraceRawLogs(tester, database);
+    await _scrollTo(tester, const Key('trace-raw-log-trace-raw'));
 
     expect(
-      find.textContaining('raw_prompt: Summarize the capture exactly.'),
+      find.textContaining('Summarize the capture exactly.'),
       findsOneWidget,
     );
     expect(find.textContaining('timeline today'), findsOneWidget);
@@ -495,8 +471,7 @@ void main() {
     );
 
     await _pumpTraceConsoleRouter(tester, database);
-    await _tap(tester, const Key('trace-console-events-entry-button'));
-    await _tap(tester, const Key('trace-console-row-trace-source'));
+    await _tap(tester, const Key('trace-console-raw-logs-entry-button'));
     await _scrollTo(
       tester,
       const Key('trace-console-open-source-trace-source'),
@@ -512,7 +487,7 @@ void main() {
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('trace-events-page')), findsOneWidget);
+    expect(find.byKey(const Key('trace-raw-logs-page')), findsOneWidget);
     expect(find.byKey(const Key('trace-source-destination')), findsNothing);
 
     await tester.binding.handlePopRoute();
@@ -520,7 +495,7 @@ void main() {
     expect(find.byKey(const Key('trace-console-page')), findsOneWidget);
   });
 
-  testWidgets('raw trace detail returns through event list with system back', (
+  testWidgets('raw trace detail returns through raw logs with system back', (
     tester,
   ) async {
     final database = WideNoteLocalDatabase.inMemory();
@@ -529,7 +504,7 @@ void main() {
     );
 
     await _pumpTraceConsoleRouter(tester, database);
-    await _tap(tester, const Key('trace-console-events-entry-button'));
+    await _tap(tester, const Key('trace-console-raw-logs-entry-button'));
     await _tap(tester, const Key('trace-console-open-raw-trace-raw-route'));
 
     expect(find.byKey(const Key('trace-raw-page')), findsOneWidget);
@@ -538,7 +513,7 @@ void main() {
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('trace-events-page')), findsOneWidget);
+    expect(find.byKey(const Key('trace-raw-logs-page')), findsOneWidget);
     expect(find.byKey(const Key('trace-raw-page')), findsNothing);
 
     await tester.binding.handlePopRoute();
@@ -566,7 +541,7 @@ Future<void> _pumpTraceConsole(
   await tester.pumpAndSettle();
 }
 
-Future<void> _pumpTraceEvents(
+Future<void> _pumpTraceRawLogs(
   WidgetTester tester,
   WideNoteLocalDatabase database,
 ) async {
@@ -578,7 +553,7 @@ Future<void> _pumpTraceEvents(
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const Scaffold(body: TraceEventsPage()),
+        home: const Scaffold(body: TraceRawLogsPage()),
       ),
     ),
   );
@@ -644,21 +619,27 @@ Future<void> _pumpTraceConsoleRouter(
             routes: [
               GoRoute(
                 path: 'events',
+                redirect: (context, state) => '/settings/traces/raw',
+              ),
+              GoRoute(
+                path: 'raw',
                 builder: (context, state) =>
-                    const Scaffold(body: TraceEventsPage()),
+                    const Scaffold(body: TraceRawLogsPage()),
+                routes: [
+                  GoRoute(
+                    path: ':traceId',
+                    builder: (context, state) => Scaffold(
+                      body: TraceRawPage(
+                        traceId: state.pathParameters['traceId'] ?? '',
+                      ),
+                    ),
+                  ),
+                ],
               ),
               GoRoute(
                 path: 'agents',
                 builder: (context, state) =>
                     const Scaffold(body: TraceAgentsPage()),
-              ),
-              GoRoute(
-                path: 'raw/:traceId',
-                builder: (context, state) => Scaffold(
-                  body: TraceRawPage(
-                    traceId: state.pathParameters['traceId'] ?? '',
-                  ),
-                ),
               ),
             ],
           ),

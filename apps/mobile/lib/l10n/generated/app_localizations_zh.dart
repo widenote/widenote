@@ -1411,7 +1411,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String settingsTraceConsoleStatusSummary(int eventCount, int warningCount) {
-    return '$eventCount 事件 / $warningCount 警告';
+    return '$eventCount 条日志 / $warningCount 个警告';
   }
 
   @override
@@ -1585,10 +1585,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pluginsBackupStatus => '本地优先';
 
   @override
-  String get pluginsTraceConsoleTitle => 'Agent Console';
+  String get pluginsTraceConsoleTitle => '日志中心';
 
   @override
-  String get pluginsTraceConsoleSubtitle => '检查本地运行、审批、追踪和插件输出。';
+  String get pluginsTraceConsoleSubtitle => '检查本地运行日志、审批、追踪和插件输出。';
 
   @override
   String get pluginsTraceConsoleStatus => '本地';
@@ -1834,32 +1834,32 @@ class AppLocalizationsZh extends AppLocalizations {
   String get permissionGateDeferredPrivacy => '隐私决策覆盖前延期。';
 
   @override
-  String get agentPlatformTitle => 'Agent Console';
+  String get agentPlatformTitle => '日志中心';
 
   @override
-  String get agentPlatformSubtitle => '来自运行、任务、审批和追踪的本地运行控制证据。';
+  String get agentPlatformSubtitle => '来自原始日志、运行、任务、审批和追踪的本地运行证据。';
 
   @override
-  String get agentConsoleTitle => 'Agent Console';
+  String get agentConsoleTitle => '日志中心';
 
   @override
-  String get agentConsoleSubtitle => '本地优先地控制运行、任务、审批、插件和脱敏追踪。';
+  String get agentConsoleSubtitle => '本地优先地查看运行、任务、审批、插件和脱敏追踪日志。';
 
   @override
-  String get traceConsoleTitle => 'Agent Console';
+  String get traceConsoleTitle => '日志中心';
 
   @override
-  String get traceConsoleSubtitle => '查看本地 Agent Runtime 运行、权限和生成输出。';
+  String get traceConsoleSubtitle => '查看本地 Agent Runtime 日志、权限和生成输出。';
 
   @override
-  String get agentConsoleSummaryTitle => '本地控制摘要';
+  String get agentConsoleSummaryTitle => '本地日志摘要';
 
   @override
   String get traceConsoleSummaryTitle => '运行摘要';
 
   @override
   String traceConsoleEventCount(int count) {
-    return '日志事件：$count';
+    return '原始日志：$count';
   }
 
   @override
@@ -1876,22 +1876,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get traceConsoleRefreshButton => '刷新';
 
   @override
-  String get traceConsoleOpenButton => '打开 Agent Console';
+  String get traceConsoleOpenButton => '打开日志中心';
 
   @override
-  String get traceConsoleEventsTitle => '事件';
+  String get traceConsoleEventsTitle => '原始日志';
 
   @override
-  String get traceConsoleEventsSubtitle => '在独立页面浏览本地运行事件，并在需要时打开原始日志。';
+  String get traceConsoleEventsSubtitle => '按本地 trace 行直接查看原始运行证据。';
 
   @override
-  String get traceConsoleEventsEntryTitle => '日志事件';
+  String get traceConsoleEventsEntryTitle => '原始日志';
 
   @override
-  String get traceConsoleEventsEntryBody => '把较长的事件流放到单独页面；只在需要时查看本机原始证据。';
+  String get traceConsoleEventsEntryBody => '直接显示本机原始日志流；凭证、路径和媒体字段仍会遮蔽。';
 
   @override
-  String get traceConsoleOpenEventsButton => '打开事件';
+  String get traceConsoleOpenEventsButton => '打开原始日志';
 
   @override
   String get traceConsoleEmpty => '还没有运行日志。记录或插件运行后会显示在这里。';
@@ -2131,7 +2131,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get traceConsoleRedactedValue => '[已脱敏]';
 
   @override
-  String get traceConsoleEventsFilteredEmpty => '没有符合当前过滤条件的日志事件。';
+  String get traceConsoleEventsFilteredEmpty => '没有符合当前过滤条件的原始日志。';
 
   @override
   String get traceConsoleBackTooltip => '从日志中心返回';
@@ -2155,7 +2155,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get traceRawOpenButton => '查看原始日志';
 
   @override
-  String get traceRawTitle => '原始日志';
+  String get traceRawTitle => '原始日志详情';
 
   @override
   String get traceRawSubtitle => '这条追踪的本地运行证据。';

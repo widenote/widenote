@@ -20,8 +20,8 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
 
-    expect(find.text('Agent Console'), findsWidgets);
-    expect(find.text('Log events: 2'), findsWidgets);
+    expect(find.text('Log Center'), findsWidgets);
+    expect(find.text('Raw logs: 2'), findsWidgets);
     expect(find.text('Runs: 1'), findsWidgets);
     expect(find.text('Tasks: 0'), findsWidgets);
     expect(find.text('Failed: 0'), findsWidgets);
@@ -32,7 +32,7 @@ void main() {
     expect(find.text('Permission denied by policy'), findsOneWidget);
   });
 
-  testWidgets('trace console entry opens real trace list', (tester) async {
+  testWidgets('trace console entry opens real raw log list', (tester) async {
     final database = WideNoteLocalDatabase.inMemory();
     _seedTraceEvents(database);
     await _pumpApp(tester, database);
@@ -43,16 +43,18 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('trace-console-page')), findsOneWidget);
-    expect(find.text('Local control summary'), findsOneWidget);
-    expect(find.byKey(const Key('trace-console-events-entry')), findsOneWidget);
-    await _tap(tester, const Key('trace-console-events-entry-button'));
-    expect(find.byKey(const Key('trace-events-page')), findsOneWidget);
-    await _scrollTo(tester, const Key('trace-console-row-trace-warning'));
+    expect(find.text('Local log summary'), findsOneWidget);
+    expect(
+      find.byKey(const Key('trace-console-raw-logs-entry')),
+      findsOneWidget,
+    );
+    await _tap(tester, const Key('trace-console-raw-logs-entry-button'));
+    expect(find.byKey(const Key('trace-raw-logs-page')), findsOneWidget);
+    await _scrollTo(tester, const Key('trace-raw-log-trace-warning'));
     expect(find.text('runtime.permission.denied'), findsOneWidget);
-    await _tap(tester, const Key('trace-console-row-trace-warning'));
-    expect(find.text('pack: pack.default'), findsWidgets);
-    expect(find.text('agent: agent.capture_loop'), findsWidgets);
-    expect(find.textContaining('duration: 8'), findsWidgets);
+    expect(find.text('pack_id: pack.default'), findsWidgets);
+    expect(find.text('agent_id: agent.capture_loop'), findsWidgets);
+    expect(find.textContaining('duration_ms: 8'), findsWidgets);
   });
 
   testWidgets('trace source navigation opens timeline source route', (
@@ -67,8 +69,8 @@ void main() {
     await tester.tap(find.byKey(const Key('trace-console-entry')));
     await tester.pumpAndSettle();
 
-    await _tap(tester, const Key('trace-console-events-entry-button'));
-    await _tap(tester, const Key('trace-console-row-trace-ok'));
+    await _tap(tester, const Key('trace-console-raw-logs-entry-button'));
+    await _scrollTo(tester, const Key('trace-raw-log-trace-ok'));
     await _tap(tester, const Key('trace-console-open-source-trace-ok'));
 
     expect(find.byKey(const Key('timeline-item-detail-page')), findsOneWidget);
@@ -89,7 +91,7 @@ void main() {
     await tester.tap(find.byKey(const Key('trace-console-entry')));
     await tester.pumpAndSettle();
 
-    await _tap(tester, const Key('trace-console-events-entry-button'));
+    await _tap(tester, const Key('trace-console-raw-logs-entry-button'));
     await _scrollTo(tester, const Key('trace-console-empty'));
     expect(find.byKey(const Key('trace-console-empty')), findsOneWidget);
     expect(find.textContaining('task-queued-capture'), findsNothing);

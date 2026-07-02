@@ -1574,7 +1574,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String settingsTraceConsoleStatusSummary(int eventCount, int warningCount) {
-    return '$eventCount events / $warningCount warnings';
+    return '$eventCount logs / $warningCount warnings';
   }
 
   @override
@@ -1767,11 +1767,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pluginsBackupStatus => 'local-first';
 
   @override
-  String get pluginsTraceConsoleTitle => 'Agent Console';
+  String get pluginsTraceConsoleTitle => 'Log Center';
 
   @override
   String get pluginsTraceConsoleSubtitle =>
-      'Inspect local runs, approvals, traces, and pack output.';
+      'Inspect local runtime logs, approvals, traces, and pack output.';
 
   @override
   String get pluginsTraceConsoleStatus => 'local';
@@ -2066,35 +2066,35 @@ class AppLocalizationsEn extends AppLocalizations {
       'Deferred until privacy decision coverage exists.';
 
   @override
-  String get agentPlatformTitle => 'Agent Console';
+  String get agentPlatformTitle => 'Log Center';
 
   @override
   String get agentPlatformSubtitle =>
-      'Local runtime control evidence from runs, tasks, approvals, and traces.';
+      'Local runtime evidence from raw logs, runs, tasks, approvals, and traces.';
 
   @override
-  String get agentConsoleTitle => 'Agent Console';
+  String get agentConsoleTitle => 'Log Center';
 
   @override
   String get agentConsoleSubtitle =>
-      'Local-first control for runs, tasks, approvals, packs, and redacted traces.';
+      'Local-first logs for runs, tasks, approvals, packs, and redacted traces.';
 
   @override
-  String get traceConsoleTitle => 'Agent Console';
+  String get traceConsoleTitle => 'Log Center';
 
   @override
   String get traceConsoleSubtitle =>
-      'Review local Agent Runtime runs, permissions, and generated outputs.';
+      'Review local Agent Runtime logs, permissions, and generated outputs.';
 
   @override
-  String get agentConsoleSummaryTitle => 'Local control summary';
+  String get agentConsoleSummaryTitle => 'Local log summary';
 
   @override
   String get traceConsoleSummaryTitle => 'Runtime summary';
 
   @override
   String traceConsoleEventCount(int count) {
-    return 'Log events: $count';
+    return 'Raw logs: $count';
   }
 
   @override
@@ -2111,24 +2111,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get traceConsoleRefreshButton => 'Refresh';
 
   @override
-  String get traceConsoleOpenButton => 'Open Agent Console';
+  String get traceConsoleOpenButton => 'Open Log Center';
 
   @override
-  String get traceConsoleEventsTitle => 'Events';
+  String get traceConsoleEventsTitle => 'Raw logs';
 
   @override
   String get traceConsoleEventsSubtitle =>
-      'Browse local runtime events and open raw logs from a focused page.';
+      'Review local runtime trace rows as raw log evidence.';
 
   @override
-  String get traceConsoleEventsEntryTitle => 'Log events';
+  String get traceConsoleEventsEntryTitle => 'Raw logs';
 
   @override
   String get traceConsoleEventsEntryBody =>
-      'Open the longer event stream on its own page, then inspect raw local evidence only when needed.';
+      'Show the local raw log stream directly. Credential, path, and media fields stay masked.';
 
   @override
-  String get traceConsoleOpenEventsButton => 'Open events';
+  String get traceConsoleOpenEventsButton => 'Open raw logs';
 
   @override
   String get traceConsoleEmpty =>
@@ -2389,7 +2389,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get traceConsoleEventsFilteredEmpty =>
-      'No log events match this filter.';
+      'No raw logs match this filter.';
 
   @override
   String get traceConsoleBackTooltip => 'Back from Log Center';
@@ -2415,7 +2415,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get traceRawOpenButton => 'View raw log';
 
   @override
-  String get traceRawTitle => 'Raw log';
+  String get traceRawTitle => 'Raw log detail';
 
   @override
   String get traceRawSubtitle => 'Local-only runtime evidence for this trace.';

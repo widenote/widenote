@@ -2696,7 +2696,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsTraceConsoleStatusSummary.
   ///
   /// In en, this message translates to:
-  /// **'{eventCount} events / {warningCount} warnings'**
+  /// **'{eventCount} logs / {warningCount} warnings'**
   String settingsTraceConsoleStatusSummary(int eventCount, int warningCount);
 
   /// No description provided for @systemPermissionsTitle.
@@ -3032,13 +3032,13 @@ abstract class AppLocalizations {
   /// No description provided for @pluginsTraceConsoleTitle.
   ///
   /// In en, this message translates to:
-  /// **'Agent Console'**
+  /// **'Log Center'**
   String get pluginsTraceConsoleTitle;
 
   /// No description provided for @pluginsTraceConsoleSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Inspect local runs, approvals, traces, and pack output.'**
+  /// **'Inspect local runtime logs, approvals, traces, and pack output.'**
   String get pluginsTraceConsoleSubtitle;
 
   /// No description provided for @pluginsTraceConsoleStatus.
@@ -3444,43 +3444,43 @@ abstract class AppLocalizations {
   /// No description provided for @agentPlatformTitle.
   ///
   /// In en, this message translates to:
-  /// **'Agent Console'**
+  /// **'Log Center'**
   String get agentPlatformTitle;
 
   /// No description provided for @agentPlatformSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Local runtime control evidence from runs, tasks, approvals, and traces.'**
+  /// **'Local runtime evidence from raw logs, runs, tasks, approvals, and traces.'**
   String get agentPlatformSubtitle;
 
   /// No description provided for @agentConsoleTitle.
   ///
   /// In en, this message translates to:
-  /// **'Agent Console'**
+  /// **'Log Center'**
   String get agentConsoleTitle;
 
   /// No description provided for @agentConsoleSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Local-first control for runs, tasks, approvals, packs, and redacted traces.'**
+  /// **'Local-first logs for runs, tasks, approvals, packs, and redacted traces.'**
   String get agentConsoleSubtitle;
 
   /// No description provided for @traceConsoleTitle.
   ///
   /// In en, this message translates to:
-  /// **'Agent Console'**
+  /// **'Log Center'**
   String get traceConsoleTitle;
 
   /// No description provided for @traceConsoleSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Review local Agent Runtime runs, permissions, and generated outputs.'**
+  /// **'Review local Agent Runtime logs, permissions, and generated outputs.'**
   String get traceConsoleSubtitle;
 
   /// No description provided for @agentConsoleSummaryTitle.
   ///
   /// In en, this message translates to:
-  /// **'Local control summary'**
+  /// **'Local log summary'**
   String get agentConsoleSummaryTitle;
 
   /// No description provided for @traceConsoleSummaryTitle.
@@ -3492,7 +3492,7 @@ abstract class AppLocalizations {
   /// No description provided for @traceConsoleEventCount.
   ///
   /// In en, this message translates to:
-  /// **'Log events: {count}'**
+  /// **'Raw logs: {count}'**
   String traceConsoleEventCount(int count);
 
   /// No description provided for @traceConsoleRunCount.
@@ -3516,37 +3516,37 @@ abstract class AppLocalizations {
   /// No description provided for @traceConsoleOpenButton.
   ///
   /// In en, this message translates to:
-  /// **'Open Agent Console'**
+  /// **'Open Log Center'**
   String get traceConsoleOpenButton;
 
   /// No description provided for @traceConsoleEventsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Events'**
+  /// **'Raw logs'**
   String get traceConsoleEventsTitle;
 
   /// No description provided for @traceConsoleEventsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Browse local runtime events and open raw logs from a focused page.'**
+  /// **'Review local runtime trace rows as raw log evidence.'**
   String get traceConsoleEventsSubtitle;
 
   /// No description provided for @traceConsoleEventsEntryTitle.
   ///
   /// In en, this message translates to:
-  /// **'Log events'**
+  /// **'Raw logs'**
   String get traceConsoleEventsEntryTitle;
 
   /// No description provided for @traceConsoleEventsEntryBody.
   ///
   /// In en, this message translates to:
-  /// **'Open the longer event stream on its own page, then inspect raw local evidence only when needed.'**
+  /// **'Show the local raw log stream directly. Credential, path, and media fields stay masked.'**
   String get traceConsoleEventsEntryBody;
 
   /// No description provided for @traceConsoleOpenEventsButton.
   ///
   /// In en, this message translates to:
-  /// **'Open events'**
+  /// **'Open raw logs'**
   String get traceConsoleOpenEventsButton;
 
   /// No description provided for @traceConsoleEmpty.
@@ -3906,7 +3906,7 @@ abstract class AppLocalizations {
   /// No description provided for @traceConsoleEventsFilteredEmpty.
   ///
   /// In en, this message translates to:
-  /// **'No log events match this filter.'**
+  /// **'No raw logs match this filter.'**
   String get traceConsoleEventsFilteredEmpty;
 
   /// No description provided for @traceConsoleBackTooltip.
@@ -3954,7 +3954,7 @@ abstract class AppLocalizations {
   /// No description provided for @traceRawTitle.
   ///
   /// In en, this message translates to:
-  /// **'Raw log'**
+  /// **'Raw log detail'**
   String get traceRawTitle;
 
   /// No description provided for @traceRawSubtitle.

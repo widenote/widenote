@@ -45,10 +45,15 @@ final class TraceConsoleController extends Notifier<TraceConsoleSnapshot> {
     WideNoteLocalDatabase database, {
     required AgentConsoleFilter filter,
   }) {
-    final traces = database.traceEvents
+    final traceRecords = database.traceEvents
         .readAll(limit: 200)
         .reversed
+        .toList(growable: false);
+    final traces = traceRecords
         .map(_traceItemFromRecord)
+        .toList(growable: false);
+    final rawLogs = traceRecords
+        .map(_rawTraceViewModelFromRecord)
         .toList(growable: false);
     final tracesByRun = <String, List<TraceConsoleItem>>{};
     for (final trace in traces) {
@@ -80,6 +85,7 @@ final class TraceConsoleController extends Notifier<TraceConsoleSnapshot> {
 
     return TraceConsoleSnapshot(
       items: traces,
+      rawLogs: rawLogs,
       runs: runs,
       tasks: tasksById.values.toList(growable: false),
       filter: filter,
@@ -92,6 +98,7 @@ final class TraceConsoleController extends Notifier<TraceConsoleSnapshot> {
 final class TraceConsoleSnapshot {
   const TraceConsoleSnapshot({
     required this.items,
+    required this.rawLogs,
     required this.runs,
     required this.tasks,
     required this.filter,
@@ -99,6 +106,7 @@ final class TraceConsoleSnapshot {
   });
 
   final List<TraceConsoleItem> items;
+  final List<RawTraceViewModel> rawLogs;
   final List<AgentConsoleRun> runs;
   final List<AgentConsoleTask> tasks;
   final AgentConsoleFilter filter;
@@ -160,6 +168,12 @@ final class TraceConsoleSnapshot {
   List<TraceConsoleItem> itemsForFilter(AgentConsoleFilter filter) {
     return items
         .where((item) => _matchesFilter(item.status, filter))
+        .toList(growable: false);
+  }
+
+  List<RawTraceViewModel> rawLogsForFilter(AgentConsoleFilter filter) {
+    return rawLogs
+        .where((log) => _matchesFilter(log.status, filter))
         .toList(growable: false);
   }
 }
@@ -347,18 +361,26 @@ final class RawTraceViewModel {
   const RawTraceViewModel({
     required this.id,
     required this.title,
+    required this.severity,
+    required this.status,
+    required this.createdAt,
     required this.message,
     required this.payloadJson,
     required this.redactedPayloadFieldCount,
     required this.metadata,
+    this.sourceEventId,
   });
 
   final String id;
   final String title;
+  final String severity;
+  final String status;
+  final DateTime createdAt;
   final String message;
   final String payloadJson;
   final int redactedPayloadFieldCount;
   final List<RawTraceField> metadata;
+  final String? sourceEventId;
 }
 
 @immutable
@@ -439,9 +461,13 @@ RawTraceViewModel _rawTraceViewModelFromRecord(TraceEventRecord trace) {
   return RawTraceViewModel(
     id: trace.id,
     title: _traceTitle(trace),
+    severity: trace.severity,
+    status: trace.status,
+    createdAt: trace.createdAt,
     message: _rawDisplayText(trace.message),
     payloadJson: const JsonEncoder.withIndent('  ').convert(payload.value),
     redactedPayloadFieldCount: payload.redactedCount,
+    sourceEventId: trace.eventId,
     metadata: <RawTraceField>[
       RawTraceField(key: 'id', value: trace.id),
       RawTraceField(key: 'name', value: trace.name),
