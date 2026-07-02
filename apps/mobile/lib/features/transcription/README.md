@@ -20,6 +20,14 @@ use local keyword or regular-expression heuristics over transcript text to infer
 meaning sensitivity. Missing, malformed, or span-mismatched correction output is
 review-only and must not auto-apply.
 
+Current short-term correction persistence does not create a separate
+`transcript_correction_revisions` table. The correction revision lives in the
+source-linked `audio_transcript` derived artifact payload, with correction
+patches, artifact payload `source_refs`, and correction event identifiers. When
+the Pack path runs, `wn.transcript.corrected` is the source-linked event anchor.
+Add an independent revision table only after audit, undo, or historical review
+requirements are accepted.
+
 Local SenseVoice and MiMo ASR are user-selected alternatives, not fallback
 layers. Old remote-fallback settings migrate to Local SenseVoice with remote
 upload consent cleared. MiMo ASR credentials live in platform secure storage.

@@ -310,7 +310,10 @@ final class CaptureOrchestrator {
       capture: capture,
       captureSubjectId: captureSubjectId,
     );
-    await _knowledgeSink?.saveArtifacts(_derivedArtifactsFromEvents(newEvents));
+    final trustedOutputEventIds = _trustedBuiltInOutputEventIds(newEvents);
+    await _knowledgeSink?.saveArtifacts(
+      _derivedArtifactsFromEvents(newEvents, trustedOutputEventIds),
+    );
     final traces = await _relatedTraceViews(capture, newEvents);
     return _buildResultForCapture(
       captureSubjectId: captureSubjectId,
@@ -361,14 +364,18 @@ final class CaptureOrchestrator {
     required List<runtime.WnEvent> relatedEvents,
     required List<TraceEvent> traces,
   }) async {
+    final trustedOutputEventIds = _trustedBuiltInOutputEventIds(relatedEvents);
     await _knowledgeSink?.saveArtifacts(
-      _derivedArtifactsFromEvents(relatedEvents),
+      _derivedArtifactsFromEvents(relatedEvents, trustedOutputEventIds),
     );
-    final memoryResult = await _writeFirstMemoryProposal(relatedEvents);
+    final memoryResult = await _writeFirstMemoryProposal(
+      relatedEvents,
+      trustedOutputEventIds,
+    );
     if (memoryResult == null && _defaultCaptureRunFailed(traces)) {
       throw const CapturePipelineException('Capture Memory generation failed.');
     }
-    final todo = _todoFromEvents(relatedEvents, capture);
+    final todo = _todoFromEvents(relatedEvents, capture, trustedOutputEventIds);
     final activeMemories = await _memoryRepository.listItems(
       status: memory.MemoryItemStatus.active,
     );
@@ -474,10 +481,12 @@ final class CaptureOrchestrator {
 
   Future<memory.MemoryWriteResult?> _writeFirstMemoryProposal(
     List<runtime.WnEvent> events,
+    Set<String> trustedOutputEventIds,
   ) async {
-    final event = _firstEventOfType(
+    final event = _firstTrustedBuiltInEventOfType(
       events,
       runtime.WnEventTypes.memoryProposed,
+      trustedOutputEventIds,
     );
     if (event == null) {
       return null;
@@ -629,10 +638,12 @@ final class CaptureOrchestrator {
   SourceTodo _todoFromEvents(
     List<runtime.WnEvent> events,
     runtime.WnEvent capture,
+    Set<String> trustedOutputEventIds,
   ) {
-    final todoEvent = _firstEventOfType(
+    final todoEvent = _firstTrustedBuiltInEventOfType(
       events,
       runtime.WnEventTypes.todoSuggested,
+      trustedOutputEventIds,
     );
     if (todoEvent == null) {
       final sourceCaptureId = capture.subjectRef?.id ?? capture.id;
@@ -646,12 +657,25 @@ final class CaptureOrchestrator {
         reasonLabel: 'model_no_suggestion',
         sourceCaptureId: sourceCaptureId,
         sourceEventId: capture.id,
+        sourceRefs: _todoSourceRefs(
+          const <Object?>[],
+          sourceCaptureId: sourceCaptureId,
+          sourceEventId: capture.id,
+          excerpt: _string(capture.payload['text'], fallback: ''),
+        ),
         isSuggested: false,
       );
     }
     final suggestionKind = _string(
       todoEvent.payload['suggestion_kind'],
       fallback: 'quiet',
+    );
+    final sourceCaptureId = todoEvent.subjectRef?.kind == 'capture'
+        ? todoEvent.subjectRef!.id
+        : _nullableString(todoEvent.payload['source_capture_id']);
+    final sourceEventId = _string(
+      todoEvent.payload['source_event_id'],
+      fallback: todoEvent.causationId ?? capture.id,
     );
     return SourceTodo(
       id: todoEvent.id,
@@ -673,10 +697,16 @@ final class CaptureOrchestrator {
       scheduledAtLabel: _nullableString(
         todoEvent.payload['scheduled_at_label'],
       ),
-      sourceCaptureId: todoEvent.subjectRef?.id,
-      sourceEventId: _string(
-        todoEvent.payload['source_event_id'],
-        fallback: todoEvent.causationId ?? capture.id,
+      sourceCaptureId: sourceCaptureId,
+      sourceEventId: sourceEventId,
+      sourceRefs: _todoSourceRefs(
+        todoEvent.payload['source_refs'],
+        sourceCaptureId: sourceCaptureId,
+        sourceEventId: sourceEventId,
+        excerpt: _string(
+          todoEvent.payload['source_excerpt'],
+          fallback: _string(todoEvent.payload['text'], fallback: ''),
+        ),
       ),
     );
   }
@@ -744,6 +774,34 @@ final class CaptureOrchestrator {
               task.status == runtime.RuntimeTaskStatus.running),
     );
   }
+
+  Set<String> _trustedBuiltInOutputEventIds(List<runtime.WnEvent> events) {
+    final relatedIds = events.map((event) => event.id).toSet();
+    final trustedIds = <String>{};
+    for (final run in _kernel.runs) {
+      if (run.status != runtime.RuntimeRunStatus.succeeded ||
+          !_isTrustedBuiltInRun(run.packId, run.agentId)) {
+        continue;
+      }
+      final task = _taskById(run.taskId);
+      if (task == null ||
+          task.status != runtime.RuntimeTaskStatus.succeeded ||
+          !relatedIds.contains(task.triggerEventId)) {
+        continue;
+      }
+      trustedIds.addAll(run.outputEventIds.where(relatedIds.contains));
+    }
+    return trustedIds;
+  }
+
+  runtime.RuntimeTask? _taskById(String taskId) {
+    for (final task in _kernel.tasks) {
+      if (task.id == taskId) {
+        return task;
+      }
+    }
+    return null;
+  }
 }
 
 bool _isDuplicateCaptureCreatedError(StateError error) {
@@ -770,13 +828,55 @@ List<runtime.AgentPackManifestSnapshot> _enabledOfficialManifests(
       .toList(growable: false);
 }
 
-runtime.WnEvent? _firstEventOfType(List<runtime.WnEvent> events, String type) {
+runtime.WnEvent? _firstTrustedBuiltInEventOfType(
+  List<runtime.WnEvent> events,
+  String type,
+  Set<String> trustedOutputEventIds,
+) {
   for (final event in events) {
-    if (event.type == type) {
+    if (event.type == type &&
+        trustedOutputEventIds.contains(event.id) &&
+        _isTrustedBuiltInOutputEvent(event)) {
       return event;
     }
   }
   return null;
+}
+
+bool _isTrustedBuiltInRun(String packId, String agentId) {
+  return (packId == CaptureOrchestrator._defaultPackId &&
+          agentId == CaptureOrchestrator._defaultAgentId) ||
+      (packId == CaptureOrchestrator._todoPackId &&
+          agentId == CaptureOrchestrator._todoAgentId) ||
+      (packId == CaptureOrchestrator._pkmPackId &&
+          agentId == CaptureOrchestrator._pkmAgentId) ||
+      (packId == CaptureOrchestrator._transcriptCorrectionPackId &&
+          agentId == CaptureOrchestrator._transcriptCorrectionAgentId);
+}
+
+bool _isTrustedBuiltInOutputEvent(runtime.WnEvent event) {
+  if (event.actor != runtime.WnActor.agent) {
+    return false;
+  }
+  if (event.type == runtime.WnEventTypes.memoryProposed ||
+      event.type == runtime.WnEventTypes.cardCreated ||
+      event.type == runtime.WnEventTypes.insightCreated) {
+    return event.packId == CaptureOrchestrator._defaultPackId &&
+        event.agentId == CaptureOrchestrator._defaultAgentId;
+  }
+  if (event.type == runtime.WnEventTypes.todoSuggested) {
+    return event.packId == CaptureOrchestrator._todoPackId &&
+        event.agentId == CaptureOrchestrator._todoAgentId;
+  }
+  if (event.type == runtime.WnEventTypes.artifactCreated) {
+    return event.packId == CaptureOrchestrator._pkmPackId &&
+        event.agentId == CaptureOrchestrator._pkmAgentId;
+  }
+  if (event.type == runtime.WnEventTypes.transcriptCorrected) {
+    return event.packId == CaptureOrchestrator._transcriptCorrectionPackId &&
+        event.agentId == CaptureOrchestrator._transcriptCorrectionAgentId;
+  }
+  return false;
 }
 
 runtime.WnEvent? _latestCaptureEventFor(
@@ -880,9 +980,15 @@ bool _sharesMemorySource(
 
 List<CaptureDerivedArtifact> _derivedArtifactsFromEvents(
   List<runtime.WnEvent> events,
+  Set<String> trustedOutputEventIds,
 ) {
   return events
-      .where((event) => event.type == runtime.WnEventTypes.artifactCreated)
+      .where(
+        (event) =>
+            event.type == runtime.WnEventTypes.artifactCreated &&
+            trustedOutputEventIds.contains(event.id) &&
+            _isTrustedBuiltInOutputEvent(event),
+      )
       .map(_derivedArtifactFromEvent)
       .whereType<CaptureDerivedArtifact>()
       .toList(growable: false);
@@ -978,6 +1084,91 @@ List<Object?> _artifactSourceRefs(
         if (excerpt.isNotEmpty) 'excerpt': excerpt,
       },
   ];
+}
+
+List<Object?> _todoSourceRefs(
+  Object? value, {
+  required String? sourceCaptureId,
+  required String sourceEventId,
+  required String excerpt,
+}) {
+  final refs = <Object?>[];
+  if (value is List) {
+    for (final ref in value) {
+      final normalized = _sourceRefMap(ref);
+      if (normalized != null) {
+        refs.add(normalized);
+      }
+    }
+  }
+  _addSourceRefIfMissing(
+    refs,
+    kind: 'capture',
+    id: sourceCaptureId,
+    excerpt: excerpt,
+  );
+  _addSourceRefIfMissing(
+    refs,
+    kind: 'event',
+    id: sourceEventId,
+    excerpt: excerpt,
+  );
+  return List<Object?>.unmodifiable(refs);
+}
+
+Map<String, Object?>? _sourceRefMap(Object? value) {
+  if (value is! Map) {
+    return null;
+  }
+  final kind =
+      _nullableString(value['kind']) ?? _nullableString(value['source_type']);
+  final id =
+      _nullableString(value['id']) ?? _nullableString(value['source_id']);
+  if (kind == null || id == null) {
+    return null;
+  }
+  return <String, Object?>{
+    'kind': kind,
+    'id': id,
+    for (final key in const <String>[
+      'source_type',
+      'source_id',
+      'event_id',
+      'source_version',
+      'content_hash',
+      'excerpt',
+      'evidence_text',
+      'uri',
+      'sensitivity',
+    ])
+      if (value[key] != null) key: value[key],
+  };
+}
+
+void _addSourceRefIfMissing(
+  List<Object?> refs, {
+  required String kind,
+  required String? id,
+  required String excerpt,
+}) {
+  if (id == null || id.isEmpty || _hasSourceRef(refs, kind, id)) {
+    return;
+  }
+  refs.add(<String, Object?>{
+    'kind': kind,
+    'id': id,
+    if (excerpt.isNotEmpty) 'excerpt': excerpt,
+  });
+}
+
+bool _hasSourceRef(List<Object?> refs, String kind, String id) {
+  return refs.whereType<Map>().any((ref) {
+    final refKind =
+        _nullableString(ref['kind']) ?? _nullableString(ref['source_type']);
+    final refId =
+        _nullableString(ref['id']) ?? _nullableString(ref['source_id']);
+    return refKind == kind && refId == id;
+  });
 }
 
 MemoryReviewCandidate _reviewCandidateView(
@@ -1683,7 +1874,21 @@ final class _TodoAgent implements runtime.AgentHandler {
             'suggestion_reason': suggestion.reason,
             if (suggestion.scheduledAtLabel != null)
               'scheduled_at_label': suggestion.scheduledAtLabel,
+            'source_capture_id': subject.id,
             'source_event_id': event.id,
+            'source_excerpt': previewText(text),
+            'source_refs': <Object?>[
+              <String, Object?>{
+                'kind': 'capture',
+                'id': subject.id,
+                'excerpt': previewText(text),
+              },
+              <String, Object?>{
+                'kind': 'event',
+                'id': event.id,
+                'excerpt': previewText(text),
+              },
+            ],
           },
         ),
       ],

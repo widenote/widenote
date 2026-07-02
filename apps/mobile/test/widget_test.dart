@@ -113,6 +113,7 @@ void main() {
     final hydrated = _readCaptureState(tester);
     expect(hydrated.records.single.body, captureText);
     expect(hydrated.todos.single.id, todo.id);
+    expect(hydrated.todos.single.sourceRefs, isNotEmpty);
     expect(hydrated.cards, hasLength(2));
     expect(hydrated.insights, hasLength(greaterThanOrEqualTo(4)));
 
@@ -125,6 +126,35 @@ void main() {
     await _openTab(tester, const Key('tab-todos'));
     expect(find.byKey(Key('todo-row-${todo.id}')), findsOneWidget);
     expect(find.text(captureText), findsOneWidget);
+  });
+
+  testWidgets('legacy todo rows hydrate without source_refs payload', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    final createdAt = DateTime.utc(2026, 7, 2, 7);
+    database.todos.insert(
+      localdb.TodoRecord(
+        id: 'legacy-todo-row',
+        sourceCaptureId: 'legacy-capture',
+        sourceEventId: 'legacy-event',
+        status: 'open',
+        payload: const <String, Object?>{'title': 'Review legacy todo row'},
+        createdAt: createdAt,
+        updatedAt: createdAt,
+      ),
+    );
+
+    await _pumpApp(tester, database: database, closeDatabase: false);
+
+    final todo = _readCaptureState(tester).todos.single;
+    expect(todo.id, 'legacy-todo-row');
+    expect(todo.sourceLabel, 'source: legacy-capture');
+    expect(
+      _sourceRefIds(todo.sourceRefs),
+      containsAll(<String>['legacy-capture', 'legacy-event']),
+    );
   });
 
   testWidgets('pending capture resumes processing after relaunch', (
@@ -687,6 +717,12 @@ void main() {
         everyElement('run_completed'),
       );
       expect(database.memoryItems.readAll(status: 'active'), hasLength(1));
+      final todoRecord = database.todos.readAll().single;
+      final todoRefs = todoRecord.payload['source_refs']! as List<Object?>;
+      expect(
+        _sourceRefIds(todoRefs),
+        containsAll(<String>[todoRecord.sourceCaptureId!, events.first.id]),
+      );
       expect(database.cards.readAll(status: 'active'), hasLength(2));
       expect(
         database.insights.readAll(status: 'active'),
@@ -948,4 +984,12 @@ final class _HangingModel implements runtime.ModelClient {
   Future<runtime.ModelResponse> complete(runtime.ModelRequest request) {
     return Completer<runtime.ModelResponse>().future;
   }
+}
+
+Set<String> _sourceRefIds(List<Object?> sourceRefs) {
+  return sourceRefs
+      .whereType<Map>()
+      .map((sourceRef) => sourceRef['id'])
+      .whereType<String>()
+      .toSet();
 }

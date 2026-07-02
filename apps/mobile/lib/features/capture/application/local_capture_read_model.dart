@@ -100,11 +100,19 @@ final class LocalCaptureReadModelStore {
     if (_hasDuplicateTodo(todo)) {
       return;
     }
+    final sourceCaptureId = todo.sourceCaptureId ?? _sourceId(todo.sourceLabel);
+    final sourceEventId = todo.sourceEventId;
+    final sourceRefs = _sourceRefsFromPayload(
+      todo.sourceRefs,
+      sourceCaptureId: sourceCaptureId,
+      sourceEventId: sourceEventId,
+      excerpt: todo.title,
+    );
     _database.todos.save(
       localdb.TodoRecord(
         id: todo.id,
-        sourceCaptureId: todo.sourceCaptureId ?? _sourceId(todo.sourceLabel),
-        sourceEventId: todo.sourceEventId,
+        sourceCaptureId: sourceCaptureId,
+        sourceEventId: sourceEventId,
         status: _todoStatus(todo.statusLabel),
         payload: <String, Object?>{
           'title': todo.title,
@@ -115,6 +123,7 @@ final class LocalCaptureReadModelStore {
           if (todo.reasonLabel != null) 'suggestion_reason': todo.reasonLabel,
           if (todo.scheduledAtLabel != null)
             'scheduled_at_label': todo.scheduledAtLabel,
+          'source_refs': sourceRefs,
         },
         createdAt: DateTime.now().toUtc(),
         updatedAt: DateTime.now().toUtc(),
@@ -708,6 +717,89 @@ bool _sourceRefsEqual(List<Object?> left, List<Object?> right) {
   return true;
 }
 
+List<Object?> _sourceRefsFromPayload(
+  Object? value, {
+  String? sourceCaptureId,
+  String? sourceEventId,
+  String? excerpt,
+}) {
+  final refs = <Object?>[];
+  if (value is List) {
+    for (final ref in value) {
+      final normalized = _sourceRefMap(ref);
+      if (normalized != null) {
+        refs.add(normalized);
+      }
+    }
+  }
+  _addSourceRefIfMissing(
+    refs,
+    kind: 'capture',
+    id: sourceCaptureId,
+    excerpt: excerpt,
+  );
+  _addSourceRefIfMissing(
+    refs,
+    kind: 'event',
+    id: sourceEventId,
+    excerpt: excerpt,
+  );
+  return List<Object?>.unmodifiable(refs);
+}
+
+Map<String, Object?>? _sourceRefMap(Object? value) {
+  if (value is! Map) {
+    return null;
+  }
+  final kind = _string(value['kind']) ?? _string(value['source_type']);
+  final id = _string(value['id']) ?? _string(value['source_id']);
+  if (kind == null || id == null) {
+    return null;
+  }
+  return <String, Object?>{
+    'kind': kind,
+    'id': id,
+    for (final key in const <String>[
+      'source_type',
+      'source_id',
+      'event_id',
+      'source_version',
+      'content_hash',
+      'excerpt',
+      'evidence_text',
+      'uri',
+      'sensitivity',
+    ])
+      if (value[key] != null) key: value[key],
+  };
+}
+
+void _addSourceRefIfMissing(
+  List<Object?> refs, {
+  required String kind,
+  required String? id,
+  String? excerpt,
+}) {
+  if (id == null || id.isEmpty || _hasSourceRef(refs, kind, id)) {
+    return;
+  }
+  final trimmedExcerpt = excerpt?.trim();
+  refs.add(<String, Object?>{
+    'kind': kind,
+    'id': id,
+    if (trimmedExcerpt != null && trimmedExcerpt.isNotEmpty)
+      'excerpt': trimmedExcerpt,
+  });
+}
+
+bool _hasSourceRef(List<Object?> refs, String kind, String id) {
+  return refs.whereType<Map>().any((ref) {
+    final refKind = _string(ref['kind']) ?? _string(ref['source_type']);
+    final refId = _string(ref['id']) ?? _string(ref['source_id']);
+    return refKind == kind && refId == id;
+  });
+}
+
 CaptureRecord _captureView(localdb.CaptureRecord record) {
   final rawLocation = record.payload['location_context'];
   return CaptureRecord(
@@ -796,6 +888,12 @@ SourceTodo _todoView(localdb.TodoRecord record) {
   final statusLabel =
       _string(record.payload['status_label']) ??
       (suggestionKind == 'quiet' ? 'not suggested' : record.status);
+  final sourceRefs = _sourceRefsFromPayload(
+    record.payload['source_refs'],
+    sourceCaptureId: record.sourceCaptureId,
+    sourceEventId: record.sourceEventId,
+    excerpt: title,
+  );
   return SourceTodo(
     id: record.id,
     title: title,
@@ -817,6 +915,7 @@ SourceTodo _todoView(localdb.TodoRecord record) {
     scheduledAtLabel: _string(record.payload['scheduled_at_label']),
     sourceCaptureId: record.sourceCaptureId,
     sourceEventId: record.sourceEventId,
+    sourceRefs: sourceRefs,
     isSuggested: suggestionKind != 'quiet',
   );
 }

@@ -28,12 +28,25 @@ serialization boundaries.
 
 Script runtime kinds are represented as manifest/runtime configuration only. The local kernel rejects them with a denied run until a sandbox RFC is accepted and implemented.
 
+Official mobile native handlers are a trusted built-in path owned by the app,
+not a community Agent Pack escape hatch. Native pack bridges only accept
+`official` manifests with declared native handlers. Those handlers still run
+through normal runtime gates: pack enabled state, permission grants, declared
+`output_events`, required source refs, runtime task/run attribution, and trace
+emission. Community or other non-official packs must use public schemas plus
+permissioned tools/events and must not write mobile-private tables directly.
+
 `RetryPolicy` defaults to two attempts for transient handler failures. Explicit
 pack policies may set one to five attempts. Terminal schema, permission,
 approval, unsupported-runtime, and cancellation failures fail closed without
 auto-retry. Expired running runs/tasks recovered after an interrupted or
 native-crash-like execution consume the same retry budget before becoming
 failed.
+
+The kernel centrally requires valid `source_refs` for derived output events
+that can influence user-visible knowledge: Memory proposals, cards, insights,
+todos, artifacts, and transcript corrections. Missing refs are filled from the
+causing event; malformed refs fail the run without appending output.
 
 ## Dependencies
 

@@ -10,9 +10,10 @@ Context Packets.
 
 The model-backed path runs as a local `read_only` chat run. Models may request
 declared local read tools with strict JSON `tool_calls`; Chat validates the
-declared read-tool allowlist, denies malformed, undeclared, write, external, or
-high-risk tools in a model-visible tool result, and then asks the model for the
-final cited answer.
+declared read-tool allowlist, checks the `chat` app-owned local permission
+grants for each tool's `requiredPermissions`, denies malformed, undeclared,
+ungranted, write, external, or high-risk tools in a model-visible tool result,
+and then asks the model for the final cited answer.
 
 ## Ownership Boundary
 

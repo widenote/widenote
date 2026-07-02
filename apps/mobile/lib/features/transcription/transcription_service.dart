@@ -418,6 +418,18 @@ final class TranscriptionService {
     );
     final transcriptEventId =
         'transcript.${_safeId(attachment.id)}.${_safeId(result.providerId)}';
+    final correctionEventId = correction == null
+        ? null
+        : 'correction.${_safeId(attachment.id)}';
+    final sourceRefs = <Object?>[
+      <String, Object?>{'kind': 'capture', 'id': attachment.captureId},
+      <String, Object?>{'kind': 'attachment', 'id': attachment.id},
+      if (attachment.sourceEventId != null)
+        <String, Object?>{'kind': 'event', 'id': attachment.sourceEventId},
+      <String, Object?>{'kind': 'event', 'id': transcriptEventId},
+      if (correctionEventId != null)
+        <String, Object?>{'kind': 'event', 'id': correctionEventId},
+    ];
     final body = result.text.trim().isNotEmpty
         ? result.text.trim()
         : result.errorMessageSafe ?? 'Transcript failed.';
@@ -440,33 +452,30 @@ final class TranscriptionService {
         'transcript': body,
         'status': result.status.wireName,
       }),
-      sourceRefs: <Object?>[
-        <String, Object?>{'kind': 'capture', 'id': attachment.captureId},
-        <String, Object?>{'kind': 'attachment', 'id': attachment.id},
-        if (attachment.sourceEventId != null)
-          <String, Object?>{'kind': 'event', 'id': attachment.sourceEventId},
-        <String, Object?>{'kind': 'event', 'id': transcriptEventId},
-        if (correction != null)
-          <String, Object?>{
-            'kind': 'event',
-            'id': 'correction.${attachment.id}',
-          },
-      ],
+      sourceRefs: sourceRefs,
       sensitivity: 'medium',
       confidence: result.confidence == null ? 'medium' : 'high',
       generatorId: result.providerId,
       generatorVersion: result.model,
-      payload: result.toPayload(
-        sourceAttachmentSha256: attachment.sha256,
-        correctionStatus: correction == null
-            ? 'not_run'
-            : correction.autoApplied
-            ? 'auto_applied'
-            : 'needs_review',
-        correctionPatches:
-            correction?.patches.map((patch) => patch.toJson()).toList() ??
-            const <Object?>[],
-      ),
+      payload: <String, Object?>{
+        ...result.toPayload(
+          sourceAttachmentSha256: attachment.sha256,
+          correctionStatus: correction == null
+              ? 'not_run'
+              : correction.autoApplied
+              ? 'auto_applied'
+              : 'needs_review',
+          correctionPatches:
+              correction?.patches.map((patch) => patch.toJson()).toList() ??
+              const <Object?>[],
+        ),
+        'source_refs': sourceRefs,
+        'transcript_event_id': transcriptEventId,
+        if (correctionEventId != null) ...<String, Object?>{
+          'correction_event_id': correctionEventId,
+          'correction_revision_kind': 'inline_audio_transcript_artifact',
+        },
+      },
       createdAt: now,
       updatedAt: now,
     );

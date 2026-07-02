@@ -112,6 +112,7 @@ class SourceTodo {
     this.scheduledAtLabel,
     this.sourceCaptureId,
     this.sourceEventId,
+    this.sourceRefs = const <Object?>[],
     this.isSuggested = true,
   });
 
@@ -125,6 +126,7 @@ class SourceTodo {
   final String? scheduledAtLabel;
   final String? sourceCaptureId;
   final String? sourceEventId;
+  final List<Object?> sourceRefs;
   final bool isSuggested;
 
   bool get isAction => suggestionKind == 'action';
