@@ -642,9 +642,11 @@ final class RuntimeTaskRecord {
     this.dependencyTaskIds = const <Object?>[],
     this.missingDependencyIds = const <Object?>[],
     this.attempts = 0,
-    this.maxAttempts = 1,
+    this.maxAttempts = 2,
     this.leaseOwner,
     this.leasedUntil,
+    this.scheduledAt,
+    this.concurrencyKey,
     this.error,
     this.payload = const <String, Object?>{},
   });
@@ -665,6 +667,8 @@ final class RuntimeTaskRecord {
   final int maxAttempts;
   final String? leaseOwner;
   final DateTime? leasedUntil;
+  final DateTime? scheduledAt;
+  final String? concurrencyKey;
   final String? error;
   final JsonMap payload;
   final DateTime createdAt;
@@ -699,11 +703,15 @@ final class RuntimeTaskRecord {
     int? maxAttempts,
     String? leaseOwner,
     DateTime? leasedUntil,
+    DateTime? scheduledAt,
+    String? concurrencyKey,
     String? error,
     JsonMap? payload,
     DateTime? createdAt,
     DateTime? updatedAt,
     bool clearLease = false,
+    bool clearScheduledAt = false,
+    bool clearConcurrencyKey = false,
     bool clearError = false,
   }) {
     return RuntimeTaskRecord(
@@ -723,6 +731,10 @@ final class RuntimeTaskRecord {
       maxAttempts: maxAttempts ?? this.maxAttempts,
       leaseOwner: clearLease ? null : leaseOwner ?? this.leaseOwner,
       leasedUntil: clearLease ? null : leasedUntil ?? this.leasedUntil,
+      scheduledAt: clearScheduledAt ? null : scheduledAt ?? this.scheduledAt,
+      concurrencyKey: clearConcurrencyKey
+          ? null
+          : concurrencyKey ?? this.concurrencyKey,
       error: clearError ? null : error ?? this.error,
       payload: payload ?? this.payload,
       createdAt: createdAt ?? this.createdAt,

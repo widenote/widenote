@@ -4,7 +4,7 @@ import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
 import 'package:widenote_local_db/widenote_local_db.dart';
 
 import '../../../app/local_database.dart';
-import '../../capture/application/capture_controller.dart';
+import '../../capture/application/capture_orchestrator_provider.dart';
 import 'official_pack_manifests.dart';
 
 final permissionGateControllerProvider =

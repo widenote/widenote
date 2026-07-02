@@ -95,63 +95,98 @@ final class LocalDbTimelineRepository implements TimelineRepository {
   }
 
   List<MemoryFirstTimelineItem> _captureItems() {
-    return _database.eventLog
-        .readByType(runtime.WnEventTypes.captureCreated, limit: 200)
-        .map((event) {
-          final body = _string(event.payload['text']) ?? 'Untitled capture';
-          final captureId = event.subjectRefId ?? event.id;
-          final captureRecord = _database.captures.readById(captureId);
-          final location = _locationFromCapture(captureRecord);
-          final locationMetadata = _locationTimelineMetadata(
-            captureRecord,
-            location,
-          );
-          final attachments = _database.attachments.readByCapture(captureId);
-          final artifactPayloads = _attachmentArtifactPayloads(
-            captureId,
-            attachments,
-          );
-          return MemoryFirstTimelineItem(
-            id: captureId,
-            kind: MemoryFirstTimelineItemKind.capture,
-            title: 'Capture',
-            body: body,
-            createdAt: event.createdAt,
-            status: event.status,
-            sourceLinks: _linksWithSelf(
-              kind: 'capture',
-              id: captureId,
-              excerpt: body,
-              links: <SourceLink>[
-                SourceLink(kind: 'event', id: event.id, excerpt: body),
-                for (final attachment in attachments)
-                  SourceLink(
-                    kind: 'capture_attachment',
-                    id: attachment.id,
-                    excerpt: _safeAttachmentExcerpt(attachment),
-                  ),
-                for (final artifact in _database.derivedArtifacts.readByCapture(
-                  captureId,
-                ))
-                  SourceLink(
-                    kind: 'artifact',
-                    id: artifact.id,
-                    excerpt: _excerpt(artifact.body),
-                  ),
-              ],
+    final captureRecords = _database.captures.readAll(limit: 200);
+    final captureIds = captureRecords.map((capture) => capture.id).toSet();
+    final items = <MemoryFirstTimelineItem>[
+      for (final capture in captureRecords) _captureItemFromRecord(capture),
+      for (final event in _database.eventLog.readByType(
+        runtime.WnEventTypes.captureCreated,
+        limit: 200,
+      ))
+        if (!captureIds.contains(event.subjectRefId ?? event.id))
+          _captureItemFromEvent(event),
+    ];
+    return items;
+  }
+
+  MemoryFirstTimelineItem _captureItemFromRecord(CaptureRecord capture) {
+    final body = _string(capture.payload['text']) ?? 'Untitled capture';
+    final eventId =
+        _string(capture.payload['source_event_id']) ?? capture.sourceId;
+    final event = eventId == null ? null : _database.eventLog.readById(eventId);
+    final location = _locationFromCapture(capture);
+    final locationMetadata = _locationTimelineMetadata(capture, location);
+    final attachments = _database.attachments.readByCapture(capture.id);
+    final artifactPayloads = _attachmentArtifactPayloads(
+      capture.id,
+      attachments,
+    );
+    return MemoryFirstTimelineItem(
+      id: capture.id,
+      kind: MemoryFirstTimelineItemKind.capture,
+      title: 'Capture',
+      body: body,
+      createdAt: capture.createdAt,
+      status: capture.status,
+      sourceLinks: _linksWithSelf(
+        kind: 'capture',
+        id: capture.id,
+        excerpt: body,
+        links: <SourceLink>[
+          if (event != null)
+            SourceLink(kind: 'event', id: event.id, excerpt: body),
+          for (final attachment in attachments)
+            SourceLink(
+              kind: 'capture_attachment',
+              id: attachment.id,
+              excerpt: _safeAttachmentExcerpt(attachment),
             ),
-            metadata: <String, Object?>{
-              'event_type': event.type,
-              'event_id': event.id,
-              ...locationMetadata,
-              if (attachments.isNotEmpty)
-                'attachment_count': attachments.length,
-              if (artifactPayloads.isNotEmpty)
-                'attachment_artifacts': artifactPayloads,
-            },
-          );
-        })
-        .toList(growable: false);
+          for (final artifact in _database.derivedArtifacts.readByCapture(
+            capture.id,
+          ))
+            SourceLink(
+              kind: 'artifact',
+              id: artifact.id,
+              excerpt: _excerpt(artifact.body),
+            ),
+        ],
+      ),
+      metadata: <String, Object?>{
+        if (event != null) 'event_type': event.type,
+        if (event != null) 'event_id': event.id,
+        if (capture.payload['memory_generated'] is bool)
+          'memory_generated': capture.payload['memory_generated'],
+        ...locationMetadata,
+        if (attachments.isNotEmpty) 'attachment_count': attachments.length,
+        if (artifactPayloads.isNotEmpty)
+          'attachment_artifacts': artifactPayloads,
+      },
+    );
+  }
+
+  MemoryFirstTimelineItem _captureItemFromEvent(EventLogEntry event) {
+    final body = _string(event.payload['text']) ?? 'Untitled capture';
+    final captureId = event.subjectRefId ?? event.id;
+    return MemoryFirstTimelineItem(
+      id: captureId,
+      kind: MemoryFirstTimelineItemKind.capture,
+      title: 'Capture',
+      body: body,
+      createdAt: event.createdAt,
+      status: event.status,
+      sourceLinks: _linksWithSelf(
+        kind: 'capture',
+        id: captureId,
+        excerpt: body,
+        links: <SourceLink>[
+          SourceLink(kind: 'event', id: event.id, excerpt: body),
+        ],
+      ),
+      metadata: <String, Object?>{
+        'event_type': event.type,
+        'event_id': event.id,
+      },
+    );
   }
 
   List<MemoryFirstTimelineItem> _cardItems() {

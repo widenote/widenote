@@ -839,7 +839,7 @@ WHERE id = 'run-bad-lease';
     });
 
     test(
-      'persists lease across reopen and recovers stale running runs',
+      'persists lease across reopen and retries stale running runs',
       () async {
         final directory = Directory.systemTemp.createTempSync(
           'widenote_runtime_adapter_',
@@ -870,6 +870,7 @@ WHERE id = 'run-bad-lease';
             triggerEventId: 'event-stale',
             status: runtime.RuntimeTaskStatus.running,
             attempts: 1,
+            maxAttempts: 2,
             createdAt: startedAt,
           ),
         );
@@ -900,10 +901,12 @@ WHERE id = 'run-bad-lease';
         )..registerPack(_emptyPack(id: 'pack.stale'));
         await kernel.restoreRuntimeState();
 
-        expect(
-          (await reopenedStore.readTaskById('task-stale'))!.status,
-          runtime.RuntimeTaskStatus.failed,
-        );
+        final recoveredTask = (await reopenedStore.readTaskById('task-stale'))!;
+        expect(recoveredTask.status, runtime.RuntimeTaskStatus.queued);
+        expect(recoveredTask.attempts, 1);
+        expect(recoveredTask.leaseOwner, isNull);
+        expect(recoveredTask.leasedUntil, isNull);
+        expect(recoveredTask.error, contains('lease expired'));
         final recoveredRun = (await reopenedStore.readRunById('run-stale'))!;
         expect(recoveredRun.status, runtime.RuntimeRunStatus.failed);
         expect(recoveredRun.leaseExpiresAt, leaseExpiresAt);

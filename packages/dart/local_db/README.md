@@ -171,8 +171,10 @@ accept/edit/reject transitions, the SQLite-backed Memory repository adapter,
 todo status updates, trace reads, in-memory schema bootstrap, file-path reopen
 persistence, v1-to-current migrations, v9 runtime/pack/approval/permission/
 context-cache tables, migration indexes/foreign keys/repeated bootstrap/failure
-rollback, pagination, capture/event/task transactional enqueue, permission revoke terminal
-state, pending approval storage, approval decisions, canceled/expired approval
+rollback, pagination, capture/event/task transactional enqueue, runtime task
+claim/lease/scheduled retry/concurrency columns, stale running retry recovery,
+permission revoke terminal state, pending approval storage, approval decisions,
+canceled/expired approval
 records, backup import/export, cache-tolerant restore, tombstone restore behavior,
 secret-boundary manifest validation, legacy safe-backup provider credential
 re-entry reports, full directory-backup credential restore, encrypted-full

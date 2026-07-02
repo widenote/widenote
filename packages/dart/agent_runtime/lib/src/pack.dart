@@ -18,6 +18,7 @@ final class AgentDefinition {
     this.tools = const <String>{},
     this.retryPolicy = const RetryPolicy(),
     this.modelProfileRef,
+    this.concurrencyKey,
   });
 
   final String id;
@@ -28,6 +29,7 @@ final class AgentDefinition {
   final Set<String> tools;
   final RetryPolicy retryPolicy;
   final String? modelProfileRef;
+  final String? concurrencyKey;
 }
 
 final class AgentPackToolDefinition {
@@ -397,6 +399,12 @@ void _compareAgents(
       native.modelProfileRef,
       manifest.modelProfileRef,
     );
+    _expectEqual(
+      issues,
+      '$path.concurrency_key',
+      native.concurrencyKey,
+      manifest.concurrencyKey,
+    );
   }
 }
 
@@ -535,6 +543,9 @@ final RegExp _agentIdPattern = RegExp(
 final RegExp _subscriptionIdPattern = RegExp(
   r'^sub\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$',
 );
+final RegExp _subscriptionDependencyPattern = RegExp(
+  r'^(?:sub\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*|pack\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*::sub\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*)$',
+);
 final RegExp _permissionIdPattern = RegExp(
   r'^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$',
 );
@@ -591,6 +602,7 @@ const Set<String> _agentKeys = <String>{
   'tools',
   'output_events',
   'retry_policy',
+  'concurrency_key',
 };
 const Set<String> _retryPolicyKeys = <String>{'max_attempts'};
 const Set<String> _toolKeys = <String>{
@@ -892,7 +904,7 @@ List<Subscription> _subscriptionList(Object? value) {
         dependsOn: _optionalStringSet(
           json['depends_on'],
           'subscriptions.$id.depends_on',
-          pattern: _subscriptionIdPattern,
+          pattern: _subscriptionDependencyPattern,
         ),
       ),
     );
@@ -955,6 +967,11 @@ AgentDefinition _agentDefinition(JsonMap json, int index) {
       json,
       'model_profile_ref',
       'agents.$id.model_profile_ref',
+    ),
+    concurrencyKey: _optionalString(
+      json,
+      'concurrency_key',
+      'agents.$id.concurrency_key',
     ),
   );
 }
@@ -1072,7 +1089,7 @@ String _requiredStringValue(Object? value, String path) {
 
 int _maxAttempts(Object? value, String path) {
   if (value == null) {
-    return 1;
+    return const RetryPolicy().normalizedMaxAttempts;
   }
   final json = _requiredJsonMap(
     value,
@@ -1427,6 +1444,9 @@ void _validateReferences({
       );
     }
     for (final dependency in subscription.dependsOn) {
+      if (dependency.contains('::')) {
+        continue;
+      }
       if (dependency == subscription.id) {
         throw FormatException(
           'Manifest field subscriptions.${subscription.id}.depends_on '
@@ -1501,6 +1521,9 @@ void _validateSubscriptionCycles(List<Subscription> subscriptions) {
     final subscription = byId[id];
     if (subscription != null) {
       for (final dependency in subscription.dependsOn) {
+        if (dependency.contains('::')) {
+          continue;
+        }
         visit(dependency, <String>[...path, id]);
       }
     }

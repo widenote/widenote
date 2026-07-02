@@ -1,45 +1,39 @@
+import 'dart:async';
+import 'dart:collection';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
-import 'package:widenote_local_db/widenote_local_db.dart' as localdb;
 
 import '../../../app/local_database.dart';
-import '../../../app/model_client.dart';
-import '../../plugins/application/official_pack_manifests.dart';
 import '../../location/application/location_settings_controller.dart';
 import '../../location/domain/location_context.dart';
 import '../../transcription/transcription_service.dart';
 import '../../transcription/transcription_types.dart';
+import 'capture_background_processing.dart';
 import 'capture_orchestrator.dart';
+import 'capture_orchestrator_provider.dart';
 import 'local_capture_read_model.dart';
-import 'local_knowledge_sink.dart';
 import '../domain/capture_models.dart';
 import '../media/capture_media.dart';
-
-final captureOrchestratorProvider = Provider<CaptureOrchestrator>((ref) {
-  final database = ref.watch(localDatabaseProvider);
-  _seedDefaultOfficialPermissionGrants(database);
-  return CaptureOrchestrator.local(
-    eventStore: ref.watch(localEventStoreProvider),
-    traceSink: ref.watch(localTraceSinkProvider),
-    memoryRepository: ref.watch(localMemoryRepositoryProvider),
-    permissionBroker: runtime.InMemoryPermissionBroker(
-      store: localdb.LocalDbPermissionStore(database),
-    ),
-    runtimeStore: localdb.LocalDbRuntimeStore(database),
-    autoGrantOfficialPermissions: false,
-    enabledPackIds: _enabledOfficialPackIds(database),
-    knowledgeSink: LocalDbCaptureKnowledgeSink(database),
-    model: ref.watch(modelClientProvider),
-  );
-});
 
 final captureControllerProvider =
     NotifierProvider<CaptureController, CaptureState>(CaptureController.new);
 
 class CaptureController extends Notifier<CaptureState> {
+  final Queue<_QueuedCaptureJob> _processingQueue = Queue<_QueuedCaptureJob>();
+  final Set<String> _processingRecordIds = <String>{};
+  bool _isDrainingQueue = false;
+  int _activeProcessingJobs = 0;
+
   @override
   CaptureState build() {
-    return _readModelStore().hydrate();
+    final hydrated = _readModelStore().hydrate();
+    scheduleMicrotask(() {
+      _restorePendingProcessingQueue();
+      if (_readModelStore().readPendingProcessingInputs().isNotEmpty) {
+        unawaited(ref.read(captureBackgroundSchedulerProvider).scheduleDrain());
+      }
+    });
+    return hydrated;
   }
 
   Future<void> submitCapture(
@@ -50,9 +44,6 @@ class CaptureController extends Notifier<CaptureState> {
     if (body.isEmpty && attachments.isEmpty) {
       return;
     }
-    if (state.isProcessing) {
-      return;
-    }
     if (attachments.any((attachment) => !attachment.isReady)) {
       state = state.copyWith(
         errorMessage: 'Review or remove pending attachments before saving.',
@@ -60,102 +51,82 @@ class CaptureController extends Notifier<CaptureState> {
       return;
     }
 
-    var processingAttachments = attachments;
-    var recordBody = body.isEmpty ? _attachmentRecordBody(attachments) : body;
-    state = state.copyWith(isProcessing: true, clearError: true);
+    final recordBody = body.isEmpty ? _attachmentRecordBody(attachments) : body;
+    state = state.copyWith(clearError: true);
     final locationContext = await _captureLocationContext();
+    final now = DateTime.now().toUtc();
 
     final pendingRecord = CaptureRecord(
-      id: 'local-${DateTime.now().toUtc().microsecondsSinceEpoch}',
+      id: 'local-${now.microsecondsSinceEpoch}',
       body: recordBody,
-      createdAt: DateTime.now().toUtc(),
-      status: 'Saved locally, processing',
+      createdAt: now,
+      status: captureStatusSavedProcessing,
       locationContext: locationContext,
     );
-    _readModelStore().saveCapture(pendingRecord, attachments: attachments);
+    _readModelStore().saveCapture(
+      pendingRecord,
+      attachments: attachments,
+      rawText: body,
+    );
 
     state = state.copyWith(
-      records: [pendingRecord, ...state.records],
+      records: _upsertRecord(state.records, pendingRecord),
       clearError: true,
     );
 
-    try {
-      processingAttachments = await _transcribeVoiceAttachments(
-        pendingRecord,
-        attachments,
-      );
-      final transcriptText = _transcriptText(processingAttachments);
-      final processingBody = _processingBody(
+    final job = _enqueueProcessing(
+      CaptureProcessingInput(
+        record: pendingRecord,
         typedText: body,
-        transcriptText: transcriptText,
-        fallbackText: recordBody,
-      );
-      if (processingBody != recordBody) {
-        final transcriptReadyRecord = pendingRecord.copyWith(
-          body: processingBody,
-          status: 'Saved locally, transcript ready',
-        );
-        _readModelStore().saveCapture(
-          transcriptReadyRecord,
-          attachments: processingAttachments,
-        );
-        state = state.copyWith(
-          records: _replaceRecord(
-            state.records,
-            pendingRecord.id,
-            transcriptReadyRecord,
-          ),
-        );
-        recordBody = processingBody;
-      }
-      final result = await ref
-          .read(captureOrchestratorProvider)
-          .processCapture(
-            recordBody,
-            attachments: processingAttachments,
-            captureId: pendingRecord.id,
-          );
-      final resultRecord = result.record.copyWith(
-        locationContext: locationContext,
-      );
-      final readModel = _readModelStore()
-        ..saveCapture(resultRecord, attachments: processingAttachments);
-      if (result.todo.isSuggested) {
-        readModel.saveTodo(result.todo);
-      }
-      final nextTodos = result.todo.isSuggested
-          ? [result.todo, ...state.todos]
-          : state.todos;
+        attachments: attachments,
+      ),
+    );
+    unawaited(ref.read(captureBackgroundSchedulerProvider).scheduleDrain());
+    return job.completer.future;
+  }
 
-      state = state.copyWith(
-        records: _replaceRecord(state.records, pendingRecord.id, resultRecord),
-        memories: result.memoryItem.needsReview
-            ? state.memories
-            : [result.memoryItem, ...state.memories],
-        reviewCandidates: result.reviewCandidate == null
-            ? state.reviewCandidates
-            : [result.reviewCandidate!, ...state.reviewCandidates],
-        cards: result.cards,
-        insights: result.insights,
-        todos: nextTodos,
-        traces: [...result.traces, ...state.traces],
-        isProcessing: false,
-        clearError: true,
-      );
-    } catch (error) {
-      final failedRecord = pendingRecord.copyWith(
-        status: 'Saved locally, agent failed',
-      );
-      _readModelStore().saveCapture(
-        failedRecord,
-        attachments: processingAttachments,
-      );
-      state = state.copyWith(
-        records: _replaceRecord(state.records, pendingRecord.id, failedRecord),
-        isProcessing: false,
-        errorMessage: _captureFailureMessage(error),
-      );
+  Future<void> retryCapture(String id) async {
+    final queuedJob = _queuedJobFor(id);
+    if (queuedJob != null) {
+      return queuedJob.completer.future;
     }
+    if (_processingRecordIds.contains(id)) {
+      return;
+    }
+    final input = _readModelStore().readProcessingInput(id);
+    if (input == null || !input.record.canRetry) {
+      return;
+    }
+    final taskRetryResult = await _retryRuntimeTaskForCapture(input);
+    if (taskRetryResult) {
+      return;
+    }
+    if (await ref
+        .read(captureOrchestratorProvider)
+        .hasPublishedCapture(input.record.id)) {
+      _reloadStateFromReadModel(clearError: true);
+      return;
+    }
+    final retryRecord = input.record.copyWith(
+      status: captureStatusSavedProcessing,
+    );
+    _readModelStore().saveCapture(
+      retryRecord,
+      attachments: input.attachments,
+      rawText: input.typedText,
+    );
+    state = state.copyWith(
+      records: _replaceRecord(state.records, id, retryRecord),
+      clearError: true,
+    );
+    final job = _enqueueProcessing(
+      CaptureProcessingInput(
+        record: retryRecord,
+        typedText: input.typedText,
+        attachments: input.attachments,
+      ),
+    );
+    return job.completer.future;
   }
 
   Future<void> acceptReviewCandidate(String id) async {
@@ -221,6 +192,213 @@ class CaptureController extends Notifier<CaptureState> {
     ];
   }
 
+  List<CaptureRecord> _upsertRecord(
+    List<CaptureRecord> records,
+    CaptureRecord next,
+  ) {
+    if (records.any((record) => record.id == next.id)) {
+      return _replaceRecord(records, next.id, next);
+    }
+    return [next, ...records];
+  }
+
+  void _restorePendingProcessingQueue() {
+    final pendingInputs = _readModelStore().readPendingProcessingInputs();
+    for (final input in pendingInputs) {
+      if (_queuedJobFor(input.record.id) != null ||
+          _processingRecordIds.contains(input.record.id)) {
+        continue;
+      }
+      _enqueueProcessing(input);
+    }
+  }
+
+  _QueuedCaptureJob _enqueueProcessing(CaptureProcessingInput input) {
+    final queued = _queuedJobFor(input.record.id);
+    if (queued != null) {
+      return queued;
+    }
+    final job = _QueuedCaptureJob(input);
+    _processingQueue.add(job);
+    _syncProcessingState();
+    unawaited(_drainProcessingQueue());
+    return job;
+  }
+
+  _QueuedCaptureJob? _queuedJobFor(String id) {
+    for (final job in _processingQueue) {
+      if (job.input.record.id == id) {
+        return job;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _drainProcessingQueue() async {
+    if (_isDrainingQueue) {
+      return;
+    }
+    _isDrainingQueue = true;
+    _syncProcessingState();
+    try {
+      while (_processingQueue.isNotEmpty &&
+          _activeProcessingJobs < _maxConcurrentCaptureJobs) {
+        final job = _processingQueue.removeFirst();
+        _startProcessingJob(job);
+      }
+    } finally {
+      _isDrainingQueue = false;
+      _syncProcessingState();
+    }
+  }
+
+  void _startProcessingJob(_QueuedCaptureJob job) {
+    _activeProcessingJobs += 1;
+    _processingRecordIds.add(job.input.record.id);
+    _syncProcessingState();
+    unawaited(
+      _processQueuedCapture(job.input).whenComplete(() {
+        _activeProcessingJobs -= 1;
+        _processingRecordIds.remove(job.input.record.id);
+        if (!job.completer.isCompleted) {
+          job.completer.complete();
+        }
+        _syncProcessingState();
+        unawaited(_drainProcessingQueue());
+      }),
+    );
+  }
+
+  Future<void> _processQueuedCapture(CaptureProcessingInput input) async {
+    var processingAttachments = input.attachments;
+    var currentRecord = input.record;
+    var recordBody = currentRecord.body;
+
+    try {
+      processingAttachments = await _transcribeVoiceAttachments(
+        currentRecord,
+        processingAttachments,
+      );
+      final transcriptText = _transcriptText(processingAttachments);
+      final processingBody = _processingBody(
+        typedText: input.typedText,
+        transcriptText: transcriptText,
+        fallbackText: recordBody,
+      );
+      if (processingBody != recordBody) {
+        final transcriptReadyRecord = currentRecord.copyWith(
+          body: processingBody,
+          status: captureStatusTranscriptReady,
+        );
+        _readModelStore().saveCapture(
+          transcriptReadyRecord,
+          attachments: processingAttachments,
+          rawText: input.typedText,
+        );
+        state = state.copyWith(
+          records: _replaceRecord(
+            state.records,
+            currentRecord.id,
+            transcriptReadyRecord,
+          ),
+        );
+        currentRecord = transcriptReadyRecord;
+        recordBody = processingBody;
+      }
+
+      final orchestrator = ref.read(captureOrchestratorProvider);
+      final materialized = await orchestrator.materializePublishedCapture(
+        currentRecord.id,
+      );
+      if (materialized != null) {
+        _savePipelineResult(
+          materialized,
+          currentRecord,
+          processingAttachments,
+          input.typedText,
+        );
+        _reloadStateFromReadModel(clearError: true);
+        return;
+      }
+      if (await orchestrator.hasPublishedCapture(currentRecord.id)) {
+        _reloadStateFromReadModel(clearError: true);
+        return;
+      }
+
+      final result = await orchestrator.processCapture(
+        recordBody,
+        attachments: processingAttachments,
+        captureId: currentRecord.id,
+      );
+      _savePipelineResult(
+        result,
+        currentRecord,
+        processingAttachments,
+        input.typedText,
+      );
+      _reloadStateFromReadModel(clearError: true);
+    } catch (error) {
+      if (_isCaptureAlreadyQueued(error)) {
+        _reloadStateFromReadModel(clearError: true);
+        return;
+      }
+      final failedRecord = currentRecord.copyWith(
+        status: captureStatusAgentFailed,
+      );
+      _readModelStore().saveCapture(
+        failedRecord,
+        attachments: processingAttachments,
+        rawText: input.typedText,
+      );
+      _reloadStateFromReadModel(errorMessage: _captureFailureMessage(error));
+    }
+  }
+
+  void _reloadStateFromReadModel({
+    String? errorMessage,
+    bool clearError = false,
+  }) {
+    final processing = state.isProcessing;
+    state = _readModelStore().hydrate().copyWith(
+      isProcessing: processing,
+      errorMessage: errorMessage,
+      clearError: clearError,
+    );
+  }
+
+  void _savePipelineResult(
+    CapturePipelineResult result,
+    CaptureRecord currentRecord,
+    List<CaptureAttachment> processingAttachments,
+    String typedText,
+  ) {
+    final resultRecord = result.record.copyWith(
+      locationContext: currentRecord.locationContext,
+      memoryGenerated: result.memoryGenerated,
+    );
+    final readModel = _readModelStore()
+      ..saveCapture(
+        resultRecord,
+        attachments: processingAttachments,
+        rawText: typedText,
+      );
+    if (result.todo.isSuggested) {
+      readModel.saveTodo(result.todo);
+    }
+  }
+
+  void _syncProcessingState() {
+    final next =
+        _isDrainingQueue ||
+        _activeProcessingJobs > 0 ||
+        _processingQueue.isNotEmpty ||
+        _processingRecordIds.isNotEmpty;
+    if (state.isProcessing == next) {
+      return;
+    }
+    state = state.copyWith(isProcessing: next);
+  }
+
   List<MemoryReviewCandidate> _removeReviewCandidate(
     List<MemoryReviewCandidate> candidates,
     String id,
@@ -272,6 +450,28 @@ class CaptureController extends Notifier<CaptureState> {
       updated.add(_attachmentWithTranscript(attachment, result));
     }
     return List<CaptureAttachment>.unmodifiable(updated);
+  }
+
+  Future<bool> _retryRuntimeTaskForCapture(CaptureProcessingInput input) async {
+    try {
+      final result = await ref
+          .read(captureOrchestratorProvider)
+          .retryCaptureTasks(input.record.id);
+      if (result == null) {
+        return false;
+      }
+      _savePipelineResult(
+        result,
+        input.record,
+        input.attachments,
+        input.typedText,
+      );
+      _reloadStateFromReadModel(clearError: true);
+      return true;
+    } catch (error) {
+      _reloadStateFromReadModel(errorMessage: _captureFailureMessage(error));
+      return true;
+    }
   }
 
   CaptureAttachment _attachmentWithTranscript(
@@ -331,6 +531,15 @@ class CaptureController extends Notifier<CaptureState> {
   }
 }
 
+const _maxConcurrentCaptureJobs = 4;
+
+final class _QueuedCaptureJob {
+  _QueuedCaptureJob(this.input);
+
+  final CaptureProcessingInput input;
+  final Completer<void> completer = Completer<void>();
+}
+
 String? _metadataText(Map<String, Object?> metadata, String key) {
   final value = metadata[key];
   if (value is String && value.trim().isNotEmpty) {
@@ -353,64 +562,7 @@ String _captureFailureMessage(Object error) {
   return 'Record saved locally, but agent processing failed. Retry after model or permission recovery.';
 }
 
-void _seedDefaultOfficialPermissionGrants(
-  localdb.WideNoteLocalDatabase database,
-) {
-  final now = DateTime.now().toUtc();
-  for (final manifest in officialPackManifestSnapshots) {
-    if (database.packInstallations.readById(manifest.id) == null) {
-      database.packInstallations.insert(
-        localdb.PackInstallationRecord(
-          packId: manifest.id,
-          name: manifest.name,
-          version: manifest.version,
-          publisher: manifest.publisher,
-          edition: manifest.edition,
-          status: 'enabled',
-          runtimeStatus: 'idle',
-          entrypointKind: 'native',
-          requestedPermissions: <Object?>[...manifest.requiredPermissions],
-          enabledSubscriptionIds: <Object?>[
-            for (final subscription in manifest.subscriptions) subscription.id,
-          ],
-          manifest: officialPackManifestMap(manifest.id),
-          payload: const <String, Object?>{'source': 'mobile_capture_runtime'},
-          installedAt: now,
-          updatedAt: now,
-        ),
-      );
-    }
-    for (final permission in manifest.requiredPermissions) {
-      if (database.permissionGrants.readByPackAndPermission(
-            manifest.id,
-            permission,
-          ) !=
-          null) {
-        continue;
-      }
-      database.permissionGrants.insert(
-        localdb.PermissionGrantRecord(
-          id: 'permission:${manifest.id}:$permission',
-          packId: manifest.id,
-          permissionId: permission,
-          status: runtime.PermissionDecisionState.granted.name,
-          grantKind: 'built_in_default',
-          grantedAt: now,
-          reason: 'built_in_default',
-          payload: const <String, Object?>{'source': 'mobile_capture_runtime'},
-          createdAt: now,
-          updatedAt: now,
-        ),
-      );
-    }
-  }
-}
-
-List<String> _enabledOfficialPackIds(localdb.WideNoteLocalDatabase database) {
-  return <String>[
-    for (final manifest in officialPackManifestSnapshots)
-      if (database.packInstallations.readById(manifest.id)?.status !=
-          'disabled')
-        manifest.id,
-  ];
+bool _isCaptureAlreadyQueued(Object error) {
+  return error is CapturePipelineException &&
+      error.message == captureAlreadyQueuedMessage;
 }

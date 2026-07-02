@@ -229,6 +229,7 @@ const officialPackManifestMaps = <String, Map<String, Object?>>{
         'agent_id': 'agent.todo_loop',
         'delivery': 'async',
         'enabled_by_default': true,
+        'depends_on': <String>['pack.default::sub.capture_created'],
       },
     ],
     'agents': <Map<String, Object?>>[
@@ -320,6 +321,7 @@ const officialPackManifestMaps = <String, Map<String, Object?>>{
         'agent_id': 'agent.pkm_profile_builder',
         'delivery': 'async',
         'enabled_by_default': true,
+        'depends_on': <String>['pack.default::sub.capture_created'],
       },
     ],
     'agents': <Map<String, Object?>>[

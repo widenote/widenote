@@ -1756,7 +1756,7 @@ CREATE TABLE runtime_tasks (
         final eventStore = LocalDbEventStore(database);
         final event = runtime.WnEvent(
           id: 'event-duplicate',
-          type: runtime.WnEventTypes.captureCreated,
+          type: 'wn.capture.ignored',
           schemaVersion: 1,
           actor: runtime.WnActor.user,
           subjectRef: const runtime.SubjectRef(
@@ -1772,6 +1772,46 @@ CREATE TABLE runtime_tasks (
         await eventStore.append(event);
 
         expect(() => eventStore.append(event), throwsA(isA<SqliteException>()));
+        expect((await eventStore.readAll()).single.payload['text'], 'first');
+      },
+    );
+
+    test(
+      'runtime event store rejects duplicate capture-created subjects',
+      () async {
+        final eventStore = LocalDbEventStore(database);
+        final first = runtime.WnEvent(
+          id: 'event-capture-first',
+          type: runtime.WnEventTypes.captureCreated,
+          schemaVersion: 1,
+          actor: runtime.WnActor.user,
+          subjectRef: const runtime.SubjectRef(
+            kind: 'capture',
+            id: 'capture-dedupe',
+          ),
+          payload: const <String, Object?>{'text': 'first'},
+          privacy: runtime.WnPrivacy.localOnly,
+          deviceId: 'device-db',
+          createdAt: DateTime.utc(2026, 7, 2, 1),
+        );
+        final duplicate = runtime.WnEvent(
+          id: 'event-capture-second',
+          type: runtime.WnEventTypes.captureCreated,
+          schemaVersion: 1,
+          actor: runtime.WnActor.user,
+          subjectRef: const runtime.SubjectRef(
+            kind: 'capture',
+            id: 'capture-dedupe',
+          ),
+          payload: const <String, Object?>{'text': 'second'},
+          privacy: runtime.WnPrivacy.localOnly,
+          deviceId: 'device-db',
+          createdAt: DateTime.utc(2026, 7, 2, 1, 1),
+        );
+
+        await eventStore.append(first);
+
+        expect(() => eventStore.append(duplicate), throwsA(isA<StateError>()));
         expect((await eventStore.readAll()).single.payload['text'], 'first');
       },
     );

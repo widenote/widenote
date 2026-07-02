@@ -13,6 +13,10 @@ presents provenance and source references, but it does not define canonical
 storage, Memory policy, Agent Pack runtime behavior, search indexing, or sync
 semantics.
 
+Capture rows are local object truth for saved records. Timeline must display
+saved captures even before a `captureCreated` runtime event exists, using the
+event only as an additional source link once processing completes.
+
 Timeline text search is not implemented with local substring rules. The current
 surface supports local type filtering and shows a retriever-required state for
 text queries. Full embedding/vector or model-backed retrieval remains a later
@@ -54,4 +58,5 @@ None.
 ## Related Context
 
 - `docs/rfcs/mobile-entry-closure.md`
+- `docs/decisions/0017-accept-continuous-capture-background-processing.md`
 - `docs/research/2026-06-26-w7-current-integration-state.md`

@@ -49,7 +49,10 @@
       ],
       "agent_id": "agent.pkm_profile_builder",
       "delivery": "async",
-      "enabled_by_default": true
+      "enabled_by_default": true,
+      "depends_on": [
+        "pack.default::sub.capture_created"
+      ]
     }
   ],
   "agents": [

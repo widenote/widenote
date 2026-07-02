@@ -202,6 +202,46 @@ void main() {
     expect(find.byKey(const Key('timeline-page')), findsOneWidget);
   });
 
+  testWidgets('timeline renders saved capture before runtime event', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    final createdAt = DateTime.utc(2026, 7, 2, 10);
+    database.captures.insert(
+      CaptureRecord(
+        id: 'capture-pending',
+        sourceType: 'manual',
+        status: 'Saved locally, processing',
+        payload: const <String, Object?>{
+          'text': 'A saved capture is still being processed.',
+        },
+        createdAt: createdAt,
+        updatedAt: createdAt,
+      ),
+    );
+
+    await _pumpTimelinePage(
+      tester,
+      overrides: [
+        localDatabaseProvider.overrideWithValue(database),
+        timelineRepositoryProvider.overrideWithValue(
+          LocalDbTimelineRepository(database),
+        ),
+      ],
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const Key('timeline-item-capture-pending')),
+      findsOneWidget,
+    );
+    expect(
+      find.text('A saved capture is still being processed.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Saved locally, processing'), findsOneWidget);
+  });
+
   testWidgets('timeline opens structured insight detail with claim sources', (
     tester,
   ) async {
@@ -405,7 +445,7 @@ Future<void> _pumpTimelinePage(
       child: const MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: TimelinePage(),
+        home: Scaffold(body: TimelinePage()),
       ),
     ),
   );

@@ -36,6 +36,7 @@ dependencies:
     path: ../../packages/dart/memory
   widenote_model_providers:
     path: ../../packages/dart/model_providers
+  workmanager: ^0.9.0+3
 
 dev_dependencies:
   flutter_test:

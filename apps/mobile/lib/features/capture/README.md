@@ -37,10 +37,18 @@ tool, platform permission, or explicit user-review state.
 
 Capture implements current contracts from
 `docs/architecture/current-contracts.md`: original records remain source truth,
-AI outputs are derived and source-linked, and low-risk source-linked
-non-conflicting Memory should flow through the Memory policy as auto-accepted by
-default. Review is reserved for low-confidence, conflicting, sensitive,
-credential-like, or policy-unclear Memory.
+AI outputs are derived and source-linked, quick capture persists immediately
+then queues full model/runtime processing in the background, and low-risk
+source-linked non-conflicting Memory should flow through the Memory policy as
+auto-accepted by default. Review is reserved for low-confidence, conflicting,
+sensitive, credential-like, or policy-unclear Memory. Background processing
+state must not disable new capture input; failed records expose per-record
+retry, while pending records do not expose edit/delete in this slice. Runtime
+task claim, retry due time, dependency blocking, and concurrency slots are
+durable local-db behavior; the controller is only a foreground drain and UI
+state bridge. Workmanager/BGTask scheduling may trigger short drains for
+already-saved ready records, but it does not take over recording, foreground
+location, or voice ASR.
 
 ## Dependencies
 
@@ -78,4 +86,6 @@ None.
 - `docs/rfcs/memory-model.md`
 - `docs/decisions/0005-use-memory-first-instead-of-pkm-core.md`
 - `docs/decisions/0009-use-object-truth-and-context-packets.md`
+- `docs/decisions/0017-accept-continuous-capture-background-processing.md`
+- `docs/decisions/0018-accept-durable-agent-work-queue.md`
 - `docs/architecture/engineering-rules.md`

@@ -10,7 +10,7 @@ import 'package:widenote_model_providers/model_providers.dart';
 import 'package:widenote_mobile/app/local_database.dart';
 import 'package:widenote_mobile/app/model_client.dart';
 import 'package:widenote_mobile/features/backup/application/backup_controller.dart';
-import 'package:widenote_mobile/features/capture/application/capture_controller.dart';
+import 'package:widenote_mobile/features/capture/application/capture_orchestrator_provider.dart';
 import 'package:widenote_mobile/features/chat/application/chat_controller.dart';
 import 'package:widenote_mobile/features/chat/domain/chat_models.dart';
 import 'package:widenote_mobile/features/model_providers/application/model_provider_settings_controller.dart';

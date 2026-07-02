@@ -53,6 +53,24 @@ INSERT INTO event_log (
     );
   }
 
+  EventLogEntry? readCaptureCreatedBySubject(String subjectId) {
+    final rows = _database.select(
+      '''
+SELECT *
+FROM event_log
+WHERE type = ?
+  AND subject_kind = 'capture'
+  AND subject_id = ?
+LIMIT 1;
+''',
+      <Object?>['wn.capture.created', subjectId],
+    );
+    if (rows.isEmpty) {
+      return null;
+    }
+    return _eventFromRow(rows.first);
+  }
+
   List<EventLogEntry> readAll({int? limit, int? offset}) {
     return _selectOrdered(
       _database,

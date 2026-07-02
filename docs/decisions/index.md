@@ -19,6 +19,8 @@
 | [ADR-0014](./0014-accept-location-capture-boundaries.md) | Accept location capture boundaries | accepted | 2026-07-01 |
 | [ADR-0015](./0015-use-hierarchical-mobile-navigation.md) | Use hierarchical mobile navigation outside bottom tabs | accepted | 2026-07-02 |
 | [ADR-0016](./0016-restore-ready-logs-backups-and-asr.md) | Make logs, backups, provider validation, and ASR restore-ready | accepted | 2026-07-02 |
+| [ADR-0017](./0017-accept-continuous-capture-background-processing.md) | Accept continuous capture background processing | accepted | 2026-07-02 |
+| [ADR-0018](./0018-accept-durable-agent-work-queue.md) | Accept durable agent work queue | accepted | 2026-07-02 |
 
 ## RFC Status
 

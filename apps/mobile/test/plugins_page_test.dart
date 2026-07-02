@@ -9,7 +9,7 @@ import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
 import 'package:widenote_local_db/widenote_local_db.dart';
 import 'package:widenote_mobile/app/local_database.dart';
 import 'package:widenote_mobile/app/widenote_app.dart';
-import 'package:widenote_mobile/features/capture/application/capture_controller.dart';
+import 'package:widenote_mobile/features/capture/application/capture_orchestrator_provider.dart';
 import 'package:widenote_mobile/features/plugins/application/official_pack_manifests.dart';
 import 'package:widenote_mobile/features/plugins/application/pack_catalog.dart';
 import 'package:widenote_mobile/features/plugins/presentation/pack_library_page.dart';

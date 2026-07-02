@@ -2,6 +2,11 @@ import 'package:flutter/foundation.dart';
 
 import '../../location/domain/location_context.dart';
 
+const captureStatusSavedProcessing = 'Saved locally, processing';
+const captureStatusTranscriptReady = 'Saved locally, transcript ready';
+const captureStatusProcessed = 'Processed locally';
+const captureStatusAgentFailed = 'Saved locally, agent failed';
+
 @immutable
 class CaptureRecord {
   const CaptureRecord({
@@ -11,6 +16,7 @@ class CaptureRecord {
     required this.status,
     this.sourceEventId,
     this.locationContext,
+    this.memoryGenerated,
   });
 
   final String id;
@@ -19,6 +25,14 @@ class CaptureRecord {
   final String status;
   final String? sourceEventId;
   final CapturedLocationContext? locationContext;
+  final bool? memoryGenerated;
+
+  bool get isProcessing {
+    return status == captureStatusSavedProcessing ||
+        status == captureStatusTranscriptReady;
+  }
+
+  bool get canRetry => status == captureStatusAgentFailed;
 
   CaptureRecord copyWith({
     String? id,
@@ -27,7 +41,9 @@ class CaptureRecord {
     String? status,
     String? sourceEventId,
     CapturedLocationContext? locationContext,
+    bool? memoryGenerated,
     bool clearLocationContext = false,
+    bool clearMemoryGenerated = false,
   }) {
     return CaptureRecord(
       id: id ?? this.id,
@@ -38,6 +54,9 @@ class CaptureRecord {
       locationContext: clearLocationContext
           ? null
           : locationContext ?? this.locationContext,
+      memoryGenerated: clearMemoryGenerated
+          ? null
+          : memoryGenerated ?? this.memoryGenerated,
     );
   }
 }

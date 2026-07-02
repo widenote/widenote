@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:collection';
+
 import 'package:test/test.dart';
 import 'package:widenote_agent_runtime/widenote_agent_runtime.dart';
 import 'package:widenote_core/widenote_core.dart';
@@ -731,7 +734,7 @@ void main() {
     });
   });
 
-  test('handler failure marks task and run failed with error trace', () async {
+  test('handler failure queues the default retry with error trace', () async {
     final store = InMemoryEventStore();
     final traceSink = InMemoryTraceSink();
     final permissions = InMemoryPermissionBroker()
@@ -758,7 +761,11 @@ void main() {
       ),
     );
 
-    expect(kernel.tasks.single.status, RuntimeTaskStatus.failed);
+    expect(kernel.tasks.single.status, RuntimeTaskStatus.queued);
+    expect(kernel.tasks.single.attempts, 1);
+    expect(kernel.tasks.single.maxAttempts, 2);
+    expect(kernel.tasks.single.scheduledAt, isNotNull);
+    expect(kernel.tasks.single.error, contains('handler exploded'));
     expect(kernel.runs.single.status, RuntimeRunStatus.failed);
     expect(kernel.runs.single.error, contains('handler exploded'));
 
@@ -768,6 +775,10 @@ void main() {
     );
     expect(failedTrace.level, TraceLevel.error);
     expect(failedTrace.details['error'], contains('handler exploded'));
+    expect(
+      traces.map((trace) => trace.name),
+      contains('runtime.task.retry_queued'),
+    );
   });
 
   test(
@@ -1278,29 +1289,33 @@ void main() {
       final store = InMemoryEventStore();
       final traceSink = InMemoryTraceSink();
       final handler = _FailsOnceHandler();
-      final kernel = _blankKernel(store: store, traceSink: traceSink)
-        ..registerPack(
-          AgentPack(
-            id: 'pack.retry',
-            name: 'Retry pack',
-            version: '0.1.0',
-            subscriptions: const <Subscription>[
-              Subscription(
-                id: 'sub.retry',
-                agentId: 'agent.retry',
-                eventTypes: <String>{WnEventTypes.captureCreated},
-              ),
-            ],
-            agentDefinitions: const <String, AgentDefinition>{
-              'agent.retry': AgentDefinition(
-                id: 'agent.retry',
-                outputEvents: <String>{WnEventTypes.insightCreated},
-                retryPolicy: RetryPolicy(maxAttempts: 2),
-              ),
-            },
-            agents: <String, AgentHandler>{'agent.retry': handler},
-          ),
-        );
+      final kernel =
+          _blankKernel(
+            store: store,
+            traceSink: traceSink,
+            retryBackoffBase: Duration.zero,
+          )..registerPack(
+            AgentPack(
+              id: 'pack.retry',
+              name: 'Retry pack',
+              version: '0.1.0',
+              subscriptions: const <Subscription>[
+                Subscription(
+                  id: 'sub.retry',
+                  agentId: 'agent.retry',
+                  eventTypes: <String>{WnEventTypes.captureCreated},
+                ),
+              ],
+              agentDefinitions: const <String, AgentDefinition>{
+                'agent.retry': AgentDefinition(
+                  id: 'agent.retry',
+                  outputEvents: <String>{WnEventTypes.insightCreated},
+                  retryPolicy: RetryPolicy(maxAttempts: 2),
+                ),
+              },
+              agents: <String, AgentHandler>{'agent.retry': handler},
+            ),
+          );
 
       await kernel.publish(
         const WnEventDraft(
@@ -1323,6 +1338,142 @@ void main() {
       );
     },
   );
+
+  test('failed task waits for retry schedule before running again', () async {
+    final store = InMemoryEventStore();
+    final traceSink = InMemoryTraceSink();
+    final handler = _FailsOnceHandler();
+    final clock = _MutableClock(DateTime.utc(2026, 6, 23, 1));
+    final kernel =
+        _blankKernel(
+          store: store,
+          traceSink: traceSink,
+          clock: clock,
+          retryBackoffBase: const Duration(minutes: 5),
+        )..registerPack(
+          AgentPack(
+            id: 'pack.retry',
+            name: 'Retry pack',
+            version: '0.1.0',
+            subscriptions: const <Subscription>[
+              Subscription(
+                id: 'sub.retry',
+                agentId: 'agent.retry',
+                eventTypes: <String>{WnEventTypes.captureCreated},
+              ),
+            ],
+            agentDefinitions: const <String, AgentDefinition>{
+              'agent.retry': AgentDefinition(
+                id: 'agent.retry',
+                outputEvents: <String>{WnEventTypes.insightCreated},
+                retryPolicy: RetryPolicy(maxAttempts: 2),
+              ),
+            },
+            agents: <String, AgentHandler>{'agent.retry': handler},
+          ),
+        );
+
+    await kernel.publish(
+      const WnEventDraft(
+        type: WnEventTypes.captureCreated,
+        actor: WnActor.user,
+      ),
+    );
+
+    expect(handler.calls, 1);
+    expect(kernel.tasks.single.status, RuntimeTaskStatus.queued);
+    expect(kernel.tasks.single.scheduledAt, isNotNull);
+
+    await kernel.drainQueue();
+    expect(handler.calls, 1);
+
+    clock.advance(const Duration(minutes: 5));
+    await kernel.drainQueue();
+
+    expect(handler.calls, 2);
+    expect(kernel.tasks.single.status, RuntimeTaskStatus.succeeded);
+  });
+
+  test(
+    'drainQueue runs independent tasks up to the concurrency limit',
+    () async {
+      final store = InMemoryEventStore();
+      final traceSink = InMemoryTraceSink();
+      final handler = _BlockingHandler();
+      final kernel = _blankKernel(
+        store: store,
+        traceSink: traceSink,
+        autoDrain: false,
+        maxConcurrentTasks: 2,
+      )..registerPack(_blockingPack(handler));
+
+      await kernel.publish(
+        const WnEventDraft(
+          type: WnEventTypes.captureCreated,
+          actor: WnActor.user,
+        ),
+      );
+      await kernel.publish(
+        const WnEventDraft(
+          type: WnEventTypes.captureCreated,
+          actor: WnActor.user,
+        ),
+      );
+
+      final drain = kernel.drainQueue();
+      await handler.waitForStarts(2);
+      expect(handler.maxActive, 2);
+
+      handler.releaseAll();
+      await drain;
+
+      expect(
+        kernel.tasks.map((task) => task.status),
+        everyElement(RuntimeTaskStatus.succeeded),
+      );
+    },
+  );
+
+  test('drainQueue serializes tasks that share a concurrency key', () async {
+    final store = InMemoryEventStore();
+    final traceSink = InMemoryTraceSink();
+    final handler = _BlockingHandler();
+    final kernel = _blankKernel(
+      store: store,
+      traceSink: traceSink,
+      autoDrain: false,
+      maxConcurrentTasks: 2,
+    )..registerPack(_blockingPack(handler, concurrencyKey: 'model.complete'));
+
+    await kernel.publish(
+      const WnEventDraft(
+        type: WnEventTypes.captureCreated,
+        actor: WnActor.user,
+      ),
+    );
+    await kernel.publish(
+      const WnEventDraft(
+        type: WnEventTypes.captureCreated,
+        actor: WnActor.user,
+      ),
+    );
+
+    final drain = kernel.drainQueue();
+    await handler.waitForStarts(1);
+    expect(handler.maxActive, 1);
+
+    handler.releaseNext();
+    await handler.waitForStarts(2);
+    expect(handler.maxActive, 1);
+
+    handler.releaseAll();
+    await drain;
+
+    expect(
+      kernel.tasks.map((task) => task.status),
+      everyElement(RuntimeTaskStatus.succeeded),
+    );
+  });
 
   test('queued task can be canceled before the fake executor runs', () async {
     final store = InMemoryEventStore();
@@ -1460,7 +1611,12 @@ void main() {
         _taskFixture(id: 'task-blocked', status: RuntimeTaskStatus.blocked),
       );
       await runtimeStore.upsertTask(
-        _taskFixture(id: 'task-running', status: RuntimeTaskStatus.running),
+        _taskFixture(
+          id: 'task-running',
+          status: RuntimeTaskStatus.running,
+          attempts: 1,
+          maxAttempts: 1,
+        ),
       );
       await runtimeStore.upsertRun(
         _runFixture(
@@ -1518,6 +1674,181 @@ void main() {
     },
   );
 
+  test(
+    'restore requeues stale running run while retry budget remains',
+    () async {
+      final runtimeStore = InMemoryRuntimeStore();
+      final now = DateTime.utc(2026, 6, 23, 2);
+      await runtimeStore.upsertTask(
+        _taskFixture(
+          id: 'task-crash-retry',
+          status: RuntimeTaskStatus.running,
+          attempts: 1,
+          maxAttempts: 2,
+        ),
+      );
+      await runtimeStore.upsertRun(
+        _runFixture(
+          id: 'run-crash-retry',
+          taskId: 'task-crash-retry',
+          status: RuntimeRunStatus.running,
+          startedAt: now.subtract(const Duration(hours: 1)),
+          leaseExpiresAt: now.subtract(const Duration(minutes: 1)),
+        ),
+      );
+      final traceSink = InMemoryTraceSink();
+      final kernel =
+          _blankKernel(
+            store: InMemoryEventStore(),
+            traceSink: traceSink,
+            runtimeStore: runtimeStore,
+            clock: FixedWnClock(now),
+            retryBackoffBase: Duration.zero,
+          )..registerPack(
+            const AgentPack(
+              id: 'pack.restore',
+              name: 'Restore pack',
+              version: '1.0.0',
+              subscriptions: <Subscription>[],
+              agents: <String, AgentHandler>{},
+            ),
+          );
+
+      await kernel.restoreRuntimeState();
+
+      final task = (await runtimeStore.readTaskById('task-crash-retry'))!;
+      expect(task.status, RuntimeTaskStatus.queued);
+      expect(task.attempts, 1);
+      expect(task.error, contains('lease expired'));
+      expect(task.leaseOwner, isNull);
+      expect(task.leasedUntil, isNull);
+      expect(
+        (await runtimeStore.readRunById('run-crash-retry'))?.status,
+        RuntimeRunStatus.failed,
+      );
+      expect(
+        (await traceSink.readAll()).map((trace) => trace.name),
+        containsAll(<String>[
+          'runtime.run.stale_terminated',
+          'runtime.task.stale_recovered',
+          'runtime.task.retry_queued',
+        ]),
+      );
+    },
+  );
+
+  test(
+    'restore fails stale running run after native-crash retry budget is exhausted',
+    () async {
+      final runtimeStore = InMemoryRuntimeStore();
+      final now = DateTime.utc(2026, 6, 23, 2, 30);
+      await runtimeStore.upsertTask(
+        _taskFixture(
+          id: 'task-crash-exhausted',
+          status: RuntimeTaskStatus.running,
+          attempts: 2,
+          maxAttempts: 2,
+        ),
+      );
+      await runtimeStore.upsertRun(
+        _runFixture(
+          id: 'run-crash-exhausted',
+          taskId: 'task-crash-exhausted',
+          status: RuntimeRunStatus.running,
+          startedAt: now.subtract(const Duration(hours: 1)),
+          leaseExpiresAt: now.subtract(const Duration(minutes: 1)),
+        ),
+      );
+      final traceSink = InMemoryTraceSink();
+      final kernel =
+          _blankKernel(
+            store: InMemoryEventStore(),
+            traceSink: traceSink,
+            runtimeStore: runtimeStore,
+            clock: FixedWnClock(now),
+          )..registerPack(
+            const AgentPack(
+              id: 'pack.restore',
+              name: 'Restore pack',
+              version: '1.0.0',
+              subscriptions: <Subscription>[],
+              agents: <String, AgentHandler>{},
+            ),
+          );
+
+      await kernel.restoreRuntimeState();
+
+      final task = (await runtimeStore.readTaskById('task-crash-exhausted'))!;
+      expect(task.status, RuntimeTaskStatus.failed);
+      expect(task.attempts, 2);
+      expect(task.error, contains('lease expired'));
+      expect(task.leaseOwner, isNull);
+      expect(task.leasedUntil, isNull);
+      expect(
+        (await runtimeStore.readRunById('run-crash-exhausted'))?.status,
+        RuntimeRunStatus.failed,
+      );
+      expect(
+        (await traceSink.readAll()).map((trace) => trace.name),
+        isNot(contains('runtime.task.retry_queued')),
+      );
+    },
+  );
+
+  test('restore recovers expired running tasks without active runs', () async {
+    final runtimeStore = InMemoryRuntimeStore();
+    final now = DateTime.utc(2026, 6, 23, 3);
+    final expiredAt = now.subtract(const Duration(minutes: 1));
+    await runtimeStore.upsertTask(
+      _taskFixture(
+        id: 'task-expired-retry',
+        status: RuntimeTaskStatus.running,
+        attempts: 1,
+        maxAttempts: 2,
+        leasedUntil: expiredAt,
+      ),
+    );
+    await runtimeStore.upsertTask(
+      _taskFixture(
+        id: 'task-expired-exhausted',
+        status: RuntimeTaskStatus.running,
+        attempts: 2,
+        maxAttempts: 2,
+        leasedUntil: expiredAt,
+      ),
+    );
+    final traceSink = InMemoryTraceSink();
+    final kernel =
+        _blankKernel(
+          store: InMemoryEventStore(),
+          traceSink: traceSink,
+          runtimeStore: runtimeStore,
+          clock: FixedWnClock(now),
+          retryBackoffBase: Duration.zero,
+        )..registerPack(
+          const AgentPack(
+            id: 'pack.restore',
+            name: 'Restore pack',
+            version: '1.0.0',
+            subscriptions: <Subscription>[],
+            agents: <String, AgentHandler>{},
+          ),
+        );
+
+    await kernel.restoreRuntimeState();
+
+    final retryTask = (await runtimeStore.readTaskById('task-expired-retry'))!;
+    final exhaustedTask = (await runtimeStore.readTaskById(
+      'task-expired-exhausted',
+    ))!;
+    expect(retryTask.status, RuntimeTaskStatus.queued);
+    expect(retryTask.attempts, 1);
+    expect(exhaustedTask.status, RuntimeTaskStatus.failed);
+    expect(exhaustedTask.attempts, 2);
+    expect(retryTask.leaseOwner, isNull);
+    expect(exhaustedTask.leaseOwner, isNull);
+  });
+
   test('dependent task is blocked when prerequisite fails', () async {
     final store = InMemoryEventStore();
     final traceSink = InMemoryTraceSink();
@@ -1550,6 +1881,7 @@ void main() {
               'agent.prepare': AgentDefinition(
                 id: 'agent.prepare',
                 outputEvents: <String>{WnEventTypes.insightCreated},
+                retryPolicy: RetryPolicy(maxAttempts: 1),
               ),
               'agent.finalize': AgentDefinition(
                 id: 'agent.finalize',
@@ -1584,6 +1916,136 @@ void main() {
       contains('runtime.task.blocked'),
     );
   });
+
+  test(
+    'cross-pack dependency resolves even when dependent pack is registered first',
+    () async {
+      final store = InMemoryEventStore();
+      final traceSink = InMemoryTraceSink();
+      final parentHandler = _CountingHandler();
+      final childHandler = _CountingHandler();
+      final kernel = _blankKernel(store: store, traceSink: traceSink)
+        ..registerPacks(<AgentPack>[
+          _externalChildPack(childHandler),
+          _externalParentPack(parentHandler),
+        ]);
+
+      await kernel.publish(
+        const WnEventDraft(
+          type: WnEventTypes.captureCreated,
+          actor: WnActor.user,
+        ),
+      );
+
+      final parent = kernel.tasks.singleWhere(
+        (task) => task.packId == 'pack.parent',
+      );
+      final child = kernel.tasks.singleWhere(
+        (task) => task.packId == 'pack.child',
+      );
+      expect(parentHandler.calls, 1);
+      expect(childHandler.calls, 1);
+      expect(parent.status, RuntimeTaskStatus.succeeded);
+      expect(child.status, RuntimeTaskStatus.succeeded);
+      expect(child.dependencyTaskIds, <String>[parent.id]);
+    },
+  );
+
+  test(
+    'cross-pack dependent waits through upstream retry and runs after success',
+    () async {
+      final store = InMemoryEventStore();
+      final traceSink = InMemoryTraceSink();
+      final clock = _MutableClock(DateTime.utc(2026, 6, 23, 4));
+      final parentHandler = _FailsOnceHandler();
+      final childHandler = _CountingHandler();
+      final kernel =
+          _blankKernel(
+            store: store,
+            traceSink: traceSink,
+            clock: clock,
+            retryBackoffBase: const Duration(minutes: 5),
+          )..registerPacks(<AgentPack>[
+            _externalChildPack(childHandler),
+            _externalParentPack(
+              parentHandler,
+              retryPolicy: const RetryPolicy(maxAttempts: 2),
+            ),
+          ]);
+
+      await kernel.publish(
+        const WnEventDraft(
+          type: WnEventTypes.captureCreated,
+          actor: WnActor.user,
+        ),
+      );
+
+      RuntimeTask parent = kernel.tasks.singleWhere(
+        (task) => task.packId == 'pack.parent',
+      );
+      RuntimeTask child = kernel.tasks.singleWhere(
+        (task) => task.packId == 'pack.child',
+      );
+      expect(parentHandler.calls, 1);
+      expect(childHandler.calls, 0);
+      expect(parent.status, RuntimeTaskStatus.queued);
+      expect(parent.attempts, 1);
+      expect(child.status, RuntimeTaskStatus.waiting);
+
+      await kernel.drainQueue();
+      expect(parentHandler.calls, 1);
+      expect(childHandler.calls, 0);
+      expect(
+        kernel.tasks.singleWhere((task) => task.packId == 'pack.child').status,
+        RuntimeTaskStatus.waiting,
+      );
+
+      clock.advance(const Duration(minutes: 5));
+      await kernel.drainQueue();
+
+      parent = kernel.tasks.singleWhere((task) => task.packId == 'pack.parent');
+      child = kernel.tasks.singleWhere((task) => task.packId == 'pack.child');
+      expect(parentHandler.calls, 2);
+      expect(childHandler.calls, 1);
+      expect(parent.status, RuntimeTaskStatus.succeeded);
+      expect(child.status, RuntimeTaskStatus.succeeded);
+    },
+  );
+
+  test(
+    'cross-pack dependent blocks after upstream retry budget is exhausted',
+    () async {
+      final store = InMemoryEventStore();
+      final traceSink = InMemoryTraceSink();
+      final childHandler = _CountingHandler();
+      final kernel = _blankKernel(store: store, traceSink: traceSink)
+        ..registerPacks(<AgentPack>[
+          _externalChildPack(childHandler),
+          _externalParentPack(
+            const _ThrowingHandler(),
+            retryPolicy: const RetryPolicy(maxAttempts: 1),
+          ),
+        ]);
+
+      await kernel.publish(
+        const WnEventDraft(
+          type: WnEventTypes.captureCreated,
+          actor: WnActor.user,
+        ),
+      );
+
+      final parent = kernel.tasks.singleWhere(
+        (task) => task.packId == 'pack.parent',
+      );
+      final child = kernel.tasks.singleWhere(
+        (task) => task.packId == 'pack.child',
+      );
+      expect(childHandler.calls, 0);
+      expect(parent.status, RuntimeTaskStatus.failed);
+      expect(child.status, RuntimeTaskStatus.blocked);
+      expect(child.error, contains(parent.id));
+    },
+  );
 
   test(
     'undeclared handler output fails terminally without auto retry or output append',
@@ -2065,6 +2527,8 @@ RuntimeKernel _blankKernel({
   WnIdGenerator? idGenerator,
   WnClock? clock,
   bool autoDrain = true,
+  Duration retryBackoffBase = const Duration(seconds: 30),
+  int maxConcurrentTasks = 1,
 }) {
   return RuntimeKernel(
     eventStore: store,
@@ -2077,6 +2541,8 @@ RuntimeKernel _blankKernel({
     deviceId: 'device-local',
     runtimeStore: runtimeStore,
     autoDrain: autoDrain,
+    retryBackoffBase: retryBackoffBase,
+    maxConcurrentTasks: maxConcurrentTasks,
   );
 }
 
@@ -2091,6 +2557,19 @@ Set<String> _declaredToolsFor(AgentHandler handler) {
     return const <String>{'secret'};
   }
   return const <String>{};
+}
+
+final class _MutableClock implements WnClock {
+  _MutableClock(this._instant);
+
+  DateTime _instant;
+
+  @override
+  DateTime now() => _instant;
+
+  void advance(Duration duration) {
+    _instant = _instant.add(duration);
+  }
 }
 
 final class _CaptureProjectionHandler implements AgentHandler {
@@ -2212,6 +2691,140 @@ final class _FailsOnceHandler implements AgentHandler {
       ],
     );
   }
+}
+
+AgentPack _externalParentPack(
+  AgentHandler handler, {
+  RetryPolicy retryPolicy = const RetryPolicy(),
+}) {
+  return AgentPack(
+    id: 'pack.parent',
+    name: 'Parent pack',
+    version: '0.1.0',
+    subscriptions: const <Subscription>[
+      Subscription(
+        id: 'sub.parent',
+        agentId: 'agent.parent',
+        eventTypes: <String>{WnEventTypes.captureCreated},
+      ),
+    ],
+    agentDefinitions: <String, AgentDefinition>{
+      'agent.parent': AgentDefinition(
+        id: 'agent.parent',
+        outputEvents: const <String>{WnEventTypes.insightCreated},
+        retryPolicy: retryPolicy,
+      ),
+    },
+    agents: <String, AgentHandler>{'agent.parent': handler},
+  );
+}
+
+AgentPack _externalChildPack(AgentHandler handler) {
+  return AgentPack(
+    id: 'pack.child',
+    name: 'Child pack',
+    version: '0.1.0',
+    subscriptions: const <Subscription>[
+      Subscription(
+        id: 'sub.child',
+        agentId: 'agent.child',
+        eventTypes: <String>{WnEventTypes.captureCreated},
+        dependsOn: <String>{'pack.parent::sub.parent'},
+      ),
+    ],
+    agentDefinitions: const <String, AgentDefinition>{
+      'agent.child': AgentDefinition(
+        id: 'agent.child',
+        outputEvents: <String>{WnEventTypes.insightCreated},
+      ),
+    },
+    agents: <String, AgentHandler>{'agent.child': handler},
+  );
+}
+
+AgentPack _blockingPack(_BlockingHandler handler, {String? concurrencyKey}) {
+  return AgentPack(
+    id: 'pack.blocking',
+    name: 'Blocking pack',
+    version: '0.1.0',
+    subscriptions: const <Subscription>[
+      Subscription(
+        id: 'sub.blocking',
+        agentId: 'agent.blocking',
+        eventTypes: <String>{WnEventTypes.captureCreated},
+      ),
+    ],
+    agentDefinitions: <String, AgentDefinition>{
+      'agent.blocking': AgentDefinition(
+        id: 'agent.blocking',
+        outputEvents: const <String>{WnEventTypes.insightCreated},
+        concurrencyKey: concurrencyKey,
+      ),
+    },
+    agents: <String, AgentHandler>{'agent.blocking': handler},
+  );
+}
+
+final class _BlockingHandler implements AgentHandler {
+  final Queue<Completer<void>> _releases = Queue<Completer<void>>();
+  final List<_StartWaiter> _startWaiters = <_StartWaiter>[];
+  var starts = 0;
+  var active = 0;
+  var maxActive = 0;
+
+  @override
+  Future<AgentHandlerResult> handle(AgentContext context, WnEvent event) async {
+    starts += 1;
+    active += 1;
+    if (active > maxActive) {
+      maxActive = active;
+    }
+    _notifyStarts();
+    final release = Completer<void>();
+    _releases.add(release);
+    await release.future;
+    active -= 1;
+    return AgentHandlerResult(
+      events: <WnEventDraft>[context.emit(type: WnEventTypes.insightCreated)],
+    );
+  }
+
+  Future<void> waitForStarts(int count) {
+    if (starts >= count) {
+      return Future<void>.value();
+    }
+    final waiter = _StartWaiter(count);
+    _startWaiters.add(waiter);
+    return waiter.completer.future;
+  }
+
+  void releaseNext() {
+    if (_releases.isNotEmpty) {
+      _releases.removeFirst().complete();
+    }
+  }
+
+  void releaseAll() {
+    while (_releases.isNotEmpty) {
+      _releases.removeFirst().complete();
+    }
+  }
+
+  void _notifyStarts() {
+    for (final waiter in List<_StartWaiter>.of(_startWaiters)) {
+      if (starts >= waiter.count && !waiter.completer.isCompleted) {
+        waiter.completer.complete();
+        _startWaiters.remove(waiter);
+      }
+    }
+  }
+}
+
+final class _StartWaiter {
+  _StartWaiter(this.count);
+
+  final int count;
+  final Completer<void> completer = Completer<void>();
 }
 
 final class _DefaultPackHandler implements AgentHandler {
@@ -2442,6 +3055,9 @@ RuntimeTask _taskFixture({
   String agentId = 'agent.restore',
   String subscriptionId = 'sub.restore',
   String triggerEventId = 'evt-restore',
+  int attempts = 0,
+  int maxAttempts = 2,
+  DateTime? leasedUntil,
 }) {
   final now = DateTime.utc(2026, 6, 23, 1);
   return RuntimeTask(
@@ -2455,6 +3071,10 @@ RuntimeTask _taskFixture({
     subscriptionId: subscriptionId,
     triggerEventId: triggerEventId,
     status: status,
+    attempts: attempts,
+    maxAttempts: maxAttempts,
+    leaseOwner: leasedUntil == null ? null : 'previous-runtime',
+    leasedUntil: leasedUntil,
     createdAt: now,
     updatedAt: now,
   );

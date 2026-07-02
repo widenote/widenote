@@ -1,7 +1,7 @@
 import 'package:sqlite3/sqlite3.dart';
 
 abstract final class LocalDbSchema {
-  static const currentVersion = 10;
+  static const currentVersion = 11;
 }
 
 final class LocalDbMigrator {
@@ -72,6 +72,10 @@ final class LocalDbMigrator {
       if (currentVersion < 10 && targetVersion >= 10) {
         _migrateToV10(database);
         database.execute('PRAGMA user_version = 10;');
+      }
+      if (currentVersion < 11 && targetVersion >= 11) {
+        _migrateToV11(database);
+        database.execute('PRAGMA user_version = 11;');
       }
       database.execute('COMMIT;');
     } catch (_) {
@@ -751,6 +755,36 @@ ON derived_artifacts(artifact_kind, status, updated_at);
       ..execute('''
 CREATE INDEX IF NOT EXISTS derived_artifacts_content_hash_idx
 ON derived_artifacts(content_hash);
+''');
+  }
+
+  static void _migrateToV11(Database database) {
+    database
+      ..execute('''
+ALTER TABLE runtime_tasks
+ADD COLUMN scheduled_at TEXT;
+''')
+      ..execute('''
+ALTER TABLE runtime_tasks
+ADD COLUMN concurrency_key TEXT;
+''')
+      ..execute('''
+UPDATE runtime_tasks
+SET scheduled_at = json_extract(payload_json, '\$.runtime_task_scheduled_at')
+WHERE json_type(payload_json, '\$.runtime_task_scheduled_at') = 'text';
+''')
+      ..execute('''
+UPDATE runtime_tasks
+SET concurrency_key = json_extract(payload_json, '\$.runtime_task_concurrency_key')
+WHERE json_type(payload_json, '\$.runtime_task_concurrency_key') = 'text';
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS runtime_tasks_runnable_idx
+ON runtime_tasks(status, scheduled_at, updated_at);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS runtime_tasks_concurrency_idx
+ON runtime_tasks(concurrency_key, status, leased_until);
 ''');
   }
 }

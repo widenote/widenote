@@ -590,6 +590,9 @@ function validateSubscriptionDependencies(subscriptions, errors) {
     }
 
     for (const dependency of subscription.depends_on) {
+      if (isExternalSubscriptionDependency(dependency)) {
+        continue;
+      }
       if (dependency === subscription.id) {
         errors.push(`subscriptions[${index}].depends_on references itself`);
       }
@@ -626,12 +629,20 @@ function visitSubscription(id, byId, visiting, visited, errors) {
 
   visiting.add(id);
   for (const dependency of subscription.depends_on) {
-    if (typeof dependency === "string" && byId.has(dependency)) {
+    if (
+      typeof dependency === "string" &&
+      !isExternalSubscriptionDependency(dependency) &&
+      byId.has(dependency)
+    ) {
       visitSubscription(dependency, byId, visiting, visited, errors);
     }
   }
   visiting.delete(id);
   visited.add(id);
+}
+
+function isExternalSubscriptionDependency(dependency) {
+  return typeof dependency === "string" && dependency.includes("::");
 }
 
 function validateMarketplace(manifest, errors) {
