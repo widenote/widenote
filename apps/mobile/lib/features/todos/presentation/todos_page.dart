@@ -13,38 +13,42 @@ class TodosPage extends ConsumerWidget {
     final l10n = context.l10n;
     final state = ref.watch(todoControllerProvider);
 
-    return ListView(
-      key: const Key('todos-page'),
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-      children: [
-        _PageHeader(title: l10n.todosTitle, subtitle: l10n.todosSubtitle),
-        if (state.errorMessage != null) ...[
-          const SizedBox(height: 12),
-          _ErrorLine(text: localizedTodoError(l10n, state.errorMessage!)),
-        ],
-        const SizedBox(height: 16),
-        _Surface(
-          icon: Icons.checklist_outlined,
-          title: l10n.todoActionsSectionTitle,
-          child: _TodoList(
-            todos: state.actionItems,
-            emptyText: l10n.todoActionsEmpty,
+    return RefreshIndicator(
+      onRefresh: () => ref.read(todoControllerProvider.notifier).refresh(),
+      child: ListView(
+        key: const Key('todos-page'),
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+        children: [
+          _PageHeader(title: l10n.todosTitle, subtitle: l10n.todosSubtitle),
+          if (state.errorMessage != null) ...[
+            const SizedBox(height: 12),
+            _ErrorLine(text: localizedTodoError(l10n, state.errorMessage!)),
+          ],
+          const SizedBox(height: 16),
+          _Surface(
+            icon: Icons.checklist_outlined,
+            title: l10n.todoActionsSectionTitle,
+            child: _TodoList(
+              todos: state.actionItems,
+              emptyText: l10n.todoActionsEmpty,
+            ),
           ),
-        ),
-        const SizedBox(height: 12),
-        _Surface(
-          icon: Icons.event_note_outlined,
-          title: l10n.todoSchedulesSectionTitle,
-          child: _TodoList(
-            todos: state.scheduleItems,
-            emptyText: l10n.todoSchedulesEmpty,
-          ),
-        ),
-        if (state.quietCount > 0) ...[
           const SizedBox(height: 12),
-          _QuietSummary(count: state.quietCount),
+          _Surface(
+            icon: Icons.event_note_outlined,
+            title: l10n.todoSchedulesSectionTitle,
+            child: _TodoList(
+              todos: state.scheduleItems,
+              emptyText: l10n.todoSchedulesEmpty,
+            ),
+          ),
+          if (state.quietCount > 0) ...[
+            const SizedBox(height: 12),
+            _QuietSummary(count: state.quietCount),
+          ],
         ],
-      ],
+      ),
     );
   }
 }

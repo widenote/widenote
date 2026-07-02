@@ -121,4 +121,40 @@ void main() {
 
     expect(database.todos.readById('model-schedule')!.status, 'open');
   });
+
+  test('todo controller refresh rehydrates externally inserted rows', () async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    final container = ProviderContainer(
+      overrides: [localDatabaseProvider.overrideWithValue(database)],
+    );
+    addTearDown(container.dispose);
+
+    expect(container.read(todoControllerProvider).items, isEmpty);
+
+    final now = DateTime.utc(2026, 7, 2, 10);
+    database.todos.insert(
+      TodoRecord(
+        id: 'external-refresh-todo',
+        sourceCaptureId: 'capture-refresh-todo',
+        payload: const <String, Object?>{
+          'title': 'Refresh externally inserted todo',
+          'source_label': 'source: capture-refresh-todo',
+          'status_label': 'suggested action',
+          'suggestion_kind': 'action',
+          'suggestion_confidence': 'high',
+          'suggestion_reason': 'external_insert',
+        },
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+
+    await container.read(todoControllerProvider.notifier).refresh();
+
+    expect(
+      container.read(todoControllerProvider).items.single.id,
+      'external-refresh-todo',
+    );
+  });
 }

@@ -17,6 +17,7 @@ class ChatPage extends ConsumerWidget {
     return chatState.when(
       data: (state) => _ChatListBody(
         state: state,
+        onRefresh: () => ref.read(chatControllerProvider.notifier).refresh(),
         onOpenSession: (sessionId) => _openSession(context, ref, sessionId),
         onNewSession: () => _startNewSession(context, ref),
         onRenameSession: (session) =>
@@ -108,6 +109,7 @@ class _ChatSessionPageState extends ConsumerState<ChatSessionPage> {
           controller: _inputController,
           onBack: () => _goBackToChatList(context),
           onSend: _send,
+          onRefresh: _refresh,
           onRenameSession: () => _renameCurrentSession(session),
           onDeleteSession: () => _deleteCurrentSession(session),
           onRetry: _retry,
@@ -154,6 +156,10 @@ class _ChatSessionPageState extends ConsumerState<ChatSessionPage> {
 
   void _retry() {
     unawaited(ref.read(chatControllerProvider.notifier).retryFailedMessage());
+  }
+
+  Future<void> _refresh() {
+    return ref.read(chatControllerProvider.notifier).refresh();
   }
 }
 
@@ -290,6 +296,7 @@ class _RenameSessionDialogState extends State<_RenameSessionDialog> {
 class _ChatListBody extends StatelessWidget {
   const _ChatListBody({
     required this.state,
+    required this.onRefresh,
     required this.onOpenSession,
     required this.onNewSession,
     required this.onRenameSession,
@@ -297,6 +304,7 @@ class _ChatListBody extends StatelessWidget {
   });
 
   final ChatState state;
+  final RefreshCallback onRefresh;
   final ValueChanged<String> onOpenSession;
   final VoidCallback onNewSession;
   final ValueChanged<ChatSession> onRenameSession;
@@ -304,22 +312,26 @@ class _ChatListBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      key: const Key('chat-page'),
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-      children: [
-        const _PageHeader(),
-        const SizedBox(height: 16),
-        _SessionsPanel(
-          sessions: state.sessions,
-          activeSessionId: state.activeSessionId,
-          isSending: state.isSending,
-          onSelect: onOpenSession,
-          onNewSession: onNewSession,
-          onRename: onRenameSession,
-          onDelete: onDeleteSession,
-        ),
-      ],
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView(
+        key: const Key('chat-page'),
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+        children: [
+          const _PageHeader(),
+          const SizedBox(height: 16),
+          _SessionsPanel(
+            sessions: state.sessions,
+            activeSessionId: state.activeSessionId,
+            isSending: state.isSending,
+            onSelect: onOpenSession,
+            onNewSession: onNewSession,
+            onRename: onRenameSession,
+            onDelete: onDeleteSession,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -331,6 +343,7 @@ class _ChatSessionBody extends StatelessWidget {
     required this.controller,
     required this.onBack,
     required this.onSend,
+    required this.onRefresh,
     required this.onRenameSession,
     required this.onDeleteSession,
     required this.onRetry,
@@ -341,6 +354,7 @@ class _ChatSessionBody extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onBack;
   final VoidCallback onSend;
+  final RefreshCallback onRefresh;
   final VoidCallback onRenameSession;
   final VoidCallback onDeleteSession;
   final VoidCallback onRetry;
@@ -358,16 +372,20 @@ class _ChatSessionBody extends StatelessWidget {
           onDelete: onDeleteSession,
         ),
         Expanded(
-          child: ListView(
-            key: const Key('chat-message-scroll'),
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-            children: [
-              if (state.errorMessage != null) ...[
-                _ErrorBanner(message: state.errorMessage!, onRetry: onRetry),
-                const SizedBox(height: 12),
+          child: RefreshIndicator(
+            onRefresh: onRefresh,
+            child: ListView(
+              key: const Key('chat-message-scroll'),
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              children: [
+                if (state.errorMessage != null) ...[
+                  _ErrorBanner(message: state.errorMessage!, onRetry: onRetry),
+                  const SizedBox(height: 12),
+                ],
+                _MessagesPanel(state: state, onRetry: onRetry),
               ],
-              _MessagesPanel(state: state, onRetry: onRetry),
-            ],
+            ),
           ),
         ),
         SafeArea(

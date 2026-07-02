@@ -36,6 +36,10 @@ class CaptureController extends Notifier<CaptureState> {
     return hydrated;
   }
 
+  Future<void> refresh() async {
+    _reloadStateFromReadModel(clearError: true);
+  }
+
   Future<void> submitCapture(
     String value, {
     List<CaptureAttachment> attachments = const <CaptureAttachment>[],

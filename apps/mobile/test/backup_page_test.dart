@@ -7,6 +7,9 @@ import 'package:widenote_local_db/widenote_local_db.dart';
 import 'package:widenote_mobile/app/local_database.dart';
 import 'package:widenote_mobile/features/backup/application/backup_controller.dart';
 import 'package:widenote_mobile/features/backup/presentation/backup_page.dart';
+import 'package:widenote_mobile/features/chat/application/chat_controller.dart';
+import 'package:widenote_mobile/features/chat/application/local_chat_repository.dart';
+import 'package:widenote_mobile/features/chat/domain/chat_models.dart';
 import 'package:widenote_mobile/features/location/application/location_settings_controller.dart';
 import 'package:widenote_mobile/features/location/domain/location_context.dart';
 import 'package:widenote_mobile/features/transcription/transcription_service.dart';
@@ -292,6 +295,65 @@ void main() {
     expect(target.captures.readById('capture-backup-page'), isNotNull);
     expect(target.eventLog.readById('event-diagnostic-only'), isNull);
     expect(target.traceEvents.readById('trace-diagnostic-only'), isNull);
+  });
+
+  test('backup import invalidates stale chat controller snapshots', () async {
+    final source = WideNoteLocalDatabase.inMemory();
+    final target = WideNoteLocalDatabase.inMemory();
+    final now = DateTime.utc(2026, 7, 2, 13);
+    await LocalChatRepository(source).saveSession(
+      ChatSession(
+        id: 'imported-chat-session',
+        title: 'Imported chat',
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+    await LocalChatRepository(target).saveSession(
+      ChatSession(
+        id: 'stale-chat-session',
+        title: 'Stale chat',
+        createdAt: now.subtract(const Duration(minutes: 1)),
+        updatedAt: now.subtract(const Duration(minutes: 1)),
+      ),
+    );
+    final fileStore = _MemoryBackupFileStore()
+      ..latestPayload = BackupImportPayload(
+        backup: LocalBackupService(
+          source,
+        ).exportBackup(mode: LocalBackupMode.full),
+        sourceLabel: '/tmp/widenote-chat-backup.widenote',
+      );
+    final container = ProviderContainer(
+      overrides: [
+        localDatabaseProvider.overrideWithValue(target),
+        backupFileStoreProvider.overrideWithValue(fileStore),
+      ],
+    );
+    addTearDown(() {
+      container.dispose();
+      source.close();
+      target.close();
+    });
+
+    final before = await container.read(chatControllerProvider.future);
+    expect(before.sessions.single.id, 'stale-chat-session');
+
+    final loaded = await container
+        .read(backupControllerProvider.notifier)
+        .loadLatestSavedFileForImport();
+    expect(loaded, isTrue);
+    final imported = await container
+        .read(backupControllerProvider.notifier)
+        .importBackup();
+    expect(imported, isTrue);
+
+    final after = await container.read(chatControllerProvider.future);
+    expect(after.sessions.single.id, 'imported-chat-session');
+    expect(
+      after.sessions.map((session) => session.id),
+      isNot(contains('stale-chat-session')),
+    );
   });
 
   testWidgets(

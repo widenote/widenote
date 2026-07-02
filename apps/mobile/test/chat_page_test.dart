@@ -409,6 +409,98 @@ void main() {
     expect(find.text('昨天记录了什么？'), findsOneWidget);
   });
 
+  testWidgets('chat list pull-to-refresh reloads local sessions', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    final repository = LocalChatRepository(database);
+    await _pumpApp(tester, database: database);
+    await _openTab(tester, const Key('tab-chat'));
+
+    expect(find.byKey(const Key('chat-empty-sessions')), findsOneWidget);
+
+    final now = DateTime.utc(2026, 7, 2, 11, 30);
+    await repository.saveSession(
+      ChatSession(
+        id: 'chat-refresh-session',
+        title: 'Refresh conversation',
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+    await repository.saveMessage(
+      ChatMessage(
+        id: 'chat-refresh-message',
+        sessionId: 'chat-refresh-session',
+        role: ChatRole.user,
+        body: 'Refresh this chat list.',
+        createdAt: now,
+      ),
+    );
+
+    await tester.drag(find.byKey(const Key('chat-page')), const Offset(0, 320));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Refresh conversation'), findsOneWidget);
+    expect(find.byKey(const Key('chat-empty-sessions')), findsNothing);
+  });
+
+  testWidgets('chat session pull-to-refresh reloads local messages', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    final repository = LocalChatRepository(database);
+    final now = DateTime.utc(2026, 7, 2, 12);
+    await repository.saveSession(
+      ChatSession(
+        id: 'chat-detail-refresh-session',
+        title: 'Detail refresh',
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+    await repository.saveMessage(
+      ChatMessage(
+        id: 'chat-detail-refresh-user',
+        sessionId: 'chat-detail-refresh-session',
+        role: ChatRole.user,
+        body: 'Initial visible message.',
+        createdAt: now,
+      ),
+    );
+    await _pumpApp(tester, database: database);
+    await _openTab(tester, const Key('tab-chat'));
+    await tester.tap(
+      find.byKey(const Key('chat-session-chat-detail-refresh-session')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('chat-session-page')), findsOneWidget);
+    expect(find.text('Externally saved assistant message.'), findsNothing);
+
+    await repository.saveMessage(
+      ChatMessage(
+        id: 'chat-detail-refresh-assistant',
+        sessionId: 'chat-detail-refresh-session',
+        role: ChatRole.assistant,
+        body: 'Externally saved assistant message.',
+        createdAt: now.add(const Duration(minutes: 1)),
+      ),
+    );
+
+    await tester.drag(
+      find.byKey(const Key('chat-message-scroll')),
+      const Offset(0, 320),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Externally saved assistant message.'), findsOneWidget);
+  });
+
   testWidgets('failed assistant response can be retried', (tester) async {
     final assistant = _FlakyAssistant();
     await _pumpApp(
