@@ -46,6 +46,7 @@ All other mobile pages are hierarchical child pages with a declared parent:
 | --- | --- |
 | `/` | `/timeline`, `/memory`, `/recap`, `/settings` |
 | `/timeline` | `/timeline/search`, `/timeline/cards/:cardId`, `/timeline/items/:itemId` |
+| `/chat` | `/chat/session/:sessionId` |
 | `/settings` | `/settings/permissions`, `/settings/model-providers`, `/settings/transcription`, `/settings/location`, `/settings/backup`, `/settings/traces` |
 | `/plugins` | `/plugins/packs`, `/plugins/permissions`, `/plugins/model-providers`, `/plugins/backup`, `/plugins/traces` |
 

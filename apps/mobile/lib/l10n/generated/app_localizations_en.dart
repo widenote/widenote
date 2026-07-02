@@ -1087,6 +1087,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatEmptySessions => 'No local sessions yet.';
 
   @override
+  String get chatBackToConversationsTooltip => 'Back to conversations';
+
+  @override
+  String get chatBackToConversationsButton => 'Back to conversations';
+
+  @override
+  String get chatSessionMissingTitle => 'Chat not found';
+
+  @override
+  String get chatSessionMissingBody =>
+      'This local chat is no longer available on this device.';
+
+  @override
+  String get chatSessionOpeningTitle => 'Opening chat';
+
+  @override
+  String get chatSessionSwitchBlockedTitle => 'Answer in progress';
+
+  @override
   String get chatSessionSwitchDisabled =>
       'Wait for the current answer before switching sessions.';
 

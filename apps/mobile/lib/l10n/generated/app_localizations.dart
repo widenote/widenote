@@ -1862,6 +1862,42 @@ abstract class AppLocalizations {
   /// **'No local sessions yet.'**
   String get chatEmptySessions;
 
+  /// No description provided for @chatBackToConversationsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to conversations'**
+  String get chatBackToConversationsTooltip;
+
+  /// No description provided for @chatBackToConversationsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to conversations'**
+  String get chatBackToConversationsButton;
+
+  /// No description provided for @chatSessionMissingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat not found'**
+  String get chatSessionMissingTitle;
+
+  /// No description provided for @chatSessionMissingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This local chat is no longer available on this device.'**
+  String get chatSessionMissingBody;
+
+  /// No description provided for @chatSessionOpeningTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening chat'**
+  String get chatSessionOpeningTitle;
+
+  /// No description provided for @chatSessionSwitchBlockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer in progress'**
+  String get chatSessionSwitchBlockedTitle;
+
   /// No description provided for @chatSessionSwitchDisabled.
   ///
   /// In en, this message translates to:

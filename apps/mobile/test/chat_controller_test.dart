@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -154,6 +155,87 @@ void main() {
     expect(state.activeSessionId, secondId);
     expect(state.messages.first.body, 'Second topic');
     expect(await repository.listMessages(firstId), isEmpty);
+  });
+
+  test('controller opens and sends to explicit sessions fail-closed', () async {
+    final repository = InMemoryChatRepository();
+    final assistant = _BlockingAssistant();
+    final container = ProviderContainer(
+      overrides: <Override>[
+        chatRepositoryProvider.overrideWithValue(repository),
+        chatContextSourceProvider.overrideWithValue(
+          const _StaticContextSource(<ChatSource>[]),
+        ),
+        chatAssistantProvider.overrideWithValue(assistant),
+        chatClockProvider.overrideWithValue(
+          _FixedClock(DateTime.utc(2026, 7, 2, 9)).call,
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await container.read(chatControllerProvider.future);
+    final notifier = container.read(chatControllerProvider.notifier);
+
+    await notifier.startNewSession();
+    var state = container.read(chatControllerProvider).requireValue;
+    final firstId = state.activeSessionId!;
+    final firstFuture = notifier.sendMessageToSession(
+      firstId,
+      'First route-bound message',
+    );
+    await Future<void>.delayed(Duration.zero);
+    assistant.completeNext('First answer.');
+    await firstFuture;
+
+    await notifier.startNewSession();
+    state = container.read(chatControllerProvider).requireValue;
+    final secondId = state.activeSessionId!;
+
+    expect(await notifier.openSession('missing-session'), isFalse);
+    expect(
+      container.read(chatControllerProvider).requireValue.activeSessionId,
+      secondId,
+    );
+    await notifier.sendMessageToSession('missing-session', 'Should not send');
+    expect(
+      container.read(chatControllerProvider).requireValue.messages,
+      isEmpty,
+    );
+
+    expect(await notifier.openSession(firstId), isTrue);
+    state = container.read(chatControllerProvider).requireValue;
+    expect(state.activeSessionId, firstId);
+    expect(state.messages.first.body, 'First route-bound message');
+
+    final sendFuture = notifier.sendMessageToSession(
+      firstId,
+      'Hold this session',
+    );
+    await Future<void>.delayed(Duration.zero);
+    state = container.read(chatControllerProvider).requireValue;
+    expect(state.isSending, isTrue);
+    expect(state.activeSessionId, firstId);
+
+    expect(await notifier.openSession(secondId), isFalse);
+    await notifier.sendMessageToSession(secondId, 'Wrong route');
+    state = container.read(chatControllerProvider).requireValue;
+    expect(state.activeSessionId, firstId);
+    expect(
+      state.messages.map((message) => message.body),
+      containsAll(<String>['First route-bound message', 'Hold this session']),
+    );
+    expect(
+      state.messages.map((message) => message.body),
+      isNot(contains('Wrong route')),
+    );
+
+    assistant.completeNext('Held answer.');
+    await sendFuture;
+    state = container.read(chatControllerProvider).requireValue;
+    expect(state.isSending, isFalse);
+    expect(state.activeSessionId, firstId);
+    expect(state.messages.last.body, 'Held answer.');
   });
 
   test('context selector preserves packet order without query scoring', () {
@@ -1166,6 +1248,25 @@ final class _SourceEchoAssistant implements ChatAssistant {
         .map((source) => '${source.kind}/${source.id}')
         .join(', ');
     return ChatAssistantReply(body: 'Fake model sources: $sources');
+  }
+}
+
+final class _BlockingAssistant implements ChatAssistant {
+  final List<Completer<ChatAssistantReply>> _pending =
+      <Completer<ChatAssistantReply>>[];
+
+  @override
+  Future<ChatAssistantReply> answer(ChatAssistantPrompt prompt) {
+    final completer = Completer<ChatAssistantReply>();
+    _pending.add(completer);
+    return completer.future;
+  }
+
+  void completeNext(String body) {
+    if (_pending.isEmpty) {
+      throw StateError('No pending chat answer.');
+    }
+    _pending.removeAt(0).complete(ChatAssistantReply(body: body));
   }
 }
 

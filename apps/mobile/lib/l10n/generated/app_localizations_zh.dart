@@ -962,6 +962,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatEmptySessions => '还没有本地会话。';
 
   @override
+  String get chatBackToConversationsTooltip => '返回对话列表';
+
+  @override
+  String get chatBackToConversationsButton => '返回对话列表';
+
+  @override
+  String get chatSessionMissingTitle => '对话不存在';
+
+  @override
+  String get chatSessionMissingBody => '这个本地对话已不在本设备上。';
+
+  @override
+  String get chatSessionOpeningTitle => '正在打开对话';
+
+  @override
+  String get chatSessionSwitchBlockedTitle => '回答进行中';
+
+  @override
   String get chatSessionSwitchDisabled => '当前回答完成后才能切换会话。';
 
   @override

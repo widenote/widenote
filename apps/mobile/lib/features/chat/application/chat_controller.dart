@@ -96,9 +96,19 @@ final class ChatController extends AsyncNotifier<ChatState> {
   }
 
   Future<void> selectSession(String sessionId) async {
+    await openSession(sessionId);
+  }
+
+  Future<bool> openSession(String sessionId) async {
     final current = await _currentState();
-    if (current.activeSessionId == sessionId || current.isSending) {
-      return;
+    if (_sessionById(current.sessions, sessionId) == null) {
+      return false;
+    }
+    if (current.activeSessionId == sessionId) {
+      return true;
+    }
+    if (current.isSending) {
+      return false;
     }
     final messages = await ref
         .read(chatRepositoryProvider)
@@ -111,6 +121,7 @@ final class ChatController extends AsyncNotifier<ChatState> {
         clearFailedMessage: true,
       ),
     );
+    return true;
   }
 
   Future<void> startNewSession() async {
@@ -204,6 +215,37 @@ final class ChatController extends AsyncNotifier<ChatState> {
   }
 
   Future<void> sendMessage(String value) async {
+    final current = await _currentState();
+    final activeSessionId = current.activeSessionId;
+    if (activeSessionId != null) {
+      await sendMessageToSession(activeSessionId, value);
+      return;
+    }
+    await _sendMessage(value);
+  }
+
+  Future<void> sendMessageToSession(String sessionId, String value) async {
+    var current = await _currentState();
+    if (_sessionById(current.sessions, sessionId) == null) {
+      return;
+    }
+    if (current.activeSessionId != sessionId) {
+      if (current.isSending) {
+        return;
+      }
+      final opened = await openSession(sessionId);
+      if (!opened) {
+        return;
+      }
+      current = await _currentState();
+    }
+    if (current.activeSessionId != sessionId) {
+      return;
+    }
+    await _sendMessage(value);
+  }
+
+  Future<void> _sendMessage(String value) async {
     final text = value.trim();
     if (text.isEmpty) {
       return;

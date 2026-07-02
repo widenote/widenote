@@ -619,15 +619,8 @@ void main() {
     expect(find.byKey(const Key('chat-page')), findsOneWidget);
     expect(find.text('Conversations'), findsOneWidget);
     expect(find.text('No local sessions yet.'), findsOneWidget);
-    expect(find.text('Local chat'), findsOneWidget);
-    expect(
-      find.text('Ask a question about records, Memory, or todos.'),
-      findsOneWidget,
-    );
-    expect(find.text('Ask'), findsOneWidget);
-
-    final input = tester.widget<TextField>(find.byType(TextField));
-    expect(input.enabled, isTrue);
+    expect(find.text('Local chat'), findsNothing);
+    expect(find.byType(TextField), findsNothing);
   });
 }
 
