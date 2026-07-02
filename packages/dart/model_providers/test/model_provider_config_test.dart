@@ -88,9 +88,10 @@ void main() {
       expect(gemini.kind.usesAnthropicMessages, isFalse);
       expect(gemini.endpoint.path, contains('/openai'));
       expect(gemini.model, 'gemini-3.5-flash');
-      expect(deepSeek.kind.usesAnthropicMessages, isFalse);
+      expect(deepSeek.kind.usesAnthropicMessages, isTrue);
       expect(deepSeek.endpoint.host, 'api.deepseek.com');
-      expect(deepSeek.model, isNotEmpty);
+      expect(deepSeek.endpoint.path, '/anthropic');
+      expect(deepSeek.model, 'deepseek-v4-flash');
       expect(mimo.kind.usesAnthropicMessages, isTrue);
       expect(mimo.endpoint.path, contains('/anthropic/'));
       expect(mimo.model, isNotEmpty);

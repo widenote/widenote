@@ -114,7 +114,7 @@ Uri _modelsEndpoint(ModelProviderConfig config) {
     return _geminiModelsEndpoint(config.endpoint, apiKey: config.apiKey);
   }
   if (config.kind.usesAnthropicMessages) {
-    return _anthropicModelsEndpoint(config.endpoint);
+    return _anthropicModelsEndpoint(config);
   }
   return _openAiModelsEndpoint(config.endpoint);
 }
@@ -136,7 +136,11 @@ Uri _openAiModelsEndpoint(Uri endpoint) {
   return endpoint.replace(pathSegments: <String>[...segments, 'models']);
 }
 
-Uri _anthropicModelsEndpoint(Uri endpoint) {
+Uri _anthropicModelsEndpoint(ModelProviderConfig config) {
+  final endpoint = _normalizeDeepSeekAnthropicEndpoint(
+    config,
+    terminalSegment: 'models',
+  );
   var segments = endpoint.pathSegments
       .where((segment) => segment.isNotEmpty)
       .toList(growable: true);
@@ -150,6 +154,31 @@ Uri _anthropicModelsEndpoint(Uri endpoint) {
     return endpoint.replace(pathSegments: <String>[...segments, 'models']);
   }
   return endpoint.replace(pathSegments: <String>[...segments, 'v1', 'models']);
+}
+
+Uri _normalizeDeepSeekAnthropicEndpoint(
+  ModelProviderConfig config, {
+  required String terminalSegment,
+}) {
+  final endpoint = config.endpoint;
+  if (config.kind != ModelProviderKind.deepSeek ||
+      endpoint.host.toLowerCase() != 'api.deepseek.com') {
+    return endpoint;
+  }
+  final segments = endpoint.pathSegments
+      .where((segment) => segment.isNotEmpty)
+      .toList(growable: false);
+  if (segments.isEmpty) {
+    return endpoint.replace(pathSegments: const <String>['anthropic']);
+  }
+  if (segments.length == 2 &&
+      segments[0] == 'v1' &&
+      segments[1] == terminalSegment) {
+    return endpoint.replace(
+      pathSegments: <String>['anthropic', 'v1', terminalSegment],
+    );
+  }
+  return endpoint;
 }
 
 Uri _geminiModelsEndpoint(Uri endpoint, {required String apiKey}) {

@@ -105,7 +105,9 @@ extension ModelProviderKindDetails on ModelProviderKind {
         'https://generativelanguage.googleapis.com/v1beta/openai',
       ),
       ModelProviderKind.openRouter => Uri.parse('https://openrouter.ai/api/v1'),
-      ModelProviderKind.deepSeek => Uri.parse('https://api.deepseek.com'),
+      ModelProviderKind.deepSeek => Uri.parse(
+        'https://api.deepseek.com/anthropic',
+      ),
       ModelProviderKind.mimo => Uri.parse(
         'https://token-plan-sgp.xiaomimimo.com/anthropic/v1/messages',
       ),
@@ -132,7 +134,7 @@ extension ModelProviderKindDetails on ModelProviderKind {
       ModelProviderKind.anthropicCompatible => 'anthropic-compatible-chat',
       ModelProviderKind.gemini => 'gemini-3.5-flash',
       ModelProviderKind.openRouter => 'openrouter/auto',
-      ModelProviderKind.deepSeek => 'deepseek-v4-pro',
+      ModelProviderKind.deepSeek => 'deepseek-v4-flash',
       ModelProviderKind.mimo => 'mimo-v2.5-pro',
       ModelProviderKind.kimi => 'kimi-k2.6',
       ModelProviderKind.qwen => 'qwen-plus',
@@ -147,13 +149,13 @@ extension ModelProviderKindDetails on ModelProviderKind {
     return switch (this) {
       ModelProviderKind.anthropic ||
       ModelProviderKind.anthropicCompatible ||
+      ModelProviderKind.deepSeek ||
       ModelProviderKind.miniMax ||
       ModelProviderKind.mimo => true,
       ModelProviderKind.openAi ||
       ModelProviderKind.openAiCompatible ||
       ModelProviderKind.gemini ||
       ModelProviderKind.openRouter ||
-      ModelProviderKind.deepSeek ||
       ModelProviderKind.kimi ||
       ModelProviderKind.qwen ||
       ModelProviderKind.doubao ||

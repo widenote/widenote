@@ -95,7 +95,7 @@ void main() {
   });
 
   test(
-    'modelClientProvider routes Anthropic-compatible defaults through messages endpoint',
+    'modelClientProvider routes DeepSeek defaults through Anthropic messages',
     () async {
       late String requestPath;
       late String? apiKeyHeader;
@@ -137,7 +137,7 @@ void main() {
       _insertProvider(
         database,
         id: 'deepseek-default',
-        providerKind: ModelProviderKind.anthropicCompatible.name,
+        providerKind: ModelProviderKind.deepSeek.name,
         displayName: 'DeepSeek QA',
         endpoint: endpoint,
         model: 'deepseek-v4-flash',

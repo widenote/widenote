@@ -51,7 +51,10 @@ Provider presets currently cover OpenAI, Anthropic Claude, Google Gemini,
 OpenRouter, DeepSeek, Kimi, Alibaba Qwen, Volcengine Doubao, Zhipu GLM,
 MiniMax, Xiaomi MIMO, Ollama, and custom OpenAI-compatible or
 Anthropic-compatible endpoints. Vendor presets choose the closest compatible
-adapter and remain editable in mobile Settings.
+adapter and remain editable in mobile Settings. The built-in DeepSeek preset
+uses DeepSeek's Anthropic-compatible `/anthropic` endpoint and
+`deepseek-v4-flash`; OpenAI-compatible DeepSeek gateways should use the custom
+OpenAI-compatible kind.
 
 Safe provider JSON uses the public schema wire names from `packages/schemas`:
 provider kinds such as `openai`, `deepseek`, `minimax`, and

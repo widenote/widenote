@@ -59,6 +59,10 @@ injected HTTP client so tests can assert request shape without external network
 access. Provider presets are thin defaults over the compatible adapters;
 endpoint fields remain editable because accounts can differ by region, gateway,
 plan, or enabled model id.
+The built-in DeepSeek preset targets DeepSeek's Anthropic-compatible
+`/anthropic` API and `deepseek-v4-flash`; users who need a DeepSeek
+OpenAI-compatible gateway should configure it through the custom
+OpenAI-compatible kind.
 
 `apps/mobile/lib/features/model_providers` owns the first mobile settings
 surface. Providers can be added, edited, tested with a fake connection service,
