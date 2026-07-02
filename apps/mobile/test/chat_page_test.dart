@@ -24,12 +24,8 @@ void main() {
 
     expect(find.byKey(const Key('chat-page')), findsOneWidget);
     expect(find.byKey(const Key('chat-empty-sessions')), findsOneWidget);
-    expect(find.byKey(const Key('chat-empty-state')), findsOneWidget);
     expect(find.text('No local sessions yet.'), findsOneWidget);
-    expect(
-      find.text('Ask a question about records, Memory, or todos.'),
-      findsOneWidget,
-    );
+    expect(find.byKey(const Key('chat-input-field')), findsNothing);
   });
 
   testWidgets('chat page shows localized Chinese empty state', (tester) async {
@@ -39,7 +35,7 @@ void main() {
     expect(find.byKey(const Key('chat-page')), findsOneWidget);
     expect(find.text('对话列表'), findsOneWidget);
     expect(find.text('还没有本地会话。'), findsOneWidget);
-    expect(find.text('先问一个关于记录、记忆或待办的问题。'), findsOneWidget);
+    expect(find.byKey(const Key('chat-input-field')), findsNothing);
   });
 
   testWidgets('sending without a configured model shows retryable failure', (
@@ -97,6 +93,7 @@ void main() {
   ) async {
     await _pumpApp(tester);
     await _openTab(tester, const Key('tab-chat'));
+    await _openNewChat(tester);
 
     final field = tester.widget<TextField>(
       find.byKey(const Key('chat-input-field')),
@@ -160,7 +157,7 @@ void main() {
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('chat-page')), findsOneWidget);
+    expect(find.byKey(const Key('chat-session-page')), findsOneWidget);
     expect(find.byKey(const Key('timeline-item-detail-page')), findsNothing);
   });
 
@@ -264,11 +261,19 @@ void main() {
     await _sendChat(tester, 'Keep this chat open.');
     final before = _readChatState(tester);
 
+    await tester.tap(find.byKey(const Key('chat-session-back-button')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('chat-page')), findsOneWidget);
+
     await _openTab(tester, const Key('tab-home'));
     await _openTab(tester, const Key('tab-chat'));
     final after = _readChatState(tester);
 
     expect(after.activeSessionId, before.activeSessionId);
+    expect(find.byKey(const Key('chat-page')), findsOneWidget);
+    await tester.tap(find.byKey(Key('chat-session-${before.activeSessionId}')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('chat-session-page')), findsOneWidget);
     expect(find.text('Keep this chat open.'), findsWidgets);
     expect(after.messages.length, before.messages.length);
   });
@@ -294,17 +299,16 @@ void main() {
     expect(find.text('First planning thread'), findsWidgets);
     expect(find.text('2 messages'), findsOneWidget);
 
-    await _ensureChatVisible(
-      tester,
-      find.byKey(const Key('chat-new-session-button')),
-      delta: -240,
-    );
+    await tester.tap(find.byKey(const Key('chat-session-back-button')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('chat-page')), findsOneWidget);
     await tester.tap(find.byKey(const Key('chat-new-session-button')));
     await tester.pumpAndSettle();
 
     state = _readChatState(tester);
     final emptyId = state.activeSessionId!;
     expect(emptyId, isNot(firstId));
+    expect(find.byKey(const Key('chat-session-page')), findsOneWidget);
     expect(find.text('New chat'), findsWidgets);
     expect(find.text('Empty'), findsOneWidget);
     await _ensureChatVisible(tester, find.byKey(const Key('chat-empty-state')));
@@ -316,20 +320,18 @@ void main() {
     expect(secondId, emptyId);
     expect(find.text('Second answer.'), findsOneWidget);
 
-    await _ensureChatVisible(tester, find.byKey(Key('chat-session-$firstId')));
+    await tester.tap(find.byKey(const Key('chat-session-back-button')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('chat-page')), findsOneWidget);
     await tester.tap(find.byKey(Key('chat-session-$firstId')));
     await tester.pumpAndSettle();
 
+    expect(find.byKey(const Key('chat-session-page')), findsOneWidget);
     expect(_readChatState(tester).activeSessionId, firstId);
     await _ensureChatVisible(tester, find.text('First answer.'));
     expect(find.text('First answer.'), findsOneWidget);
 
-    await _ensureChatVisible(
-      tester,
-      find.byKey(Key('chat-session-actions-$firstId')),
-      delta: -240,
-    );
-    await tester.tap(find.byKey(Key('chat-session-actions-$firstId')));
+    await tester.tap(find.byKey(const Key('chat-session-actions-current')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Rename').last);
     await tester.pumpAndSettle();
@@ -342,12 +344,7 @@ void main() {
 
     expect(find.text('Renamed first thread'), findsWidgets);
 
-    await _ensureChatVisible(
-      tester,
-      find.byKey(Key('chat-session-actions-$firstId')),
-      delta: -240,
-    );
-    await tester.tap(find.byKey(Key('chat-session-actions-$firstId')));
+    await tester.tap(find.byKey(const Key('chat-session-actions-current')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete').last);
     await tester.pumpAndSettle();
@@ -357,12 +354,15 @@ void main() {
     await tester.pumpAndSettle();
 
     state = _readChatState(tester);
+    expect(find.byKey(const Key('chat-page')), findsOneWidget);
     expect(
       state.sessions.map((session) => session.id),
       isNot(contains(firstId)),
     );
     expect(state.activeSessionId, secondId);
     expect(find.text('Renamed first thread'), findsNothing);
+    await tester.tap(find.byKey(Key('chat-session-$secondId')));
+    await tester.pumpAndSettle();
     await _ensureChatVisible(tester, find.text('Second answer.'));
     expect(find.text('Second answer.'), findsOneWidget);
   });
@@ -393,6 +393,9 @@ void main() {
     await _openTab(tester, const Key('tab-chat'));
 
     expect(find.text('历史复盘'), findsWidgets);
+    await tester.tap(find.byKey(const Key('chat-session-history-1')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('chat-session-page')), findsOneWidget);
     await _ensureChatVisible(tester, find.text('昨天记录了什么？'));
     expect(find.text('昨天记录了什么？'), findsOneWidget);
   });
@@ -461,9 +464,20 @@ Future<void> _openTab(WidgetTester tester, Key tabKey) async {
 }
 
 Future<void> _sendChat(WidgetTester tester, String text) async {
+  if (find.byKey(const Key('chat-input-field')).evaluate().isEmpty) {
+    await _openNewChat(tester);
+  }
   await tester.enterText(find.byKey(const Key('chat-input-field')), text);
   await tester.tap(find.byKey(const Key('chat-send-button')));
   await tester.pumpAndSettle();
+}
+
+Future<void> _openNewChat(WidgetTester tester) async {
+  await tester.ensureVisible(find.byKey(const Key('chat-new-session-button')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const Key('chat-new-session-button')));
+  await tester.pumpAndSettle();
+  expect(find.byKey(const Key('chat-session-page')), findsOneWidget);
 }
 
 Future<void> _ensureChatVisible(
@@ -533,8 +547,11 @@ void _seedToolLoopContext(WideNoteLocalDatabase database, DateTime now) {
 }
 
 ChatState _readChatState(WidgetTester tester) {
+  final scope = find.byKey(const Key('chat-session-page')).evaluate().isNotEmpty
+      ? find.byKey(const Key('chat-session-page'))
+      : find.byKey(const Key('chat-page'));
   return ProviderScope.containerOf(
-    tester.element(find.byKey(const Key('chat-page'))),
+    tester.element(scope),
   ).read(chatControllerProvider).requireValue;
 }
 

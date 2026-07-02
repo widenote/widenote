@@ -106,7 +106,7 @@ void main() {
 
     expect(await tester.binding.handlePopRoute(), isTrue);
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('chat-page')), findsOneWidget);
+    expect(find.byKey(const Key('chat-session-page')), findsOneWidget);
 
     await _pumpRoute(tester, '/todos', seed: _seedTodo);
     await tester.tap(find.byKey(const Key('todo-source-todo-nav-1')));
@@ -433,6 +433,39 @@ void main() {
       await tester.pumpAndSettle();
     }
   });
+
+  testWidgets('deep linked chat session returns to chat list', (tester) async {
+    await _pumpRoute(
+      tester,
+      '/chat/session/nav-session',
+      seed: _seedChatSession,
+    );
+
+    expect(find.byKey(const Key('chat-session-page')), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
+
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('chat-page')), findsOneWidget);
+    expect(find.byKey(const Key('chat-session-page')), findsNothing);
+    expect(find.byType(NavigationBar), findsOneWidget);
+  });
+
+  testWidgets('missing chat session deep link returns to chat list safely', (
+    tester,
+  ) async {
+    await _pumpRoute(tester, '/chat/session/missing-session');
+
+    expect(find.byKey(const Key('chat-session-missing')), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
+
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('chat-page')), findsOneWidget);
+    expect(find.byType(NavigationBar), findsOneWidget);
+  });
 }
 
 class _DeepLinkCase {
@@ -515,9 +548,34 @@ Future<void> _pumpRoute(
 }
 
 Future<void> _sendChat(WidgetTester tester, String text) async {
+  if (find.byKey(const Key('chat-input-field')).evaluate().isEmpty) {
+    await tester.tap(find.byKey(const Key('chat-new-session-button')));
+    await tester.pumpAndSettle();
+  }
   await tester.enterText(find.byKey(const Key('chat-input-field')), text);
   await tester.tap(find.byKey(const Key('chat-send-button')));
   await tester.pumpAndSettle();
+}
+
+void _seedChatSession(WideNoteLocalDatabase database) {
+  final now = DateTime.utc(2026, 7, 2, 10);
+  database.chatSessions.save(
+    ChatSessionRecord(
+      id: 'nav-session',
+      title: 'Navigation chat',
+      createdAt: now,
+      updatedAt: now,
+    ),
+  );
+  database.chatMessages.save(
+    ChatMessageRecord(
+      id: 'nav-message',
+      sessionId: 'nav-session',
+      role: 'user',
+      body: 'Check chat detail navigation.',
+      createdAt: now,
+    ),
+  );
 }
 
 Future<void> _ensureChatVisible(WidgetTester tester, Finder finder) async {

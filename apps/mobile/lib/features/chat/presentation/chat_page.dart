@@ -8,15 +8,77 @@ import '../../../l10n/l10n.dart';
 import '../application/chat_controller.dart';
 import '../domain/chat_models.dart';
 
-class ChatPage extends ConsumerStatefulWidget {
+class ChatPage extends ConsumerWidget {
   const ChatPage({super.key});
 
   @override
-  ConsumerState<ChatPage> createState() => _ChatPageState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final chatState = ref.watch(chatControllerProvider);
+    return chatState.when(
+      data: (state) => _ChatListBody(
+        state: state,
+        onOpenSession: (sessionId) => _openSession(context, ref, sessionId),
+        onNewSession: () => _startNewSession(context, ref),
+        onRenameSession: (session) =>
+            _showRenameSessionDialog(context, ref, session),
+        onDeleteSession: (session) =>
+            _confirmAndDeleteSession(context, ref, session),
+      ),
+      loading: () => const _LoadingPage(),
+      error: (error, stackTrace) => _LoadErrorPage(error: error),
+    );
+  }
+
+  Future<void> _openSession(
+    BuildContext context,
+    WidgetRef ref,
+    String sessionId,
+  ) async {
+    final opened = await ref
+        .read(chatControllerProvider.notifier)
+        .openSession(sessionId);
+    if (opened && context.mounted) {
+      context.push(_chatSessionPath(sessionId));
+    }
+  }
+
+  Future<void> _startNewSession(BuildContext context, WidgetRef ref) async {
+    await ref.read(chatControllerProvider.notifier).startNewSession();
+    final sessionId = ref
+        .read(chatControllerProvider)
+        .valueOrNull
+        ?.activeSessionId;
+    if (sessionId != null && context.mounted) {
+      context.push(_chatSessionPath(sessionId));
+    }
+  }
 }
 
-class _ChatPageState extends ConsumerState<ChatPage> {
+class ChatSessionPage extends ConsumerStatefulWidget {
+  const ChatSessionPage({required this.sessionId, super.key});
+
+  final String sessionId;
+
+  @override
+  ConsumerState<ChatSessionPage> createState() => _ChatSessionPageState();
+}
+
+class _ChatSessionPageState extends ConsumerState<ChatSessionPage> {
   final _inputController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _openSession());
+  }
+
+  @override
+  void didUpdateWidget(ChatSessionPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.sessionId != widget.sessionId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _openSession());
+    }
+  }
 
   @override
   void dispose() {
@@ -26,119 +88,151 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    return _ChatPageContent(controller: _inputController);
-  }
-}
-
-class _ChatPageContent extends ConsumerWidget {
-  const _ChatPageContent({required this.controller});
-
-  final TextEditingController controller;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
     final chatState = ref.watch(chatControllerProvider);
     return chatState.when(
-      data: (state) => _ChatBody(
-        state: state,
-        controller: controller,
-        onSend: () => _send(context, ref),
-        onSelectSession: (sessionId) => _selectSession(ref, sessionId),
-        onNewSession: () => _startNewSession(ref),
-        onRenameSession: (session) => _renameSession(context, ref, session),
-        onDeleteSession: (session) => _deleteSession(context, ref, session),
-        onRetry: () => _retry(ref),
-      ),
+      data: (state) {
+        final session = _sessionById(state.sessions, widget.sessionId);
+        if (session == null) {
+          return _MissingSessionPage(onBack: () => context.go('/chat'));
+        }
+        if (state.activeSessionId != widget.sessionId) {
+          return _SessionOpeningPage(
+            session: session,
+            isBlocked: state.isSending,
+            onBack: () => _goBackToChatList(context),
+          );
+        }
+        return _ChatSessionBody(
+          state: state,
+          session: session,
+          controller: _inputController,
+          onBack: () => _goBackToChatList(context),
+          onSend: _send,
+          onRenameSession: () => _renameCurrentSession(session),
+          onDeleteSession: () => _deleteCurrentSession(session),
+          onRetry: _retry,
+        );
+      },
       loading: () => const _LoadingPage(),
       error: (error, stackTrace) => _LoadErrorPage(error: error),
     );
   }
 
-  void _send(BuildContext context, WidgetRef ref) {
-    final text = controller.text;
+  void _openSession() {
+    if (!mounted) {
+      return;
+    }
+    unawaited(
+      ref.read(chatControllerProvider.notifier).openSession(widget.sessionId),
+    );
+  }
+
+  void _send() {
+    final text = _inputController.text;
     if (text.trim().isEmpty) {
       return;
     }
-    controller.clear();
+    _inputController.clear();
     FocusScope.of(context).unfocus();
-    unawaited(ref.read(chatControllerProvider.notifier).sendMessage(text));
-  }
-
-  void _selectSession(WidgetRef ref, String sessionId) {
-    unawaited(
-      ref.read(chatControllerProvider.notifier).selectSession(sessionId),
-    );
-  }
-
-  void _startNewSession(WidgetRef ref) {
-    controller.clear();
-    unawaited(ref.read(chatControllerProvider.notifier).startNewSession());
-  }
-
-  Future<void> _renameSession(
-    BuildContext context,
-    WidgetRef ref,
-    ChatSession session,
-  ) async {
-    final l10n = context.l10n;
-    final title = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) => _RenameSessionDialog(
-        initialTitle: _displaySessionTitle(l10n, session),
-      ),
-    );
-    if (title == null || title.trim().isEmpty) {
-      return;
-    }
     unawaited(
       ref
           .read(chatControllerProvider.notifier)
-          .renameSession(session.id, title),
+          .sendMessageToSession(widget.sessionId, text),
     );
   }
 
-  Future<void> _deleteSession(
-    BuildContext context,
-    WidgetRef ref,
-    ChatSession session,
-  ) async {
-    final l10n = context.l10n;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(l10n.chatDeleteSessionTitle),
-          content: Text(l10n.chatDeleteSessionBody),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(l10n.cancelButton),
-            ),
-            FilledButton(
-              key: const Key('chat-delete-session-confirm-button'),
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text(l10n.chatDeleteSessionConfirm),
-            ),
-          ],
-        );
-      },
-    );
-    if (confirmed != true) {
-      return;
-    }
-    unawaited(
-      ref.read(chatControllerProvider.notifier).deleteSession(session.id),
-    );
-    if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.chatSessionDeletedSnackbar)));
+  Future<void> _renameCurrentSession(ChatSession session) async {
+    await _showRenameSessionDialog(context, ref, session);
+  }
+
+  Future<void> _deleteCurrentSession(ChatSession session) async {
+    final deleted = await _confirmAndDeleteSession(context, ref, session);
+    if (deleted && mounted) {
+      context.go('/chat');
     }
   }
 
-  void _retry(WidgetRef ref) {
+  void _retry() {
     unawaited(ref.read(chatControllerProvider.notifier).retryFailedMessage());
   }
+}
+
+Future<void> _showRenameSessionDialog(
+  BuildContext context,
+  WidgetRef ref,
+  ChatSession session,
+) async {
+  final l10n = context.l10n;
+  final title = await showDialog<String>(
+    context: context,
+    builder: (dialogContext) =>
+        _RenameSessionDialog(initialTitle: _displaySessionTitle(l10n, session)),
+  );
+  if (title == null || title.trim().isEmpty) {
+    return;
+  }
+  await ref
+      .read(chatControllerProvider.notifier)
+      .renameSession(session.id, title);
+}
+
+Future<bool> _confirmAndDeleteSession(
+  BuildContext context,
+  WidgetRef ref,
+  ChatSession session,
+) async {
+  final l10n = context.l10n;
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) {
+      return AlertDialog(
+        title: Text(l10n.chatDeleteSessionTitle),
+        content: Text(l10n.chatDeleteSessionBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.cancelButton),
+          ),
+          FilledButton(
+            key: const Key('chat-delete-session-confirm-button'),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.chatDeleteSessionConfirm),
+          ),
+        ],
+      );
+    },
+  );
+  if (confirmed != true) {
+    return false;
+  }
+  await ref.read(chatControllerProvider.notifier).deleteSession(session.id);
+  if (context.mounted) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.chatSessionDeletedSnackbar)));
+  }
+  return true;
+}
+
+String _chatSessionPath(String sessionId) {
+  return '/chat/session/${Uri.encodeComponent(sessionId)}';
+}
+
+void _goBackToChatList(BuildContext context) {
+  if (context.canPop()) {
+    context.pop();
+    return;
+  }
+  context.go('/chat');
+}
+
+ChatSession? _sessionById(List<ChatSession> sessions, String sessionId) {
+  for (final session in sessions) {
+    if (session.id == sessionId) {
+      return session;
+    }
+  }
+  return null;
 }
 
 class _RenameSessionDialog extends StatefulWidget {
@@ -193,53 +287,85 @@ class _RenameSessionDialogState extends State<_RenameSessionDialog> {
   }
 }
 
-class _ChatBody extends StatelessWidget {
-  const _ChatBody({
+class _ChatListBody extends StatelessWidget {
+  const _ChatListBody({
     required this.state,
-    required this.controller,
-    required this.onSend,
-    required this.onSelectSession,
+    required this.onOpenSession,
     required this.onNewSession,
+    required this.onRenameSession,
+    required this.onDeleteSession,
+  });
+
+  final ChatState state;
+  final ValueChanged<String> onOpenSession;
+  final VoidCallback onNewSession;
+  final ValueChanged<ChatSession> onRenameSession;
+  final ValueChanged<ChatSession> onDeleteSession;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      key: const Key('chat-page'),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      children: [
+        const _PageHeader(),
+        const SizedBox(height: 16),
+        _SessionsPanel(
+          sessions: state.sessions,
+          activeSessionId: state.activeSessionId,
+          isSending: state.isSending,
+          onSelect: onOpenSession,
+          onNewSession: onNewSession,
+          onRename: onRenameSession,
+          onDelete: onDeleteSession,
+        ),
+      ],
+    );
+  }
+}
+
+class _ChatSessionBody extends StatelessWidget {
+  const _ChatSessionBody({
+    required this.state,
+    required this.session,
+    required this.controller,
+    required this.onBack,
+    required this.onSend,
     required this.onRenameSession,
     required this.onDeleteSession,
     required this.onRetry,
   });
 
   final ChatState state;
+  final ChatSession session;
   final TextEditingController controller;
+  final VoidCallback onBack;
   final VoidCallback onSend;
-  final ValueChanged<String> onSelectSession;
-  final VoidCallback onNewSession;
-  final ValueChanged<ChatSession> onRenameSession;
-  final ValueChanged<ChatSession> onDeleteSession;
+  final VoidCallback onRenameSession;
+  final VoidCallback onDeleteSession;
   final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      key: const Key('chat-page'),
+      key: const Key('chat-session-page'),
       children: [
+        _SessionHeader(
+          session: session,
+          isSending: state.isSending,
+          onBack: onBack,
+          onRename: onRenameSession,
+          onDelete: onDeleteSession,
+        ),
         Expanded(
           child: ListView(
             key: const Key('chat-message-scroll'),
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
             children: [
-              const _PageHeader(),
-              const SizedBox(height: 16),
-              _SessionsPanel(
-                sessions: state.sessions,
-                activeSessionId: state.activeSessionId,
-                isSending: state.isSending,
-                onSelect: onSelectSession,
-                onNewSession: onNewSession,
-                onRename: onRenameSession,
-                onDelete: onDeleteSession,
-              ),
               if (state.errorMessage != null) ...[
-                const SizedBox(height: 12),
                 _ErrorBanner(message: state.errorMessage!, onRetry: onRetry),
+                const SizedBox(height: 12),
               ],
-              const SizedBox(height: 16),
               _MessagesPanel(state: state, onRetry: onRetry),
             ],
           ),
@@ -253,6 +379,206 @@ class _ChatBody extends StatelessWidget {
               isSending: state.isSending,
               onSend: onSend,
             ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SessionHeader extends StatelessWidget {
+  const _SessionHeader({
+    required this.session,
+    required this.isSending,
+    required this.onBack,
+    required this.onRename,
+    required this.onDelete,
+  });
+
+  final ChatSession session;
+  final bool isSending;
+  final VoidCallback onBack;
+  final VoidCallback onRename;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final colors = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Color(0xFFE3E8EF))),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(4, 6, 8, 8),
+        child: Row(
+          children: [
+            IconButton(
+              key: const Key('chat-session-back-button'),
+              tooltip: l10n.chatBackToConversationsTooltip,
+              onPressed: onBack,
+              icon: const Icon(Icons.arrow_back),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _displaySessionTitle(l10n, session),
+                    key: const Key('chat-session-title'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    l10n.chatSessionMessageCount(session.messageCount),
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            PopupMenuButton<_SessionAction>(
+              key: const Key('chat-session-actions-current'),
+              enabled: !isSending,
+              tooltip: l10n.chatSessionActionsTooltip,
+              onSelected: (action) {
+                switch (action) {
+                  case _SessionAction.rename:
+                    onRename();
+                    break;
+                  case _SessionAction.delete:
+                    onDelete();
+                    break;
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem<_SessionAction>(
+                  value: _SessionAction.rename,
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.edit_outlined),
+                    title: Text(l10n.chatRenameSessionAction),
+                  ),
+                ),
+                PopupMenuItem<_SessionAction>(
+                  value: _SessionAction.delete,
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.delete_outline),
+                    title: Text(l10n.chatDeleteSessionAction),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MissingSessionPage extends StatelessWidget {
+  const _MissingSessionPage({required this.onBack});
+
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return ListView(
+      key: const Key('chat-session-missing'),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      children: [
+        _BackHeader(onBack: onBack),
+        const SizedBox(height: 16),
+        _Surface(
+          icon: Icons.forum_outlined,
+          title: l10n.chatSessionMissingTitle,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.chatSessionMissingBody),
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                key: const Key('chat-session-missing-back-button'),
+                onPressed: onBack,
+                icon: const Icon(Icons.list_alt_outlined),
+                label: Text(l10n.chatBackToConversationsButton),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SessionOpeningPage extends StatelessWidget {
+  const _SessionOpeningPage({
+    required this.session,
+    required this.isBlocked,
+    required this.onBack,
+  });
+
+  final ChatSession session;
+  final bool isBlocked;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return ListView(
+      key: const Key('chat-session-opening'),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      children: [
+        _BackHeader(title: _displaySessionTitle(l10n, session), onBack: onBack),
+        const SizedBox(height: 16),
+        _Surface(
+          icon: isBlocked ? Icons.hourglass_top : Icons.forum_outlined,
+          title: isBlocked
+              ? l10n.chatSessionSwitchBlockedTitle
+              : l10n.chatSessionOpeningTitle,
+          child: isBlocked
+              ? Text(l10n.chatSessionSwitchDisabled)
+              : const Center(child: CircularProgressIndicator()),
+        ),
+      ],
+    );
+  }
+}
+
+class _BackHeader extends StatelessWidget {
+  const _BackHeader({required this.onBack, this.title});
+
+  final String? title;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Row(
+      children: [
+        IconButton(
+          key: const Key('chat-session-back-button'),
+          tooltip: l10n.chatBackToConversationsTooltip,
+          onPressed: onBack,
+          icon: const Icon(Icons.arrow_back),
+        ),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            title ?? l10n.chatConversationListTitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
           ),
         ),
       ],

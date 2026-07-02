@@ -53,6 +53,7 @@ must not fall back to local template answers.
 - `application/ChatAssistant`
 - `application/chatControllerProvider`
 - `presentation/ChatPage`
+- `presentation/ChatSessionPage`
 
 ## Generated Artifacts
 

@@ -164,6 +164,18 @@ GoRouter createAppRouter({String initialLocation = '/'}) {
             name: 'chat',
             pageBuilder: (context, state) =>
                 _noTransitionPage(state, const ChatPage()),
+            routes: [
+              GoRoute(
+                path: 'session/:sessionId',
+                name: 'chat-session',
+                pageBuilder: (context, state) => _noTransitionPage(
+                  state,
+                  ChatSessionPage(
+                    sessionId: state.pathParameters['sessionId'] ?? '',
+                  ),
+                ),
+              ),
+            ],
           ),
           GoRoute(
             path: '/todos',
@@ -264,44 +276,47 @@ class WideNoteShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
+    final showBottomNavigationBar = !location.startsWith('/chat/session/');
     return Scaffold(
       body: SafeArea(child: child),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) => _openTab(context, ref, index),
-        destinations: [
-          NavigationDestination(
-            key: const Key('tab-home'),
-            icon: const Icon(Icons.home_outlined),
-            selectedIcon: const Icon(Icons.home),
-            label: l10n.tabHome,
-          ),
-          NavigationDestination(
-            key: const Key('tab-chat'),
-            icon: const Icon(Icons.forum_outlined),
-            selectedIcon: const Icon(Icons.forum),
-            label: l10n.tabChat,
-          ),
-          NavigationDestination(
-            key: const Key('tab-record-action'),
-            icon: const Icon(Icons.add_circle_outline),
-            selectedIcon: const Icon(Icons.add_circle),
-            label: l10n.tabRecord,
-          ),
-          NavigationDestination(
-            key: const Key('tab-todos'),
-            icon: const Icon(Icons.checklist_outlined),
-            selectedIcon: const Icon(Icons.checklist),
-            label: l10n.tabTodos,
-          ),
-          NavigationDestination(
-            key: const Key('tab-plugins'),
-            icon: const Icon(Icons.extension_outlined),
-            selectedIcon: const Icon(Icons.extension),
-            label: l10n.tabPlugins,
-          ),
-        ],
-      ),
+      bottomNavigationBar: showBottomNavigationBar
+          ? NavigationBar(
+              selectedIndex: _selectedIndex,
+              onDestinationSelected: (index) => _openTab(context, ref, index),
+              destinations: [
+                NavigationDestination(
+                  key: const Key('tab-home'),
+                  icon: const Icon(Icons.home_outlined),
+                  selectedIcon: const Icon(Icons.home),
+                  label: l10n.tabHome,
+                ),
+                NavigationDestination(
+                  key: const Key('tab-chat'),
+                  icon: const Icon(Icons.forum_outlined),
+                  selectedIcon: const Icon(Icons.forum),
+                  label: l10n.tabChat,
+                ),
+                NavigationDestination(
+                  key: const Key('tab-record-action'),
+                  icon: const Icon(Icons.add_circle_outline),
+                  selectedIcon: const Icon(Icons.add_circle),
+                  label: l10n.tabRecord,
+                ),
+                NavigationDestination(
+                  key: const Key('tab-todos'),
+                  icon: const Icon(Icons.checklist_outlined),
+                  selectedIcon: const Icon(Icons.checklist),
+                  label: l10n.tabTodos,
+                ),
+                NavigationDestination(
+                  key: const Key('tab-plugins'),
+                  icon: const Icon(Icons.extension_outlined),
+                  selectedIcon: const Icon(Icons.extension),
+                  label: l10n.tabPlugins,
+                ),
+              ],
+            )
+          : null,
     );
   }
 
