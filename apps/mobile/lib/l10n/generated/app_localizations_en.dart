@@ -1329,6 +1329,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Schedule candidates are local suggestions and are not completed like action items.';
 
   @override
+  String get todoDetailCompletedNotice =>
+      'Completed tasks stay at the bottom. Reopen to move this task back to active buckets.';
+
+  @override
   String get todoDetailMetadata => 'Task metadata';
 
   @override

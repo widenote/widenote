@@ -638,6 +638,7 @@
     }
   },
   "todoDetailScheduleNotice": "Schedule candidates are local suggestions and are not completed like action items.",
+  "todoDetailCompletedNotice": "Completed tasks stay at the bottom. Reopen to move this task back to active buckets.",
   "todoDetailMetadata": "Task metadata",
   "todoDetailPriority": "Priority",
   "todoDetailDue": "Due date",

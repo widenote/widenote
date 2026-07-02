@@ -31,8 +31,21 @@ void main() {
     );
     expect(find.byKey(const Key('todo-row-todo-page-1')), findsOneWidget);
     expect(find.text('Completed'), findsWidgets);
+    expect(
+      find.byKey(const Key('todo-completed-at-todo-page-1')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('todo-reopen-todo-page-1')), findsOneWidget);
+    final completedTitle = tester.widget<Text>(
+      find.text('Review source-linked todo'),
+    );
+    expect(completedTitle.style?.decoration, TextDecoration.lineThrough);
+    final completedBody = tester.widget<Text>(
+      find.text('Keep source-linked context.'),
+    );
+    expect(completedBody.style?.decoration, TextDecoration.lineThrough);
 
-    await tester.tap(find.byKey(const Key('todo-checkbox-todo-page-1')));
+    await tester.tap(find.byKey(const Key('todo-reopen-todo-page-1')));
     await tester.pumpAndSettle();
 
     expect(database.todos.readById('todo-page-1')!.status, 'open');
@@ -129,6 +142,49 @@ void main() {
     expect(record.payload['due_at'], isA<String>());
     expect(record.payload['indent_level'], 1);
     expect(record.payload['sort_order'], 100);
+  });
+
+  testWidgets('todo detail page reopens completed rows with crossed subtasks', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    _seedCompletedTodo(database);
+    await _pumpTodosPage(tester, database);
+
+    await tester.tap(find.byKey(const Key('todo-row-todo-completed-page')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('todo-detail-page')), findsOneWidget);
+    expect(
+      find.text(
+        'Completed tasks stay at the bottom. Reopen to move this task back to active buckets.',
+      ),
+      findsOneWidget,
+    );
+    await tester.drag(
+      find.byKey(const Key('todo-detail-scroll')),
+      const Offset(0, -280),
+    );
+    await tester.pumpAndSettle();
+    final subtask = tester.widget<Text>(
+      find.byKey(const Key('todo-detail-subtask-subtask-draft')),
+    );
+    expect(subtask.style?.decoration, TextDecoration.lineThrough);
+    await tester.drag(
+      find.byKey(const Key('todo-detail-scroll')),
+      const Offset(0, 280),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.byKey(const Key('todo-detail-toggle-todo-completed-page')),
+    );
+    await tester.pumpAndSettle();
+
+    final record = database.todos.readById('todo-completed-page')!;
+    expect(record.status, 'open');
+    expect(record.payload.containsKey('completed_at'), isFalse);
   });
 
   testWidgets('todos page pull-to-refresh reloads local todo rows', (
@@ -228,6 +284,7 @@ void _seedTodo(WideNoteLocalDatabase database) {
         'suggestion_kind': 'action',
         'suggestion_confidence': 'high',
         'suggestion_reason': 'explicit_action',
+        'body': 'Keep source-linked context.',
       },
       createdAt: now,
       updatedAt: now,
@@ -251,6 +308,36 @@ void _seedSchedule(WideNoteLocalDatabase database) {
         'scheduled_at_label': 'tomorrow',
       },
       createdAt: now,
+      updatedAt: now,
+    ),
+  );
+}
+
+void _seedCompletedTodo(WideNoteLocalDatabase database) {
+  final now = DateTime.utc(2026, 7, 2, 15);
+  database.todos.insert(
+    TodoRecord(
+      id: 'todo-completed-page',
+      sourceCaptureId: 'capture-completed-page',
+      status: 'completed',
+      payload: const <String, Object?>{
+        'title': 'Completed launch task',
+        'source_label': 'source: capture-completed-page',
+        'status_label': 'suggested action',
+        'suggestion_kind': 'action',
+        'suggestion_confidence': 'high',
+        'suggestion_reason': 'explicit_action',
+        'completed_at': '2026-07-02T15:00:00.000Z',
+        'completed_by': 'user',
+        'subtasks': <Object?>[
+          <String, Object?>{
+            'id': 'subtask-draft',
+            'title': 'Draft launch note',
+            'completed': false,
+          },
+        ],
+      },
+      createdAt: now.subtract(const Duration(hours: 2)),
       updatedAt: now,
     ),
   );

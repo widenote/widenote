@@ -277,6 +277,7 @@ class _TodoRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final colorScheme = Theme.of(context).colorScheme;
+    final isCompleted = todo.isCompleted;
     return InkWell(
       borderRadius: BorderRadius.circular(8),
       onTap: () => context.push('/todos/${Uri.encodeComponent(todo.id)}'),
@@ -311,10 +312,11 @@ class _TodoRow extends ConsumerWidget {
                       localizedTodoTitle(l10n, todo.title),
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.w700,
-                        decoration: todo.isCompleted
+                        decoration: isCompleted
                             ? TextDecoration.lineThrough
                             : null,
-                        color: todo.isCompleted
+                        decorationThickness: isCompleted ? 2 : null,
+                        color: isCompleted
                             ? colorScheme.onSurfaceVariant
                             : null,
                       ),
@@ -327,6 +329,10 @@ class _TodoRow extends ConsumerWidget {
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurfaceVariant,
+                          decoration: isCompleted
+                              ? TextDecoration.lineThrough
+                              : null,
+                          decorationThickness: isCompleted ? 2 : null,
                         ),
                       ),
                     ],
@@ -352,6 +358,14 @@ class _TodoRow extends ConsumerWidget {
                             todo.statusLabel,
                           ),
                         ),
+                        if (todo.completedAt != null)
+                          _Tag(
+                            key: Key('todo-completed-at-${todo.id}'),
+                            icon: Icons.done_all_outlined,
+                            label: l10n.todoCompletedAtLabel(
+                              _dateLabel(todo.completedAt!),
+                            ),
+                          ),
                         if (todo.priority != null)
                           _Tag(
                             key: Key('todo-priority-${todo.id}'),
@@ -389,11 +403,21 @@ class _TodoRow extends ConsumerWidget {
                 ),
               ),
             ),
-            Icon(
-              Icons.chevron_right,
-              size: 20,
-              color: colorScheme.onSurfaceVariant,
-            ),
+            if (isCompleted)
+              IconButton(
+                key: Key('todo-reopen-${todo.id}'),
+                tooltip: l10n.todoActionReopen,
+                onPressed: () =>
+                    ref.read(todoControllerProvider.notifier).reopen(todo.id),
+                icon: const Icon(Icons.undo_outlined),
+                color: colorScheme.primary,
+              )
+            else
+              Icon(
+                Icons.chevron_right,
+                size: 20,
+                color: colorScheme.onSurfaceVariant,
+              ),
           ],
         ),
       ),
@@ -492,6 +516,11 @@ String _dueLabel(AppLocalizations l10n, TodoListItem todo) {
   return l10n.todoDueLabel(
     '${local.year.toString().padLeft(4, '0')}-${local.month.toString().padLeft(2, '0')}-${local.day.toString().padLeft(2, '0')}',
   );
+}
+
+String _dateLabel(DateTime value) {
+  final local = value.toLocal();
+  return '${local.year.toString().padLeft(4, '0')}-${local.month.toString().padLeft(2, '0')}-${local.day.toString().padLeft(2, '0')}';
 }
 
 class _ErrorLine extends StatelessWidget {

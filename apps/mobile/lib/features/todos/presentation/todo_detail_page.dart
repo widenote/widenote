@@ -107,28 +107,45 @@ class _TodoDetailPageState extends ConsumerState<TodoDetailPage> {
                 ),
                 const SizedBox(height: 10),
                 if (todo.isAction)
-                  OutlinedButton.icon(
-                    key: Key('todo-detail-toggle-${todo.id}'),
-                    onPressed: () {
-                      final controller = ref.read(
-                        todoControllerProvider.notifier,
-                      );
-                      if (todo.isCompleted) {
-                        controller.reopen(todo.id);
-                      } else {
-                        controller.complete(todo.id);
-                      }
-                    },
-                    icon: Icon(
-                      todo.isCompleted
-                          ? Icons.refresh_outlined
-                          : Icons.check_circle_outline,
-                    ),
-                    label: Text(
-                      todo.isCompleted
-                          ? l10n.todoActionReopen
-                          : l10n.todoActionComplete,
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      OutlinedButton.icon(
+                        key: Key('todo-detail-toggle-${todo.id}'),
+                        onPressed: () {
+                          final controller = ref.read(
+                            todoControllerProvider.notifier,
+                          );
+                          if (todo.isCompleted) {
+                            controller.reopen(todo.id);
+                          } else {
+                            controller.complete(todo.id);
+                          }
+                        },
+                        icon: Icon(
+                          todo.isCompleted
+                              ? Icons.undo_outlined
+                              : Icons.check_circle_outline,
+                        ),
+                        label: Text(
+                          todo.isCompleted
+                              ? l10n.todoActionReopen
+                              : l10n.todoActionComplete,
+                        ),
+                      ),
+                      if (todo.isCompleted) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          l10n.todoDetailCompletedNotice,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      ],
+                    ],
                   )
                 else
                   Text(
@@ -271,7 +288,20 @@ class _TodoDetailPageState extends ConsumerState<TodoDetailPage> {
                                 ? Icons.check_circle
                                 : Icons.radio_button_unchecked,
                           ),
-                          title: Text(subtask.title),
+                          title: Text(
+                            subtask.title,
+                            key: Key('todo-detail-subtask-${subtask.id}'),
+                            style: TextStyle(
+                              decoration: todo.isCompleted || subtask.completed
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                              color: todo.isCompleted || subtask.completed
+                                  ? Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant
+                                  : null,
+                            ),
+                          ),
                         ),
                     ],
                   ),

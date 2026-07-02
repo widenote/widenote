@@ -34,7 +34,8 @@ The `/todos` tab becomes an operational list:
   - Completed
 - Action rows show a checkbox.
 - Schedule rows show an event icon and no checkbox.
-- Completed rows stay visible and have a restore action.
+- Completed rows stay visible in the bottom Completed bucket, render with
+  strikethrough text, show completion time, and have a one-tap Reopen action.
 - Rows retain source chips so users and models can trace the original record.
 - Indentation is rendered from structured metadata, but drag-to-indent is not in
   this first PR. The detail page can adjust hierarchy metadata explicitly.
@@ -147,7 +148,9 @@ Fresh PR evidence from `memex-lab/memex`:
 WideNote avoidance checklist:
 
 - Match todo identity by `TodoRecord.id`, not source capture id.
-- Keep completed rows restorable and preserve metadata in payload.
+- Keep completed rows restorable and preserve metadata in payload. Reopening is
+  a state change on the same `TodoRecord`, so source, priority, due, hierarchy,
+  and subtask metadata move back with the task.
 - Add tests for malformed optional arrays such as `subtasks`.
 - Do not flatten hierarchy into text-only rows.
 - Make empty buckets a UI state, not a model retry trigger.

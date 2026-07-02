@@ -1194,6 +1194,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get todoDetailScheduleNotice => '日程候选只是本地建议，不像行动项一样勾选完成。';
 
   @override
+  String get todoDetailCompletedNotice => '已完成待办会沉到底部；重新打开后会回到未完成分组。';
+
+  @override
   String get todoDetailMetadata => '任务信息';
 
   @override

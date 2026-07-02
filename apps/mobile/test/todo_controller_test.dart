@@ -56,6 +56,70 @@ void main() {
     );
   });
 
+  test('todo controller sinks completed rows and sorts by completed time', () {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    final now = DateTime.utc(2026, 7, 3, 9);
+    void insertTodo(
+      String id, {
+      String status = 'open',
+      DateTime? completedAt,
+      DateTime? dueAt,
+    }) {
+      database.todos.insert(
+        TodoRecord(
+          id: id,
+          sourceCaptureId: 'capture-$id',
+          status: status,
+          payload: <String, Object?>{
+            'title': 'Task $id',
+            'source_label': 'source: capture-$id',
+            'status_label': 'suggested action',
+            'suggestion_kind': 'action',
+            'suggestion_confidence': 'high',
+            'suggestion_reason': 'explicit_action',
+            if (dueAt != null) 'due_at': dueAt.toIso8601String(),
+            if (completedAt != null)
+              'completed_at': completedAt.toIso8601String(),
+          },
+          createdAt: now.subtract(const Duration(days: 1)),
+          updatedAt: completedAt ?? now,
+        ),
+      );
+    }
+
+    insertTodo('active', dueAt: DateTime.utc(2026, 7, 10));
+    insertTodo(
+      'done-old',
+      status: 'completed',
+      completedAt: DateTime.utc(2026, 7, 2, 8),
+      dueAt: DateTime.utc(2026, 7, 1),
+    );
+    insertTodo(
+      'done-new',
+      status: 'completed',
+      completedAt: DateTime.utc(2026, 7, 3, 8),
+      dueAt: DateTime.utc(2026, 7, 20),
+    );
+    final container = ProviderContainer(
+      overrides: [localDatabaseProvider.overrideWithValue(database)],
+    );
+    addTearDown(container.dispose);
+
+    final state = container.read(todoControllerProvider);
+
+    expect(state.actionItems.map((item) => item.id), ['active']);
+    expect(state.completedItems.map((item) => item.id), [
+      'done-new',
+      'done-old',
+    ]);
+    expect(state.items.map((item) => item.id), [
+      'active',
+      'done-new',
+      'done-old',
+    ]);
+  });
+
   test('todo controller groups model-suggested rows without local parsing', () {
     final database = WideNoteLocalDatabase.inMemory();
     addTearDown(database.close);

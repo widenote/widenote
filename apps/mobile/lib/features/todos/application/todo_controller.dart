@@ -284,7 +284,7 @@ final class TodoController extends Notifier<TodoState> {
       if (!item.isAction) {
         return;
       }
-      final now = DateTime.now().toUtc();
+      final now = ref.read(todoNowProvider).toUtc();
       final payload = Map<String, Object?>.from(record.payload)
         ..['todo_schema_version'] = 1;
       if (status == 'completed') {
@@ -339,7 +339,7 @@ final class TodoController extends Notifier<TodoState> {
       if (record == null) {
         return;
       }
-      final now = DateTime.now().toUtc();
+      final now = ref.read(todoNowProvider).toUtc();
       final payload = update(Map<String, Object?>.from(record.payload), now);
       if (userOverrideKeys.isNotEmpty) {
         payload['user_overrides'] = _mergeUserOverrides(
@@ -374,9 +374,9 @@ final class TodoController extends Notifier<TodoState> {
     final actionItems = visibleItems
         .where((item) => item.isAction && !item.isCompleted)
         .toList(growable: false);
-    final completedItems = visibleItems
-        .where((item) => item.isCompleted)
-        .toList(growable: false);
+    final completedItems =
+        visibleItems.where((item) => item.isCompleted).toList(growable: false)
+          ..sort(_compareCompletedTodoDisplay);
     final scheduleItems = visibleItems
         .where((item) => item.isSchedule && !item.isCompleted)
         .toList(growable: false);
@@ -535,6 +535,16 @@ int _compareTodoDisplay(TodoListItem a, TodoListItem b) {
     return updated;
   }
   return a.id.compareTo(b.id);
+}
+
+int _compareCompletedTodoDisplay(TodoListItem a, TodoListItem b) {
+  final aCompletedAt = a.completedAt ?? a.updatedAt;
+  final bCompletedAt = b.completedAt ?? b.updatedAt;
+  final completed = bCompletedAt.compareTo(aCompletedAt);
+  if (completed != 0) {
+    return completed;
+  }
+  return _compareTodoDisplay(a, b);
 }
 
 String _sourceLabel({

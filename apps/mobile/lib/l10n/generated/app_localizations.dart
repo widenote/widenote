@@ -2294,6 +2294,12 @@ abstract class AppLocalizations {
   /// **'Schedule candidates are local suggestions and are not completed like action items.'**
   String get todoDetailScheduleNotice;
 
+  /// No description provided for @todoDetailCompletedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed tasks stay at the bottom. Reopen to move this task back to active buckets.'**
+  String get todoDetailCompletedNotice;
+
   /// No description provided for @todoDetailMetadata.
   ///
   /// In en, this message translates to:
