@@ -7,24 +7,186 @@ import 'package:widenote_model_providers/model_providers.dart';
 import '../../../l10n/l10n.dart';
 import '../application/model_provider_settings_controller.dart';
 
-const _visibleProviderKinds = <ModelProviderKind>[
-  ModelProviderKind.openAi,
-  ModelProviderKind.anthropic,
-  ModelProviderKind.gemini,
-  ModelProviderKind.openRouter,
-  ModelProviderKind.deepSeek,
-  ModelProviderKind.kimi,
-  ModelProviderKind.qwen,
-  ModelProviderKind.doubao,
-  ModelProviderKind.zhipu,
-  ModelProviderKind.miniMax,
-  ModelProviderKind.mimo,
-  ModelProviderKind.ollama,
-  ModelProviderKind.openAiCompatible,
-  ModelProviderKind.anthropicCompatible,
+const _visibleProviderPresets = <_ProviderPresetOption>[
+  _ProviderPresetOption(
+    key: 'openai-chat',
+    kind: ModelProviderKind.openAi,
+    endpoint: 'https://api.openai.com/v1',
+    model: 'gpt-4.1-mini',
+  ),
+  _ProviderPresetOption(
+    key: 'openai-responses',
+    kind: ModelProviderKind.openAiResponses,
+    endpoint: 'https://api.openai.com/v1',
+    model: 'gpt-4.1-mini',
+  ),
+  _ProviderPresetOption(
+    key: 'anthropic-api',
+    kind: ModelProviderKind.anthropic,
+    endpoint: 'https://api.anthropic.com',
+    model: 'claude-sonnet-5',
+  ),
+  _ProviderPresetOption(
+    key: 'gemini-api',
+    kind: ModelProviderKind.gemini,
+    endpoint: 'https://generativelanguage.googleapis.com/v1beta/openai',
+    model: 'gemini-3.5-flash',
+  ),
+  _ProviderPresetOption(
+    key: 'openrouter-api',
+    kind: ModelProviderKind.openRouter,
+    endpoint: 'https://openrouter.ai/api/v1',
+    model: 'openrouter/auto',
+  ),
+  _ProviderPresetOption(
+    key: 'deepseek-openai',
+    kind: ModelProviderKind.openAiCompatible,
+    endpoint: 'https://api.deepseek.com',
+    model: 'deepseek-v4-flash',
+  ),
+  _ProviderPresetOption(
+    key: 'deepseek-anthropic',
+    kind: ModelProviderKind.deepSeek,
+    endpoint: 'https://api.deepseek.com/anthropic',
+    model: 'deepseek-v4-flash',
+  ),
+  _ProviderPresetOption(
+    key: 'kimi-global',
+    kind: ModelProviderKind.kimi,
+    endpoint: 'https://api.moonshot.ai/v1',
+    model: 'kimi-k2.6',
+  ),
+  _ProviderPresetOption(
+    key: 'kimi-china',
+    kind: ModelProviderKind.kimi,
+    endpoint: 'https://api.moonshot.cn/v1',
+    model: 'kimi-k2.6',
+  ),
+  _ProviderPresetOption(
+    key: 'kimi-code',
+    kind: ModelProviderKind.openAiCompatible,
+    endpoint: 'https://api.kimi.com/coding/v1',
+    model: 'kimi-k2.7-code',
+    accessMode: ModelProviderAccessMode.codingPlan,
+  ),
+  _ProviderPresetOption(
+    key: 'qwen-china',
+    kind: ModelProviderKind.qwen,
+    endpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+    model: 'qwen-plus',
+  ),
+  _ProviderPresetOption(
+    key: 'qwen-international',
+    kind: ModelProviderKind.qwen,
+    endpoint: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+    model: 'qwen-plus',
+  ),
+  _ProviderPresetOption(
+    key: 'doubao-api',
+    kind: ModelProviderKind.doubao,
+    endpoint: 'https://ark.cn-beijing.volces.com/api/v3',
+    model: 'doubao-seed-2-0-lite-260428',
+  ),
+  _ProviderPresetOption(
+    key: 'doubao-coding',
+    kind: ModelProviderKind.openAiCompatible,
+    endpoint: 'https://ark.cn-beijing.volces.com/api/coding/v3',
+    model: 'ark-code-latest',
+    accessMode: ModelProviderAccessMode.codingPlan,
+  ),
+  _ProviderPresetOption(
+    key: 'zhipu-api',
+    kind: ModelProviderKind.zhipu,
+    endpoint: 'https://api.z.ai/api/paas/v4',
+    model: 'glm-5.2',
+  ),
+  _ProviderPresetOption(
+    key: 'zhipu-coding',
+    kind: ModelProviderKind.openAiCompatible,
+    endpoint: 'https://api.z.ai/api/coding/paas/v4',
+    model: 'glm-5.2',
+    accessMode: ModelProviderAccessMode.codingPlan,
+  ),
+  _ProviderPresetOption(
+    key: 'minimax-openai-token',
+    kind: ModelProviderKind.openAiCompatible,
+    endpoint: 'https://api.minimax.io/v1',
+    model: 'MiniMax-M3',
+    accessMode: ModelProviderAccessMode.tokenPlan,
+  ),
+  _ProviderPresetOption(
+    key: 'minimax-anthropic-token',
+    kind: ModelProviderKind.miniMax,
+    endpoint: 'https://api.minimax.io/anthropic',
+    model: 'MiniMax-M3',
+    accessMode: ModelProviderAccessMode.tokenPlan,
+  ),
+  _ProviderPresetOption(
+    key: 'mimo-openai-api',
+    kind: ModelProviderKind.openAiCompatible,
+    endpoint: 'https://api.xiaomimimo.com/v1',
+    model: 'mimo-v2.5-pro',
+  ),
+  _ProviderPresetOption(
+    key: 'mimo-anthropic-api',
+    kind: ModelProviderKind.mimo,
+    endpoint: 'https://api.xiaomimimo.com/anthropic',
+    model: 'mimo-v2.5-pro',
+  ),
+  _ProviderPresetOption(
+    key: 'mimo-openai-token-cn',
+    kind: ModelProviderKind.openAiCompatible,
+    endpoint: 'https://token-plan-cn.xiaomimimo.com/v1',
+    model: 'mimo-v2.5-pro',
+    accessMode: ModelProviderAccessMode.tokenPlan,
+  ),
+  _ProviderPresetOption(
+    key: 'mimo-anthropic-token-cn',
+    kind: ModelProviderKind.mimo,
+    endpoint: 'https://token-plan-cn.xiaomimimo.com/anthropic',
+    model: 'mimo-v2.5-pro',
+    accessMode: ModelProviderAccessMode.tokenPlan,
+  ),
+  _ProviderPresetOption(
+    key: 'ollama-local',
+    kind: ModelProviderKind.ollama,
+    endpoint: 'http://localhost:11434/v1',
+    model: 'qwen2.5:7b',
+    accessMode: ModelProviderAccessMode.local,
+  ),
+  _ProviderPresetOption(
+    key: 'custom-openai',
+    kind: ModelProviderKind.openAiCompatible,
+    endpoint: 'https://api.openai.com/v1/chat/completions',
+    model: 'openai-compatible-chat',
+  ),
+  _ProviderPresetOption(
+    key: 'custom-anthropic',
+    kind: ModelProviderKind.anthropicCompatible,
+    endpoint: 'https://api.anthropic.com/v1/messages',
+    model: 'anthropic-compatible-chat',
+  ),
 ];
 
 const _customModelValue = '__widenote_custom_model__';
+
+final class _ProviderPresetOption {
+  const _ProviderPresetOption({
+    required this.key,
+    required this.kind,
+    required this.endpoint,
+    required this.model,
+    this.accessMode = ModelProviderAccessMode.apiKey,
+  });
+
+  final String key;
+  final ModelProviderKind kind;
+  final String endpoint;
+  final String model;
+  final ModelProviderAccessMode accessMode;
+
+  Uri get endpointUri => Uri.parse(endpoint);
+}
 
 class ModelProviderSettingsPage extends ConsumerWidget {
   const ModelProviderSettingsPage({super.key});
@@ -339,6 +501,9 @@ class _ProviderRow extends ConsumerWidget {
                 runSpacing: 6,
                 children: [
                   _Tag(label: provider.kind.label),
+                  _Tag(
+                    label: _accessModeLabel(l10n, provider.effectiveAccessMode),
+                  ),
                   if (isDefault) _Tag(label: l10n.providerSettingsDefaultTag),
                   for (final capability in provider.capabilities)
                     _Tag(label: _capabilityLabel(l10n, capability)),
@@ -465,7 +630,7 @@ class _ProviderFormDialog extends ConsumerStatefulWidget {
 }
 
 class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
-  late ModelProviderKind _kind;
+  late _ProviderPresetOption _preset;
   late final TextEditingController _nameController;
   late final TextEditingController _endpointController;
   late final TextEditingController _modelController;
@@ -475,27 +640,39 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
   bool _isTestingDraft = false;
   bool _isCustomModel = false;
   bool _clearSavedKey = false;
+  bool _didLocalizeInitialName = false;
   String? _localError;
   ProviderConnectionSnapshot? _draftConnection;
+
+  ModelProviderKind get _kind => _preset.kind;
+
+  ModelProviderAccessMode get _accessMode => _preset.accessMode;
 
   @override
   void initState() {
     super.initState();
     final existing = widget.existing;
-    final existingKind = existing?.kind;
-    _kind = existingKind != null && _visibleProviderKinds.contains(existingKind)
-        ? existingKind
-        : _visibleProviderKinds.first;
+    _preset = _presetFor(existing);
     _nameController = TextEditingController(
-      text: existing?.displayName ?? _kind.label,
+      text: existing?.displayName ?? _preset.kind.label,
     );
     _endpointController = TextEditingController(
-      text: (existing?.endpoint ?? _kind.defaultEndpoint).toString(),
+      text: (existing?.endpoint ?? _preset.endpointUri).toString(),
     );
     _modelController = TextEditingController(
-      text: existing?.model ?? _kind.defaultModel,
+      text: existing?.model ?? _preset.model,
     );
     _apiKeyController = TextEditingController();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didLocalizeInitialName || widget.existing != null) {
+      return;
+    }
+    _didLocalizeInitialName = true;
+    _nameController.text = _providerPresetLabel(context.l10n, _preset);
   }
 
   @override
@@ -522,19 +699,28 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              DropdownButtonFormField<ModelProviderKind>(
+              DropdownButtonFormField<String>(
                 key: const Key('provider-kind-field'),
-                initialValue: _kind,
+                initialValue: _preset.key,
+                isExpanded: true,
                 decoration: InputDecoration(
                   labelText: l10n.providerFieldProviderType,
+                  helperText: l10n.providerPresetSelectionHelper,
                 ),
                 items: [
-                  for (final kind in _visibleProviderKinds)
-                    DropdownMenuItem(value: kind, child: Text(kind.label)),
+                  for (final preset in _visibleProviderPresets)
+                    DropdownMenuItem(
+                      value: preset.key,
+                      child: Text(
+                        _providerPresetLabel(l10n, preset),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                 ],
-                onChanged: (kind) {
-                  if (kind != null) {
-                    _applyKind(kind);
+                onChanged: (key) {
+                  final preset = _presetByKey(key);
+                  if (preset != null) {
+                    _applyPreset(l10n, preset);
                   }
                 },
               ),
@@ -697,12 +883,12 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
     );
   }
 
-  void _applyKind(ModelProviderKind kind) {
+  void _applyPreset(AppLocalizations l10n, _ProviderPresetOption preset) {
     setState(() {
-      _kind = kind;
-      _nameController.text = kind.label;
-      _endpointController.text = kind.defaultEndpoint.toString();
-      _modelController.text = kind.defaultModel;
+      _preset = preset;
+      _nameController.text = _providerPresetLabel(l10n, preset);
+      _endpointController.text = preset.endpoint;
+      _modelController.text = preset.model;
       _availableModels = const <String>[];
       _isCustomModel = false;
       _draftConnection = null;
@@ -737,13 +923,14 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
             id: widget.existing?.id ?? _newProviderId(_nameController.text),
             kind: _kind,
             displayName: _nameController.text.trim().isEmpty
-                ? _kind.label
+                ? _providerPresetLabel(l10n, _preset)
                 : _nameController.text.trim(),
             endpoint: endpoint,
             model: _modelController.text.trim().isEmpty
-                ? _kind.defaultModel
+                ? _preset.model
                 : _modelController.text.trim(),
             apiKey: apiKey,
+            accessMode: _accessMode,
           ),
         );
     if (!mounted) {
@@ -838,6 +1025,7 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
       endpoint: endpoint,
       model: _modelController.text.trim(),
       apiKey: _nextApiKey(),
+      accessMode: _accessMode,
     );
   }
 
@@ -859,7 +1047,12 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
             .valueOrNull
             ?.providers ??
         const <ModelProviderConfig>[];
-    final base = _slug(displayName).isEmpty ? 'provider' : _slug(displayName);
+    final displaySlug = _slug(displayName);
+    final presetSlug = _slug(_preset.key);
+    final base =
+        displaySlug.isEmpty || displaySlug == 'api' || displaySlug == 'plan'
+        ? presetSlug
+        : displaySlug;
     var candidate = base;
     var suffix = 2;
     while (providers.any((provider) => provider.id == candidate)) {
@@ -883,9 +1076,7 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
   List<String> get _modelOptions {
     final values = <String>[];
     values.addAll(
-      _availableModels.isEmpty
-          ? <String>[_kind.defaultModel]
-          : _availableModels,
+      _availableModels.isEmpty ? <String>[_preset.model] : _availableModels,
     );
     final current = _modelController.text.trim();
     if (!_isCustomModel && current.isNotEmpty && !values.contains(current)) {
@@ -1046,6 +1237,88 @@ String _endpointLabel(Uri endpoint) {
     return endpoint.host;
   }
   return endpoint.toString();
+}
+
+_ProviderPresetOption _presetFor(ModelProviderConfig? config) {
+  if (config == null) {
+    return _visibleProviderPresets.first;
+  }
+  for (final preset in _visibleProviderPresets) {
+    if (preset.kind == config.kind &&
+        preset.endpointUri.toString() == config.endpoint.toString() &&
+        preset.model == config.model &&
+        preset.accessMode == config.effectiveAccessMode) {
+      return preset;
+    }
+  }
+  for (final preset in _visibleProviderPresets) {
+    if (preset.kind == config.kind &&
+        preset.accessMode == config.effectiveAccessMode) {
+      return preset;
+    }
+  }
+  if (config.kind.usesAnthropicMessages) {
+    return _presetByKey('custom-anthropic')!;
+  }
+  return _presetByKey('custom-openai')!;
+}
+
+_ProviderPresetOption? _presetByKey(String? key) {
+  if (key == null) {
+    return null;
+  }
+  for (final preset in _visibleProviderPresets) {
+    if (preset.key == key) {
+      return preset;
+    }
+  }
+  return null;
+}
+
+String _providerPresetLabel(
+  AppLocalizations l10n,
+  _ProviderPresetOption preset,
+) {
+  return switch (preset.key) {
+    'openai-chat' => l10n.providerPresetOpenAiChat,
+    'openai-responses' => l10n.providerPresetOpenAiResponses,
+    'anthropic-api' => l10n.providerPresetAnthropicApi,
+    'gemini-api' => l10n.providerPresetGeminiApi,
+    'openrouter-api' => l10n.providerPresetOpenRouterApi,
+    'deepseek-openai' => l10n.providerPresetDeepSeekOpenAi,
+    'deepseek-anthropic' => l10n.providerPresetDeepSeekAnthropic,
+    'kimi-global' => l10n.providerPresetKimiGlobal,
+    'kimi-china' => l10n.providerPresetKimiChina,
+    'kimi-code' => l10n.providerPresetKimiCode,
+    'qwen-china' => l10n.providerPresetQwenChina,
+    'qwen-international' => l10n.providerPresetQwenInternational,
+    'doubao-api' => l10n.providerPresetDoubaoApi,
+    'doubao-coding' => l10n.providerPresetDoubaoCoding,
+    'zhipu-api' => l10n.providerPresetZhipuApi,
+    'zhipu-coding' => l10n.providerPresetZhipuCoding,
+    'minimax-openai-token' => l10n.providerPresetMiniMaxOpenAiToken,
+    'minimax-anthropic-token' => l10n.providerPresetMiniMaxAnthropicToken,
+    'mimo-openai-api' => l10n.providerPresetMimoOpenAiApi,
+    'mimo-anthropic-api' => l10n.providerPresetMimoAnthropicApi,
+    'mimo-openai-token-cn' => l10n.providerPresetMimoOpenAiTokenCn,
+    'mimo-anthropic-token-cn' => l10n.providerPresetMimoAnthropicTokenCn,
+    'ollama-local' => l10n.providerPresetOllamaLocal,
+    'custom-openai' => l10n.providerPresetCustomOpenAi,
+    'custom-anthropic' => l10n.providerPresetCustomAnthropic,
+    _ => preset.kind.label,
+  };
+}
+
+String _accessModeLabel(
+  AppLocalizations l10n,
+  ModelProviderAccessMode accessMode,
+) {
+  return switch (accessMode) {
+    ModelProviderAccessMode.apiKey => l10n.providerAccessModeApiKey,
+    ModelProviderAccessMode.tokenPlan => l10n.providerAccessModeTokenPlan,
+    ModelProviderAccessMode.codingPlan => l10n.providerAccessModeCodingPlan,
+    ModelProviderAccessMode.local => l10n.providerAccessModeLocal,
+  };
 }
 
 String _capabilityLabel(AppLocalizations l10n, ModelCapability capability) {

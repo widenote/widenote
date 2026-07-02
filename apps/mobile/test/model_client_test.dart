@@ -156,8 +156,8 @@ void main() {
           );
 
       expect(requestPath, '/anthropic/v1/messages');
-      expect(apiKeyHeader, 'provider-secret');
-      expect(authorizationHeader, isNull);
+      expect(apiKeyHeader, isNull);
+      expect(authorizationHeader, 'Bearer provider-secret');
       expect(versionHeader, '2023-06-01');
       expect(requestBody['model'], 'deepseek-v4-flash');
       expect(requestBody['thinking'], <String, Object?>{'type': 'disabled'});
@@ -520,7 +520,7 @@ void main() {
       late ContentType? contentType;
       late Map<String, Object?> requestBody;
       final endpoint = await _serve((request) async {
-        apiKeyHeader = request.headers.value('x-api-key');
+        apiKeyHeader = request.headers.value('api-key');
         versionHeader = request.headers.value('anthropic-version');
         contentType = request.headers.contentType;
         requestBody =

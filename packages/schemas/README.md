@@ -128,12 +128,13 @@ defaults: `routing_policy: app_default`, empty `required_capabilities[]`, and
 `allow_fallback: false` unless the pack or user settings say otherwise.
 
 Provider metadata currently accepts canonical provider wire names used by the
-Dart package (`openai`, `anthropic`, `gemini`, `openrouter`, `deepseek`,
-`kimi`, `qwen`, `doubao`, `zhipu`, `minimax`, `mimo`, `ollama`,
-`openai_compatible`, and `anthropic_compatible`) plus current camelCase and old
-snake_case aliases for compatibility. New schema fixtures and safe provider JSON
-should use the canonical values. Capabilities use snake_case, including
-`tool_use`; camelCase `toolUse` remains a compatibility alias.
+Dart package (`openai`, `openai_responses`, `anthropic`, `gemini`,
+`openrouter`, `deepseek`, `kimi`, `qwen`, `doubao`, `zhipu`, `minimax`,
+`mimo`, `ollama`, `openai_compatible`, and `anthropic_compatible`) plus current
+camelCase and old snake_case aliases for compatibility. New schema fixtures and
+safe provider JSON should use the canonical values. Capabilities use
+snake_case, including `tool_use`; camelCase `toolUse` remains a compatibility
+alias.
 
 Validator self-tests:
 

@@ -194,7 +194,7 @@ final class XiaomiMimoModelClient implements runtime.ModelClient {
   }) : endpoint =
            endpoint ??
            Uri.parse(
-             'https://token-plan-sgp.xiaomimimo.com/anthropic/v1/messages',
+             'https://token-plan-cn.xiaomimimo.com/anthropic/v1/messages',
            ),
        _httpClient = httpClient ?? HttpClient();
 
@@ -231,7 +231,7 @@ final class XiaomiMimoModelClient implements runtime.ModelClient {
     httpRequest.headers
       ..set(HttpHeaders.contentTypeHeader, ContentType.json.mimeType)
       ..set('anthropic-version', '2023-06-01')
-      ..set('x-api-key', apiKey);
+      ..set('api-key', apiKey);
 
     final body = jsonEncode(<String, Object?>{
       'model': model,

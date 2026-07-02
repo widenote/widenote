@@ -2503,6 +2503,99 @@ class AppLocalizationsZh extends AppLocalizations {
   String get providerFieldProviderType => '提供商类型';
 
   @override
+  String get providerPresetSelectionHelper =>
+      '选择与协议和套餐匹配的入口。Token Plan 密钥不能和普通 API Key 混用。';
+
+  @override
+  String get providerAccessModeApiKey => 'API Key';
+
+  @override
+  String get providerAccessModeTokenPlan => 'Token Plan';
+
+  @override
+  String get providerAccessModeCodingPlan => 'Coding Plan';
+
+  @override
+  String get providerAccessModeLocal => '本地';
+
+  @override
+  String get providerPresetOpenAiChat => 'OpenAI Chat Completions';
+
+  @override
+  String get providerPresetOpenAiResponses => 'OpenAI Responses API';
+
+  @override
+  String get providerPresetAnthropicApi => 'Anthropic Claude API';
+
+  @override
+  String get providerPresetGeminiApi => 'Google Gemini API';
+
+  @override
+  String get providerPresetOpenRouterApi => 'OpenRouter';
+
+  @override
+  String get providerPresetDeepSeekOpenAi => 'DeepSeek（OpenAI API）';
+
+  @override
+  String get providerPresetDeepSeekAnthropic => 'DeepSeek（Anthropic API）';
+
+  @override
+  String get providerPresetKimiGlobal => 'Kimi（国际 API）';
+
+  @override
+  String get providerPresetKimiChina => 'Kimi（中国 API）';
+
+  @override
+  String get providerPresetKimiCode => 'Kimi Code API';
+
+  @override
+  String get providerPresetQwenChina => '阿里云百炼 Qwen（中国）';
+
+  @override
+  String get providerPresetQwenInternational => '阿里云百炼 Qwen（国际）';
+
+  @override
+  String get providerPresetDoubaoApi => '火山方舟豆包 API';
+
+  @override
+  String get providerPresetDoubaoCoding => '火山方舟 Coding Plan';
+
+  @override
+  String get providerPresetZhipuApi => '智谱 GLM API';
+
+  @override
+  String get providerPresetZhipuCoding => '智谱 GLM Coding Plan';
+
+  @override
+  String get providerPresetMiniMaxOpenAiToken => 'MiniMax Token Plan（OpenAI）';
+
+  @override
+  String get providerPresetMiniMaxAnthropicToken =>
+      'MiniMax Token Plan（Anthropic）';
+
+  @override
+  String get providerPresetMimoOpenAiApi => '小米 MIMO API（OpenAI）';
+
+  @override
+  String get providerPresetMimoAnthropicApi => '小米 MIMO API（Anthropic）';
+
+  @override
+  String get providerPresetMimoOpenAiTokenCn => '小米 MIMO Token Plan CN（OpenAI）';
+
+  @override
+  String get providerPresetMimoAnthropicTokenCn =>
+      '小米 MIMO Token Plan CN（Anthropic）';
+
+  @override
+  String get providerPresetOllamaLocal => 'Ollama 本地';
+
+  @override
+  String get providerPresetCustomOpenAi => '自定义 OpenAI-compatible';
+
+  @override
+  String get providerPresetCustomAnthropic => '自定义 Anthropic-compatible';
+
+  @override
   String get providerFieldDisplayName => '显示名称';
 
   @override

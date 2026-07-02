@@ -27,11 +27,13 @@ setup UI, routing policy, or Agent Pack prompts.
 - `ModelMessage`
 - `ModelCapability`
 - `ModelProviderKind`
+- `ModelProviderAccessMode`
 - `ModelProviderConfig`
 - `ModelProviderConfigValidation`
 - `ModelProviderHttpClient`
 - `FakeModelProviderHttpClient`
 - `OpenAiCompatibleModelProvider`
+- `OpenAiResponsesModelProvider`
 - `AnthropicCompatibleModelProvider`
 - `ModelProviderException`
 - `ModelProviderConnectionTestService`
@@ -47,14 +49,23 @@ setup UI, routing policy, or Agent Pack prompts.
 - `RuntimeModelProviderException`
 - `UnsupportedModelCapabilityException`
 
-Provider presets currently cover OpenAI, Anthropic Claude, Google Gemini,
-OpenRouter, DeepSeek, Kimi, Alibaba Qwen, Volcengine Doubao, Zhipu GLM,
-MiniMax, Xiaomi MIMO, Ollama, and custom OpenAI-compatible or
-Anthropic-compatible endpoints. Vendor presets choose the closest compatible
-adapter and remain editable in mobile Settings. The built-in DeepSeek preset
-uses DeepSeek's Anthropic-compatible `/anthropic` endpoint and
-`deepseek-v4-flash`; OpenAI-compatible DeepSeek gateways should use the custom
-OpenAI-compatible kind.
+Provider presets currently cover OpenAI Chat Completions, OpenAI Responses,
+Anthropic Claude, Google Gemini, OpenRouter, DeepSeek, Kimi, Alibaba Qwen,
+Volcengine Doubao, Zhipu GLM, MiniMax, Xiaomi MIMO, Ollama, and custom
+OpenAI-compatible or Anthropic-compatible endpoints. Vendor presets choose the
+closest compatible adapter and remain editable in mobile Settings. Configs also
+carry an access mode (`api_key`, `token_plan`, `coding_plan`, or `local`) so a
+provider's subscription endpoint is not collapsed into a generic API-key
+record.
+
+Domestic vendor presets intentionally separate pay-as-you-go API endpoints from
+Token Plan or Coding Plan endpoints when official docs describe distinct base
+URLs or credentials. MiniMax and Xiaomi MIMO expose both OpenAI-compatible and
+Anthropic-compatible Token Plan routes. Zhipu GLM and Volcengine Doubao expose
+Coding Plan routes in addition to general API routes. Kimi keeps a general
+Moonshot API preset and a Kimi coding endpoint preset. Alibaba Qwen keeps
+China and international OpenAI-compatible presets because official base URLs
+vary by region and workspace.
 
 Safe provider JSON uses the public schema wire names from `packages/schemas`:
 provider kinds such as `openai`, `deepseek`, `minimax`, and
@@ -63,16 +74,19 @@ provider kinds such as `openai`, `deepseek`, `minimax`, and
 compatibility aliases while local persistence migrates.
 
 Model-list support derives official provider model endpoints from the editable
-base endpoint. OpenAI-compatible presets use `/models`, Anthropic-compatible
-presets use `/v1/models`, and Gemini uses the native `models` endpoint with the
-API key query parameter. The service returns model IDs only; UI surfaces own
-selection, empty-state, and custom-model fallback behavior.
+base endpoint. OpenAI-compatible and Responses presets use `/models`,
+Anthropic-compatible presets use `/v1/models`, and Gemini uses the native
+`models` endpoint with the API key query parameter. The service returns model
+IDs only; UI surfaces own selection, empty-state, and custom-model fallback
+behavior.
 
 The package also exposes an offline model-list service for deterministic
 Flutter/widget tests. Production UI wiring uses the adapter service only after a
-user taps the model refresh action. MiniMax is intentionally provider-specific:
-its Anthropic-compatible Messages endpoint documents Bearer authorization, while
-its official Models endpoint documents `X-Api-Key`.
+user taps the model refresh action. Provider-specific authentication differences
+are centralized in the adapter helpers: Xiaomi MIMO uses `api-key` for
+OpenAI-compatible and Anthropic-compatible requests, DeepSeek and MiniMax use
+Bearer authorization for Anthropic-compatible message calls, and MiniMax model
+listing keeps its documented `X-Api-Key` header.
 
 ## Dependencies
 
@@ -98,12 +112,12 @@ Run:
 dart test
 ```
 
-Current tests cover config validation, provider presets, fake provider queued
-responses, fake HTTP recording, OpenAI-compatible and Anthropic-compatible
-request construction, endpoint normalization, response parsing,
-official model-list endpoint derivation and parsing, connection-test
-success/failure classification, missing capability errors, and the runtime
-adapter.
+Current tests cover config validation, provider presets and access modes, fake
+provider queued responses, fake HTTP recording, OpenAI-compatible, OpenAI
+Responses, and Anthropic-compatible request construction, endpoint
+normalization, response parsing, official model-list endpoint derivation and
+parsing, connection-test success/failure classification, missing capability
+errors, and the runtime adapter.
 
 ## Related Context
 

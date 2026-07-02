@@ -38,6 +38,7 @@ void main() {
       final safeJson = config.toSafeJson();
 
       expect(safeJson['kind'], 'kimi');
+      expect(safeJson['access_mode'], 'api_key');
       expect(safeJson['capabilities'], <String>['chat', 'completion']);
       expect(safeJson['has_api_key'], isTrue);
       expect(safeJson.containsKey('api_key'), isFalse);
@@ -47,6 +48,10 @@ void main() {
 
     test('maps public provider and capability wire names with aliases', () {
       expect(modelProviderKindFromWireName('openai'), ModelProviderKind.openAi);
+      expect(
+        modelProviderKindFromWireName('openai_responses'),
+        ModelProviderKind.openAiResponses,
+      );
       expect(
         modelProviderKindFromWireName('openAiCompatible'),
         ModelProviderKind.openAiCompatible,
@@ -60,7 +65,13 @@ void main() {
         ModelProviderKind.miniMax,
       );
       expect(ModelProviderKind.openAiCompatible.wireName, 'openai_compatible');
+      expect(ModelProviderKind.openAiResponses.wireName, 'openai_responses');
       expect(ModelProviderKind.miniMax.wireName, 'minimax');
+      expect(
+        modelProviderAccessModeFromWireName('token_plan'),
+        ModelProviderAccessMode.tokenPlan,
+      );
+      expect(ModelProviderAccessMode.codingPlan.wireName, 'coding_plan');
 
       expect(modelCapabilityFromWireName('tool_use'), ModelCapability.toolUse);
       expect(modelCapabilityFromWireName('toolUse'), ModelCapability.toolUse);
@@ -93,7 +104,7 @@ void main() {
       expect(deepSeek.endpoint.path, '/anthropic');
       expect(deepSeek.model, 'deepseek-v4-flash');
       expect(mimo.kind.usesAnthropicMessages, isTrue);
-      expect(mimo.endpoint.path, contains('/anthropic/'));
+      expect(mimo.endpoint.toString(), 'https://api.xiaomimimo.com/anthropic');
       expect(mimo.model, isNotEmpty);
       expect(kimi.kind.usesAnthropicMessages, isFalse);
       expect(kimi.endpoint.path, '/v1');

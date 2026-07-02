@@ -44,6 +44,9 @@ ModelProvider modelProviderFromConfig({
   required ModelProviderConfig config,
   required ModelProviderHttpClient httpClient,
 }) {
+  if (config.kind == ModelProviderKind.openAiResponses) {
+    return OpenAiResponsesModelProvider(config: config, httpClient: httpClient);
+  }
   if (config.kind.usesAnthropicMessages) {
     return AnthropicCompatibleModelProvider(
       config: config,
@@ -87,7 +90,7 @@ final class OpenAiCompatibleModelProvider implements ModelProvider {
       id,
       () => httpClient.postJson(
         _openAiChatCompletionsEndpoint(config.endpoint),
-        headers: _openAiHeaders(config.apiKey),
+        headers: _openAiHeaders(config),
         body: _buildBody(request),
         timeout: timeout,
       ),
@@ -149,6 +152,107 @@ final class OpenAiCompatibleModelProvider implements ModelProvider {
         if (body['id'] is String) 'request_id': body['id'],
         if (firstChoice['finish_reason'] is String)
           'finish_reason': firstChoice['finish_reason'],
+      },
+    );
+  }
+
+  void _assertUsableConfig() {
+    final validation = config.validate();
+    if (validation.isValid) {
+      return;
+    }
+    throw ModelProviderException(
+      providerId: id,
+      kind: ModelProviderErrorKind.invalidConfiguration,
+      message: 'Provider config is invalid: ${validation.summary}.',
+    );
+  }
+}
+
+final class OpenAiResponsesModelProvider implements ModelProvider {
+  const OpenAiResponsesModelProvider({
+    required this.config,
+    required this.httpClient,
+    this.timeout = const Duration(seconds: 30),
+  });
+
+  final ModelProviderConfig config;
+  final ModelProviderHttpClient httpClient;
+  final Duration timeout;
+
+  @override
+  String get id => config.id;
+
+  @override
+  String get displayName => config.displayName;
+
+  @override
+  Set<ModelCapability> get capabilities => config.capabilities;
+
+  @override
+  bool supports(ModelCapability capability) {
+    return capabilities.contains(capability);
+  }
+
+  @override
+  Future<ModelResponse> complete(ModelRequest request) async {
+    _assertUsableConfig();
+    _assertCapabilities(id, capabilities, request.requiredCapabilities);
+
+    final httpResponse = await _sendRequest(
+      id,
+      () => httpClient.postJson(
+        _openAiResponsesEndpoint(config.endpoint),
+        headers: _openAiHeaders(config),
+        body: _buildBody(request),
+        timeout: timeout,
+      ),
+    );
+
+    _assertSuccessStatus(id, httpResponse.statusCode);
+    return _parseResponsesResponse(httpResponse.body, request.model);
+  }
+
+  Map<String, Object?> _buildBody(ModelRequest request) {
+    return <String, Object?>{
+      'model': request.model ?? config.model,
+      'input': _responsesInput(request.messages),
+      'max_output_tokens': config.maxOutputTokens,
+      if (request.metadata.isNotEmpty) 'metadata': request.metadata,
+    };
+  }
+
+  Object _responsesInput(List<ModelMessage> messages) {
+    return messages
+        .map(
+          (message) => <String, Object?>{
+            'role': _openAiRole(message.role),
+            'content': <Object?>[
+              <String, Object?>{'type': 'input_text', 'text': message.content},
+            ],
+          },
+        )
+        .toList(growable: false);
+  }
+
+  ModelResponse _parseResponsesResponse(Object? body, String? requestedModel) {
+    if (body is! Map<String, Object?>) {
+      throw _malformed(id, 'OpenAI Responses response was not an object.');
+    }
+
+    final text = _responsesText(body);
+    if (text == null || text.trim().isEmpty) {
+      throw _missingText(id, 'OpenAI Responses response did not include text.');
+    }
+
+    return ModelResponse(
+      providerId: id,
+      model: _stringValue(body['model']) ?? requestedModel ?? config.model,
+      text: text,
+      usage: _responsesUsage(body['usage']),
+      metadata: <String, Object?>{
+        if (body['id'] is String) 'request_id': body['id'],
+        if (body['status'] is String) 'status': body['status'],
       },
     );
   }
@@ -302,6 +406,21 @@ Uri _openAiChatCompletionsEndpoint(Uri endpoint) {
   );
 }
 
+Uri _openAiResponsesEndpoint(Uri endpoint) {
+  var segments = endpoint.pathSegments
+      .where((segment) => segment.isNotEmpty)
+      .toList(growable: true);
+  if (segments.isNotEmpty && segments.last == 'responses') {
+    return endpoint;
+  }
+  if (segments.length >= 2 &&
+      segments[segments.length - 2] == 'chat' &&
+      segments.last == 'completions') {
+    segments = segments.take(segments.length - 2).toList(growable: true);
+  }
+  return endpoint.replace(pathSegments: <String>[...segments, 'responses']);
+}
+
 bool _endsWithOpenAiChatCompletionsPath(List<String> segments) {
   return segments.length >= 2 &&
       segments[segments.length - 2] == 'chat' &&
@@ -356,10 +475,14 @@ Uri _normalizeDeepSeekAnthropicEndpoint(
   return endpoint;
 }
 
-Map<String, String> _openAiHeaders(String apiKey) {
+Map<String, String> _openAiHeaders(ModelProviderConfig config) {
   return <String, String>{
     'content-type': 'application/json',
-    if (apiKey.trim().isNotEmpty) 'authorization': 'Bearer $apiKey',
+    if (config.apiKey.trim().isNotEmpty)
+      if (_openAiUsesApiKeyHeader(config))
+        'api-key': config.apiKey
+      else
+        'authorization': 'Bearer ${config.apiKey}',
   };
 }
 
@@ -368,11 +491,36 @@ Map<String, String> _anthropicHeaders(ModelProviderConfig config) {
     'content-type': 'application/json',
     'anthropic-version': '2023-06-01',
     if (config.apiKey.trim().isNotEmpty)
-      if (config.kind.usesAnthropicBearerAuthorization)
+      if (_anthropicUsesApiKeyHeader(config))
+        'api-key': config.apiKey
+      else if (_anthropicUsesBearerAuthorization(config))
         'authorization': 'Bearer ${config.apiKey}'
       else
         'x-api-key': config.apiKey,
   };
+}
+
+bool _openAiUsesApiKeyHeader(ModelProviderConfig config) {
+  return _hostContains(config.endpoint, 'xiaomimimo');
+}
+
+bool _anthropicUsesApiKeyHeader(ModelProviderConfig config) {
+  return config.kind == ModelProviderKind.mimo ||
+      _hostContains(config.endpoint, 'xiaomimimo');
+}
+
+bool _anthropicUsesBearerAuthorization(ModelProviderConfig config) {
+  if (config.kind.usesAnthropicBearerAuthorization) {
+    return true;
+  }
+  final host = config.endpoint.host.toLowerCase();
+  return host.contains('moonshot') ||
+      host.contains('kimi') ||
+      host.contains('minimax');
+}
+
+bool _hostContains(Uri endpoint, String needle) {
+  return endpoint.host.toLowerCase().contains(needle);
 }
 
 bool _shouldDisableAnthropicThinking(ModelProviderConfig config) {
@@ -502,6 +650,16 @@ ModelUsage _openAiUsage(Object? usage) {
   );
 }
 
+ModelUsage _responsesUsage(Object? usage) {
+  if (usage is! Map<String, Object?>) {
+    return const ModelUsage();
+  }
+  return ModelUsage(
+    inputTokens: _intValue(usage['input_tokens']),
+    outputTokens: _intValue(usage['output_tokens']),
+  );
+}
+
 ModelUsage _anthropicUsage(Object? usage) {
   if (usage is! Map<String, Object?>) {
     return const ModelUsage();
@@ -510,6 +668,40 @@ ModelUsage _anthropicUsage(Object? usage) {
     inputTokens: _intValue(usage['input_tokens']),
     outputTokens: _intValue(usage['output_tokens']),
   );
+}
+
+String? _responsesText(Map<String, Object?> body) {
+  final outputText = body['output_text'];
+  if (outputText is String && outputText.trim().isNotEmpty) {
+    return outputText;
+  }
+
+  final output = body['output'];
+  if (output is! List<Object?>) {
+    return null;
+  }
+  final parts = <String>[];
+  for (final item in output) {
+    if (item is! Map<String, Object?>) {
+      continue;
+    }
+    final content = item['content'];
+    if (content is! List<Object?>) {
+      continue;
+    }
+    for (final part in content) {
+      if (part is! Map<String, Object?>) {
+        continue;
+      }
+      final text = part['text'];
+      if ((part['type'] == 'output_text' || part['type'] == 'text') &&
+          text is String &&
+          text.trim().isNotEmpty) {
+        parts.add(text);
+      }
+    }
+  }
+  return parts.isEmpty ? null : parts.join('\n');
 }
 
 int _intValue(Object? value) {

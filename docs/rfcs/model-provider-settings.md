@@ -18,11 +18,14 @@ requirement.
 
 ## Goals
 
-- Represent OpenAI-compatible, Anthropic-compatible, and common provider
-  presets with shared config models. Current presets cover OpenAI, Anthropic
-  Claude, Google Gemini, OpenRouter, DeepSeek, Kimi, Alibaba Qwen, Volcengine
-  Doubao, Zhipu GLM, MiniMax, Xiaomi MIMO, Ollama, and custom compatible
-  endpoints.
+- Represent OpenAI Chat Completions, OpenAI Responses, Anthropic-compatible,
+  and common provider presets with shared config models. Current presets cover
+  OpenAI, Anthropic Claude, Google Gemini, OpenRouter, DeepSeek, Kimi, Alibaba
+  Qwen, Volcengine Doubao, Zhipu GLM, MiniMax, Xiaomi MIMO, Ollama, and custom
+  compatible endpoints.
+- Preserve provider access mode (`api_key`, `token_plan`, `coding_plan`, or
+  `local`) so domestic subscription endpoints are visible and reviewable rather
+  than hidden behind generic API-key presets.
 - Keep provider adapters testable with fake HTTP.
 - Classify auth, rate limit, timeout, server, network, malformed-response, and
   missing-text failures.
@@ -96,6 +99,8 @@ The package-level config includes:
 
 - stable provider id
 - provider kind
+- access mode for pay-as-you-go API key, Token Plan, Coding Plan, or local
+  server usage
 - display name
 - endpoint URI
 - model id

@@ -84,7 +84,11 @@ void main() {
         http.requests[1].endpoint.toString(),
         'https://api.deepseek.com/anthropic/v1/models',
       );
-      expect(http.requests[0].headers['x-api-key'], _runtimeCredential());
+      expect(
+        http.requests[0].headers['authorization'],
+        'Bearer ${_runtimeCredential()}',
+      );
+      expect(http.requests[0].headers.containsKey('x-api-key'), isFalse);
       expect(http.requests[0].headers['anthropic-version'], '2023-06-01');
     });
 
@@ -172,6 +176,68 @@ void main() {
       );
       expect(http.requests[1].headers['X-Api-Key'], _runtimeCredential());
     });
+
+    test(
+      'fetches Responses and MIMO Token Plan models with official headers',
+      () async {
+        final http = FakeModelProviderHttpClient(
+          responses: <ModelProviderHttpResponse>[
+            _openAiModelsResponse(<String>['gpt-4.1-mini']),
+            _openAiModelsResponse(<String>['mimo-v2.5-pro']),
+            _openAiModelsResponse(<String>['mimo-v2.5-pro']),
+          ],
+        );
+        final service = AdapterModelProviderModelListService(httpClient: http);
+
+        final responses = await service.listModels(
+          ModelProviderConfig.preset(
+            id: 'openai-responses',
+            kind: ModelProviderKind.openAiResponses,
+            endpoint: Uri.parse('https://api.openai.com/v1/responses'),
+            apiKey: _runtimeCredential(),
+          ),
+        );
+        final mimoOpenAi = await service.listModels(
+          ModelProviderConfig.preset(
+            id: 'mimo-openai',
+            kind: ModelProviderKind.openAiCompatible,
+            endpoint: Uri.parse('https://token-plan-cn.xiaomimimo.com/v1'),
+            model: 'mimo-v2.5-pro',
+            apiKey: _runtimeCredential(),
+            accessMode: ModelProviderAccessMode.tokenPlan,
+          ),
+        );
+        final mimoAnthropic = await service.listModels(
+          ModelProviderConfig.preset(
+            id: 'mimo-anthropic',
+            kind: ModelProviderKind.mimo,
+            endpoint: Uri.parse(
+              'https://token-plan-cn.xiaomimimo.com/anthropic',
+            ),
+            apiKey: _runtimeCredential(),
+            accessMode: ModelProviderAccessMode.tokenPlan,
+          ),
+        );
+
+        expect(responses.models, <String>['gpt-4.1-mini']);
+        expect(mimoOpenAi.models, <String>['mimo-v2.5-pro']);
+        expect(mimoAnthropic.models, <String>['mimo-v2.5-pro']);
+        expect(
+          http.requests[0].endpoint.toString(),
+          'https://api.openai.com/v1/models',
+        );
+        expect(
+          http.requests[1].endpoint.toString(),
+          'https://token-plan-cn.xiaomimimo.com/v1/models',
+        );
+        expect(http.requests[1].headers['api-key'], _runtimeCredential());
+        expect(
+          http.requests[2].endpoint.toString(),
+          'https://token-plan-cn.xiaomimimo.com/anthropic/v1/models',
+        );
+        expect(http.requests[2].headers['api-key'], _runtimeCredential());
+      },
+    );
 
     test('allows no-key local model listing', () async {
       final http = FakeModelProviderHttpClient(

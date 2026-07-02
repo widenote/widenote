@@ -47,6 +47,7 @@ final class RecordedModelProviderHttpRequest {
     return headers.map((key, value) {
       final lowerKey = key.toLowerCase();
       if (lowerKey == 'authorization' ||
+          lowerKey == 'api-key' ||
           lowerKey == 'x-api-key' ||
           lowerKey.contains('token')) {
         return MapEntry(key, '<redacted>');
