@@ -138,6 +138,12 @@ GoRouter createAppRouter({String initialLocation = '/'}) {
                         _noTransitionPage(state, const TraceConsolePage()),
                     routes: [
                       GoRoute(
+                        path: 'events',
+                        name: 'settings-trace-events',
+                        pageBuilder: (context, state) =>
+                            _noTransitionPage(state, const TraceEventsPage()),
+                      ),
+                      GoRoute(
                         path: 'agents',
                         name: 'settings-trace-agents',
                         pageBuilder: (context, state) =>

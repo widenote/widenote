@@ -276,6 +276,13 @@ void main() {
         thirdParentKey: Key('home-page'),
       ),
       _DeepLinkCase(
+        path: '/settings/traces/events',
+        pageKey: Key('trace-events-page'),
+        firstParentKey: Key('trace-console-page'),
+        secondParentKey: Key('settings-page'),
+        thirdParentKey: Key('home-page'),
+      ),
+      _DeepLinkCase(
         path: '/settings/traces/raw/missing-trace',
         pageKey: Key('trace-raw-page'),
         firstParentKey: Key('trace-console-page'),

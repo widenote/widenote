@@ -24,17 +24,45 @@ class TraceConsolePage extends ConsumerWidget {
         const SizedBox(height: 16),
         _Summary(snapshot: snapshot, onRefresh: controller.refresh),
         const SizedBox(height: 16),
-        _FilterBar(selected: snapshot.filter, onSelected: controller.setFilter),
-        const SizedBox(height: 16),
         _ApprovalQueue(snapshot: snapshot),
         const SizedBox(height: 16),
-        _AgentConsoleEntry(snapshot: snapshot),
+        _EventsEntry(snapshot: snapshot),
         const SizedBox(height: 16),
-        _TraceList(
-          items: snapshot.filteredItems,
-          hasAnyItems: snapshot.items.isNotEmpty,
-        ),
+        _AgentConsoleEntry(snapshot: snapshot),
       ],
+    );
+  }
+}
+
+class TraceEventsPage extends ConsumerWidget {
+  const TraceEventsPage({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final snapshot = ref.watch(traceConsoleControllerProvider);
+    final controller = ref.read(traceConsoleControllerProvider.notifier);
+    return SelectionContainer.disabled(
+      child: ListView(
+        key: const Key('trace-events-page'),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+        children: [
+          _BackHeader(
+            title: l10n.traceConsoleEventsTitle,
+            subtitle: l10n.traceConsoleEventsSubtitle,
+          ),
+          const SizedBox(height: 16),
+          _FilterBar(
+            selected: snapshot.filter,
+            onSelected: controller.setFilter,
+          ),
+          const SizedBox(height: 16),
+          _TraceList(
+            items: snapshot.filteredItems,
+            hasAnyItems: snapshot.items.isNotEmpty,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -232,6 +260,45 @@ class _ApprovalQueue extends StatelessWidget {
               ],
             )
           : const SizedBox.shrink(),
+    );
+  }
+}
+
+class _EventsEntry extends StatelessWidget {
+  const _EventsEntry({required this.snapshot});
+
+  final TraceConsoleSnapshot snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return _Surface(
+      icon: Icons.account_tree_outlined,
+      title: l10n.traceConsoleEventsEntryTitle,
+      child: Column(
+        key: const Key('trace-console-events-entry'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.traceConsoleEventsEntryBody),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              _Tag(label: l10n.traceConsoleEventCount(snapshot.items.length)),
+              _Tag(label: l10n.traceConsoleWarningCount(snapshot.warningCount)),
+              OutlinedButton.icon(
+                key: const Key('trace-console-events-entry-button'),
+                onPressed: () =>
+                    context.push(_traceChildPath(context, 'events')),
+                icon: const Icon(Icons.open_in_new),
+                label: Text(l10n.traceConsoleOpenEventsButton),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -604,6 +671,12 @@ class _TraceRow extends StatelessWidget {
       tilePadding: EdgeInsets.zero,
       childrenPadding: const EdgeInsets.fromLTRB(30, 0, 0, 8),
       leading: Icon(Icons.bolt_outlined, size: 20, color: color),
+      trailing: IconButton(
+        key: Key('trace-console-open-raw-${item.id}'),
+        onPressed: () => _openRawTrace(context, item.id),
+        icon: const Icon(Icons.receipt_long_outlined),
+        tooltip: l10n.traceRawOpenButton,
+      ),
       title: Text(
         item.title,
         style: Theme.of(
@@ -669,8 +742,6 @@ class _TraceDetails extends StatelessWidget {
             _DelegationDetails(traceId: item.id, link: item.delegation!),
             const SizedBox(height: 8),
           ],
-          _RawTraceAction(item: item),
-          const SizedBox(height: 8),
           _SourceAction(item: item),
           const SizedBox(height: 8),
           _PayloadView(item: item),
@@ -716,25 +787,6 @@ class _DelegationDetails extends StatelessWidget {
             ),
           ),
       ],
-    );
-  }
-}
-
-class _RawTraceAction extends StatelessWidget {
-  const _RawTraceAction({required this.item});
-
-  final TraceConsoleItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return OutlinedButton.icon(
-      key: Key('trace-console-open-raw-${item.id}'),
-      onPressed: () => context.push(
-        _traceChildPath(context, 'raw/${Uri.encodeComponent(item.id)}'),
-      ),
-      icon: const Icon(Icons.receipt_long_outlined),
-      label: Text(l10n.traceRawOpenButton),
     );
   }
 }
@@ -1083,4 +1135,8 @@ String _traceChildPath(BuildContext context, String childPath) {
       ? '/plugins/traces'
       : '/settings/traces';
   return '$prefix/$childPath';
+}
+
+void _openRawTrace(BuildContext context, String traceId) {
+  context.push(_traceChildPath(context, 'raw/${Uri.encodeComponent(traceId)}'));
 }
