@@ -5,6 +5,24 @@ import 'package:widenote_mobile/features/transcription/transcription_download_ma
 import 'package:widenote_mobile/features/transcription/transcription_settings.dart';
 
 void main() {
+  test('default SenseVoice URLs use the reachable MemeX mirror', () {
+    expect(
+      defaultSenseVoiceHfMirrorBaseUrl,
+      'https://hf-mirror.com/csukuangfj/'
+      'sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/resolve/main',
+    );
+    expect(defaultSenseVoiceDownloadFiles.map((file) => file.url), <String>[
+      '$defaultSenseVoiceHfMirrorBaseUrl/model.int8.onnx',
+      '$defaultSenseVoiceHfMirrorBaseUrl/tokens.txt',
+    ]);
+    expect(
+      defaultSenseVoiceDownloadFiles
+          .map((file) => file.expectedMinBytes)
+          .toList(),
+      <int?>[200 * 1024 * 1024, 250 * 1024],
+    );
+  });
+
   test('download manager reports interrupted partial downloads', () async {
     final temp = await Directory.systemTemp.createTemp(
       'widenote-transcription-download-',
