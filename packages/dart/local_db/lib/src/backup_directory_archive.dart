@@ -608,16 +608,17 @@ String _relativeArchivePath(String archivePath) {
 
 void _validateEntryPath(String path) {
   _relativeArchivePath(path);
+  final lowerPath = path.toLowerCase();
+  if (lowerPath.endsWith('.json') || lowerPath.endsWith('.md')) {
+    throw FormatException(
+      'Directory backups cannot contain JSON or Markdown: $path.',
+    );
+  }
   final segments = path.split('/');
   for (final segment in segments) {
     if (segment.isEmpty || segment == '.' || segment == '..') {
       throw FormatException('Unsafe backup archive path: $path.');
     }
-  }
-  if (path.endsWith('.json') || path.endsWith('.md')) {
-    throw FormatException(
-      'Directory backups cannot contain JSON or Markdown: $path.',
-    );
   }
 }
 

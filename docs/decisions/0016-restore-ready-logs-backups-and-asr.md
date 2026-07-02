@@ -52,6 +52,14 @@ secure-storage settings and credentials needed for direct-use restore:
 
 The archive must continue to use `manifest.properties`, entry hashes, and
 `includes_secrets=true`. Legacy JSON/Markdown projections remain secret-free.
+Non-formal mobile builds append diagnostic log copies under
+`diagnostics/*.log` plus export metadata under `diagnostics/export-info.txt`.
+That includes debug/profile builds and release builds with explicit non-formal
+flavors such as `dev` or internal QA channels. These files are part of the local
+secret-bearing backup artifact for support review, are checksum-verified by the
+archive manifest, and are ignored by restore so they do not become canonical
+user data. Formal release flavors and unflavored release builds omit these extra
+diagnostics.
 
 Model Provider Settings must expose an explicit, user-initiated connection test
 from the add/edit form before save. Draft tests use synthetic provider probes

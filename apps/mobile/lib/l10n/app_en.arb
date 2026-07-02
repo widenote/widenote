@@ -1614,10 +1614,10 @@
   "backupExportSectionTitle": "Export and restore boundary",
   "backupExportButton": "Create .widenote backup",
   "backupExportEmpty": "Export creates one compressed directory .widenote archive. You can open it with another app or save it to a location you choose.",
-  "backupSecretWarning": "Full backups include provider and allowlisted secure-storage keys. Keep .widenote files somewhere you trust.",
+  "backupSecretWarning": "Full backups include provider and allowlisted secure-storage keys; non-formal builds can also include diagnostic logs. Keep .widenote files somewhere you trust.",
   "backupRestoreBoundary": "The .widenote archive restores a SQLite snapshot, capture media files, provider API keys, and allowlisted app settings.",
   "backupOwnerExportBoundary": "Backups are compressed directories, not JSON or Markdown restore documents.",
-  "backupFullSecretBoundary": "Full .widenote backups include provider, AMap, and MiMo ASR keys so restore can use configured features immediately.",
+  "backupFullSecretBoundary": "Full .widenote backups include provider, AMap, and MiMo ASR keys; non-formal builds also attach support diagnostics that restore ignores.",
   "backupLegacyProviderCredentialReentryCount": "Provider keys requiring re-entry: {count}",
   "@backupLegacyProviderCredentialReentryCount": {
     "placeholders": {

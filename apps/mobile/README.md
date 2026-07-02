@@ -44,13 +44,16 @@ restart.
 
 Full backup / restore is the implemented backup path. User-facing exports are
 single `.widenote` compressed directory archives that contain a manifest, full
-SQLite snapshot, and local capture media files. Import decompresses the archive
-through a staging directory before restoring records, runtime evidence, Pack
-state, permissions, provider metadata, and provider credential values. Treat
-`.widenote` files as secret-bearing local artifacts. Legacy safe JSON and
-Markdown projections remain package-level compatibility/export surfaces, not
-the default mobile restore source; `encrypted_full` is reserved for a future
-encrypted envelope.
+SQLite snapshot, local capture media files, and, for debug/profile builds or
+release builds with an explicit non-formal flavor, support-only diagnostic log
+copies under `diagnostics/`. Formal release flavors and unflavored release
+builds omit diagnostics. Import decompresses the archive through a staging
+directory before restoring records, runtime evidence, Pack state, permissions,
+provider metadata, and provider credential values. Diagnostic files are verified
+but ignored by restore. Treat `.widenote` files as secret-bearing local
+artifacts. Legacy safe JSON and Markdown projections remain package-level
+compatibility/export surfaces, not the default mobile restore source;
+`encrypted_full` is reserved for a future encrypted envelope.
 
 ## Dependencies
 

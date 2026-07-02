@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
@@ -27,6 +28,7 @@ final backupServiceProvider = Provider<LocalBackupService>((ref) {
 final backupFileStoreProvider = Provider<BackupFileStore>((ref) {
   return AppSupportBackupFileStore(
     supportDirectory: ref.watch(appSupportDirectoryProvider),
+    includeDiagnosticLogs: ref.watch(backupDiagnosticLogsEnabledProvider),
     supportSettingsLoader: () async {
       final locationSettings = await ref
           .read(locationSettingsRepositoryProvider)
@@ -51,6 +53,34 @@ final backupFileStoreProvider = Provider<BackupFileStore>((ref) {
     },
   );
 });
+
+final backupDiagnosticLogsEnabledProvider = Provider<bool>((_) {
+  return shouldIncludeBackupDiagnosticLogs(
+    flavor: appFlavor,
+    isReleaseMode: kReleaseMode,
+  );
+});
+
+const _formalReleaseFlavors = <String>{
+  'prod',
+  'production',
+  'official',
+  'release',
+  'store',
+};
+
+bool shouldIncludeBackupDiagnosticLogs({
+  required String? flavor,
+  required bool isReleaseMode,
+}) {
+  if (!isReleaseMode) {
+    return true;
+  }
+  final normalizedFlavor = flavor?.trim().toLowerCase();
+  return normalizedFlavor != null &&
+      normalizedFlavor.isNotEmpty &&
+      !_formalReleaseFlavors.contains(normalizedFlavor);
+}
 
 final backupControllerProvider =
     NotifierProvider<BackupController, BackupState>(BackupController.new);
@@ -113,6 +143,11 @@ typedef BackupSupportSettingsLoader =
 const _backupLocationSettingsPath = 'config/location_context.wnconfig';
 const _backupVoiceSettingsPath = 'config/voice_transcription.wnconfig';
 const _backupMimoSecretPath = 'secrets/voice_transcription_mimo.wnsecret';
+const _backupDiagnosticsExportInfoPath = 'diagnostics/export-info.txt';
+const _backupDiagnosticsEventLogPath = 'diagnostics/event_log.log';
+const _backupDiagnosticsRuntimeTasksPath = 'diagnostics/runtime_tasks.log';
+const _backupDiagnosticsRuntimeRunsPath = 'diagnostics/runtime_runs.log';
+const _backupDiagnosticsTraceEventsPath = 'diagnostics/trace_events.log';
 
 final class BackupSupportSettingsBundle {
   const BackupSupportSettingsBundle({
@@ -182,17 +217,31 @@ final class BackupSupportSettingsBundle {
 }
 
 final class AppSupportBackupFileStore implements BackupFileStore {
-  const AppSupportBackupFileStore({
+  AppSupportBackupFileStore({
     Directory? supportDirectory,
     BackupExportPlatform platform = const BackupExportPlatform(),
     BackupSupportSettingsLoader? supportSettingsLoader,
+    bool? includeDiagnosticLogs,
+    String? buildFlavor,
+    String? buildMode,
   }) : _supportDirectory = supportDirectory,
        _platform = platform,
-       _supportSettingsLoader = supportSettingsLoader;
+       _supportSettingsLoader = supportSettingsLoader,
+       _includeDiagnosticLogs =
+           includeDiagnosticLogs ??
+           shouldIncludeBackupDiagnosticLogs(
+             flavor: buildFlavor ?? appFlavor,
+             isReleaseMode: kReleaseMode,
+           ),
+       _buildFlavor = buildFlavor ?? appFlavor,
+       _buildMode = buildMode ?? _currentBuildMode();
 
   final Directory? _supportDirectory;
   final BackupExportPlatform _platform;
   final BackupSupportSettingsLoader? _supportSettingsLoader;
+  final bool _includeDiagnosticLogs;
+  final String? _buildFlavor;
+  final String _buildMode;
 
   @override
   Future<BackupFileResult> shareExport({
@@ -249,6 +298,16 @@ final class AppSupportBackupFileStore implements BackupFileStore {
     final supportSettings =
         await _supportSettingsLoader?.call() ??
         const BackupSupportSettingsBundle();
+    final extraFiles = <String, String>{
+      ...supportSettings.toSupportFiles(),
+      if (_includeDiagnosticLogs)
+        ..._diagnosticLogFilesForBackup(
+          backup: backup,
+          createdAt: createdAt,
+          buildFlavor: _buildFlavor,
+          buildMode: _buildMode,
+        ),
+    };
     try {
       final result = await Isolate.run(
         () => _writeBackupDirectoryArchive(
@@ -260,7 +319,7 @@ final class AppSupportBackupFileStore implements BackupFileStore {
             localDbSchemaVersion: backup.manifest.localDbSchemaVersion,
             recordCounts: backup.manifest.recordCounts,
             mediaFiles: mediaFiles,
-            supportFiles: supportSettings.toSupportFiles(),
+            supportFiles: extraFiles,
           ),
         ),
       );
@@ -839,6 +898,141 @@ String? _stringValue(Object? value) {
     return value.trim();
   }
   return null;
+}
+
+String _currentBuildMode() {
+  if (kReleaseMode) {
+    return 'release';
+  }
+  if (kProfileMode) {
+    return 'profile';
+  }
+  return 'debug';
+}
+
+Map<String, String> _diagnosticLogFilesForBackup({
+  required LocalDataBackup backup,
+  required DateTime createdAt,
+  required String? buildFlavor,
+  required String buildMode,
+}) {
+  final normalizedFlavor = buildFlavor?.trim();
+  final info = StringBuffer()
+    ..writeln('kind=widenote.non_formal_backup_diagnostics')
+    ..writeln('created_at=${createdAt.toUtc().toIso8601String()}')
+    ..writeln(
+      'build_flavor=${normalizedFlavor == null || normalizedFlavor.isEmpty ? 'unflavored' : normalizedFlavor}',
+    )
+    ..writeln('build_mode=$buildMode')
+    ..writeln('database_snapshot=data/widenote.sqlite')
+    ..writeln('event_log_rows=${backup.eventLog.length}')
+    ..writeln('runtime_task_rows=${backup.runtimeTasks.length}')
+    ..writeln('runtime_run_rows=${backup.runtimeRuns.length}')
+    ..writeln('trace_event_rows=${backup.traceEvents.length}');
+  return <String, String>{
+    _backupDiagnosticsExportInfoPath: info.toString(),
+    _backupDiagnosticsEventLogPath: _jsonLines(
+      backup.eventLog.map(_eventDiagnosticJson),
+    ),
+    _backupDiagnosticsRuntimeTasksPath: _jsonLines(
+      backup.runtimeTasks.map(_runtimeTaskDiagnosticJson),
+    ),
+    _backupDiagnosticsRuntimeRunsPath: _jsonLines(
+      backup.runtimeRuns.map(_runtimeRunDiagnosticJson),
+    ),
+    _backupDiagnosticsTraceEventsPath: _jsonLines(
+      backup.traceEvents.map(_traceEventDiagnosticJson),
+    ),
+  };
+}
+
+String _jsonLines(Iterable<Map<String, Object?>> rows) {
+  final encoded = rows.map(jsonEncode).join('\n');
+  return encoded.isEmpty ? '' : '$encoded\n';
+}
+
+Map<String, Object?> _eventDiagnosticJson(EventLogEntry event) {
+  return <String, Object?>{
+    'created_at': event.createdAt.toUtc().toIso8601String(),
+    'id': event.id,
+    'type': event.type,
+    'actor': event.actor,
+    'status': event.status,
+    'privacy': event.privacy,
+    'source_capture_id': event.sourceCaptureId,
+    'source_event_id': event.sourceEventId,
+    'subject_kind': event.subjectKind,
+    'subject_id': event.subjectId,
+    'subject_ref': event.subjectRef,
+    'pack_id': event.packId,
+    'agent_id': event.agentId,
+    'device_id': event.deviceId,
+    'causation_id': event.causationId,
+    'correlation_id': event.correlationId,
+    'payload': event.payload,
+  };
+}
+
+Map<String, Object?> _runtimeTaskDiagnosticJson(RuntimeTaskRecord task) {
+  return <String, Object?>{
+    'created_at': task.createdAt.toUtc().toIso8601String(),
+    'updated_at': task.updatedAt.toUtc().toIso8601String(),
+    'id': task.id,
+    'pack_id': task.packId,
+    'pack_version': task.packVersion,
+    'agent_id': task.agentId,
+    'handler_id': task.handlerId,
+    'subscription_id': task.subscriptionId,
+    'trigger_event_id': task.triggerEventId,
+    'identity_key': task.effectiveIdentityKey,
+    'status': task.status,
+    'attempts': task.attempts,
+    'max_attempts': task.maxAttempts,
+    'lease_owner': task.leaseOwner,
+    'leased_until': task.leasedUntil?.toUtc().toIso8601String(),
+    'error': task.error,
+    'payload': task.payload,
+  };
+}
+
+Map<String, Object?> _runtimeRunDiagnosticJson(RuntimeRunRecord run) {
+  return <String, Object?>{
+    'started_at': run.startedAt.toUtc().toIso8601String(),
+    'completed_at': run.completedAt?.toUtc().toIso8601String(),
+    'id': run.id,
+    'task_id': run.taskId,
+    'pack_id': run.packId,
+    'pack_version': run.packVersion,
+    'agent_id': run.agentId,
+    'handler_id': run.handlerId,
+    'status': run.status,
+    'attempt': run.attempt,
+    'output_event_ids': run.outputEventIds,
+    'error': run.error,
+    'payload': run.payload,
+  };
+}
+
+Map<String, Object?> _traceEventDiagnosticJson(TraceEventRecord trace) {
+  return <String, Object?>{
+    'created_at': trace.createdAt.toUtc().toIso8601String(),
+    'id': trace.id,
+    'name': trace.name,
+    'level': trace.level,
+    'trace_type': trace.traceType,
+    'run_id': trace.runId,
+    'severity': trace.severity,
+    'message': trace.message,
+    'source_event_id': trace.sourceEventId,
+    'source_run_id': trace.sourceRunId,
+    'source_task_id': trace.sourceTaskId,
+    'pack_id': trace.packId,
+    'agent_id': trace.agentId,
+    'parent_trace_id': trace.parentTraceId,
+    'duration_ms': trace.durationMs,
+    'status': trace.status,
+    'payload': trace.payload,
+  };
 }
 
 String _fileStamp(DateTime value) {

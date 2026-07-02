@@ -2945,7 +2945,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backupSecretWarning =>
-      'Full backups include provider and allowlisted secure-storage keys. Keep .widenote files somewhere you trust.';
+      'Full backups include provider and allowlisted secure-storage keys; non-formal builds can also include diagnostic logs. Keep .widenote files somewhere you trust.';
 
   @override
   String get backupRestoreBoundary =>
@@ -2957,7 +2957,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backupFullSecretBoundary =>
-      'Full .widenote backups include provider, AMap, and MiMo ASR keys so restore can use configured features immediately.';
+      'Full .widenote backups include provider, AMap, and MiMo ASR keys; non-formal builds also attach support diagnostics that restore ignores.';
 
   @override
   String backupLegacyProviderCredentialReentryCount(int count) {
