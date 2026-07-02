@@ -107,58 +107,65 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     _handlePendingSheetRequest(sheetRequest);
 
-    return ListView(
-      key: const Key('home-page'),
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 112),
-      children: [
-        const HomeHeader(),
-        const SizedBox(height: 16),
-        if (_feedbackMessage != null && !_isCaptureSheetOpen) ...[
-          HomeFeedbackLine(
-            message: _feedbackMessage!,
-            actionLabel: _feedbackActionLabel,
-            onAction: _feedbackAction,
-          ),
+    return RefreshIndicator(
+      onRefresh: _refreshHome,
+      child: ListView(
+        key: const Key('home-page'),
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 112),
+        children: [
+          const HomeHeader(),
+          const SizedBox(height: 16),
+          if (_feedbackMessage != null && !_isCaptureSheetOpen) ...[
+            HomeFeedbackLine(
+              message: _feedbackMessage!,
+              actionLabel: _feedbackActionLabel,
+              onAction: _feedbackAction,
+            ),
+            const SizedBox(height: 12),
+          ],
+          if (captureState.errorMessage != null) ...[
+            HomeErrorLine(
+              text: localizedCaptureError(l10n, captureState.errorMessage!),
+            ),
+            const SizedBox(height: 12),
+          ],
+          if (inputState.isRecordingVoice) ...[
+            const SizedBox(height: 8),
+            _BackgroundVoiceCard(
+              onStop: () => _stopVoice(openComposerAfterStop: true),
+              onCancel: _cancelVoice,
+              inputBusy: inputState.isBusy,
+              preview: inputState.voicePreview,
+            ),
+          ],
+          if (inputState.errorMessage != null && !_isCaptureSheetOpen) ...[
+            const SizedBox(height: 12),
+            HomeErrorLine(
+              text: localizedCaptureError(l10n, inputState.errorMessage!),
+            ),
+          ],
           const SizedBox(height: 12),
-        ],
-        if (captureState.errorMessage != null) ...[
-          HomeErrorLine(
-            text: localizedCaptureError(l10n, captureState.errorMessage!),
+          _TodayRecapCard(
+            state: captureState,
+            onOpen: () => context.push('/recap'),
           ),
-          const SizedBox(height: 12),
-        ],
-        if (inputState.isRecordingVoice) ...[
-          const SizedBox(height: 8),
-          _BackgroundVoiceCard(
-            onStop: () => _stopVoice(openComposerAfterStop: true),
-            onCancel: _cancelVoice,
+          const SizedBox(height: 16),
+          _RecordsSection(
+            records: captureState.records,
+            onRetry: _retryCapture,
+          ),
+          const SizedBox(height: 16),
+          _InsightTeaser(insights: captureState.insights),
+          const SizedBox(height: 16),
+          _HomeCaptureActions(
             inputBusy: inputState.isBusy,
-            preview: inputState.voicePreview,
+            isRecordingVoice: inputState.isRecordingVoice,
+            onNewRecord: _openCaptureSheet,
+            onStartVoice: _startVoice,
           ),
         ],
-        if (inputState.errorMessage != null && !_isCaptureSheetOpen) ...[
-          const SizedBox(height: 12),
-          HomeErrorLine(
-            text: localizedCaptureError(l10n, inputState.errorMessage!),
-          ),
-        ],
-        const SizedBox(height: 12),
-        _TodayRecapCard(
-          state: captureState,
-          onOpen: () => context.push('/recap'),
-        ),
-        const SizedBox(height: 16),
-        _RecordsSection(records: captureState.records, onRetry: _retryCapture),
-        const SizedBox(height: 16),
-        _InsightTeaser(insights: captureState.insights),
-        const SizedBox(height: 16),
-        _HomeCaptureActions(
-          inputBusy: inputState.isBusy,
-          isRecordingVoice: inputState.isRecordingVoice,
-          onNewRecord: _openCaptureSheet,
-          onStartVoice: _startVoice,
-        ),
-      ],
+      ),
     );
   }
 
@@ -376,6 +383,10 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   void _retryCapture(String id) {
     unawaited(ref.read(captureControllerProvider.notifier).retryCapture(id));
+  }
+
+  Future<void> _refreshHome() {
+    return ref.read(captureControllerProvider.notifier).refresh();
   }
 }
 

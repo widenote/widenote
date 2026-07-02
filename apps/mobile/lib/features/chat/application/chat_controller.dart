@@ -88,12 +88,78 @@ final class ChatIdGenerator {
 final class ChatController extends AsyncNotifier<ChatState> {
   @override
   Future<ChatState> build() async {
-    final repository = ref.watch(chatRepositoryProvider);
+    return _loadState(ref.watch(chatRepositoryProvider));
+  }
+
+  Future<void> refresh() async {
+    final beforeRefresh = state.valueOrNull;
+    final refreshed = await _loadState(
+      ref.read(chatRepositoryProvider),
+      preferredActiveSessionId: beforeRefresh?.activeSessionId,
+    );
+    final latest = state.valueOrNull;
+    final merged = latest != null && !identical(latest, beforeRefresh)
+        ? _mergeConcurrentRefreshState(refreshed, latest)
+        : _mergeRefreshState(refreshed, latest ?? beforeRefresh);
+    state = AsyncData(merged);
+  }
+
+  ChatState _mergeRefreshState(ChatState refreshed, ChatState? current) {
+    if (current == null) {
+      return refreshed;
+    }
+    final failedStillExists =
+        current.failedMessageId != null &&
+        refreshed.messages.any(
+          (message) =>
+              message.id == current.failedMessageId &&
+              message.status == ChatMessageStatus.failed,
+        );
+    final keepSending =
+        current.isSending &&
+        refreshed.activeSessionId != null &&
+        refreshed.activeSessionId == current.activeSessionId;
+    return refreshed.copyWith(
+      isSending: keepSending,
+      errorMessage: failedStillExists ? current.errorMessage : null,
+      failedMessageId: failedStillExists ? current.failedMessageId : null,
+      clearError: !failedStillExists,
+      clearFailedMessage: !failedStillExists,
+    );
+  }
+
+  ChatState _mergeConcurrentRefreshState(
+    ChatState refreshed,
+    ChatState latest,
+  ) {
+    final activeId = latest.activeSessionId;
+    final latestActiveSession = latest.activeSession;
+    if (activeId == null ||
+        latestActiveSession == null ||
+        _sessionById(refreshed.sessions, activeId) == null) {
+      return _mergeRefreshState(refreshed, latest);
+    }
+    return _mergeRefreshState(
+      refreshed.copyWith(
+        sessions: _upsertSession(refreshed.sessions, latestActiveSession),
+        activeSessionId: activeId,
+        messages: latest.messages,
+      ),
+      latest,
+    );
+  }
+
+  Future<ChatState> _loadState(
+    ChatRepository repository, {
+    String? preferredActiveSessionId,
+  }) async {
     final sessions = await repository.listSessions();
     if (sessions.isEmpty) {
       return ChatState.initial();
     }
-    final active = sessions.first;
+    final active =
+        _sessionById(sessions, preferredActiveSessionId ?? '') ??
+        sessions.first;
     final messages = await repository.listMessages(active.id);
     return ChatState(
       sessions: sessions,

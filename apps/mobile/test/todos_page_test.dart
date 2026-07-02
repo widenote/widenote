@@ -77,6 +77,45 @@ void main() {
     expect(find.text('Schedule candidate'), findsOneWidget);
     expect(find.text('Time cue: tomorrow'), findsOneWidget);
   });
+
+  testWidgets('todos page pull-to-refresh reloads local todo rows', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    await _pumpTodosPage(tester, database);
+
+    expect(find.byKey(const Key('todo-row-todo-refresh-1')), findsNothing);
+
+    final now = DateTime.utc(2026, 7, 2, 11);
+    database.todos.insert(
+      TodoRecord(
+        id: 'todo-refresh-1',
+        sourceCaptureId: 'capture-refresh-page',
+        payload: const <String, Object?>{
+          'title': 'Refresh visible todo',
+          'source_label': 'source: capture-refresh-page',
+          'status_label': 'suggested action',
+          'suggestion_kind': 'action',
+          'suggestion_confidence': 'high',
+          'suggestion_reason': 'external_insert',
+        },
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+
+    await tester.drag(
+      find.byKey(const Key('todos-page')),
+      const Offset(0, 320),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('todo-row-todo-refresh-1')), findsOneWidget);
+    expect(find.text('Refresh visible todo'), findsOneWidget);
+  });
 }
 
 Future<void> _pumpTodosPage(

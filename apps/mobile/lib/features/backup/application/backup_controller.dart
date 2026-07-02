@@ -12,6 +12,7 @@ import 'package:widenote_local_db/widenote_local_db.dart';
 import '../../../app/local_database.dart';
 import '../../../app/model_client.dart';
 import '../../capture/application/capture_controller.dart';
+import '../../chat/application/chat_controller.dart';
 import '../../location/application/location_settings_controller.dart';
 import '../../location/domain/location_context.dart';
 import '../../memory/application/memory_controller.dart';
@@ -823,6 +824,7 @@ final class BackupController extends Notifier<BackupState> {
       ..invalidate(captureControllerProvider)
       ..invalidate(timelineSnapshotProvider)
       ..invalidate(todoControllerProvider)
+      ..invalidate(chatControllerProvider)
       ..invalidate(memoryControllerProvider)
       ..invalidate(modelProviderSettingsControllerProvider)
       ..invalidate(locationSettingsControllerProvider)

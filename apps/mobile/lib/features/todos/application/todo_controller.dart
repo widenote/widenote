@@ -86,6 +86,10 @@ final class TodoController extends Notifier<TodoState> {
     return _readState();
   }
 
+  Future<void> refresh() async {
+    state = _readState().copyWith(clearError: true);
+  }
+
   void complete(String id) {
     _setStatus(id, 'completed');
   }

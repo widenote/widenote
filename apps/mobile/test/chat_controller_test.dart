@@ -240,6 +240,184 @@ void main() {
     expect(state.messages.last.body, 'Held answer.');
   });
 
+  test(
+    'controller refresh reloads repository state without interrupting send',
+    () async {
+      final repository = InMemoryChatRepository();
+      final assistant = _BlockingAssistant();
+      final container = ProviderContainer(
+        overrides: <Override>[
+          chatRepositoryProvider.overrideWithValue(repository),
+          chatContextSourceProvider.overrideWithValue(
+            const _StaticContextSource(<ChatSource>[]),
+          ),
+          chatAssistantProvider.overrideWithValue(assistant),
+          chatClockProvider.overrideWithValue(
+            _FixedClock(DateTime.utc(2026, 7, 2, 10)).call,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(chatControllerProvider.future);
+      final notifier = container.read(chatControllerProvider.notifier);
+      await notifier.startNewSession();
+      final activeId = container
+          .read(chatControllerProvider)
+          .requireValue
+          .activeSessionId!;
+      final sendFuture = notifier.sendMessage('Refresh while this is sending.');
+      await Future<void>.delayed(Duration.zero);
+
+      var state = container.read(chatControllerProvider).requireValue;
+      expect(state.isSending, isTrue);
+      expect(state.activeSessionId, activeId);
+
+      final externalCreatedAt = DateTime.utc(2026, 7, 2, 10, 5);
+      await repository.saveSession(
+        ChatSession(
+          id: 'external-session',
+          title: 'External session',
+          createdAt: externalCreatedAt,
+          updatedAt: externalCreatedAt,
+        ),
+      );
+      await repository.saveMessage(
+        ChatMessage(
+          id: 'external-message',
+          sessionId: 'external-session',
+          role: ChatRole.user,
+          body: 'External message.',
+          createdAt: externalCreatedAt,
+        ),
+      );
+
+      await notifier.refresh();
+
+      state = container.read(chatControllerProvider).requireValue;
+      expect(state.isSending, isTrue);
+      expect(state.activeSessionId, activeId);
+      expect(
+        state.sessions.map((session) => session.id),
+        contains('external-session'),
+      );
+      expect(
+        state.messages.map((message) => message.body),
+        contains('Refresh while this is sending.'),
+      );
+      expect(
+        state.messages.map((message) => message.body),
+        isNot(contains('External message.')),
+      );
+
+      assistant.completeNext('Answer after refresh.');
+      await sendFuture;
+
+      state = container.read(chatControllerProvider).requireValue;
+      expect(state.isSending, isFalse);
+      expect(state.messages.last.body, 'Answer after refresh.');
+    },
+  );
+
+  test(
+    'controller refresh preserves send completion during repository reload',
+    () async {
+      final repository = _BlockingListMessagesRepository(
+        InMemoryChatRepository(),
+      );
+      final assistant = _BlockingAssistant();
+      final container = ProviderContainer(
+        overrides: <Override>[
+          chatRepositoryProvider.overrideWithValue(repository),
+          chatContextSourceProvider.overrideWithValue(
+            const _StaticContextSource(<ChatSource>[]),
+          ),
+          chatAssistantProvider.overrideWithValue(assistant),
+          chatClockProvider.overrideWithValue(
+            _FixedClock(DateTime.utc(2026, 7, 2, 10)).call,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(chatControllerProvider.future);
+      final notifier = container.read(chatControllerProvider.notifier);
+      await notifier.startNewSession();
+      final activeId = container
+          .read(chatControllerProvider)
+          .requireValue
+          .activeSessionId!;
+      final sendFuture = notifier.sendMessage('Complete while refreshing.');
+      await Future<void>.delayed(Duration.zero);
+
+      repository.blockNextListMessages();
+      final refreshFuture = notifier.refresh();
+      await repository.waitForBlockedListMessages();
+      assistant.completeNext('Completed during refresh.');
+      await sendFuture;
+      repository.releaseListMessages();
+      await refreshFuture;
+
+      final state = container.read(chatControllerProvider).requireValue;
+      expect(state.isSending, isFalse);
+      expect(state.activeSessionId, activeId);
+      expect(state.messages.map((message) => message.body), <String>[
+        'Complete while refreshing.',
+        'Completed during refresh.',
+      ]);
+      expect(state.errorMessage, isNull);
+      expect(state.failedMessageId, isNull);
+    },
+  );
+
+  test(
+    'controller refresh preserves send failure during repository reload',
+    () async {
+      final repository = _BlockingListMessagesRepository(
+        InMemoryChatRepository(),
+      );
+      final assistant = _BlockingAssistant();
+      final container = ProviderContainer(
+        overrides: <Override>[
+          chatRepositoryProvider.overrideWithValue(repository),
+          chatContextSourceProvider.overrideWithValue(
+            const _StaticContextSource(<ChatSource>[]),
+          ),
+          chatAssistantProvider.overrideWithValue(assistant),
+          chatClockProvider.overrideWithValue(
+            _FixedClock(DateTime.utc(2026, 7, 2, 10)).call,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(chatControllerProvider.future);
+      final notifier = container.read(chatControllerProvider.notifier);
+      await notifier.startNewSession();
+      final activeId = container
+          .read(chatControllerProvider)
+          .requireValue
+          .activeSessionId!;
+      final sendFuture = notifier.sendMessage('Fail while refreshing.');
+      await Future<void>.delayed(Duration.zero);
+
+      repository.blockNextListMessages();
+      final refreshFuture = notifier.refresh();
+      await repository.waitForBlockedListMessages();
+      assistant.failNext(StateError('assistant failed during refresh'));
+      await sendFuture;
+      repository.releaseListMessages();
+      await refreshFuture;
+
+      final state = container.read(chatControllerProvider).requireValue;
+      expect(state.isSending, isFalse);
+      expect(state.activeSessionId, activeId);
+      expect(state.errorMessage, contains('assistant failed during refresh'));
+      expect(state.failedMessageId, isNotNull);
+      expect(state.messages.single.status, ChatMessageStatus.failed);
+    },
+  );
+
   test('context selector preserves packet order without query scoring', () {
     final selector = ChatContextSelector();
     final now = DateTime.utc(2026, 6, 24, 2);
@@ -1474,6 +1652,82 @@ final class _BlockingAssistant implements ChatAssistant {
       throw StateError('No pending chat answer.');
     }
     _pending.removeAt(0).complete(ChatAssistantReply(body: body));
+  }
+
+  void failNext(Object error) {
+    if (_pending.isEmpty) {
+      throw StateError('No pending chat answer.');
+    }
+    _pending.removeAt(0).completeError(error);
+  }
+}
+
+final class _BlockingListMessagesRepository implements ChatRepository {
+  _BlockingListMessagesRepository(this._delegate);
+
+  final ChatRepository _delegate;
+  Completer<void>? _listMessagesStarted;
+  Completer<void>? _releaseListMessages;
+
+  void blockNextListMessages() {
+    if (_releaseListMessages != null) {
+      throw StateError('A listMessages call is already blocked.');
+    }
+    _listMessagesStarted = Completer<void>();
+    _releaseListMessages = Completer<void>();
+  }
+
+  Future<void> waitForBlockedListMessages() {
+    final started = _listMessagesStarted;
+    if (started == null) {
+      throw StateError('No blocked listMessages call is expected.');
+    }
+    return started.future;
+  }
+
+  void releaseListMessages() {
+    final release = _releaseListMessages;
+    if (release == null) {
+      throw StateError('No listMessages call is blocked.');
+    }
+    if (!release.isCompleted) {
+      release.complete();
+    }
+  }
+
+  @override
+  Future<List<ChatSession>> listSessions() {
+    return _delegate.listSessions();
+  }
+
+  @override
+  Future<List<ChatMessage>> listMessages(String sessionId) async {
+    final release = _releaseListMessages;
+    if (release != null) {
+      final started = _listMessagesStarted;
+      if (started != null && !started.isCompleted) {
+        started.complete();
+      }
+      await release.future;
+      _listMessagesStarted = null;
+      _releaseListMessages = null;
+    }
+    return _delegate.listMessages(sessionId);
+  }
+
+  @override
+  Future<void> saveSession(ChatSession session) {
+    return _delegate.saveSession(session);
+  }
+
+  @override
+  Future<void> saveMessage(ChatMessage message) {
+    return _delegate.saveMessage(message);
+  }
+
+  @override
+  Future<void> deleteSession(String sessionId) {
+    return _delegate.deleteSession(sessionId);
   }
 }
 

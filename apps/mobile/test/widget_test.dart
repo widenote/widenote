@@ -128,6 +128,45 @@ void main() {
     expect(find.text(captureText), findsOneWidget);
   });
 
+  testWidgets('home pull-to-refresh rehydrates externally inserted captures', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    await _pumpApp(tester, database: database, closeDatabase: false);
+
+    expect(_readCaptureState(tester).records, isEmpty);
+    expect(find.text('Externally inserted capture.'), findsNothing);
+
+    final createdAt = DateTime.utc(2026, 7, 2, 10, 30);
+    database.captures.insert(
+      localdb.CaptureRecord(
+        id: 'home-refresh-capture',
+        sourceType: 'manual',
+        status: captureStatusProcessed,
+        payload: const <String, Object?>{
+          'text': 'Externally inserted capture.',
+          'raw_text': 'Externally inserted capture.',
+        },
+        createdAt: createdAt,
+        updatedAt: createdAt,
+      ),
+    );
+
+    await tester.drag(find.byKey(const Key('home-page')), const Offset(0, 320));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    expect(_readCaptureState(tester).records.single.id, 'home-refresh-capture');
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('record-row-home-refresh-capture')),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Externally inserted capture.'), findsOneWidget);
+  });
+
   testWidgets('legacy todo rows hydrate without source_refs payload', (
     tester,
   ) async {
