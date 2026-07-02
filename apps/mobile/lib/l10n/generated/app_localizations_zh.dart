@@ -2428,6 +2428,15 @@ class AppLocalizationsZh extends AppLocalizations {
       '当前用于对话回答和需要模型的内置 Agent Pack。';
 
   @override
+  String get providerSettingsVisionRoleTitle => '视觉语义智能体';
+
+  @override
+  String get providerSettingsVisionRoleDescription => '用于捕获图片预处理，需要带有视觉标签的提供商。';
+
+  @override
+  String get providerSettingsVisionRoleUnavailable => '尚未配置视觉提供商';
+
+  @override
   String get providerSettingsAgentRoleTitle => '按智能体覆盖';
 
   @override
@@ -2450,10 +2459,46 @@ class AppLocalizationsZh extends AppLocalizations {
   String get providerSettingsCapabilityCompletion => '补全';
 
   @override
+  String get providerSettingsCapabilityVision => '视觉';
+
+  @override
+  String get providerSettingsCapabilityAudio => '语音';
+
+  @override
+  String get providerSettingsCapabilityVideo => '视频';
+
+  @override
+  String get providerSettingsCapabilityTextOnly => '仅文本';
+
+  @override
   String get providerSettingsCapabilityOfflineFallback => '本地原始记录';
 
   @override
   String get providerSettingsCapabilityByok => '自带密钥本地存储';
+
+  @override
+  String get providerCapabilityPreviewTitle => '模型能力标签';
+
+  @override
+  String get providerCapabilityVisionOverrideTitle => '支持图片输入';
+
+  @override
+  String get providerCapabilityVisionOverrideSubtitle =>
+      '仅当此模型可接收图片内容并用于捕获理解时启用。';
+
+  @override
+  String get providerCapabilityAudioOverrideTitle => '支持语音或音频输入';
+
+  @override
+  String get providerCapabilityAudioOverrideSubtitle =>
+      '仅当此模型可接收音频内容或语音转写请求时启用。';
+
+  @override
+  String get providerCapabilityVideoOverrideTitle => '支持视频输入或生成';
+
+  @override
+  String get providerCapabilityVideoOverrideSubtitle =>
+      '仅当此模型可接收视频内容或执行视频生成任务时启用。';
 
   @override
   String get providerClearKeyTitle => '清除已保存的 API Key';

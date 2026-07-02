@@ -21,6 +21,16 @@ final chatModelClientProvider = Provider<runtime.ModelClient?>((ref) {
   return _defaultProviderClient(ref);
 });
 
+final visionModelClientProvider = Provider<runtime.ModelClient>((ref) {
+  final providerClient = _providerClientSupporting(ref, const <ModelCapability>{
+    ModelCapability.vision,
+  });
+  if (providerClient != null) {
+    return providerClient;
+  }
+  return const ModelUnavailableModelClient();
+});
+
 final class ModelUnavailableModelClient implements runtime.ModelClient {
   const ModelUnavailableModelClient();
 
@@ -49,11 +59,64 @@ runtime.ModelClient? _defaultProviderClient(Ref ref) {
     return null;
   }
   final record = database.modelProviderConfigs.readDefault();
-  if (record == null || record.apiKey.trim().isEmpty) {
+  if (record == null) {
     return null;
   }
+  return _providerClientFromRecord(ref, record);
+}
+
+runtime.ModelClient? _providerClientSupporting(
+  Ref ref,
+  Set<ModelCapability> requiredCapabilities,
+) {
+  final WideNoteLocalDatabase database;
+  try {
+    database = ref.watch(localDatabaseProvider);
+  } on Object {
+    return null;
+  }
+  final records = database.modelProviderConfigs.readAll(status: 'active');
+  if (records.isEmpty) {
+    return null;
+  }
+  final defaultId = database.modelProviderConfigs.readDefault()?.id;
+  final ordered = <ModelProviderConfigRecord>[
+    if (defaultId != null) ...records.where((record) => record.id == defaultId),
+    ...records.where((record) => record.id != defaultId),
+  ];
+  for (final record in ordered) {
+    final config = _modelProviderConfigFromRecord(record);
+    if (config == null ||
+        !requiredCapabilities.every(config.capabilities.contains)) {
+      continue;
+    }
+    final client = _providerClientFromConfig(ref, config);
+    if (client != null) {
+      return client;
+    }
+  }
+  return null;
+}
+
+runtime.ModelClient? _providerClientFromRecord(
+  Ref ref,
+  ModelProviderConfigRecord record,
+) {
   final config = _modelProviderConfigFromRecord(record);
-  if (config == null || !config.validate().isValid) {
+  if (config == null) {
+    return null;
+  }
+  return _providerClientFromConfig(ref, config);
+}
+
+runtime.ModelClient? _providerClientFromConfig(
+  Ref ref,
+  ModelProviderConfig config,
+) {
+  if (config.kind.requiresApiKey && config.apiKey.trim().isEmpty) {
+    return null;
+  }
+  if (!config.validate().isValid) {
     return null;
   }
 
@@ -88,7 +151,12 @@ ModelProviderConfig? _modelProviderConfigFromRecord(
     endpoint: endpoint,
     model: record.model,
     apiKey: record.apiKey,
-    capabilities: _modelCapabilitiesFromNames(record.capabilities),
+    capabilities: _modelCapabilitiesFromNames(
+      record.capabilities,
+      kind: kind,
+      model: record.model,
+      payload: record.payload,
+    ),
   );
 }
 
@@ -109,7 +177,12 @@ ModelProviderKind? _modelProviderKindFromName(String name) {
   return null;
 }
 
-Set<ModelCapability> _modelCapabilitiesFromNames(List<Object?> names) {
+Set<ModelCapability> _modelCapabilitiesFromNames(
+  List<Object?> names, {
+  required ModelProviderKind kind,
+  required String model,
+  required Map<String, Object?> payload,
+}) {
   final capabilities = <ModelCapability>{};
   for (final name in names.whereType<String>()) {
     for (final capability in ModelCapability.values) {
@@ -120,12 +193,31 @@ Set<ModelCapability> _modelCapabilitiesFromNames(List<Object?> names) {
     }
   }
   if (capabilities.isEmpty) {
-    return const <ModelCapability>{
-      ModelCapability.chat,
-      ModelCapability.completion,
-    };
+    return defaultCapabilitiesForModel(kind, model);
+  }
+  final inferred = defaultCapabilitiesForModel(kind, model);
+  if (_shouldBackfillInferredCapabilities(capabilities, inferred, payload)) {
+    return inferred;
   }
   return capabilities;
+}
+
+bool _shouldBackfillInferredCapabilities(
+  Set<ModelCapability> stored,
+  Set<ModelCapability> inferred,
+  Map<String, Object?> payload,
+) {
+  if (payload['capabilities_source'] == 'explicit') {
+    return false;
+  }
+  final storedOnlyText =
+      stored.length == 2 &&
+      stored.contains(ModelCapability.chat) &&
+      stored.contains(ModelCapability.completion);
+  final inferredHasMedia =
+      inferred.contains(ModelCapability.vision) ||
+      inferred.contains(ModelCapability.audio);
+  return storedOnlyText && inferredHasMedia;
 }
 
 final class _DartIoModelProviderHttpClient implements ModelProviderHttpClient {

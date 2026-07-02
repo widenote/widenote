@@ -349,9 +349,13 @@ class _ModelRolesSurface extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final provider = state.defaultProvider;
+    final visionProvider = state.providerForCapability(ModelCapability.vision);
     final roleValue = provider == null
         ? l10n.providerSettingsRoleFallback
         : '${provider.displayName} / ${provider.model}';
+    final visionRoleValue = visionProvider == null
+        ? l10n.providerSettingsVisionRoleUnavailable
+        : '${visionProvider.displayName} / ${visionProvider.model}';
     return _Surface(
       icon: Icons.tune_outlined,
       title: l10n.providerSettingsRolesTitle,
@@ -363,6 +367,13 @@ class _ModelRolesSurface extends StatelessWidget {
             title: l10n.providerSettingsTextRoleTitle,
             description: l10n.providerSettingsTextRoleDescription,
             value: roleValue,
+          ),
+          const Divider(height: 20),
+          _RoleTile(
+            icon: Icons.image_search_outlined,
+            title: l10n.providerSettingsVisionRoleTitle,
+            description: l10n.providerSettingsVisionRoleDescription,
+            value: visionRoleValue,
           ),
           const Divider(height: 20),
           _RoleTile(
@@ -454,6 +465,40 @@ class _RoleTile extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _CapabilityPreview extends StatelessWidget {
+  const _CapabilityPreview({required this.labels});
+
+  final List<String> labels;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final previewLabels = labels.isEmpty
+        ? <String>[l10n.providerSettingsCapabilityTextOnly]
+        : labels;
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.providerCapabilityPreviewTitle,
+            style: Theme.of(
+              context,
+            ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [for (final label in previewLabels) _Tag(label: label)],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -641,6 +686,9 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
   bool _isCustomModel = false;
   bool _clearSavedKey = false;
   bool _didLocalizeInitialName = false;
+  late bool _visionCapabilitySelected;
+  late bool _audioCapabilitySelected;
+  late bool _videoCapabilitySelected;
   String? _localError;
   ProviderConnectionSnapshot? _draftConnection;
 
@@ -663,6 +711,10 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
       text: existing?.model ?? _preset.model,
     );
     _apiKeyController = TextEditingController();
+    _applyCapabilitySelection(
+      existing?.capabilities ??
+          _inferredCapabilitiesFor(existing?.model ?? _kind.defaultModel),
+    );
   }
 
   @override
@@ -693,9 +745,13 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
             ? l10n.providerDialogAddTitle
             : l10n.providerDialogEditTitle,
       ),
-      content: SingleChildScrollView(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
+      content: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 420,
+          maxHeight: MediaQuery.sizeOf(context).height * 0.56,
+        ),
+        child: SingleChildScrollView(
+          key: const Key('provider-form-scroll'),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -803,8 +859,58 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
                     labelText: l10n.providerModelCustomOption,
                     helperText: l10n.providerModelCustomHelper,
                   ),
+                  onChanged: (value) {
+                    setState(() {
+                      _applyCapabilitySelection(
+                        _inferredCapabilitiesFor(value),
+                      );
+                    });
+                  },
                 ),
               ],
+              const SizedBox(height: 12),
+              _CapabilityPreview(
+                labels: _capabilityPreviewLabels(l10n, _draftCapabilities),
+              ),
+              CheckboxListTile(
+                key: const Key('provider-vision-capability-checkbox'),
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                value: _visionCapabilitySelected,
+                title: Text(l10n.providerCapabilityVisionOverrideTitle),
+                subtitle: Text(l10n.providerCapabilityVisionOverrideSubtitle),
+                onChanged: (value) {
+                  setState(() {
+                    _visionCapabilitySelected = value ?? false;
+                  });
+                },
+              ),
+              CheckboxListTile(
+                key: const Key('provider-audio-capability-checkbox'),
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                value: _audioCapabilitySelected,
+                title: Text(l10n.providerCapabilityAudioOverrideTitle),
+                subtitle: Text(l10n.providerCapabilityAudioOverrideSubtitle),
+                onChanged: (value) {
+                  setState(() {
+                    _audioCapabilitySelected = value ?? false;
+                  });
+                },
+              ),
+              CheckboxListTile(
+                key: const Key('provider-video-capability-checkbox'),
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                value: _videoCapabilitySelected,
+                title: Text(l10n.providerCapabilityVideoOverrideTitle),
+                subtitle: Text(l10n.providerCapabilityVideoOverrideSubtitle),
+                onChanged: (value) {
+                  setState(() {
+                    _videoCapabilitySelected = value ?? false;
+                  });
+                },
+              ),
               const SizedBox(height: 12),
               TextField(
                 key: const Key('provider-api-key-field'),
@@ -889,6 +995,7 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
       _nameController.text = _providerPresetLabel(l10n, preset);
       _endpointController.text = preset.endpoint;
       _modelController.text = preset.model;
+      _applyCapabilitySelection(_inferredCapabilitiesFor(preset.model));
       _availableModels = const <String>[];
       _isCustomModel = false;
       _draftConnection = null;
@@ -931,6 +1038,7 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
                 : _modelController.text.trim(),
             apiKey: apiKey,
             accessMode: _accessMode,
+            capabilities: _draftCapabilities,
           ),
         );
     if (!mounted) {
@@ -942,9 +1050,11 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
       if (result.succeeded && result.models.isNotEmpty) {
         _availableModels = result.models;
         final current = _modelController.text.trim();
-        _modelController.text = result.models.contains(current)
+        final selectedModel = result.models.contains(current)
             ? current
             : result.models.first;
+        _modelController.text = selectedModel;
+        _applyCapabilitySelection(_inferredCapabilitiesFor(selectedModel));
         _isCustomModel = false;
         _localError = null;
         return;
@@ -1026,6 +1136,7 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
       model: _modelController.text.trim(),
       apiKey: _nextApiKey(),
       accessMode: _accessMode,
+      capabilities: _draftCapabilities,
     );
   }
 
@@ -1101,7 +1212,13 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
       for (final model in _modelOptions)
         DropdownMenuItem<String>(
           value: model,
-          child: Text(model, overflow: TextOverflow.ellipsis),
+          child: _ModelOptionLabel(
+            model: model,
+            labels: _capabilityPreviewLabels(
+              l10n,
+              _inferredCapabilitiesFor(model),
+            ),
+          ),
         ),
       DropdownMenuItem<String>(
         value: _customModelValue,
@@ -1117,9 +1234,31 @@ class _ProviderFormDialogState extends ConsumerState<_ProviderFormDialog> {
       } else {
         _isCustomModel = false;
         _modelController.text = value;
+        _applyCapabilitySelection(_inferredCapabilitiesFor(value));
       }
       _localError = null;
     });
+  }
+
+  Set<ModelCapability> _inferredCapabilitiesFor(String model) {
+    final selectedModel = model.trim().isEmpty ? _kind.defaultModel : model;
+    return defaultCapabilitiesForModel(_kind, selectedModel);
+  }
+
+  Set<ModelCapability> get _draftCapabilities {
+    return <ModelCapability>{
+      ModelCapability.chat,
+      ModelCapability.completion,
+      if (_visionCapabilitySelected) ModelCapability.vision,
+      if (_audioCapabilitySelected) ModelCapability.audio,
+      if (_videoCapabilitySelected) ModelCapability.video,
+    };
+  }
+
+  void _applyCapabilitySelection(Set<ModelCapability> capabilities) {
+    _visionCapabilitySelected = capabilities.contains(ModelCapability.vision);
+    _audioCapabilitySelected = capabilities.contains(ModelCapability.audio);
+    _videoCapabilitySelected = capabilities.contains(ModelCapability.video);
   }
 
   String? _apiKeyHelperText(AppLocalizations l10n) {
@@ -1169,6 +1308,29 @@ class _PageHeader extends StatelessWidget {
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
+      ],
+    );
+  }
+}
+
+class _ModelOptionLabel extends StatelessWidget {
+  const _ModelOptionLabel({required this.model, required this.labels});
+
+  final String model;
+  final List<String> labels;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Expanded(child: Text(model, overflow: TextOverflow.ellipsis)),
+        const SizedBox(width: 8),
+        for (final label in labels)
+          Padding(
+            padding: const EdgeInsets.only(left: 4),
+            child: _Tag(label: label),
+          ),
       ],
     );
   }
@@ -1325,8 +1487,30 @@ String _capabilityLabel(AppLocalizations l10n, ModelCapability capability) {
   return switch (capability) {
     ModelCapability.chat => l10n.providerSettingsCapabilityChat,
     ModelCapability.completion => l10n.providerSettingsCapabilityCompletion,
+    ModelCapability.vision => l10n.providerSettingsCapabilityVision,
+    ModelCapability.audio => l10n.providerSettingsCapabilityAudio,
+    ModelCapability.video => l10n.providerSettingsCapabilityVideo,
     _ => capability.name,
   };
+}
+
+List<String> _capabilityPreviewLabels(
+  AppLocalizations l10n,
+  Set<ModelCapability> capabilities,
+) {
+  final labels = capabilities
+      .where(
+        (capability) =>
+            capability == ModelCapability.vision ||
+            capability == ModelCapability.audio ||
+            capability == ModelCapability.video,
+      )
+      .map((capability) => _capabilityLabel(l10n, capability))
+      .toList(growable: false);
+  if (labels.isEmpty) {
+    return <String>[l10n.providerSettingsCapabilityTextOnly];
+  }
+  return labels;
 }
 
 class _Tag extends StatelessWidget {

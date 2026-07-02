@@ -551,6 +551,79 @@ void main() {
       },
     );
 
+    test(
+      'attachment expansion treats ready and available attachments as readable',
+      () {
+        final now = DateTime.utc(2026, 7, 2, 10);
+        _seedPack(database, now);
+        database.captures.insert(
+          CaptureRecord(
+            id: 'capture-attachment-status',
+            sourceType: 'manual_with_attachments',
+            payload: const <String, Object?>{
+              'text': 'Status compatibility capture',
+            },
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+        for (final entry in <(String, String)>[
+          ('attachment-available', 'available'),
+          ('attachment-ready', 'ready'),
+          ('attachment-pending', 'pending'),
+          ('attachment-blocked', 'blocked'),
+        ]) {
+          database.attachments.insert(
+            AttachmentRecord(
+              id: entry.$1,
+              captureId: 'capture-attachment-status',
+              assetKind: 'photo',
+              mimeType: 'image/jpeg',
+              storagePath: '/Users/guangmo/private/${entry.$1}.jpg',
+              originalFileName: '/Users/guangmo/private/${entry.$1}.jpg',
+              sha256: 'sha-${entry.$1}',
+              status: entry.$2,
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+        }
+
+        final result = ContextPacketBuilder(database, clock: () => now).build(
+          const ContextPacketBuildRequest(
+            surface: 'chat',
+            cacheKey: 'attachment-status',
+            disclosureLevel: 'attachment_expansion',
+            permissionMode: 'user_granted',
+            permissions: <String>['record.read', 'memory.read'],
+            includeAttachmentMetadata: true,
+            allowAttachmentExpansion: false,
+            packId: 'pack.default',
+            packVersion: '0.1.0',
+          ),
+        );
+
+        _expectContextPacketSchema(result.packet);
+        final encoded = jsonEncode(result.packet);
+        expect(encoded, contains('Attachment attachment-available'));
+        expect(encoded, contains('Attachment attachment-ready'));
+        expect(encoded, isNot(contains('Attachment attachment-pending')));
+        expect(encoded, isNot(contains('Attachment attachment-blocked')));
+        expect(encoded, isNot(contains('/Users/guangmo/private')));
+        expect(encoded, contains('raw_file: not included'));
+
+        final fileRefs = _sourceRefs(
+          result.packet,
+        ).where((ref) => ref['kind'] == 'file').map((ref) => ref['id']).toSet();
+        expect(
+          fileRefs,
+          containsAll(<String>['attachment-available', 'attachment-ready']),
+        );
+        expect(fileRefs, isNot(contains('attachment-pending')));
+        expect(fileRefs, isNot(contains('attachment-blocked')));
+      },
+    );
+
     test('empty context returns valid non-cached packet', () {
       final now = DateTime.utc(2026, 6, 26, 9);
 

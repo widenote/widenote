@@ -12,6 +12,7 @@ import 'capture_background_processing.dart';
 import 'capture_orchestrator.dart';
 import 'capture_orchestrator_provider.dart';
 import 'local_capture_read_model.dart';
+import 'media_preprocessing_service.dart';
 import '../domain/capture_models.dart';
 import '../media/capture_media.dart';
 
@@ -302,6 +303,17 @@ class CaptureController extends Notifier<CaptureState> {
         currentRecord = transcriptReadyRecord;
       }
 
+      processingAttachments = await ref
+          .read(mediaPreprocessingServiceProvider)
+          .preprocessPhotoAttachments(currentRecord, processingAttachments);
+      if (_hasPhotoAttachment(processingAttachments)) {
+        _readModelStore().saveCapture(
+          currentRecord,
+          attachments: processingAttachments,
+          rawText: input.typedText,
+        );
+      }
+
       final orchestrator = ref.read(captureOrchestratorProvider);
       final materialized = await orchestrator.materializePublishedCapture(
         currentRecord.id,
@@ -508,6 +520,13 @@ class CaptureController extends Notifier<CaptureState> {
       }
     }
     return false;
+  }
+
+  bool _hasPhotoAttachment(List<CaptureAttachment> attachments) {
+    return attachments.any(
+      (attachment) =>
+          attachment.kind == CaptureAssetKind.photo && attachment.isReady,
+    );
   }
 }
 

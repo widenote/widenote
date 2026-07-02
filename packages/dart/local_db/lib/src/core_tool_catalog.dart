@@ -1241,6 +1241,13 @@ bool _isReadableArtifact(DerivedArtifactRecord artifact) {
   return artifact.status == 'active' || artifact.status == 'ready';
 }
 
+bool _isReadableAttachment(AttachmentRecord attachment) {
+  return switch (attachment.status) {
+    'active' || 'available' || 'ready' => true,
+    _ => false,
+  };
+}
+
 bool _matchesSourceFilters(
   JsonList sourceRefs, {
   String? sourceCaptureId,
@@ -1973,7 +1980,7 @@ _DerivedArtifactSource _resolveDerivedArtifactSource(
       details: const <String, Object?>{'field': 'source_attachment_id'},
     );
   }
-  if (attachment != null && attachment.status != 'available') {
+  if (attachment != null && !_isReadableAttachment(attachment)) {
     throw _ToolInputException(
       'source_not_ready',
       'The referenced attachment is not available for local fake derivation.',

@@ -256,6 +256,10 @@ final class ModelProviderConfig {
       apiKey: apiKey,
       maxOutputTokens: maxOutputTokens,
       accessMode: accessMode ?? kind.defaultAccessMode,
+      capabilities: defaultCapabilitiesForModel(
+        kind,
+        model ?? kind.defaultModel,
+      ),
     );
   }
 
@@ -338,6 +342,125 @@ final class ModelProviderConfig {
   String toString() {
     return 'ModelProviderConfig(${toSafeJson()})';
   }
+}
+
+Set<ModelCapability> defaultCapabilitiesForModel(
+  ModelProviderKind kind,
+  String model,
+) {
+  final normalized = model.trim().toLowerCase();
+  return <ModelCapability>{
+    ModelCapability.chat,
+    ModelCapability.completion,
+    if (_isKnownVisionModel(kind, normalized)) ModelCapability.vision,
+    if (_isKnownAudioModel(kind, normalized)) ModelCapability.audio,
+    if (_isKnownVideoModel(kind, normalized)) ModelCapability.video,
+  };
+}
+
+bool _isKnownVisionModel(ModelProviderKind kind, String model) {
+  if (model.isEmpty || model == 'openrouter/auto') {
+    return false;
+  }
+
+  return switch (kind) {
+    ModelProviderKind.gemini => model.startsWith('gemini-'),
+    ModelProviderKind.anthropic ||
+    ModelProviderKind.anthropicCompatible => _isClaudeVisionModel(model),
+    ModelProviderKind.openAi ||
+    ModelProviderKind.openAiResponses ||
+    ModelProviderKind.openAiCompatible => _isOpenAiVisionModel(model),
+    ModelProviderKind.zhipu => model.contains('glm-') && model.contains('v'),
+    ModelProviderKind.mimo =>
+      model == 'mimo-v2.5' || model == 'mimo-v2-omni' || model.contains('omni'),
+    ModelProviderKind.qwen ||
+    ModelProviderKind.doubao ||
+    ModelProviderKind.miniMax ||
+    ModelProviderKind.deepSeek =>
+      model.contains('vl') ||
+          model.contains('vision') ||
+          model.contains('omni'),
+    ModelProviderKind.openRouter => _isOpenRouterVisionModel(model),
+    ModelProviderKind.kimi || ModelProviderKind.ollama =>
+      model.contains('vision') ||
+          model.contains('vl') ||
+          model.contains('omni'),
+  };
+}
+
+bool _isClaudeVisionModel(String model) {
+  return model.contains('claude-3') ||
+      model.contains('claude-sonnet') ||
+      model.contains('claude-opus') ||
+      model.contains('claude-haiku');
+}
+
+bool _isOpenAiVisionModel(String model) {
+  return model.contains('gpt-4o') ||
+      model.contains('gpt-4.1') ||
+      model.contains('gpt-5') ||
+      model.contains('o3');
+}
+
+bool _isOpenRouterVisionModel(String model) {
+  return model.contains('gemini') ||
+      model.contains('claude') ||
+      _isOpenAiVisionModel(model) ||
+      model.contains('qwen-vl') ||
+      model.contains('vision') ||
+      model.contains('mimo-v2.5') ||
+      model.contains('mimo-v2-omni') ||
+      (model.contains('glm-') && model.contains('v'));
+}
+
+bool _isKnownVideoModel(ModelProviderKind kind, String model) {
+  if (model.isEmpty || model == 'openrouter/auto') {
+    return false;
+  }
+  if (_looksLikeVideoModel(model)) {
+    return true;
+  }
+  return switch (kind) {
+    ModelProviderKind.openRouter =>
+      model.contains('hailuo') ||
+          model.contains('runway') ||
+          model.contains('pika') ||
+          model.contains('vidu'),
+    _ => false,
+  };
+}
+
+bool _looksLikeVideoModel(String model) {
+  if (model.contains('video') ||
+      model.contains('sora') ||
+      model.contains('veo') ||
+      model.contains('kling') ||
+      model.contains('hailuo') ||
+      model.contains('seedance')) {
+    return true;
+  }
+  return RegExp(r'(^|[/:\-_.])wan\d').hasMatch(model);
+}
+
+bool _isKnownAudioModel(ModelProviderKind kind, String model) {
+  if (model.isEmpty || model == 'openrouter/auto') {
+    return false;
+  }
+  if (model.contains('whisper') ||
+      model.contains('audio') ||
+      model.contains('speech') ||
+      model.contains('transcrib') ||
+      model.contains('asr') ||
+      model.contains('omni')) {
+    return true;
+  }
+  return switch (kind) {
+    ModelProviderKind.openRouter =>
+      model.contains('sonic') ||
+          model.contains('realtime') ||
+          model.contains('gpt-4o-audio'),
+    _ => false,
+  };
 }
 
 final class ModelProviderConfigValidation {

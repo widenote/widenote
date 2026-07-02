@@ -107,7 +107,7 @@ final class OpenAiCompatibleModelProvider implements ModelProvider {
           .map(
             (message) => <String, Object?>{
               'role': _openAiRole(message.role),
-              'content': message.content,
+              'content': _openAiContent(message),
             },
           )
           .toList(),
@@ -325,7 +325,7 @@ final class AnthropicCompatibleModelProvider implements ModelProvider {
         .map(
           (message) => <String, Object?>{
             'role': _anthropicRole(message.role),
-            'content': message.content,
+            'content': _anthropicContent(message),
           },
         )
         .toList();
@@ -551,6 +551,58 @@ String _anthropicRole(ModelMessageRole role) {
     ModelMessageRole.user ||
     ModelMessageRole.tool => 'user',
   };
+}
+
+Object _openAiContent(ModelMessage message) {
+  if (!message.hasStructuredContent) {
+    return message.content;
+  }
+  return message.contentParts.map(_openAiContentPart).toList(growable: false);
+}
+
+Map<String, Object?> _openAiContentPart(ModelContentPart part) {
+  return switch (part.kind) {
+    ModelContentPartKind.text => <String, Object?>{
+      'type': 'text',
+      'text': part.text ?? '',
+    },
+    ModelContentPartKind.inlineImage => <String, Object?>{
+      'type': 'image_url',
+      'image_url': <String, Object?>{
+        'url': _dataUrl(part.mimeType, part.dataBase64),
+      },
+    },
+  };
+}
+
+Object _anthropicContent(ModelMessage message) {
+  if (!message.hasStructuredContent) {
+    return message.content;
+  }
+  return message.contentParts
+      .map(_anthropicContentPart)
+      .toList(growable: false);
+}
+
+Map<String, Object?> _anthropicContentPart(ModelContentPart part) {
+  return switch (part.kind) {
+    ModelContentPartKind.text => <String, Object?>{
+      'type': 'text',
+      'text': part.text ?? '',
+    },
+    ModelContentPartKind.inlineImage => <String, Object?>{
+      'type': 'image',
+      'source': <String, Object?>{
+        'type': 'base64',
+        'media_type': part.mimeType ?? 'application/octet-stream',
+        'data': part.dataBase64 ?? '',
+      },
+    },
+  };
+}
+
+String _dataUrl(String? mimeType, String? dataBase64) {
+  return 'data:${mimeType ?? 'application/octet-stream'};base64,${dataBase64 ?? ''}';
 }
 
 Future<ModelProviderHttpResponse> _sendRequest(

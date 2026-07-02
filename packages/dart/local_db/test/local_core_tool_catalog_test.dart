@@ -1251,6 +1251,7 @@ void _seedMediaSources(WideNoteLocalDatabase database, DateTime now) {
         mimeType: 'image/jpeg',
         storagePath: '/Users/guangmo/media/image.jpg',
         sha256: 'sha-image',
+        status: 'ready',
         createdAt: now,
         updatedAt: now,
       ),

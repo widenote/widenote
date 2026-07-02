@@ -12,16 +12,7 @@ final class RuntimeModelClientAdapter implements runtime.ModelClient {
   Future<runtime.ModelResponse> complete(runtime.ModelRequest request) async {
     final ModelResponse response;
     try {
-      response = await provider.complete(
-        ModelRequest.text(
-          request.prompt,
-          model: model,
-          requiredCapabilities: const <ModelCapability>{
-            ModelCapability.completion,
-          },
-          metadata: request.context,
-        ),
-      );
+      response = await provider.complete(_providerRequest(request));
     } catch (error) {
       throw RuntimeModelProviderException(
         providerId: provider.id,
@@ -44,6 +35,42 @@ final class RuntimeModelClientAdapter implements runtime.ModelClient {
       },
     );
   }
+
+  ModelRequest _providerRequest(runtime.ModelRequest request) {
+    if (!request.hasAttachments) {
+      return ModelRequest.text(
+        request.prompt,
+        model: model,
+        requiredCapabilities: const <ModelCapability>{
+          ModelCapability.completion,
+        },
+        metadata: request.context,
+      );
+    }
+    return ModelRequest.multimodal(
+      request.prompt,
+      model: model,
+      metadata: request.context,
+      parts: request.attachments
+          .map(
+            (attachment) => ModelContentPart.inlineImage(
+              mimeType: attachment.mimeType,
+              dataBase64: attachment.dataBase64,
+              sourceRef: _safeSourceRef(attachment.sourceRef),
+            ),
+          )
+          .toList(growable: false),
+    );
+  }
+}
+
+Map<String, Object?> _safeSourceRef(Map<String, Object?> value) {
+  final kind = value['kind'];
+  final id = value['id'];
+  return <String, Object?>{
+    if (kind is String && kind.trim().isNotEmpty) 'kind': kind.trim(),
+    if (id is String && id.trim().isNotEmpty) 'id': id.trim(),
+  };
 }
 
 final class RuntimeModelProviderException implements Exception {

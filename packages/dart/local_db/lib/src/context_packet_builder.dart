@@ -390,7 +390,9 @@ final class ContextPacketBuilder {
       final attachments = <AttachmentRecord>[];
       for (final captureId in captureIds) {
         attachments.addAll(
-          _database.attachments.readByCapture(captureId, status: 'available'),
+          _database.attachments
+              .readByCapture(captureId)
+              .where(_isReadableAttachment),
         );
       }
       attachments.sort(_compareUpdatedDesc);
@@ -1592,6 +1594,13 @@ bool _isLiveTodo(TodoRecord todo) {
 
 bool _isReadyArtifact(DerivedArtifactRecord artifact) {
   return artifact.status == 'active' || artifact.status == 'ready';
+}
+
+bool _isReadableAttachment(AttachmentRecord attachment) {
+  return switch (attachment.status) {
+    'active' || 'available' || 'ready' => true,
+    _ => false,
+  };
 }
 
 const _terminalStatuses = <String>{
