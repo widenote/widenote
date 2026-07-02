@@ -7,6 +7,7 @@ import 'json.dart';
 import 'json_codec.dart';
 import 'migration.dart';
 import 'models.dart';
+import 'runtime_run_mode_codec.dart';
 
 const _eventLogSection = 'event_log';
 const _capturesSection = 'captures';
@@ -54,7 +55,6 @@ enum LocalBackupMode {
   encryptedFull('encrypted_full');
 
   const LocalBackupMode(this.wireName);
-
   final String wireName;
 
   static LocalBackupMode fromWireName(String value) {
@@ -1240,7 +1240,6 @@ TodoRecord _todoFromJson(JsonMap json) {
     updatedAt: _requiredDateTime(json, 'updated_at'),
   );
 }
-
 JsonMap _runtimeTaskToJson(RuntimeTaskRecord task) {
   return <String, Object?>{
     'id': task.id,
@@ -1253,6 +1252,7 @@ JsonMap _runtimeTaskToJson(RuntimeTaskRecord task) {
     'trigger_event_id': task.triggerEventId,
     'identity_key': task.effectiveIdentityKey,
     'status': task.status,
+    'run_mode': storedRuntimeRunMode(task.payload, runtimeTaskRunModeKey),
     'dependency_task_ids': task.dependencyTaskIds,
     'missing_dependency_ids': task.missingDependencyIds,
     'attempts': task.attempts,
@@ -1267,7 +1267,6 @@ JsonMap _runtimeTaskToJson(RuntimeTaskRecord task) {
     'updated_at': _dateTimeToJson(task.updatedAt),
   };
 }
-
 RuntimeTaskRecord _runtimeTaskFromJson(JsonMap json) {
   return RuntimeTaskRecord(
     id: _requiredString(json, 'id'),
@@ -1289,12 +1288,11 @@ RuntimeTaskRecord _runtimeTaskFromJson(JsonMap json) {
     scheduledAt: _optionalDateTime(json, 'scheduled_at'),
     concurrencyKey: _optionalString(json, 'concurrency_key'),
     error: _optionalString(json, 'error'),
-    payload: _requiredMap(json, 'payload'),
+    payload: _runtimePayload(json, runtimeTaskRunModeKey),
     createdAt: _requiredDateTime(json, 'created_at'),
     updatedAt: _requiredDateTime(json, 'updated_at'),
   );
 }
-
 JsonMap _runtimeRunToJson(RuntimeRunRecord run) {
   return <String, Object?>{
     'id': run.id,
@@ -1305,6 +1303,7 @@ JsonMap _runtimeRunToJson(RuntimeRunRecord run) {
     'agent_id': run.agentId,
     'handler_id': run.handlerId,
     'status': run.status,
+    'run_mode': storedRuntimeRunMode(run.payload, runtimeRunModeKey),
     'attempt': run.attempt,
     'output_event_ids': run.outputEventIds,
     'error': run.error,
@@ -1313,7 +1312,6 @@ JsonMap _runtimeRunToJson(RuntimeRunRecord run) {
     'completed_at': _optionalDateTimeToJson(run.completedAt),
   };
 }
-
 RuntimeRunRecord _runtimeRunFromJson(JsonMap json) {
   return RuntimeRunRecord(
     id: _requiredString(json, 'id'),
@@ -1327,12 +1325,14 @@ RuntimeRunRecord _runtimeRunFromJson(JsonMap json) {
     attempt: _requiredInt(json, 'attempt'),
     outputEventIds: _requiredList(json, 'output_event_ids'),
     error: _optionalString(json, 'error'),
-    payload: _requiredMap(json, 'payload'),
+    payload: _runtimePayload(json, runtimeRunModeKey),
     startedAt: _requiredDateTime(json, 'started_at'),
     completedAt: _optionalDateTime(json, 'completed_at'),
   );
 }
-
+JsonMap _runtimePayload(JsonMap json, String key) {
+  return payloadWithRuntimeRunMode(_requiredMap(json, 'payload'), key, _optionalString(json, 'run_mode'));
+}
 JsonMap _packInstallationToJson(PackInstallationRecord installation) {
   return <String, Object?>{
     'pack_id': installation.packId,

@@ -1,0 +1,74 @@
+{
+  "line_limit": 800,
+  "description": "Existing production source files over the 800-line budget. This is a ratchet baseline: max_lines must not increase, and entries must be removed once files are at or below the limit.",
+  "files": {
+    "packages/dart/local_db/lib/src/core_tool_catalog.dart": {
+      "max_lines": 2965,
+      "reason": "Existing local core tool catalog debt; split by tool domain before adding broad behavior."
+    },
+    "packages/dart/agent_runtime/lib/src/kernel.dart": {
+      "max_lines": 2728,
+      "reason": "Existing runtime kernel debt; split run orchestration, scheduling, and trace paths before adding broad behavior."
+    },
+    "packages/dart/local_db/lib/src/backup_export.dart": {
+      "max_lines": 1803,
+      "reason": "Existing backup/export flow debt; split archive staging and export policy paths before adding broad behavior."
+    },
+    "packages/dart/local_db/lib/src/context_packet_builder.dart": {
+      "max_lines": 1736,
+      "reason": "Existing context packet builder debt; split source selection and projection assembly before adding broad behavior."
+    },
+    "apps/mobile/lib/features/capture/application/capture_orchestrator.dart": {
+      "max_lines": 1971,
+      "reason": "Existing capture orchestration debt; split runtime event, Memory, card, insight, and todo phases before adding broad behavior."
+    },
+    "packages/dart/agent_runtime/lib/src/pack.dart": {
+      "max_lines": 1562,
+      "reason": "Existing pack model/registry debt; split manifest parsing, registry state, and subscription matching before adding broad behavior."
+    },
+    "tools/pack_validator/validate.mjs": {
+      "max_lines": 1454,
+      "reason": "Existing validator debt; split marketplace, tool-safety, and manifest-shape checks before adding broad behavior."
+    },
+    "packages/dart/agent_runtime/lib/src/delegation.dart": {
+      "max_lines": 1293,
+      "reason": "Existing delegation loop debt; split planning, execution, and artifact handling before adding broad behavior."
+    },
+    "packages/dart/local_db/lib/src/models.dart": {
+      "max_lines": 1261,
+      "reason": "Existing local model type debt; split model families before adding broad behavior."
+    },
+    "apps/mobile/lib/features/model_providers/presentation/model_provider_settings_page.dart": {
+      "max_lines": 1144,
+      "reason": "Existing model-provider settings UI debt; split dialogs, list sections, and testable widgets before adding broad behavior."
+    },
+    "apps/mobile/lib/features/chat/presentation/chat_page.dart": {
+      "max_lines": 1338,
+      "reason": "Existing chat page UI debt; split composer, message list, session controls, and detail panels before adding broad behavior."
+    },
+    "apps/mobile/lib/features/backup/application/backup_controller.dart": {
+      "max_lines": 1000,
+      "reason": "Existing backup controller debt; split export, import, restore, and platform-open coordination before adding broad behavior."
+    },
+    "packages/dart/local_db/lib/src/runtime_adapters.dart": {
+      "max_lines": 1082,
+      "reason": "Existing runtime adapter debt; split event, tool, and persistence adapters before adding broad behavior."
+    },
+    "apps/mobile/lib/features/traces/presentation/trace_console_page.dart": {
+      "max_lines": 1086,
+      "reason": "Existing trace console UI debt; split filters, detail panes, and event renderers before adding broad behavior."
+    },
+    "apps/mobile/lib/features/capture/application/local_capture_read_model.dart": {
+      "max_lines": 949,
+      "reason": "Existing capture read-model debt; split capture persistence, artifact projection, and todo projection before adding broad behavior."
+    },
+    "apps/mobile/lib/features/capture/presentation/home_page.dart": {
+      "max_lines": 810,
+      "reason": "Existing capture home UI debt; split capture composer, timeline preview, and processing state sections before adding broad behavior."
+    },
+    "apps/mobile/lib/features/traces/application/trace_console_controller.dart": {
+      "max_lines": 803,
+      "reason": "Existing trace console controller debt; split query state, filtering, and raw trace detail loading before adding broad behavior."
+    }
+  }
+}

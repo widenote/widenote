@@ -26,7 +26,52 @@ enum ModelProviderConfigIssue {
   missingApiKey,
 }
 
+ModelProviderKind modelProviderKindFromWireName(String value) {
+  final normalized = value.replaceAll('-', '_');
+  return switch (normalized) {
+    'openai' || 'open_ai' || 'openAi' => ModelProviderKind.openAi,
+    'anthropic' => ModelProviderKind.anthropic,
+    'gemini' => ModelProviderKind.gemini,
+    'openrouter' ||
+    'open_router' ||
+    'openRouter' => ModelProviderKind.openRouter,
+    'deepseek' || 'deep_seek' || 'deepSeek' => ModelProviderKind.deepSeek,
+    'kimi' => ModelProviderKind.kimi,
+    'qwen' => ModelProviderKind.qwen,
+    'doubao' => ModelProviderKind.doubao,
+    'zhipu' => ModelProviderKind.zhipu,
+    'minimax' || 'mini_max' || 'miniMax' => ModelProviderKind.miniMax,
+    'mimo' => ModelProviderKind.mimo,
+    'ollama' => ModelProviderKind.ollama,
+    'openai_compatible' ||
+    'open_ai_compatible' ||
+    'openAiCompatible' => ModelProviderKind.openAiCompatible,
+    'anthropic_compatible' ||
+    'anthropicCompatible' => ModelProviderKind.anthropicCompatible,
+    _ => throw StateError('Unknown model provider kind: $value'),
+  };
+}
+
 extension ModelProviderKindDetails on ModelProviderKind {
+  String get wireName {
+    return switch (this) {
+      ModelProviderKind.openAi => 'openai',
+      ModelProviderKind.anthropic => 'anthropic',
+      ModelProviderKind.gemini => 'gemini',
+      ModelProviderKind.openRouter => 'openrouter',
+      ModelProviderKind.deepSeek => 'deepseek',
+      ModelProviderKind.kimi => 'kimi',
+      ModelProviderKind.qwen => 'qwen',
+      ModelProviderKind.doubao => 'doubao',
+      ModelProviderKind.zhipu => 'zhipu',
+      ModelProviderKind.miniMax => 'minimax',
+      ModelProviderKind.mimo => 'mimo',
+      ModelProviderKind.ollama => 'ollama',
+      ModelProviderKind.openAiCompatible => 'openai_compatible',
+      ModelProviderKind.anthropicCompatible => 'anthropic_compatible',
+    };
+  }
+
   String get label {
     return switch (this) {
       ModelProviderKind.openAiCompatible => 'OpenAI-compatible',
@@ -223,13 +268,13 @@ final class ModelProviderConfig {
   Map<String, Object?> toSafeJson() {
     return <String, Object?>{
       'id': id,
-      'kind': kind.name,
+      'kind': kind.wireName,
       'display_name': displayName,
       'endpoint': endpoint.toString(),
       'model': model,
       'max_output_tokens': maxOutputTokens,
       'capabilities': capabilities
-          .map((capability) => capability.name)
+          .map((capability) => capability.wireName)
           .toList(),
       'has_api_key': apiKey.trim().isNotEmpty,
     };

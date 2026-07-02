@@ -6,8 +6,8 @@
   "pack_id": "pack.synthetic_contract",
   "agent_id": "agent.synthetic_capture",
   "routing_policy": "fixed_provider",
-  "provider_ref": "provider.fake.synthetic",
-  "model_ref": "fake-chat",
+  "provider_ref": "provider.ollama.synthetic",
+  "model_ref": "qwen2.5:7b",
   "required_capabilities": [
     "chat",
     "completion"

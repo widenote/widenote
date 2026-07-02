@@ -56,12 +56,11 @@ final class CapabilityBudget {
   final int? maxOutputTokens;
   final int? maxTotalTokens;
   final double? maxEstimatedCostUsd;
-
   JsonMap toJson() {
     return <String, Object?>{
       'allowed_tools': allowedTools.toList()..sort(),
       'source_refs': sourceRefs.map((ref) => ref.toJson()).toList(),
-      'run_mode': runMode.name,
+      'run_mode': runMode.wireName,
       'max_duration_ms': maxDuration.inMilliseconds,
       'max_tool_calls': maxToolCalls,
       'max_input_tokens': maxInputTokens,
@@ -324,33 +323,30 @@ final class DelegationPlanner {
         ),
       );
     }
-
     if (_runModeRank(child.runMode) > _runModeRank(parent.runMode)) {
       violations.add(
         DelegationViolation(
           code: 'run_mode_escalation',
           message: 'Child run mode cannot be wider than parent run mode.',
           details: <String, Object?>{
-            'parent_run_mode': parent.runMode.name,
-            'child_run_mode': child.runMode.name,
+            'parent_run_mode': parent.runMode.wireName,
+            'child_run_mode': child.runMode.wireName,
           },
         ),
       );
     }
-
     if (_runModeRank(child.runMode) > _runModeRank(preset.defaultRunMode)) {
       violations.add(
         DelegationViolation(
           code: 'preset_run_mode_escalation',
           message: 'Child run mode cannot exceed preset default run mode.',
           details: <String, Object?>{
-            'preset_run_mode': preset.defaultRunMode.name,
-            'child_run_mode': child.runMode.name,
+            'preset_run_mode': preset.defaultRunMode.wireName,
+            'child_run_mode': child.runMode.wireName,
           },
         ),
       );
     }
-
     _checkReadOnlyToolSafety(violations, parent: parent, child: child);
 
     final sourceRefsOutsideParent = _sourceRefsOutside(
@@ -860,7 +856,8 @@ final class DelegationExecutor {
       );
     }
 
-    final childTask = _createChildTask(request, preset);
+    final childRunMode = plan.effectiveChildBudget.runMode;
+    final childTask = _createChildTask(request, preset, childRunMode);
     final childRun = _createChildRun(
       request,
       childTask,
@@ -1017,6 +1014,7 @@ final class DelegationExecutor {
   RuntimeTask _createChildTask(
     DelegationExecutionRequest request,
     ChildAgentPreset preset,
+    RunMode runMode,
   ) {
     final now = clock.now();
     return RuntimeTask(
@@ -1031,6 +1029,7 @@ final class DelegationExecutor {
       status: RuntimeTaskStatus.running,
       createdAt: now,
       updatedAt: now,
+      runMode: runMode,
       attempts: 1,
       maxAttempts: 1,
     );

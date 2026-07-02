@@ -1,0 +1,46 @@
+name: Validation
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  validation:
+    name: Schema, packs, and guardrails
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check whitespace in changed files
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "${{ github.base_ref }}" ]]; then
+            git diff --check "origin/${{ github.base_ref }}...HEAD"
+          else
+            git diff-tree --check --no-commit-id --root -r HEAD
+          fi
+
+      - name: Validate schema fixtures
+        run: node packages/schemas/validate_fixtures.mjs
+
+      - name: Validate Agent Pack manifests
+        run: |
+          node tools/pack_validator/validate_test.mjs
+          node tools/pack_validator/validate.mjs \
+            packs/official/default/manifest.json \
+            packs/official/todo/manifest.json \
+            packs/official/pkm_library/manifest.json \
+            packs/official/transcript_correction/manifest.json \
+            packs/marketplace/index.json
+
+      - name: Check file complexity budget
+        run: node tools/check_file_complexity.mjs

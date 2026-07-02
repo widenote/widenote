@@ -117,7 +117,12 @@ void main() {
   testWidgets('background voice starts, blocks save, stops, then saves', (
     tester,
   ) async {
-    await _pumpApp(tester, voiceAdapter: const _NoPreviewVoiceAdapter());
+    final database = WideNoteLocalDatabase.inMemory();
+    await _pumpApp(
+      tester,
+      database: database,
+      voiceAdapter: const _NoPreviewVoiceAdapter(),
+    );
 
     await _startBackgroundRecording(tester);
 
@@ -179,7 +184,35 @@ void main() {
     final state = _readCaptureState(tester);
     expect(
       state.records.single.body,
-      contains('This should wait for the recording to stop.'),
+      'This should wait for the recording to stop.',
+    );
+    expect(state.records.single.body, isNot(contains('Live preview text')));
+    final storedCapture = database.captures.readAll().single;
+    expect(
+      storedCapture.payload['text'],
+      'This should wait for the recording to stop.',
+    );
+    final transcriptArtifact = database.derivedArtifacts
+        .readAll(artifactKind: 'audio_transcript')
+        .single;
+    expect(transcriptArtifact.body, 'Live preview text');
+    expect(
+      transcriptArtifact.sourceRefs.whereType<Map>().any(
+        (ref) => ref['kind'] == 'capture' && ref['id'] == storedCapture.id,
+      ),
+      isTrue,
+    );
+    expect(
+      transcriptArtifact.sourceRefs.whereType<Map>().any(
+        (ref) => ref['kind'] == 'attachment' && ref['id'] == attachment.id,
+      ),
+      isTrue,
+    );
+    expect(
+      transcriptArtifact.sourceRefs.whereType<Map>().any(
+        (ref) => ref['kind'] == 'event',
+      ),
+      isTrue,
     );
     expect(_readCaptureInputState(tester).attachments, isEmpty);
   });
@@ -404,7 +437,7 @@ void main() {
     expect(vision.body, contains('whiteboard snapshot'));
     expect(
       vision.sourceRefs.whereType<Map>().any(
-        (ref) => ref['kind'] == 'file' && ref['id'] == attachment.id,
+        (ref) => ref['kind'] == 'attachment' && ref['id'] == attachment.id,
       ),
       isTrue,
     );

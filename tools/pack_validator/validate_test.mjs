@@ -503,6 +503,7 @@ const officialManifestPaths = [
   "../../packs/official/default/manifest.json",
   "../../packs/official/todo/manifest.json",
   "../../packs/official/pkm_library/manifest.json",
+  "../../packs/official/transcript_correction/manifest.json",
 ].map((path) => fileURLToPath(new URL(path, import.meta.url)));
 
 for (const manifestPath of officialManifestPaths) {

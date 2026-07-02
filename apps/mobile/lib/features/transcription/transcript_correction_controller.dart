@@ -24,11 +24,7 @@ final class TranscriptCorrectionPatch {
   final String reason;
   final bool requiresReview;
 
-  bool get canAutoApply =>
-      confidence == 'high' &&
-      !requiresReview &&
-      !_meaningSensitive(from) &&
-      !_meaningSensitive(to);
+  bool get canAutoApply => confidence == 'high' && !requiresReview;
 
   Map<String, Object?> toJson() {
     return <String, Object?>{
@@ -148,6 +144,15 @@ $transcript
 ''';
 }
 
+const _validConfidences = <String>{'high', 'medium', 'low'};
+
+const _validReasons = <String>{
+  'term_memory',
+  'user_glossary',
+  'context_consistency',
+  'model_guess',
+};
+
 List<TranscriptCorrectionPatch> _parsePatches(String value, String transcript) {
   try {
     final decoded = _decodePatchJson(value);
@@ -163,22 +168,33 @@ List<TranscriptCorrectionPatch> _parsePatches(String value, String transcript) {
       final from = _string(item['from']);
       final to = _string(item['to']);
       final span = item['span'];
-      final start = span is Map ? _int(span['start']) : null;
-      final end = span is Map ? _int(span['end']) : null;
-      final confidence = _string(item['confidence']) ?? 'low';
-      final reason = _string(item['reason']) ?? 'model_guess';
-      final requiresReview = item['requires_review'] != false;
+      final spanStart = span is Map ? span['start'] : null;
+      final spanEnd = span is Map ? span['end'] : null;
+      final start = _int(spanStart);
+      final end = _int(spanEnd);
+      final confidence = _string(item['confidence']);
+      final reason = _string(item['reason']);
+      final modelRequiresReview = item['requires_review'];
       if (from == null || to == null) {
         continue;
       }
+      final validationRequiresReview =
+          confidence == null ||
+          !_validConfidences.contains(confidence) ||
+          reason == null ||
+          !_validReasons.contains(reason) ||
+          modelRequiresReview is! bool ||
+          spanStart is! int ||
+          spanEnd is! int ||
+          start == null ||
+          end == null ||
+          start < 0 ||
+          end < start ||
+          end > transcript.length ||
+          transcript.substring(start, end) != from;
       var resolvedStart = start;
       var resolvedEnd = end;
-      if (resolvedStart == null ||
-          resolvedEnd == null ||
-          resolvedStart < 0 ||
-          resolvedEnd < resolvedStart ||
-          resolvedEnd > transcript.length ||
-          transcript.substring(resolvedStart, resolvedEnd) != from) {
+      if (validationRequiresReview) {
         final fallbackStart = transcript.indexOf(from);
         if (fallbackStart < 0) {
           continue;
@@ -190,11 +206,14 @@ List<TranscriptCorrectionPatch> _parsePatches(String value, String transcript) {
         TranscriptCorrectionPatch(
           from: from,
           to: to,
-          start: resolvedStart,
-          end: resolvedEnd,
-          confidence: confidence,
-          reason: reason,
-          requiresReview: requiresReview,
+          start: resolvedStart!,
+          end: resolvedEnd!,
+          confidence: _validConfidences.contains(confidence)
+              ? confidence!
+              : 'low',
+          reason: _validReasons.contains(reason) ? reason! : 'model_guess',
+          requiresReview:
+              validationRequiresReview || modelRequiresReview != false,
         ),
       );
     }
@@ -268,10 +287,6 @@ Map<String, Object?> _evidence({
   };
 }
 
-bool _meaningSensitive(String text) {
-  return RegExp(r'\d|sk-|AKIA|password|密码|金额|诊断|合同').hasMatch(text);
-}
-
 String? _string(Object? value) {
   if (value is String && value.trim().isNotEmpty) {
     return value.trim();
@@ -282,12 +297,6 @@ String? _string(Object? value) {
 int? _int(Object? value) {
   if (value is int) {
     return value;
-  }
-  if (value is num) {
-    return value.toInt();
-  }
-  if (value is String) {
-    return int.tryParse(value);
   }
   return null;
 }

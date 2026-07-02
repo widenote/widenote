@@ -55,7 +55,7 @@ final class LocalCaptureReadModelStore {
     for (final attachment in attachments) {
       _database.attachments.save(_attachmentRecord(record, attachment));
       for (final artifact in _attachmentArtifacts(record, attachment)) {
-        if (_shouldPreserveExistingArtifact(artifact)) {
+        if (_preserveExistingTranscriptArtifact(artifact)) {
           continue;
         }
         _database.derivedArtifacts.save(artifact);
@@ -138,7 +138,9 @@ final class LocalCaptureReadModelStore {
     });
   }
 
-  bool _shouldPreserveExistingArtifact(localdb.DerivedArtifactRecord artifact) {
+  bool _preserveExistingTranscriptArtifact(
+    localdb.DerivedArtifactRecord artifact,
+  ) {
     if (artifact.artifactKind != 'audio_transcript') {
       return false;
     }
@@ -146,7 +148,24 @@ final class LocalCaptureReadModelStore {
     if (existing == null || existing.status != 'active') {
       return false;
     }
-    return existing.payload['provider_id'] is String;
+    if (existing.payload['provider_id'] is! String) {
+      return false;
+    }
+    final mergedSourceRefs = _mergeSourceRefs(
+      existing.sourceRefs,
+      artifact.sourceRefs,
+    );
+    if (artifact.sourceEventId != null ||
+        !_sourceRefsEqual(mergedSourceRefs, existing.sourceRefs)) {
+      _database.derivedArtifacts.save(
+        existing.copyWith(
+          sourceEventId: existing.sourceEventId ?? artifact.sourceEventId,
+          sourceRefs: mergedSourceRefs,
+          updatedAt: DateTime.now().toUtc(),
+        ),
+      );
+    }
+    return true;
   }
 }
 
@@ -515,15 +534,15 @@ localdb.DerivedArtifactRecord _artifactRecord({
     <String, Object?>{
       'kind': 'capture',
       'id': record.id,
-      if (record.sourceEventId != null) 'event_id': record.sourceEventId,
       'excerpt': _excerpt(record.body),
     },
     <String, Object?>{
-      'kind': 'file',
+      'kind': 'attachment',
       'id': attachment.id,
-      if (record.sourceEventId != null) 'event_id': record.sourceEventId,
       'excerpt': _excerpt(attachment.previewText),
     },
+    if (record.sourceEventId != null)
+      <String, Object?>{'kind': 'event', 'id': record.sourceEventId},
   ];
   return localdb.DerivedArtifactRecord(
     id: _artifactId(record.id, attachment.id, artifactKind),
@@ -657,6 +676,36 @@ String _excerpt(String value) {
     return text;
   }
   return '${text.substring(0, 117)}...';
+}
+
+List<Object?> _mergeSourceRefs(List<Object?> current, List<Object?> incoming) {
+  final refs = <Object?>[];
+  final seen = <String>{};
+  for (final ref in <Object?>[...current, ...incoming]) {
+    if (ref is! Map) {
+      refs.add(ref);
+      continue;
+    }
+    final kind = _string(ref['kind']);
+    final id = _string(ref['id']);
+    final key = kind == null || id == null ? jsonEncode(ref) : '$kind:$id';
+    if (seen.add(key)) {
+      refs.add(ref.cast<String, Object?>());
+    }
+  }
+  return List<Object?>.unmodifiable(refs);
+}
+
+bool _sourceRefsEqual(List<Object?> left, List<Object?> right) {
+  if (left.length != right.length) {
+    return false;
+  }
+  for (var index = 0; index < left.length; index += 1) {
+    if (jsonEncode(left[index]) != jsonEncode(right[index])) {
+      return false;
+    }
+  }
+  return true;
 }
 
 CaptureRecord _captureView(localdb.CaptureRecord record) {

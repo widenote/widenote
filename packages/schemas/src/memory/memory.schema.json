@@ -26,6 +26,8 @@
             "event",
             "record",
             "capture",
+            "attachment",
+            "transcript",
             "memory",
             "card",
             "insight",
@@ -132,7 +134,6 @@
       "type": "string",
       "enum": [
         "transient",
-        "session",
         "durable"
       ]
     },
@@ -190,7 +191,6 @@
           "type": "string",
           "enum": [
             "pending",
-            "proposed",
             "auto_accepted",
             "needs_review",
             "accepted",

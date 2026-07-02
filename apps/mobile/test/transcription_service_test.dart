@@ -40,10 +40,21 @@ void main() {
       expect(artifact.payload['provider_id'], 'fake_local');
       expect(
         artifact.sourceRefs.whereType<Map>().any(
+          (ref) => ref['kind'] == 'capture' && ref['id'] == 'capture-1',
+        ),
+        isTrue,
+      );
+      expect(
+        artifact.sourceRefs.whereType<Map>().any(
+          (ref) => ref['kind'] == 'attachment' && ref['id'] == 'voice-1',
+        ),
+        isTrue,
+      );
+      expect(
+        artifact.sourceRefs.whereType<Map>().any(
           (ref) =>
-              ref['kind'] == 'file' &&
-              ref['id'] == 'voice-1' &&
-              ref['sha256'] == 'voice-sha',
+              ref['kind'] == 'event' &&
+              ref['id'] == 'transcript.voice-1.fake_local',
         ),
         isTrue,
       );
@@ -180,10 +191,7 @@ void main() {
       expect(artifact.payload['correction_auto_applied'], isTrue);
       expect(
         artifact.sourceRefs.whereType<Map>().any(
-          (ref) =>
-              ref['kind'] == 'correction_event' &&
-              ref['id'] == 'correction.voice-1' &&
-              ref['pack_id'] == 'pack.transcript_correction',
+          (ref) => ref['kind'] == 'event' && ref['id'] == 'correction.voice-1',
         ),
         isTrue,
       );
@@ -384,7 +392,7 @@ void _seedVoiceAttachment(
       body: 'Transcript pending.',
       sourceRefs: <Object?>[
         <String, Object?>{'kind': 'capture', 'id': 'capture-1'},
-        <String, Object?>{'kind': 'file', 'id': attachmentId},
+        <String, Object?>{'kind': 'attachment', 'id': attachmentId},
       ],
       generatorId: 'pending',
       generatorVersion: 'pending',

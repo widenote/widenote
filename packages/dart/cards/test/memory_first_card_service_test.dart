@@ -115,7 +115,7 @@ void main() {
       expect(bundle.insights[3].metadata['source_kinds'], isA<Map>());
     });
 
-    test('derives action and attachment evidence insights', () {
+    test('does not infer semantic insights from local text keywords', () {
       final bundle = service.generate(
         MemoryFirstCardInput(
           now: DateTime.utc(2026, 6, 24, 12),
@@ -138,24 +138,24 @@ void main() {
 
       expect(
         bundle.insights.map((insight) => insight.kind),
-        containsAll(<MemoryFirstInsightKind>[
-          MemoryFirstInsightKind.actionPattern,
-          MemoryFirstInsightKind.attachmentEvidence,
-        ]),
+        isNot(contains(MemoryFirstInsightKind.actionPattern)),
       );
-      final action = bundle.insights.singleWhere(
-        (insight) => insight.kind == MemoryFirstInsightKind.actionPattern,
-      );
-      expect(action.summary, contains('follow-up'));
-      expect(action.metadata['terms'], containsAll(<String>['follow up']));
-
-      final media = bundle.insights.singleWhere(
-        (insight) => insight.kind == MemoryFirstInsightKind.attachmentEvidence,
-      );
-      expect(media.metricValue, 2);
       expect(
-        media.metadata['modalities'],
-        containsAll(<String>['image', 'ocr', 'transcript', 'audio']),
+        bundle.insights.map((insight) => insight.kind),
+        isNot(contains(MemoryFirstInsightKind.attachmentEvidence)),
+      );
+      expect(
+        bundle.insights.map((insight) => insight.kind),
+        <MemoryFirstInsightKind>[
+          MemoryFirstInsightKind.summary,
+          MemoryFirstInsightKind.count,
+          MemoryFirstInsightKind.trend,
+          MemoryFirstInsightKind.sourceMix,
+        ],
+      );
+      expect(
+        bundle.insights.every((insight) => insight.isSourceLinked),
+        isTrue,
       );
     });
 

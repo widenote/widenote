@@ -1,8 +1,15 @@
 # RFC: Mobile Entry Closure
 
-Status: Implemented phase-one slice; current status superseded by W7 integration state
+Status: Implemented phase-one slice; current target-state amendments live in
+current contracts and newer ADRs
 
 Date: 2026-06-25
+
+Current-state note: this RFC records the implemented mobile-entry slice and its
+original deferrals. Use
+[`docs/architecture/current-contracts.md`](../architecture/current-contracts.md)
+plus newer ADRs for current route, backup, transcription, location, provider,
+trace, and permission boundaries.
 
 ## Context
 

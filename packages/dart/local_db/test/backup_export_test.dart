@@ -69,6 +69,18 @@ void main() {
       expect(backup.manifest.recordCounts, containsPair('trace_events', 1));
       expect(backup.modelProviderConfigs.single.hasApiKey, isTrue);
       expect(backup.modelProviderConfigs.single.apiKey, isEmpty);
+      expect(
+        backup.runtimeTasks.single.payload['runtime_task_run_mode'],
+        'confirm',
+      );
+      expect(backup.runtimeRuns.single.payload['runtime_run_mode'], 'confirm');
+      final backupJson = jsonDecode(json) as Map<String, Object?>;
+      final runtimeTaskJson =
+          (backupJson['runtime_tasks']! as List).single as Map;
+      final runtimeRunJson =
+          (backupJson['runtime_runs']! as List).single as Map;
+      expect(runtimeTaskJson['run_mode'], 'confirm');
+      expect(runtimeRunJson['run_mode'], 'confirm');
 
       final target = WideNoteLocalDatabase.inMemory();
       addTearDown(target.close);
@@ -161,10 +173,12 @@ void main() {
       expect(task.packVersion, '0.1.0');
       expect(task.effectiveIdentityKey, contains('pack:pack.default@0.1.0'));
       expect(task.effectiveIdentityKey, contains('handler:agent.capture'));
+      expect(task.payload['runtime_task_run_mode'], 'confirm');
 
       final run = target.runtimeRuns.readById('run-backup')!;
       expect(run.status, 'denied');
       expect(run.taskId, 'task-backup');
+      expect(run.payload['runtime_run_mode'], 'confirm');
 
       final cache = target.contextPacketCaches.readById('cache-backup')!;
       expect(cache.status, 'active');
@@ -1221,6 +1235,7 @@ void _seedBackupSource(WideNoteLocalDatabase database) {
       dependencyTaskIds: const <Object?>[],
       missingDependencyIds: const <Object?>[],
       payload: const <String, Object?>{
+        'runtime_task_run_mode': 'confirm',
         'required_permissions': <String>['model.complete'],
       },
       createdAt: createdAt,
@@ -1238,6 +1253,7 @@ void _seedBackupSource(WideNoteLocalDatabase database) {
       status: 'denied',
       attempt: 1,
       error: 'permission_revoked:model.complete',
+      payload: const <String, Object?>{'runtime_run_mode': 'confirm'},
       startedAt: createdAt,
       completedAt: updatedAt,
     ),

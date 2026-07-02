@@ -5,7 +5,8 @@ status: accepted
 date: 2026-07-02
 owners: [core, mobile, privacy]
 tags: [trace, backup, restore, asr, model-providers, privacy, local-first]
-supersedes: []
+supersedes:
+  - ./0012-accept-voice-transcription-and-correction-boundaries.md
 superseded_by:
 sources:
   - ./0012-accept-voice-transcription-and-correction-boundaries.md
@@ -33,6 +34,10 @@ The product owner clarified four related restore and operations expectations:
 These choices intentionally make local artifacts more complete and more
 sensitive. They need a single accepted record so future agents preserve the
 secret boundary while keeping the product usable after restore.
+
+Supersession note: this ADR partially supersedes ADR-0012's automatic remote
+ASR fallback behavior. It does not replace ADR-0012's source-truth, WAV,
+transcript artifact, backup media, correction Pack, or runtime-tool boundaries.
 
 ## Decision
 

@@ -37,10 +37,34 @@ void main() {
 
       final safeJson = config.toSafeJson();
 
+      expect(safeJson['kind'], 'kimi');
+      expect(safeJson['capabilities'], <String>['chat', 'completion']);
       expect(safeJson['has_api_key'], isTrue);
       expect(safeJson.containsKey('api_key'), isFalse);
       expect(safeJson.containsValue(credential), isFalse);
       expect(config.toString(), isNot(contains(credential)));
+    });
+
+    test('maps public provider and capability wire names with aliases', () {
+      expect(modelProviderKindFromWireName('openai'), ModelProviderKind.openAi);
+      expect(
+        modelProviderKindFromWireName('openAiCompatible'),
+        ModelProviderKind.openAiCompatible,
+      );
+      expect(
+        modelProviderKindFromWireName('deep_seek'),
+        ModelProviderKind.deepSeek,
+      );
+      expect(
+        modelProviderKindFromWireName('miniMax'),
+        ModelProviderKind.miniMax,
+      );
+      expect(ModelProviderKind.openAiCompatible.wireName, 'openai_compatible');
+      expect(ModelProviderKind.miniMax.wireName, 'minimax');
+
+      expect(modelCapabilityFromWireName('tool_use'), ModelCapability.toolUse);
+      expect(modelCapabilityFromWireName('toolUse'), ModelCapability.toolUse);
+      expect(ModelCapability.toolUse.wireName, 'tool_use');
     });
 
     test('presets choose compatibility endpoints and models', () {

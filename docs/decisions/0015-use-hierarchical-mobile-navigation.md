@@ -48,7 +48,7 @@ All other mobile pages are hierarchical child pages with a declared parent:
 | `/timeline` | `/timeline/search`, `/timeline/cards/:cardId`, `/timeline/items/:itemId` |
 | `/chat` | `/chat/session/:sessionId` |
 | `/settings` | `/settings/permissions`, `/settings/model-providers`, `/settings/transcription`, `/settings/location`, `/settings/backup`, `/settings/traces` |
-| `/plugins` | `/plugins/packs`, `/plugins/permissions`, `/plugins/model-providers`, `/plugins/backup`, `/plugins/traces` |
+| `/plugins` | `/plugins/packs` |
 
 UI controls that open a direct child page should use push-style navigation so
 the current stack remains intact. Shortcuts that jump over an intermediate

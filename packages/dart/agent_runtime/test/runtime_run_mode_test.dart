@@ -43,11 +43,19 @@ void main() {
     final denied = traces.singleWhere(
       (trace) => trace.name == 'runtime.tool.run_mode_denied',
     );
-    expect(denied.details['run_mode'], 'readOnly');
+    expect(denied.details['run_mode'], 'read_only');
     expect(denied.details['tool_access'], 'write');
     expect(denied.details['tool_risk'], 'low');
     expect(denied.details['input_keys'], <String>['value']);
     _expectRawToolInput(denied);
+  });
+
+  test('maps run mode public wire names and compatibility aliases', () {
+    expect(RunMode.readOnly.wireName, 'read_only');
+    expect(runModeFromWireName('read_only'), RunMode.readOnly);
+    expect(runModeFromWireName('readOnly'), RunMode.readOnly);
+    expect(runModeFromWireName('confirm'), RunMode.confirm);
+    expect(runModeFromWireName('auto'), RunMode.auto);
   });
 
   test('read-only mode rejects external and high-risk tools', () async {
@@ -658,7 +666,7 @@ final class _ToolCallingHandler implements AgentHandler {
         context.emit(
           type: WnEventTypes.insightCreated,
           payload: <String, Object?>{
-            'run_mode': context.runMode.name,
+            'run_mode': context.runMode.wireName,
             'tool_echo': result.isOk ? result.value['echo'] : null,
             'tool_error': result.isErr ? result.failure.code : null,
           },

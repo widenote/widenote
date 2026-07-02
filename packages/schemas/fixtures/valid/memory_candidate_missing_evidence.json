@@ -7,7 +7,7 @@
   "memory_type": "project",
   "confidence": "medium",
   "sensitivity": "low",
-  "durability": "session",
+  "durability": "durable",
   "status": "needs_review",
   "policy_reasons": [
     "missing_evidence"

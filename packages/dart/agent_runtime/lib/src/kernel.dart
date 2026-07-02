@@ -1031,13 +1031,13 @@ final class RuntimeKernel {
       status: RuntimeTaskStatus.queued,
       createdAt: now,
       updatedAt: now,
+      runMode: request.definition.runMode ?? runMode,
       maxAttempts: request.definition.retryPolicy.normalizedMaxAttempts,
       concurrencyKey: request.definition.concurrencyKey,
     );
   }
 
   RuntimeRun _createRun(RuntimeTask task) {
-    final definition = _packs[task.packId]?.definitionFor(task.agentId);
     final startedAt = clock.now();
     return RuntimeRun(
       id: idGenerator.nextId('run'),
@@ -1048,7 +1048,7 @@ final class RuntimeKernel {
       status: RuntimeRunStatus.running,
       startedAt: startedAt,
       attempt: task.attempts,
-      runMode: definition?.runMode ?? runMode,
+      runMode: task.runMode,
       leaseExpiresAt: startedAt.add(runLeaseDuration),
     );
   }
@@ -1619,7 +1619,7 @@ final class RuntimeKernel {
       details: <String, Object?>{
         'trace_type': 'run_started',
         'attempt': run.attempt,
-        'run_mode': run.runMode.name,
+        'run_mode': run.runMode.wireName,
         'lease_expires_at': run.leaseExpiresAt?.toIso8601String(),
       },
     );
@@ -2537,7 +2537,7 @@ final class _RuntimeToolInvoker implements ToolInvoker {
     return <String, Object?>{
       'trace_type': 'tool',
       'tool_name': name,
-      'run_mode': runMode.name,
+      'run_mode': runMode.wireName,
       'input_keys': inputKeys,
       if (definition != null) ...<String, Object?>{
         'tool_access': definition.access.name,
@@ -2550,7 +2550,7 @@ final class _RuntimeToolInvoker implements ToolInvoker {
         'approval_required': _requiresApprovalForRunMode(definition),
         'required_permissions': _sorted(definition.requiredPermissions),
         'compatible_run_modes': _sorted(
-          definition.compatibleRunModes.map((mode) => mode.name),
+          definition.compatibleRunModes.map((mode) => mode.wireName),
         ),
       },
     };
@@ -2561,7 +2561,7 @@ final class _RuntimeToolInvoker implements ToolInvoker {
       'trace_type': 'approval',
       'approval_request_id': request.id,
       'tool_name': request.toolName,
-      'run_mode': request.runMode.name,
+      'run_mode': request.runMode.wireName,
       'input_keys': request.inputKeys,
       'tool_access': request.toolAccess.name,
       'tool_risk': request.toolRisk.name,
@@ -2580,7 +2580,7 @@ final class _RuntimeToolInvoker implements ToolInvoker {
   ) {
     return <String, Object?>{
       'tool_name': definition.name,
-      'run_mode': runMode.name,
+      'run_mode': runMode.wireName,
       'input_keys': inputKeys,
       'tool_access': definition.access.name,
       'tool_risk': definition.risk.name,
@@ -2592,7 +2592,7 @@ final class _RuntimeToolInvoker implements ToolInvoker {
       'approval_required': _requiresApprovalForRunMode(definition),
       'required_permissions': _sorted(definition.requiredPermissions),
       'compatible_run_modes': _sorted(
-        definition.compatibleRunModes.map((mode) => mode.name),
+        definition.compatibleRunModes.map((mode) => mode.wireName),
       ),
     };
   }

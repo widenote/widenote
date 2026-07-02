@@ -105,7 +105,7 @@ the change crosses module boundaries or user-visible flows.
 | Mobile user journey or platform integration | Run focused Flutter tests and add Android emulator or iOS simulator proof when the behavior is platform-specific or high risk. |
 | Dart runtime, Memory, model routing, local DB, backup, or orchestration | Run package-local `dart analyze` and `dart test`; add orchestration tests for cross-layer flows. |
 | Schemas or schema fixtures | Run `node packages/schemas/validate_fixtures.mjs`; update schema docs and fixtures together. |
-| Agent Pack manifests or permissions | Run `node tools/pack_validator/validate_test.mjs` and `node tools/pack_validator/validate.mjs packs/official/default/manifest.json packs/official/todo/manifest.json`. |
+| Agent Pack manifests or permissions | Run `node tools/pack_validator/validate_test.mjs` and `node tools/pack_validator/validate.mjs packs/official/default/manifest.json packs/official/todo/manifest.json packs/official/pkm_library/manifest.json packs/official/transcript_correction/manifest.json packs/marketplace/index.json`. |
 | Generated artifacts | Regenerate from the documented source of truth; do not hand-edit generated output. |
 | Privacy, secrets, backup, sync, plugin permissions, or high-risk tools | Re-check ADR/RFC triggers and include explicit tests or documentation for permission, redaction, restore, and trace behavior. |
 | GitHub publication | Fetch the latest target branch, update or create the work branch from it, verify the diff, run relevant checks, then push and open a draft PR unless the user asks otherwise. |

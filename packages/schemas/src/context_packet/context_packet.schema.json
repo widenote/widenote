@@ -161,6 +161,8 @@
             "event",
             "record",
             "capture",
+            "attachment",
+            "transcript",
             "memory",
             "card",
             "insight",

@@ -8,6 +8,34 @@ enum ModelCapability {
   toolUse,
 }
 
+extension ModelCapabilityWireName on ModelCapability {
+  String get wireName {
+    return switch (this) {
+      ModelCapability.chat => 'chat',
+      ModelCapability.completion => 'completion',
+      ModelCapability.embedding => 'embedding',
+      ModelCapability.vision => 'vision',
+      ModelCapability.audio => 'audio',
+      ModelCapability.streaming => 'streaming',
+      ModelCapability.toolUse => 'tool_use',
+    };
+  }
+}
+
+ModelCapability modelCapabilityFromWireName(String value) {
+  final normalized = value.replaceAll('-', '_');
+  return switch (normalized) {
+    'chat' => ModelCapability.chat,
+    'completion' => ModelCapability.completion,
+    'embedding' => ModelCapability.embedding,
+    'vision' => ModelCapability.vision,
+    'audio' => ModelCapability.audio,
+    'streaming' => ModelCapability.streaming,
+    'tool_use' || 'toolUse' => ModelCapability.toolUse,
+    _ => throw StateError('Unknown model capability: $value'),
+  };
+}
+
 enum ModelMessageRole { system, user, assistant, tool }
 
 final class ModelMessage {

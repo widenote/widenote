@@ -279,15 +279,8 @@ class CaptureController extends Notifier<CaptureState> {
         currentRecord,
         processingAttachments,
       );
-      final transcriptText = _transcriptText(processingAttachments);
-      final processingBody = _processingBody(
-        typedText: input.typedText,
-        transcriptText: transcriptText,
-        fallbackText: recordBody,
-      );
-      if (processingBody != recordBody) {
+      if (_hasActiveVoiceTranscript(processingAttachments)) {
         final transcriptReadyRecord = currentRecord.copyWith(
-          body: processingBody,
           status: captureStatusTranscriptReady,
         );
         _readModelStore().saveCapture(
@@ -303,7 +296,6 @@ class CaptureController extends Notifier<CaptureState> {
           ),
         );
         currentRecord = transcriptReadyRecord;
-        recordBody = processingBody;
       }
 
       final orchestrator = ref.read(captureOrchestratorProvider);
@@ -501,33 +493,17 @@ class CaptureController extends Notifier<CaptureState> {
     );
   }
 
-  String _transcriptText(List<CaptureAttachment> attachments) {
-    final transcripts = <String>[];
+  bool _hasActiveVoiceTranscript(List<CaptureAttachment> attachments) {
     for (final attachment in attachments) {
       if (attachment.kind != CaptureAssetKind.voice) {
         continue;
       }
-      final transcript = _metadataText(attachment.rawMetadata, 'transcript');
-      if (transcript != null) {
-        transcripts.add(transcript);
+      if (attachment.rawMetadata['transcript_status'] ==
+          TranscriptStatus.active.wireName) {
+        return true;
       }
     }
-    return transcripts.join('\n');
-  }
-
-  String _processingBody({
-    required String typedText,
-    required String transcriptText,
-    required String fallbackText,
-  }) {
-    final parts = <String>[
-      if (typedText.trim().isNotEmpty) typedText.trim(),
-      if (transcriptText.trim().isNotEmpty) transcriptText.trim(),
-    ];
-    if (parts.isEmpty) {
-      return fallbackText;
-    }
-    return parts.join('\n');
+    return false;
   }
 }
 
@@ -538,21 +514,6 @@ final class _QueuedCaptureJob {
 
   final CaptureProcessingInput input;
   final Completer<void> completer = Completer<void>();
-}
-
-String? _metadataText(Map<String, Object?> metadata, String key) {
-  final value = metadata[key];
-  if (value is String && value.trim().isNotEmpty) {
-    return value.trim();
-  }
-  final nested = metadata['adapter_metadata'];
-  if (nested is Map) {
-    final nestedValue = nested[key];
-    if (nestedValue is String && nestedValue.trim().isNotEmpty) {
-      return nestedValue.trim();
-    }
-  }
-  return null;
 }
 
 String _captureFailureMessage(Object error) {

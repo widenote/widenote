@@ -76,10 +76,12 @@ final class AudioAttachmentRef {
     required this.byteLength,
     required this.durationMs,
     required this.localPath,
+    this.sourceEventId,
   });
 
   final String id;
   final String captureId;
+  final String? sourceEventId;
   final String storagePath;
   final String mimeType;
   final String sha256;

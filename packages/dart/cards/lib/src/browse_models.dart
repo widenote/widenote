@@ -52,6 +52,10 @@ final class MemoryFirstTimelineFilter {
     this.kinds = const <MemoryFirstTimelineItemKind>{},
   });
 
+  /// Reserved for model-backed retrieval.
+  ///
+  /// `MemoryFirstBrowseIndex.search` intentionally ignores this value so this
+  /// package does not perform local substring matching over user text.
   final String query;
   final Set<MemoryFirstTimelineItemKind> kinds;
 

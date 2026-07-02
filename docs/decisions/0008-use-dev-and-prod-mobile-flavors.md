@@ -58,6 +58,10 @@ second flavor axis instead of overloading debug and release semantics.
 - Android run and build commands must pass `--flavor dev` or `--flavor prod`.
 - The production Android package identity is `app.widenote`.
 - Development builds use a visible `WideNote Dev` launcher label.
+- Android `devRelease` builds may use debug signing for local QA.
+- Android `prodRelease` builds must use configured release signing from local
+  environment variables or gitignored `key.properties`; they must not silently
+  fall back to debug signing.
 - iOS scheme/config work should follow the same `dev`/`prod` channel model when
   an iOS project is added.
 - Market-specific behavior must remain absent until a later ADR or RFC accepts a
@@ -65,7 +69,6 @@ second flavor axis instead of overloading debug and release semantics.
 
 ## Follow-ups
 
-- Add release signing configuration before publishing `prod`.
 - Add iOS `dev` and `prod` schemes when the iOS project is introduced.
 - Revisit market flavors only when store, provider, compliance, or update policy
   requirements make the split concrete.

@@ -18,7 +18,7 @@ Uses only the Node.js standard library. It must not add repository package depen
 Run the validator with one or more manifest or marketplace index paths:
 
 ```sh
-node tools/pack_validator/validate.mjs packs/official/default/manifest.json packs/official/todo/manifest.json packs/official/pkm_library/manifest.json packs/marketplace/index.json
+node tools/pack_validator/validate.mjs packs/official/default/manifest.json packs/official/todo/manifest.json packs/official/pkm_library/manifest.json packs/official/transcript_correction/manifest.json packs/marketplace/index.json
 ```
 
 Current checks include:
@@ -55,8 +55,8 @@ Validator self-tests:
 node tools/pack_validator/validate_test.mjs
 ```
 
-Self-tests also validate the current official default, todo, PKM manifests, and
-the GitHub-first marketplace index.
+Self-tests also validate the current official default, todo, PKM,
+transcript-correction manifests, and the GitHub-first marketplace index.
 
 ## Generated Artifacts
 
