@@ -42,7 +42,8 @@ abstract interface class TranscriptionModelFileDownloader {
   Future<void> download({
     required Uri url,
     required File destination,
-    required void Function(int receivedBytes, int? totalBytes) onProgress,
+    required FutureOr<void> Function(int receivedBytes, int? totalBytes)
+    onProgress,
   });
 }
 
@@ -54,7 +55,8 @@ final class DartIoTranscriptionModelFileDownloader
   Future<void> download({
     required Uri url,
     required File destination,
-    required void Function(int receivedBytes, int? totalBytes) onProgress,
+    required FutureOr<void> Function(int receivedBytes, int? totalBytes)
+    onProgress,
   }) async {
     final client = HttpClient();
     IOSink? sink;
@@ -74,7 +76,7 @@ final class DartIoTranscriptionModelFileDownloader
       await for (final bytes in response) {
         received += bytes.length;
         sink.add(bytes);
-        onProgress(received, total);
+        await onProgress(received, total);
       }
       await sink.flush();
       await sink.close();
@@ -100,7 +102,17 @@ final class TranscriptionModelDownloadSnapshot {
   final String? errorMessage;
 }
 
-final class TranscriptionDownloadManager {
+abstract interface class TranscriptionModelDownloadController {
+  Future<TranscriptionModelDownloadSnapshot> downloadDefaultModel({
+    FutureOr<void> Function(TranscriptionModelDownloadSnapshot snapshot)?
+    onProgress,
+  });
+
+  Future<void> deleteModel();
+}
+
+final class TranscriptionDownloadManager
+    implements TranscriptionModelDownloadController {
   TranscriptionDownloadManager({
     required Directory supportDirectory,
     required VoiceTranscriptionSettingsRepository settingsRepository,
@@ -170,7 +182,11 @@ final class TranscriptionDownloadManager {
     );
   }
 
-  Future<TranscriptionModelDownloadSnapshot> downloadDefaultModel() async {
+  @override
+  Future<TranscriptionModelDownloadSnapshot> downloadDefaultModel({
+    FutureOr<void> Function(TranscriptionModelDownloadSnapshot snapshot)?
+    onProgress,
+  }) async {
     final settings = await _settingsRepository.load();
     final part = Directory('${modelRoot.path}.part');
     if (part.existsSync()) {
@@ -184,6 +200,12 @@ final class TranscriptionDownloadManager {
         clearError: true,
       ),
     );
+    await _notifyProgress(
+      onProgress,
+      const TranscriptionModelDownloadSnapshot(
+        state: LocalTranscriptionModelState.downloading,
+      ),
+    );
 
     try {
       for (var index = 0; index < _files.length; index += 1) {
@@ -192,8 +214,15 @@ final class TranscriptionDownloadManager {
         await _downloader.download(
           url: Uri.parse(file.url),
           destination: destination,
-          onProgress: (received, total) {
-            unawaited(_saveDownloadProgress(index, received, total));
+          onProgress: (received, total) async {
+            final snapshot = await _saveDownloadProgress(
+              index,
+              received,
+              total,
+            );
+            if (snapshot != null) {
+              await _notifyProgress(onProgress, snapshot);
+            }
           },
         );
       }
@@ -203,6 +232,13 @@ final class TranscriptionDownloadManager {
         verifying.copyWith(
           localModelState: LocalTranscriptionModelState.verifying,
           downloadProgress: 99,
+        ),
+      );
+      await _notifyProgress(
+        onProgress,
+        const TranscriptionModelDownloadSnapshot(
+          state: LocalTranscriptionModelState.verifying,
+          progress: 99,
         ),
       );
       if (modelRoot.existsSync()) {
@@ -221,25 +257,30 @@ final class TranscriptionDownloadManager {
           clearError: true,
         ),
       );
-      return const TranscriptionModelDownloadSnapshot(
+      const snapshot = TranscriptionModelDownloadSnapshot(
         state: LocalTranscriptionModelState.ready,
         progress: 100,
       );
+      await _notifyProgress(onProgress, snapshot);
+      return snapshot;
     } on Object catch (error) {
       final failed = await _settingsRepository.load();
+      final errorMessage = _safeDownloadError(error);
       await _settingsRepository.save(
         failed.copyWith(
           localModelState: LocalTranscriptionModelState.failed,
           lastErrorCode: 'model_download_failed',
-          lastErrorMessage: _safeDownloadError(error),
+          lastErrorMessage: errorMessage,
         ),
       );
-      return TranscriptionModelDownloadSnapshot(
+      final snapshot = TranscriptionModelDownloadSnapshot(
         state: LocalTranscriptionModelState.failed,
         progress: failed.downloadProgress,
         errorCode: 'model_download_failed',
-        errorMessage: _safeDownloadError(error),
+        errorMessage: errorMessage,
       );
+      await _notifyProgress(onProgress, snapshot);
+      return snapshot;
     }
   }
 
@@ -268,6 +309,7 @@ final class TranscriptionDownloadManager {
     );
   }
 
+  @override
   Future<void> deleteModel() async {
     final settings = await _settingsRepository.load();
     await _settingsRepository.save(
@@ -289,7 +331,7 @@ final class TranscriptionDownloadManager {
     );
   }
 
-  Future<void> _saveDownloadProgress(
+  Future<TranscriptionModelDownloadSnapshot?> _saveDownloadProgress(
     int fileIndex,
     int received,
     int? total,
@@ -302,12 +344,22 @@ final class TranscriptionDownloadManager {
     final progress = (fileIndex * fileShare + fileProgress * fileShare)
         .floor()
         .clamp(0, 98);
+    if (settings.localModelState == LocalTranscriptionModelState.downloading &&
+        settings.downloadProgress == progress &&
+        settings.lastErrorCode == null &&
+        settings.lastErrorMessage == null) {
+      return null;
+    }
     await _settingsRepository.save(
       settings.copyWith(
         localModelState: LocalTranscriptionModelState.downloading,
         downloadProgress: progress,
         clearError: true,
       ),
+    );
+    return TranscriptionModelDownloadSnapshot(
+      state: LocalTranscriptionModelState.downloading,
+      progress: progress,
     );
   }
 
@@ -324,6 +376,17 @@ final class TranscriptionDownloadManager {
       }
     }
   }
+}
+
+Future<void> _notifyProgress(
+  FutureOr<void> Function(TranscriptionModelDownloadSnapshot snapshot)?
+  onProgress,
+  TranscriptionModelDownloadSnapshot snapshot,
+) async {
+  if (onProgress == null) {
+    return;
+  }
+  await onProgress(snapshot);
 }
 
 String _safeDownloadError(Object error) {

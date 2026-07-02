@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -7,6 +8,7 @@ import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
 import 'package:widenote_local_db/widenote_local_db.dart' as localdb;
 import 'package:widenote_mobile/app/local_database.dart';
 import 'package:widenote_mobile/features/transcription/presentation/voice_transcription_settings_page.dart';
+import 'package:widenote_mobile/features/transcription/transcription_download_manager.dart';
 import 'package:widenote_mobile/features/transcription/transcription_service.dart';
 import 'package:widenote_mobile/features/transcription/transcription_settings.dart';
 import 'package:widenote_mobile/features/transcription/transcription_types.dart';
@@ -92,6 +94,57 @@ void main() {
     saved = await repository.load();
     expect(saved.engine, VoiceTranscriptionEngine.localSenseVoice);
     expect(saved.remoteConsentGranted, isFalse);
+  });
+
+  testWidgets('local model download renders active percentage', (tester) async {
+    final finishDownload = Completer<void>();
+    addTearDown(() async {
+      if (!finishDownload.isCompleted) {
+        finishDownload.complete();
+      }
+    });
+
+    final repository = MemoryVoiceTranscriptionSettingsRepository();
+    final manager = _FakeDownloadController(
+      settingsRepository: repository,
+      finishDownload: finishDownload,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          voiceTranscriptionSettingsRepositoryProvider.overrideWithValue(
+            repository,
+          ),
+          transcriptionCredentialStoreProvider.overrideWithValue(
+            MemoryTranscriptionCredentialStore(),
+          ),
+          transcriptionDownloadManagerProvider.overrideWithValue(manager),
+        ],
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: VoiceTranscriptionSettingsPage()),
+        ),
+      ),
+    );
+    await _pumpUntilFound(
+      tester,
+      find.byKey(const Key('voice-transcription-settings-page')),
+    );
+
+    final downloadButton = find.byKey(
+      const Key('voice-download-local-model-button'),
+    );
+    await tester.ensureVisible(downloadButton);
+    await tester.pump();
+    await tester.tap(downloadButton);
+    await tester.pump();
+
+    await _pumpUntilFound(tester, find.text('downloading · 50%'));
+
+    finishDownload.complete();
+    await _pumpUntilFound(tester, find.text('ready · 100%'));
   });
 
   testWidgets(
@@ -226,6 +279,21 @@ void main() {
   );
 }
 
+Future<void> _pumpUntilFound(WidgetTester tester, Finder finder) async {
+  for (var attempt = 0; attempt < 40; attempt += 1) {
+    await tester.pump(const Duration(milliseconds: 50));
+    if (finder.evaluate().isNotEmpty) {
+      return;
+    }
+  }
+  final visibleText = tester
+      .widgetList<Text>(find.byType(Text))
+      .map((text) => text.data ?? text.textSpan?.toPlainText())
+      .whereType<String>()
+      .join(' | ');
+  fail('Expected to find $finder. Visible text: $visibleText');
+}
+
 void _seedFailedVoiceTranscript(localdb.WideNoteLocalDatabase database) {
   final now = DateTime.utc(2026, 7, 1, 10);
   database.captures.save(
@@ -335,6 +403,58 @@ final class _FailingTranscriptionProvider
 
   @override
   Future<void> dispose() async {}
+}
+
+final class _FakeDownloadController
+    implements TranscriptionModelDownloadController {
+  const _FakeDownloadController({
+    required this.settingsRepository,
+    required this.finishDownload,
+  });
+
+  final VoiceTranscriptionSettingsRepository settingsRepository;
+  final Completer<void> finishDownload;
+
+  @override
+  Future<TranscriptionModelDownloadSnapshot> downloadDefaultModel({
+    FutureOr<void> Function(TranscriptionModelDownloadSnapshot snapshot)?
+    onProgress,
+  }) async {
+    const downloading = TranscriptionModelDownloadSnapshot(
+      state: LocalTranscriptionModelState.downloading,
+      progress: 50,
+    );
+    await _saveSnapshot(downloading);
+    await onProgress?.call(downloading);
+
+    await finishDownload.future;
+
+    const ready = TranscriptionModelDownloadSnapshot(
+      state: LocalTranscriptionModelState.ready,
+      progress: 100,
+    );
+    await _saveSnapshot(ready);
+    await onProgress?.call(ready);
+    return ready;
+  }
+
+  @override
+  Future<void> deleteModel() async {}
+
+  Future<void> _saveSnapshot(
+    TranscriptionModelDownloadSnapshot snapshot,
+  ) async {
+    final settings = await settingsRepository.load();
+    await settingsRepository.save(
+      settings.copyWith(
+        localModelState: snapshot.state,
+        downloadProgress: snapshot.progress,
+        lastErrorCode: snapshot.errorCode,
+        lastErrorMessage: snapshot.errorMessage,
+        clearError: snapshot.errorCode == null && snapshot.errorMessage == null,
+      ),
+    );
+  }
 }
 
 final class _RemoteTranscriptionProvider implements AudioTranscriptionProvider {

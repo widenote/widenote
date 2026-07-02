@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -199,11 +200,12 @@ final class _FakeModelDownloader implements TranscriptionModelFileDownloader {
   Future<void> download({
     required Uri url,
     required File destination,
-    required void Function(int receivedBytes, int? totalBytes) onProgress,
+    required FutureOr<void> Function(int receivedBytes, int? totalBytes)
+    onProgress,
   }) async {
     await destination.parent.create(recursive: true);
     await destination.writeAsString('fake model file from $url');
-    onProgress(32, 32);
+    await onProgress(32, 32);
   }
 }
 
@@ -215,11 +217,12 @@ final class _FailingModelDownloader
   Future<void> download({
     required Uri url,
     required File destination,
-    required void Function(int receivedBytes, int? totalBytes) onProgress,
+    required FutureOr<void> Function(int receivedBytes, int? totalBytes)
+    onProgress,
   }) async {
     await destination.parent.create(recursive: true);
     await destination.writeAsString('partial');
-    onProgress(7, 32);
+    await onProgress(7, 32);
     throw const SocketException('connection reset');
   }
 }
