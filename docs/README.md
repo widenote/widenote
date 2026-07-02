@@ -24,7 +24,7 @@ historical decisions, rationale, and supersession history, use
 - [Current Architecture Contracts](./architecture/current-contracts.md)
 - [Operational Principles](./architecture/operational-principles.md)
 - [Chat Session Management Plan](./research/2026-07-01-chat-session-management-plan.md)
-- [W7 Current Integration State](./research/2026-06-26-w7-current-integration-state.md)
+- [W7 Current Integration State](./research/2026-06-26-w7-current-integration-state.md) is dated integration evidence; use current contracts for the current target state.
 - [W7 Integration QA](./research/2026-06-26-w7-integration-qa.md)
 - [Cross-Platform Long Conversation Test Plan](./research/2026-06-27-cross-platform-long-conversation-test-plan.md)
 - [Cross-Platform Core Smoke Results](./research/2026-06-27-cross-platform-core-smoke-results.md)
@@ -33,7 +33,7 @@ historical decisions, rationale, and supersession history, use
 - [Local Semantic Rule Audit](./research/2026-06-27-local-semantic-rule-audit.md)
 - [Agent Runtime Roadmap Research](./research/2026-06-27-agent-runtime-roadmap-research.md)
 - [Agent Orchestration Parity](./research/2026-06-27-agent-orchestration-parity.md)
-- [Phase One Technical Plan](./architecture/phase-one-technical-plan.md) is a planning baseline; use W7 current state and the umbrella RFC for current implementation status.
+- [Phase One Technical Plan](./architecture/phase-one-technical-plan.md) is a planning baseline; use current contracts and the umbrella RFC for current target state.
 - [Phase One Module Plan](./architecture/phase-one-module-plan.md) is a planning baseline; update module READMEs and project map as modules land.
 - [Engineering Rules](./architecture/engineering-rules.md) for complexity budgets, test gates, subagent collaboration, external review boundaries, and emulator validation
 - [Phase One Technical Research](./research/2026-06-23-phase-one-technical-research.md)
@@ -47,7 +47,7 @@ historical decisions, rationale, and supersession history, use
 - [Kimi Technical Direction Review](./research/2026-06-26-kimi-technical-direction-review.md)
 - [Implementation Readiness Review](./research/2026-06-26-implementation-readiness-review.md)
 - [Phase-One Acceptance Matrix](./research/2026-06-26-phase-one-acceptance-matrix.md)
-- [Current Implementation Baseline](./research/2026-06-26-current-implementation-baseline.md) is historical pre-wave evidence; use W7 current state for the current implementation boundary.
+- [Current Implementation Baseline](./research/2026-06-26-current-implementation-baseline.md) is historical pre-wave evidence; use current contracts for the current implementation boundary.
 - [Wave One Coordination](./research/2026-06-26-wave-one-coordination.md)
 - [Wave One Results](./research/2026-06-26-wave-one-results.md)
 - [Wave Two Coordination](./research/2026-06-26-wave-two-coordination.md)
@@ -69,7 +69,7 @@ historical decisions, rationale, and supersession history, use
 - [Memory Model](./rfcs/memory-model.md): accepted phase-one contract with follow-ups open.
 - [Agent Pack Schema](./rfcs/agent-pack-schema.md): accepted phase-one contract; scripted/community runtime deferred.
 - [Agent Runtime Capability Boundaries](./rfcs/agent-runtime-capability-boundaries.md): proposed implementation guardrail under ADR-0011.
-- [Mobile Entry Closure](./rfcs/mobile-entry-closure.md): implemented slice; current status superseded by W7 integration state.
+- [Mobile Entry Closure](./rfcs/mobile-entry-closure.md): implemented slice; current target-state amendments live in current contracts and newer ADRs.
 - [Mobile Visual Style](./rfcs/mobile-visual-style.md): accepted.
 
 ## Contract Sources
@@ -79,6 +79,7 @@ historical decisions, rationale, and supersession history, use
 - [Official default Agent Pack manifest](../packs/official/default/manifest.json)
 - [Official todo Agent Pack manifest](../packs/official/todo/manifest.json)
 - [Official PKM Agent Pack manifest](../packs/official/pkm_library/manifest.json)
+- [Official transcript correction Agent Pack manifest](../packs/official/transcript_correction/manifest.json)
 - [Marketplace index](../packs/marketplace/index.json)
 
 ## Contract Validation
@@ -86,7 +87,7 @@ historical decisions, rationale, and supersession history, use
 Validate phase-one official Agent Pack manifests with the lightweight validator:
 
 ```sh
-node tools/pack_validator/validate.mjs packs/official/default/manifest.json packs/official/todo/manifest.json packs/official/pkm_library/manifest.json packs/marketplace/index.json
+node tools/pack_validator/validate.mjs packs/official/default/manifest.json packs/official/todo/manifest.json packs/official/pkm_library/manifest.json packs/official/transcript_correction/manifest.json packs/marketplace/index.json
 ```
 
 This is a lightweight validator, not a complete JSON Schema validator.

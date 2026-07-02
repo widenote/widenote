@@ -1822,7 +1822,6 @@ final class _TranscriptCorrectionAgent implements runtime.AgentHandler {
     final correctionPatches = event.payload['correction_patches'] is List
         ? event.payload['correction_patches']! as List<Object?>
         : const <Object?>[];
-
     return runtime.AgentHandlerResult(
       events: <runtime.WnEventDraft>[
         context.emit(
@@ -1842,6 +1841,7 @@ final class _TranscriptCorrectionAgent implements runtime.AgentHandler {
             'auto_apply': event.payload['auto_apply'] == true,
             'source_refs': <Object?>[
               <String, Object?>{'kind': 'transcript', 'id': transcriptId},
+              <String, Object?>{'kind': 'event', 'id': event.id},
               if (sourceAttachmentId.isNotEmpty)
                 <String, Object?>{
                   'kind': 'attachment',

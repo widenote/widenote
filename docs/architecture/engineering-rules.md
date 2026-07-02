@@ -25,6 +25,14 @@ When a limit is exceeded, split by responsibility before adding more behavior.
 
 Generated files are exempt, but their source of truth and generator command must be documented.
 
+Existing over-budget production source files are tracked by
+`tools/file_complexity_baseline.json` and checked with
+`node tools/check_file_complexity.mjs`. The baseline is a debt ratchet: listed
+files may shrink, but they must not grow; new files over the 800-line limit
+fail validation unless a reviewed baseline entry is added with a split plan.
+When a listed file drops to 800 lines or below, remove it from the baseline in
+the same change.
+
 Single-file and single-function rules:
 
 - Do not add unrelated responsibilities to a file just because it is nearby.

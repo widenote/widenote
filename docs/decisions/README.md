@@ -20,7 +20,13 @@ then open linked ADRs when changing a contract or needing the history.
 - `superseded`
 - `deprecated`
 
-Accepted ADRs should not be heavily rewritten. If a decision changes, create a new ADR and mark the previous one as superseded.
+Accepted ADRs should not be heavily rewritten. If a decision changes, create a
+new ADR and mark the previous one as superseded.
+
+Partial supersession may keep both ADRs accepted when only one behavior or
+subdecision changes. In that case, keep bidirectional `supersedes` /
+`superseded_by` links and state the exact superseded scope in both ADR bodies
+and the decision index.
 
 When an accepted ADR changes the current target state, update
 `docs/architecture/current-contracts.md` and the affected module READMEs in the

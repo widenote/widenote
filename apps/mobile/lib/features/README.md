@@ -29,6 +29,9 @@ Features may own presentation and temporary app-local controllers. Durable runti
   backup/restore, log center, and display status.
 - `system_permissions`: Android and iOS app-level permission status, request,
   and settings handoff surface.
+- `transcription`: voice transcription settings, explicit ASR engine
+  selection, local SenseVoice model state, MiMo ASR, retry, and correction
+  orchestration.
 - `location`: opt-in foreground GPS capture, separate AMap reverse geocoding,
   fact-backed place metadata, redacted location display, and saved-location
   clearing.

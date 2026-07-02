@@ -195,48 +195,6 @@ GoRouter createAppRouter({String initialLocation = '/'}) {
                 pageBuilder: (context, state) =>
                     _noTransitionPage(state, const PackLibraryPage()),
               ),
-              GoRoute(
-                path: 'permissions',
-                name: 'permission-gate',
-                pageBuilder: (context, state) =>
-                    _noTransitionPage(state, const PermissionGatePage()),
-              ),
-              GoRoute(
-                path: 'model-providers',
-                name: 'model-providers',
-                pageBuilder: (context, state) =>
-                    _noTransitionPage(state, const ModelProviderSettingsPage()),
-              ),
-              GoRoute(
-                path: 'backup',
-                name: 'backup',
-                pageBuilder: (context, state) =>
-                    _noTransitionPage(state, const BackupPage()),
-              ),
-              GoRoute(
-                path: 'traces',
-                name: 'trace-console',
-                pageBuilder: (context, state) =>
-                    _noTransitionPage(state, const TraceConsolePage()),
-                routes: [
-                  GoRoute(
-                    path: 'agents',
-                    name: 'trace-agents',
-                    pageBuilder: (context, state) =>
-                        _noTransitionPage(state, const TraceAgentsPage()),
-                  ),
-                  GoRoute(
-                    path: 'raw/:traceId',
-                    name: 'trace-raw',
-                    pageBuilder: (context, state) => _noTransitionPage(
-                      state,
-                      TraceRawPage(
-                        traceId: state.pathParameters['traceId'] ?? '',
-                      ),
-                    ),
-                  ),
-                ],
-              ),
             ],
           ),
         ],

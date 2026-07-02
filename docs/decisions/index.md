@@ -32,7 +32,15 @@
 | [Memory Model](../rfcs/memory-model.md) | accepted phase-one contract; follow-ups open |
 | [Agent Pack Schema](../rfcs/agent-pack-schema.md) | accepted phase-one contract; scripted/community runtime deferred |
 | [Agent Runtime Capability Boundaries](../rfcs/agent-runtime-capability-boundaries.md) | proposed implementation guardrail under ADR-0011 |
-| [Mobile Entry Closure](../rfcs/mobile-entry-closure.md) | implemented slice; current status superseded by W7 integration state |
+| [Mobile Entry Closure](../rfcs/mobile-entry-closure.md) | implemented slice; current target state lives in current contracts and newer ADRs |
 | [Mobile Visual Style](../rfcs/mobile-visual-style.md) | accepted |
 
-Current implementation evidence: [W7 Current Integration State](../research/2026-06-26-w7-current-integration-state.md).
+Current target-state disclosure starts at
+[Current Architecture Contracts](../architecture/current-contracts.md). Dated
+implementation evidence includes
+[W7 Current Integration State](../research/2026-06-26-w7-current-integration-state.md).
+
+Supersession note: [ADR-0016](./0016-restore-ready-logs-backups-and-asr.md)
+partially supersedes [ADR-0012](./0012-accept-voice-transcription-and-correction-boundaries.md)
+for automatic remote ASR fallback only; ADR-0012 remains accepted for the other
+voice transcription and correction boundaries.

@@ -3,13 +3,13 @@ import 'dart:collection';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
 import 'package:widenote_local_db/widenote_local_db.dart';
 import 'package:widenote_model_providers/model_providers.dart';
 import 'package:widenote_mobile/app/local_database.dart';
+import 'package:widenote_mobile/app/widenote_app.dart';
+import 'package:widenote_mobile/features/location/application/location_settings_controller.dart';
 import 'package:widenote_mobile/features/model_providers/application/model_provider_settings_controller.dart';
 import 'package:widenote_mobile/features/model_providers/presentation/model_provider_settings_page.dart';
-import 'package:widenote_mobile/features/plugins/presentation/plugins_page.dart';
 import 'package:widenote_mobile/l10n/l10n.dart';
 
 void main() {
@@ -21,7 +21,9 @@ void main() {
     expect(liveProviderConnectionTestsEnabled(flag: 'live'), isTrue);
   });
 
-  testWidgets('plugins entry opens provider settings route', (tester) async {
+  testWidgets('plugins shortcut opens settings-owned provider route', (
+    tester,
+  ) async {
     final database = WideNoteLocalDatabase.inMemory();
     addTearDown(database.close);
     final now = DateTime.utc(2026, 6, 24, 10);
@@ -39,34 +41,9 @@ void main() {
         updatedAt: now,
       ),
     );
-    final router = GoRouter(
-      initialLocation: '/plugins',
-      routes: [
-        GoRoute(
-          path: '/plugins',
-          builder: (context, state) => const Scaffold(body: PluginsPage()),
-          routes: [
-            GoRoute(
-              path: 'model-providers',
-              builder: (context, state) =>
-                  const Scaffold(body: ModelProviderSettingsPage()),
-            ),
-          ],
-        ),
-      ],
-    );
-    addTearDown(router.dispose);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [localDatabaseProvider.overrideWithValue(database)],
-        child: MaterialApp.router(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          routerConfig: router,
-        ),
-      ),
-    );
+    await _pumpWideNoteApp(tester, database: database);
+    await tester.tap(find.byKey(const Key('tab-plugins')));
     await tester.pumpAndSettle();
 
     expect(find.text('1 provider'), findsOneWidget);
@@ -78,8 +55,16 @@ void main() {
       find.byKey(const Key('model-provider-settings-page')),
       findsOneWidget,
     );
+    expect(
+      tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
+      0,
+    );
     expect(find.text('Runtime model access'), findsOneWidget);
     expect(find.text('Using MIMO Main'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('settings-page')), findsOneWidget);
   });
 
   testWidgets(
@@ -703,6 +688,27 @@ Future<void> _pumpSettings(
         supportedLocales: AppLocalizations.supportedLocales,
         home: const Scaffold(body: ModelProviderSettingsPage()),
       ),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
+Future<void> _pumpWideNoteApp(
+  WidgetTester tester, {
+  required WideNoteLocalDatabase database,
+}) async {
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        localDatabaseProvider.overrideWithValue(database),
+        modelProviderModelListServiceProvider.overrideWithValue(
+          const OfflineModelProviderModelListService(),
+        ),
+        locationSettingsRepositoryProvider.overrideWithValue(
+          InMemoryLocationSettingsRepository(),
+        ),
+      ],
+      child: const WideNoteApp(locale: Locale('en')),
     ),
   );
   await tester.pumpAndSettle();

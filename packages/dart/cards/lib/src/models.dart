@@ -21,7 +21,15 @@ enum MemoryFirstInsightKind {
   count,
   trend,
   sourceMix,
+
+  /// Reserved for model/context-derived action insights.
+  ///
+  /// `MemoryFirstCardService` must not infer this from local title/body text.
   actionPattern,
+
+  /// Reserved for structured attachment/source evidence.
+  ///
+  /// `MemoryFirstCardService` must not infer this from local title/body text.
   attachmentEvidence,
 }
 

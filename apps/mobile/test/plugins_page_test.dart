@@ -10,6 +10,7 @@ import 'package:widenote_local_db/widenote_local_db.dart';
 import 'package:widenote_mobile/app/local_database.dart';
 import 'package:widenote_mobile/app/widenote_app.dart';
 import 'package:widenote_mobile/features/capture/application/capture_orchestrator_provider.dart';
+import 'package:widenote_mobile/features/location/application/location_settings_controller.dart';
 import 'package:widenote_mobile/features/plugins/application/official_pack_manifests.dart';
 import 'package:widenote_mobile/features/plugins/application/pack_catalog.dart';
 import 'package:widenote_mobile/features/plugins/presentation/pack_library_page.dart';
@@ -634,41 +635,52 @@ void main() {
     );
   });
 
-  testWidgets(
-    'system back from plugin child routes returns to control entries',
-    (tester) async {
-      await _pumpApp(tester);
+  testWidgets('system back from pack library returns to control entries', (
+    tester,
+  ) async {
+    await _pumpApp(tester);
 
-      await _openPluginsTab(tester);
-      expect(find.byKey(const Key('plugins-page')), findsOneWidget);
+    await _openPluginsTab(tester);
+    expect(find.byKey(const Key('plugins-page')), findsOneWidget);
 
-      await _openPluginChildAndReturn(
-        tester,
-        entryKey: const Key('pack-library-entry'),
-        pageKey: const Key('pack-library-page'),
-      );
-      await _openPluginChildAndReturn(
-        tester,
-        entryKey: const Key('permission-gate-entry'),
-        pageKey: const Key('permission-gate-page'),
-      );
-      await _openPluginChildAndReturn(
-        tester,
-        entryKey: const Key('model-provider-entry'),
-        pageKey: const Key('model-provider-settings-page'),
-      );
-      await _openPluginChildAndReturn(
-        tester,
-        entryKey: const Key('backup-entry'),
-        pageKey: const Key('backup-page'),
-      );
-      await _openPluginChildAndReturn(
-        tester,
-        entryKey: const Key('trace-console-entry'),
-        pageKey: const Key('trace-console-page'),
-      );
-    },
-  );
+    await _openPluginChildAndReturn(
+      tester,
+      entryKey: const Key('pack-library-entry'),
+      pageKey: const Key('pack-library-page'),
+    );
+  });
+
+  testWidgets('settings shortcuts in plugins route through Settings', (
+    tester,
+  ) async {
+    await _pumpApp(tester);
+
+    await _openSettingsShortcutAndReturnHome(
+      tester,
+      entryKey: const Key('permission-gate-entry'),
+      pageKey: const Key('permission-gate-page'),
+    );
+    await _openSettingsShortcutAndReturnHome(
+      tester,
+      entryKey: const Key('model-provider-entry'),
+      pageKey: const Key('model-provider-settings-page'),
+    );
+    await _openSettingsShortcutAndReturnHome(
+      tester,
+      entryKey: const Key('backup-entry'),
+      pageKey: const Key('backup-page'),
+    );
+    await _openSettingsShortcutAndReturnHome(
+      tester,
+      entryKey: const Key('trace-console-entry'),
+      pageKey: const Key('trace-console-page'),
+    );
+    await _openSettingsShortcutAndReturnHome(
+      tester,
+      entryKey: const Key('agent-platform-open-traces-button'),
+      pageKey: const Key('trace-console-page'),
+    );
+  });
 
   testWidgets('plugin control entries expose tappable semantics', (
     tester,
@@ -749,7 +761,12 @@ Future<void> _pumpApp(WidgetTester tester) async {
   addTearDown(database.close);
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [localDatabaseProvider.overrideWithValue(database)],
+      overrides: [
+        localDatabaseProvider.overrideWithValue(database),
+        locationSettingsRepositoryProvider.overrideWithValue(
+          InMemoryLocationSettingsRepository(),
+        ),
+      ],
       child: const WideNoteApp(locale: Locale('en')),
     ),
   );
@@ -766,7 +783,7 @@ Future<void> _openPluginChildAndReturn(
   required Key entryKey,
   required Key pageKey,
 }) async {
-  await tester.ensureVisible(find.byKey(entryKey));
+  await _ensureVisible(tester, entryKey);
   await tester.pumpAndSettle();
   await tester.tap(find.byKey(entryKey));
   await tester.pumpAndSettle();
@@ -776,6 +793,44 @@ Future<void> _openPluginChildAndReturn(
   await tester.pumpAndSettle();
   expect(find.byKey(const Key('plugins-page')), findsOneWidget);
   expect(find.byKey(pageKey), findsNothing);
+}
+
+Future<void> _openSettingsShortcutAndReturnHome(
+  WidgetTester tester, {
+  required Key entryKey,
+  required Key pageKey,
+}) async {
+  await _openPluginsTab(tester);
+  expect(find.byKey(const Key('plugins-page')), findsOneWidget);
+
+  await _ensureVisible(tester, entryKey);
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(entryKey));
+  await tester.pumpAndSettle();
+  expect(find.byKey(pageKey), findsOneWidget);
+
+  await tester.binding.handlePopRoute();
+  await tester.pumpAndSettle();
+  expect(find.byKey(const Key('settings-page')), findsOneWidget);
+  expect(find.byKey(pageKey), findsNothing);
+
+  await tester.binding.handlePopRoute();
+  await tester.pumpAndSettle();
+  expect(find.byKey(const Key('home-page')), findsOneWidget);
+}
+
+Future<void> _ensureVisible(WidgetTester tester, Key key) async {
+  final finder = find.byKey(key);
+  if (finder.evaluate().isNotEmpty) {
+    await tester.ensureVisible(finder);
+  } else {
+    await tester.scrollUntilVisible(
+      finder,
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
+  }
+  await tester.pumpAndSettle();
 }
 
 String _officialManifestPath(String packId) {

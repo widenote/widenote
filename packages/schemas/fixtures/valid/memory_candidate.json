@@ -19,7 +19,7 @@
   "memory_type": "project",
   "confidence": "medium",
   "sensitivity": "low",
-  "durability": "session",
+  "durability": "durable",
   "status": "auto_accepted",
   "policy_reasons": [
     "synthetic_low_risk_fixture"

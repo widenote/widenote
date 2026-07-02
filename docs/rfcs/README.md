@@ -25,8 +25,10 @@ contracts for the default development state.
 | [Memory Model](./memory-model.md) | Accepted phase-one contract; follow-ups open |
 | [Agent Pack Schema](./agent-pack-schema.md) | Accepted phase-one contract; scripted/community runtime deferred |
 | [Agent Runtime Capability Boundaries](./agent-runtime-capability-boundaries.md) | Proposed implementation guardrail under ADR-0011 |
-| [Mobile Entry Closure](./mobile-entry-closure.md) | Implemented phase-one slice; current status superseded by W7 integration state |
+| [Mobile Entry Closure](./mobile-entry-closure.md) | Implemented phase-one slice; current target state lives in current contracts and newer ADRs |
 | [Mobile Visual Style](./mobile-visual-style.md) | Accepted |
 
-Current implementation status lives in
+Current target-state status lives in
+[`docs/architecture/current-contracts.md`](../architecture/current-contracts.md).
+Dated implementation evidence remains in research notes such as
 [`docs/research/2026-06-26-w7-current-integration-state.md`](../research/2026-06-26-w7-current-integration-state.md).

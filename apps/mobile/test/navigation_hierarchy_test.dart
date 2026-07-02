@@ -339,98 +339,92 @@ void main() {
     }
   });
 
-  testWidgets('deep linked plugin child pages return to plugins tab root', (
+  testWidgets('deep linked pack library returns to plugins tab root', (
     tester,
   ) async {
-    const cases = <_DeepLinkCase>[
-      _DeepLinkCase(
-        path: '/plugins/packs',
-        pageKey: Key('pack-library-page'),
-        firstParentKey: Key('plugins-page'),
-      ),
-      _DeepLinkCase(
-        path: '/plugins/permissions',
+    const routeCase = _DeepLinkCase(
+      path: '/plugins/packs',
+      pageKey: Key('pack-library-page'),
+      firstParentKey: Key('plugins-page'),
+    );
+
+    await _pumpRoute(tester, routeCase.path);
+    expect(find.byKey(routeCase.pageKey), findsOneWidget);
+
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    await tester.pumpAndSettle();
+    expect(find.byKey(routeCase.firstParentKey), findsOneWidget);
+
+    expect(await tester.binding.handlePopRoute(), isFalse);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('plugins-page')), findsOneWidget);
+  });
+
+  testWidgets('plugins shortcuts construct settings parent stacks', (
+    tester,
+  ) async {
+    const cases = <_ShortcutCase>[
+      _ShortcutCase(
+        entryKey: Key('permission-gate-entry'),
         pageKey: Key('permission-gate-page'),
-        firstParentKey: Key('plugins-page'),
       ),
-      _DeepLinkCase(
-        path: '/plugins/model-providers',
+      _ShortcutCase(
+        entryKey: Key('model-provider-entry'),
         pageKey: Key('model-provider-settings-page'),
-        firstParentKey: Key('plugins-page'),
       ),
-      _DeepLinkCase(
-        path: '/plugins/backup',
-        pageKey: Key('backup-page'),
-        firstParentKey: Key('plugins-page'),
-      ),
-      _DeepLinkCase(
-        path: '/plugins/traces',
+      _ShortcutCase(entryKey: Key('backup-entry'), pageKey: Key('backup-page')),
+      _ShortcutCase(
+        entryKey: Key('trace-console-entry'),
         pageKey: Key('trace-console-page'),
-        firstParentKey: Key('plugins-page'),
-      ),
-      _DeepLinkCase(
-        path: '/plugins/traces/agents',
-        pageKey: Key('trace-agents-page'),
-        firstParentKey: Key('trace-console-page'),
-        secondParentKey: Key('plugins-page'),
-      ),
-      _DeepLinkCase(
-        path: '/plugins/traces/raw/missing-trace',
-        pageKey: Key('trace-raw-page'),
-        firstParentKey: Key('trace-console-page'),
-        secondParentKey: Key('plugins-page'),
       ),
     ];
 
+    await _pumpWideNoteApp(tester);
+
     for (final routeCase in cases) {
-      await _pumpRoute(tester, routeCase.path);
+      await tester.tap(find.byKey(const Key('tab-plugins')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('plugins-page')), findsOneWidget);
+
+      await tester.ensureVisible(find.byKey(routeCase.entryKey));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(routeCase.entryKey));
+      await tester.pumpAndSettle();
       expect(
         find.byKey(routeCase.pageKey),
         findsOneWidget,
-        reason: routeCase.path,
+        reason: '${routeCase.entryKey}',
+      );
+      expect(
+        tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
+        0,
+        reason: '${routeCase.entryKey}',
       );
 
       expect(
         await tester.binding.handlePopRoute(),
         isTrue,
-        reason: routeCase.path,
+        reason: '${routeCase.entryKey}',
       );
       await tester.pumpAndSettle();
       expect(
-        find.byKey(routeCase.firstParentKey),
+        find.byKey(const Key('settings-page')),
         findsOneWidget,
-        reason: routeCase.path,
+        reason: '${routeCase.entryKey}',
       );
-
-      final secondParentKey = routeCase.secondParentKey;
-      if (secondParentKey != null) {
-        expect(
-          await tester.binding.handlePopRoute(),
-          isTrue,
-          reason: routeCase.path,
-        );
-        await tester.pumpAndSettle();
-        expect(
-          find.byKey(secondParentKey),
-          findsOneWidget,
-          reason: routeCase.path,
-        );
-      }
 
       expect(
         await tester.binding.handlePopRoute(),
-        isFalse,
-        reason: routeCase.path,
+        isTrue,
+        reason: '${routeCase.entryKey}',
       );
       await tester.pumpAndSettle();
       expect(
-        find.byKey(const Key('plugins-page')),
+        find.byKey(const Key('home-page')),
         findsOneWidget,
-        reason: routeCase.path,
+        reason: '${routeCase.entryKey}',
       );
-
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pumpAndSettle();
+      expect(find.byKey(routeCase.pageKey), findsNothing);
     }
   });
 
@@ -489,6 +483,13 @@ class _SelectedTabCase {
 
   final String path;
   final int selectedIndex;
+}
+
+class _ShortcutCase {
+  const _ShortcutCase({required this.entryKey, required this.pageKey});
+
+  final Key entryKey;
+  final Key pageKey;
 }
 
 Future<void> _pumpWideNoteApp(WidgetTester tester) async {

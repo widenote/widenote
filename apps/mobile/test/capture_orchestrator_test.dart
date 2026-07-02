@@ -130,7 +130,6 @@ void main() {
       'count insight',
       'trend insight',
       'source mix insight',
-      'action pattern insight',
     ]);
     expect(
       result.insights.map((insight) => insight.sourceLabel),

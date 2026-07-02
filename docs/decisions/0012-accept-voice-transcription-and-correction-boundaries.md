@@ -7,6 +7,7 @@ owners: [core, mobile, agents, privacy]
 tags: [voice, asr, transcript, agent-pack, backup, privacy]
 supersedes: []
 superseded_by:
+  - ./0016-restore-ready-logs-backups-and-asr.md
 sources:
   - ../research/2026-06-30-voice-input-asr-correction-plan.md
   - ../rfcs/agent-pack-schema.md
@@ -28,6 +29,11 @@ The existing contract is that original user records and attachments remain
 source truth, while ASR/OCR/vision/model outputs are derived artifacts with
 source refs. The new voice slice keeps that rule but makes audio and transcript
 behavior explicit.
+
+Supersession note: ADR-0016 partially supersedes this ADR's automatic remote
+ASR fallback relationship. This ADR remains accepted for raw-audio source
+truth, WAV first-slice recording, transcript artifacts, backup media, correction
+Pack boundaries, and runtime-tool deferral.
 
 ## Decision
 
@@ -68,9 +74,9 @@ correction revisions. Medium or low confidence patches, and patches affecting
 meaning, numbers, dates, credentials, medical, legal, or financial content, go
 to review.
 
-The `audio.transcribe` Agent Runtime tool is deferred until after the mobile
-transcription engine lands. When exposed, it should be a narrow wrapper over
-the mobile-owned transcription engine rather than a second ASR implementation.
+The `audio.transcribe` Agent Runtime tool remains deferred to a later slice
+that can wrap the mobile-owned transcription engine rather than adding a second
+ASR implementation.
 
 ## Considered Options
 
@@ -118,10 +124,11 @@ logic from bypassing Memory policy.
 
 ## Follow-ups
 
-- Implement the mobile transcription engine, real-time preview degradation, and
-  WAV recording path without touching raw source truth.
+- Keep the mobile transcription engine, real-time preview degradation, and WAV
+  recording path aligned with current contracts without touching raw source
+  truth.
 - Add mobile unit/widget tests and platform QA for voice capture, preview,
   transcript retry, correction review, and backup media restore.
-- Add runtime/native pack handler tests when `pack.transcript_correction`
-  becomes executable in mobile.
+- Maintain runtime/native pack handler coverage for `pack.transcript_correction`
+  as correction execution evolves.
 - Revisit `.m4a` conversion only after the first WAV/local-ASR path is stable.

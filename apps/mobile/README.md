@@ -14,6 +14,7 @@ Responsibilities:
 - Local Agent Runtime Kernel
 - Permissions and trace review
 - BYOK model provider configuration
+- Voice transcription and ASR settings
 - Settings and Privacy hub
 
 ## Ownership Boundary
@@ -77,8 +78,39 @@ Run or build with an explicit flavor:
 
 ```sh
 flutter run --flavor dev
+flutter build apk --flavor dev --release
 flutter build apk --flavor prod --release
 ```
+
+Android release signing is flavor-scoped:
+
+- `devRelease` uses the Android debug signing config so local QA release builds
+  can be produced without private signing material.
+- `prodRelease` must use a configured release keystore. It does not fall back to
+  the debug key.
+
+Configure `prodRelease` signing with environment variables:
+
+```sh
+export WIDENOTE_ANDROID_KEYSTORE_FILE=/absolute/path/to/upload-keystore.jks
+export WIDENOTE_ANDROID_KEYSTORE_PASSWORD=<secret>
+export WIDENOTE_ANDROID_KEY_ALIAS=<alias>
+export WIDENOTE_ANDROID_KEY_PASSWORD=<secret>
+flutter build apk --flavor prod --release
+```
+
+Or create `apps/mobile/android/key.properties`, which is gitignored:
+
+```properties
+storeFile=/absolute/path/to/upload-keystore.jks
+storePassword=<secret>
+keyAlias=<alias>
+keyPassword=<secret>
+```
+
+Relative `storeFile` paths are resolved from `apps/mobile/android`. Do not
+commit keystores, `key.properties`, passwords, or signing logs that reveal
+secrets.
 
 China/global market flavors are intentionally deferred. Add a market axis only
 after store requirements, provider defaults, compliance, or distribution policy

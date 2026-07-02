@@ -416,6 +416,8 @@ final class TranscriptionService {
       attachment.id,
       'audio_transcript',
     );
+    final transcriptEventId =
+        'transcript.${_safeId(attachment.id)}.${_safeId(result.providerId)}';
     final body = result.text.trim().isNotEmpty
         ? result.text.trim()
         : result.errorMessageSafe ?? 'Transcript failed.';
@@ -423,6 +425,7 @@ final class TranscriptionService {
       id: artifactId,
       sourceCaptureId: attachment.captureId,
       sourceAttachmentId: attachment.id,
+      sourceEventId: attachment.sourceEventId,
       artifactKind: 'audio_transcript',
       status: result.status.wireName,
       title: result.status == TranscriptStatus.active
@@ -439,21 +442,14 @@ final class TranscriptionService {
       }),
       sourceRefs: <Object?>[
         <String, Object?>{'kind': 'capture', 'id': attachment.captureId},
-        <String, Object?>{
-          'kind': 'file',
-          'id': attachment.id,
-          'sha256': attachment.sha256,
-        },
-        <String, Object?>{
-          'kind': 'asr_event',
-          'id': 'transcript.${attachment.id}.${result.providerId}',
-          'provider_id': result.providerId,
-        },
+        <String, Object?>{'kind': 'attachment', 'id': attachment.id},
+        if (attachment.sourceEventId != null)
+          <String, Object?>{'kind': 'event', 'id': attachment.sourceEventId},
+        <String, Object?>{'kind': 'event', 'id': transcriptEventId},
         if (correction != null)
           <String, Object?>{
-            'kind': 'correction_event',
+            'kind': 'event',
             'id': 'correction.${attachment.id}',
-            'pack_id': 'pack.transcript_correction',
           },
       ],
       sensitivity: 'medium',
@@ -544,6 +540,7 @@ final class TranscriptionService {
     return AudioAttachmentRef(
       id: record.id,
       captureId: record.captureId,
+      sourceEventId: record.sourceEventId,
       storagePath: record.storagePath,
       mimeType: record.mimeType ?? 'application/octet-stream',
       sha256: sha256,

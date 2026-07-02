@@ -57,9 +57,7 @@ All other pages are child pages:
   `/settings/transcription`, `/settings/location`, `/settings/backup`,
   `/settings/traces`, `/settings/traces/agents`,
   `/settings/traces/raw/:traceId`
-- Plugins children: `/plugins/packs`, `/plugins/permissions`,
-  `/plugins/model-providers`, `/plugins/backup`, `/plugins/traces`,
-  `/plugins/traces/agents`, `/plugins/traces/raw/:traceId`
+- Plugins children: `/plugins/packs`
 
 UI controls that open direct child pages should use push-style navigation.
 Shortcuts that skip an intermediate parent should construct the declared parent
@@ -67,6 +65,10 @@ stack. Bottom tab switches should use replacement-style navigation. Direct
 links to child pages must still return through the declared parent on system
 back. Contextual source links may preserve the visible source page as the
 immediate back target.
+
+The Plugins tab may surface visual shortcuts for permissions, model providers,
+backup, and traces, but those shortcuts navigate to the Settings-owned
+`/settings/...` routes instead of declaring duplicate `/plugins/...` pages.
 
 ## Generated Artifacts
 

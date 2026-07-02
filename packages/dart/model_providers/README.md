@@ -53,6 +53,12 @@ MiniMax, Xiaomi MIMO, Ollama, and custom OpenAI-compatible or
 Anthropic-compatible endpoints. Vendor presets choose the closest compatible
 adapter and remain editable in mobile Settings.
 
+Safe provider JSON uses the public schema wire names from `packages/schemas`:
+provider kinds such as `openai`, `deepseek`, `minimax`, and
+`openai_compatible`, and capabilities such as `chat`, `completion`, and
+`tool_use`. Parsers keep accepting the existing Dart enum names as
+compatibility aliases while local persistence migrates.
+
 Model-list support derives official provider model endpoints from the editable
 base endpoint. OpenAI-compatible presets use `/models`, Anthropic-compatible
 presets use `/v1/models`, and Gemini uses the native `models` endpoint with the

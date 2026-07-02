@@ -8,6 +8,7 @@ import 'database.dart';
 import 'json.dart';
 import 'memory_repository_adapter.dart';
 import 'models.dart';
+import 'runtime_run_mode_codec.dart';
 
 typedef LocalDbCoreToolClock = DateTime Function();
 typedef LocalDbCoreToolIdFactory = String Function(String prefix);
@@ -2260,7 +2261,7 @@ JsonMap _runOutput(RuntimeRunRecord run) {
     'agent_id': run.agentId,
     'handler_id': run.handlerId,
     'status': run.status,
-    'run_mode': _storedRunMode(run.payload),
+    'run_mode': storedRuntimeRunMode(run.payload, runtimeRunModeKey),
     'attempt': run.attempt,
     'output_event_count': run.outputEventIds.length,
     'error': run.error == null ? null : _redactString(run.error!),
@@ -2289,11 +2290,6 @@ JsonMap _traceOutput(TraceEventRecord trace) {
     'payload': _redactJsonMap(trace.payload),
     'created_at': trace.createdAt.toUtc().toIso8601String(),
   };
-}
-
-String _storedRunMode(JsonMap payload) {
-  final value = payload['runtime_run_mode'];
-  return value is String && value.isNotEmpty ? value : 'auto';
 }
 
 void _ensureAllowedKeys(

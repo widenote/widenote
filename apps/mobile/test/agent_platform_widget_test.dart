@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:widenote_local_db/widenote_local_db.dart';
 import 'package:widenote_mobile/app/local_database.dart';
 import 'package:widenote_mobile/app/widenote_app.dart';
+import 'package:widenote_mobile/features/location/application/location_settings_controller.dart';
 
 void main() {
   testWidgets('plugins tab summarizes real local trace events', (tester) async {
@@ -128,7 +129,12 @@ Future<void> _pumpApp(
   addTearDown(database.close);
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [localDatabaseProvider.overrideWithValue(database)],
+      overrides: [
+        localDatabaseProvider.overrideWithValue(database),
+        locationSettingsRepositoryProvider.overrideWithValue(
+          InMemoryLocationSettingsRepository(),
+        ),
+      ],
       child: const WideNoteApp(),
     ),
   );

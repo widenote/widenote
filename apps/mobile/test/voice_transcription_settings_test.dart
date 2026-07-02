@@ -271,7 +271,7 @@ void _seedFailedVoiceTranscript(localdb.WideNoteLocalDatabase database) {
       body: 'Transcript failed.',
       sourceRefs: const <Object?>[
         <String, Object?>{'kind': 'capture', 'id': 'capture-1'},
-        <String, Object?>{'kind': 'file', 'id': 'voice-1'},
+        <String, Object?>{'kind': 'attachment', 'id': 'voice-1'},
       ],
       generatorId: 'local_sensevoice',
       generatorVersion: 'local_sensevoice',

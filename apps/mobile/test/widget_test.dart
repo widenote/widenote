@@ -208,7 +208,7 @@ void main() {
       findsOneWidget,
     );
     expect(state.cards, hasLength(2));
-    expect(state.insights, hasLength(greaterThanOrEqualTo(5)));
+    expect(state.insights, hasLength(greaterThanOrEqualTo(4)));
 
     await _scrollHomeTextIntoView(tester, '1 accepted');
     expect(find.text('1 accepted'), findsOneWidget);
@@ -545,12 +545,12 @@ void main() {
     expect(state.records, hasLength(1));
     expect(state.memories, hasLength(1));
     expect(state.cards, hasLength(2));
-    expect(state.insights, hasLength(5));
+    expect(state.insights, hasLength(4));
     expect(state.todos, hasLength(1));
     await _scrollHomeTextIntoView(tester, '1 processed');
     expect(find.text('1 processed'), findsOneWidget);
     expect(find.text('1 accepted'), findsOneWidget);
-    expect(find.text('5 source-linked'), findsOneWidget);
+    expect(find.text('4 source-linked'), findsOneWidget);
 
     await ProviderScope.containerOf(tester.element(find.byType(WideNoteApp)))
         .read(captureControllerProvider.notifier)
@@ -560,12 +560,12 @@ void main() {
     expect(state.records, hasLength(2));
     expect(state.memories, hasLength(2));
     expect(state.cards, hasLength(4));
-    expect(state.insights, hasLength(5));
+    expect(state.insights, hasLength(4));
     expect(state.todos, hasLength(2));
     await _scrollHomeTextIntoView(tester, '2 processed');
     expect(find.text('2 processed'), findsOneWidget);
     expect(find.text('2 accepted'), findsOneWidget);
-    expect(find.text('5 source-linked'), findsOneWidget);
+    expect(find.text('4 source-linked'), findsOneWidget);
   });
 
   testWidgets('sensitive Memory candidate stays out of the home surface', (

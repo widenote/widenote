@@ -3,6 +3,7 @@ import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
 import 'database.dart';
 import 'json.dart';
 import 'models.dart';
+import 'runtime_run_mode_codec.dart';
 
 final class LocalDbEventStore implements runtime.EventStore {
   const LocalDbEventStore(this._database);
@@ -574,7 +575,7 @@ RuntimeTaskRecord _taskToRecord(
     scheduledAt: task.scheduledAt,
     concurrencyKey: task.concurrencyKey,
     error: task.error,
-    payload: _taskPayload(existing?.payload ?? const <String, Object?>{}),
+    payload: _taskPayload(existing?.payload ?? const <String, Object?>{}, task),
     createdAt: existing?.createdAt ?? task.createdAt,
     updatedAt: task.updatedAt,
   );
@@ -591,6 +592,7 @@ runtime.RuntimeTask _taskFromRecord(RuntimeTaskRecord record) {
     subscriptionId: record.subscriptionId,
     triggerEventId: record.triggerEventId,
     status: _runtimeTaskStatus(record.status),
+    runMode: runtimeTaskRunModeFromPayload(record.payload),
     dependencyTaskIds: _requiredStringList(
       record.dependencyTaskIds,
       'runtime_tasks.dependency_task_ids_json',
@@ -936,7 +938,7 @@ JsonMap _runPayload(
   DateTime? leaseExpiresAt,
 ) {
   final next = <String, Object?>{...payload};
-  next[_runtimeRunModeKey] = runMode.name;
+  next[runtimeRunModeKey] = runMode.wireName;
   if (leaseExpiresAt == null) {
     next.remove(_runtimeRunLeaseExpiresAtKey);
   } else {
@@ -947,10 +949,21 @@ JsonMap _runPayload(
   return next;
 }
 
-JsonMap _taskPayload(JsonMap payload) {
-  final next = <String, Object?>{...payload};
-  next.remove(_runtimeTaskScheduledAtKey);
-  next.remove(_runtimeTaskConcurrencyKey);
+JsonMap _taskPayload(JsonMap payload, runtime.RuntimeTask task) {
+  final next = payloadWithTaskRunMode(payload, task);
+  if (task.scheduledAt == null) {
+    next.remove(_runtimeTaskScheduledAtKey);
+  } else {
+    next[_runtimeTaskScheduledAtKey] = task.scheduledAt!
+        .toUtc()
+        .toIso8601String();
+  }
+  final concurrencyKey = task.concurrencyKey?.trim();
+  if (concurrencyKey == null || concurrencyKey.isEmpty) {
+    next.remove(_runtimeTaskConcurrencyKey);
+  } else {
+    next[_runtimeTaskConcurrencyKey] = concurrencyKey;
+  }
   return next;
 }
 
@@ -976,20 +989,7 @@ String? _optionalStringFromPayload(Object? value, String key) {
 }
 
 runtime.RunMode _runtimeRunModeFromPayload(JsonMap payload) {
-  final value = payload[_runtimeRunModeKey];
-  if (value == null) {
-    return runtime.RunMode.auto;
-  }
-  if (value is String) {
-    final normalized = value.replaceAll('-', '_');
-    return switch (normalized) {
-      'read_only' || 'readOnly' => runtime.RunMode.readOnly,
-      'confirm' => runtime.RunMode.confirm,
-      'auto' => runtime.RunMode.auto,
-      _ => throw StateError('Unknown runtime run mode: $value'),
-    };
-  }
-  throw StateError('$_runtimeRunModeKey must be a string.');
+  return runtimeRunModeFromPayload(payload);
 }
 
 DateTime? _dateTimeFromJson(Object? value) {
@@ -1075,7 +1075,6 @@ String _schemaTraceType(String runtimeName) {
 }
 
 const _runtimeRunLeaseExpiresAtKey = 'runtime_run_lease_expires_at';
-const _runtimeRunModeKey = 'runtime_run_mode';
 const _runtimeTaskScheduledAtKey = 'runtime_task_scheduled_at';
 const _runtimeTaskConcurrencyKey = 'runtime_task_concurrency_key';
 const _runtimePackCountsKey = 'runtime_status_counts';

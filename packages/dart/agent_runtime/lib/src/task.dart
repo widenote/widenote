@@ -61,6 +61,7 @@ final class RuntimeTask {
     required this.status,
     required this.createdAt,
     required this.updatedAt,
+    this.runMode = RunMode.auto,
     this.dependencyTaskIds = const <String>[],
     this.missingDependencyIds = const <String>[],
     this.attempts = 0,
@@ -83,6 +84,7 @@ final class RuntimeTask {
   final RuntimeTaskStatus status;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final RunMode runMode;
   final List<String> dependencyTaskIds;
   final List<String> missingDependencyIds;
   final int attempts;
@@ -98,6 +100,7 @@ final class RuntimeTask {
   RuntimeTask copyWith({
     RuntimeTaskStatus? status,
     DateTime? updatedAt,
+    RunMode? runMode,
     List<String>? dependencyTaskIds,
     List<String>? missingDependencyIds,
     int? attempts,
@@ -124,6 +127,7 @@ final class RuntimeTask {
       status: status ?? this.status,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      runMode: runMode ?? this.runMode,
       dependencyTaskIds: dependencyTaskIds ?? this.dependencyTaskIds,
       missingDependencyIds: missingDependencyIds ?? this.missingDependencyIds,
       attempts: attempts ?? this.attempts,

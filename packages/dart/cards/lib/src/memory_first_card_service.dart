@@ -74,10 +74,6 @@ final class MemoryFirstCardService {
       _countInsight(input, cards),
       _trendInsight(input, cards),
       _sourceMixInsight(input, cards),
-      if (_actionCandidateCards(cards).isNotEmpty)
-        _actionPatternInsight(input, cards),
-      if (_attachmentEvidenceCards(cards).isNotEmpty)
-        _attachmentEvidenceInsight(input, cards),
     ];
   }
 
@@ -265,106 +261,6 @@ final class MemoryFirstCardService {
       },
     );
   }
-
-  MemoryFirstInsight _actionPatternInsight(
-    MemoryFirstCardInput input,
-    List<MemoryFirstCard> cards,
-  ) {
-    final candidates = _actionCandidateCards(cards);
-    final terms = _actionTerms(candidates);
-    final sourceLinks = _dedupeLinks([
-      for (final card in candidates) ...card.sourceLinks,
-    ]);
-    final claims = <MemoryFirstInsightClaim>[
-      _claim(
-        id: 'claim.action_pattern',
-        text:
-            '${candidates.length} source-linked item(s) mention follow-up, '
-            'review, or preparation signals.',
-        sourceLinks: sourceLinks,
-      ),
-    ];
-    final metrics = <MemoryFirstInsightMetric>[
-      _metric(
-        label: 'action-linked sources',
-        value: candidates.length,
-        sourceLinks: sourceLinks,
-      ),
-    ];
-    return MemoryFirstInsight(
-      id: _id('insight.action_pattern', _dateStamp(input.now)),
-      kind: MemoryFirstInsightKind.actionPattern,
-      title: 'Action pattern',
-      summary: claims.single.text,
-      sourceLinks: sourceLinks,
-      createdAt: input.now,
-      metricLabel: 'action-linked sources',
-      metricValue: candidates.length,
-      claims: claims,
-      metrics: metrics,
-      uiBlocks: _uiBlocks(),
-      metadata: <String, Object?>{
-        'card_ids': candidates.map((card) => card.id).toList(growable: false),
-        'terms': terms,
-        ..._insightMetadata(
-          claims: claims,
-          metrics: metrics,
-          sourceLinks: sourceLinks,
-          note: claims.single.text,
-        ),
-      },
-    );
-  }
-
-  MemoryFirstInsight _attachmentEvidenceInsight(
-    MemoryFirstCardInput input,
-    List<MemoryFirstCard> cards,
-  ) {
-    final candidates = _attachmentEvidenceCards(cards);
-    final modalities = _modalities(candidates);
-    final sourceLinks = _dedupeLinks([
-      for (final card in candidates) ...card.sourceLinks,
-    ]);
-    final claims = <MemoryFirstInsightClaim>[
-      _claim(
-        id: 'claim.attachment_evidence',
-        text:
-            '${candidates.length} source-linked item(s) include media, OCR, '
-            'transcript, or attachment evidence.',
-        sourceLinks: sourceLinks,
-      ),
-    ];
-    final metrics = <MemoryFirstInsightMetric>[
-      _metric(
-        label: 'media-backed sources',
-        value: candidates.length,
-        sourceLinks: sourceLinks,
-      ),
-    ];
-    return MemoryFirstInsight(
-      id: _id('insight.attachment_evidence', _dateStamp(input.now)),
-      kind: MemoryFirstInsightKind.attachmentEvidence,
-      title: 'Attachment evidence',
-      summary: claims.single.text,
-      sourceLinks: sourceLinks,
-      createdAt: input.now,
-      metricLabel: 'media-backed sources',
-      metricValue: candidates.length,
-      claims: claims,
-      metrics: metrics,
-      uiBlocks: _uiBlocks(),
-      metadata: <String, Object?>{
-        'card_ids': candidates.map((card) => card.id).toList(growable: false),
-        'modalities': modalities,
-        ..._insightMetadata(
-          claims: claims,
-          metrics: metrics,
-          sourceLinks: sourceLinks,
-          note: claims.single.text,
-        ),
-      },
-    );
-  }
 }
 
 List<MemoryFirstCard> _dedupeCards(List<MemoryFirstCard> cards) {
@@ -420,80 +316,6 @@ String _mostActiveDay(List<MemoryFirstCard> cards) {
 
 bool _isLaterDay(String candidate, String current) {
   return candidate.compareTo(current) > 0;
-}
-
-List<MemoryFirstCard> _actionCandidateCards(List<MemoryFirstCard> cards) {
-  return cards
-      .where((card) {
-        final text = '${card.title}\n${card.body}'.toLowerCase();
-        return text.contains('follow up') ||
-            text.contains('follow-up') ||
-            text.contains('todo') ||
-            text.contains('review') ||
-            text.contains('prepare') ||
-            text.contains('next step') ||
-            text.contains('action');
-      })
-      .toList(growable: false);
-}
-
-List<String> _actionTerms(List<MemoryFirstCard> cards) {
-  final terms = <String>{};
-  for (final card in cards) {
-    final text = '${card.title}\n${card.body}'.toLowerCase();
-    for (final term in const <String>[
-      'follow up',
-      'follow-up',
-      'todo',
-      'review',
-      'prepare',
-      'next step',
-      'action',
-    ]) {
-      if (text.contains(term)) {
-        terms.add(term);
-      }
-    }
-  }
-  return terms.toList(growable: false)..sort();
-}
-
-List<MemoryFirstCard> _attachmentEvidenceCards(List<MemoryFirstCard> cards) {
-  return cards
-      .where((card) {
-        final text = '${card.title}\n${card.body}'.toLowerCase();
-        return text.contains('attachment') ||
-            text.contains('photo') ||
-            text.contains('image') ||
-            text.contains('ocr') ||
-            text.contains('transcript') ||
-            text.contains('voice') ||
-            text.contains('audio');
-      })
-      .toList(growable: false);
-}
-
-List<String> _modalities(List<MemoryFirstCard> cards) {
-  final modalities = <String>{};
-  for (final card in cards) {
-    final text = '${card.title}\n${card.body}'.toLowerCase();
-    if (text.contains('photo') || text.contains('image')) {
-      modalities.add('image');
-    }
-    if (text.contains('ocr')) {
-      modalities.add('ocr');
-    }
-    if (text.contains('transcript')) {
-      modalities.add('transcript');
-    }
-    if (text.contains('voice') || text.contains('audio')) {
-      modalities.add('audio');
-    }
-    if (text.contains('attachment')) {
-      modalities.add('attachment');
-    }
-  }
-  return modalities.toList(growable: false)..sort();
 }
 
 List<SourceLink> _dedupeLinks(List<SourceLink> links) {

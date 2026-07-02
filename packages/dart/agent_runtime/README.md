@@ -22,6 +22,10 @@ Owns local runtime execution. It must not own app UI, backend execution, or publ
 - `AgentPackManifestBridge`, `AgentPack`, `PackRegistry`, `AgentPackManifestSnapshot`, `Subscription`, `AgentDefinition`, `AgentHandler`, `AgentContext`, `ModelClient`, and `FakeModel` for manifest-aligned local pack loading and execution without a real LLM.
 - `RuntimeTask`, `RuntimeRun`, `RetryPolicy`, and `RuntimePackStatus` for queued task/run inspection, retry, retry due time, dependency blocking, lease ownership, concurrency keys, cancellation, permission-denied, and pack status surfaces.
 
+Runtime task/run JSON uses public schema run modes `read_only`, `confirm`, and
+`auto`; the Dart enum keeps the native `RunMode.readOnly` name and maps it at
+serialization boundaries.
+
 Script runtime kinds are represented as manifest/runtime configuration only. The local kernel rejects them with a denied run until a sandbox RFC is accepted and implemented.
 
 `RetryPolicy` defaults to two attempts for transient handler failures. Explicit

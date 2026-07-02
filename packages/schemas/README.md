@@ -85,6 +85,11 @@ The runtime task/run contract uses public JSON run modes
 names such as `RunMode.readOnly`, but schema fixtures keep the wire contract in
 snake case.
 
+Memory candidate durability uses `durable` for supported auto-accept writes and
+`transient` for non-durable proposals that route to review. `session` is not a
+public Memory durability value unless a future Memory contract adds session
+scoping.
+
 The Agent Pack manifest currently includes subscription dependencies through
 `depends_on[]` and deterministic retry bounds through
 `agents[].retry_policy.max_attempts`. It also exposes model profile routing
@@ -122,10 +127,13 @@ declarative. A materialized provider routing object should apply conservative
 defaults: `routing_policy: app_default`, empty `required_capabilities[]`, and
 `allow_fallback: false` unless the pack or user settings say otherwise.
 
-Provider metadata currently accepts canonical snake_case values and the current
-Dart camelCase wire names for provider kinds and capabilities. Treat camelCase
-entries as compatibility aliases until generated bindings or a migration close
-the drift.
+Provider metadata currently accepts canonical provider wire names used by the
+Dart package (`openai`, `anthropic`, `gemini`, `openrouter`, `deepseek`,
+`kimi`, `qwen`, `doubao`, `zhipu`, `minimax`, `mimo`, `ollama`,
+`openai_compatible`, and `anthropic_compatible`) plus current camelCase and old
+snake_case aliases for compatibility. New schema fixtures and safe provider JSON
+should use the canonical values. Capabilities use snake_case, including
+`tool_use`; camelCase `toolUse` remains a compatibility alias.
 
 Validator self-tests:
 

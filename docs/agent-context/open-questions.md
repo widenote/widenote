@@ -1,19 +1,26 @@
 # Open Questions
 
-These are the next architecture topics that need deeper design.
+These are current unresolved architecture topics. Accepted target-state rules
+belong in `docs/architecture/current-contracts.md`, ADRs, RFCs, and module
+READMEs; do not keep resolved decisions here.
 
-- Umbrella technical-plan RFC: object boundaries, lifecycle diagrams, schema
-  proposals, Agent Pack boundaries, UI read models, and validation gates.
-- Context packet schema: source refs, progressive disclosure levels, cache
-  invalidation keys, permission scopes, and generator versioning.
+- Context Packet public schema: source refs, progressive disclosure levels,
+  cache invalidation keys, permission scopes, generator versioning, and when the
+  schema graduates into `packages/schemas`.
+- Deletion, purge, and sync-readiness: recoverable window UX, permanent purge
+  semantics, minimal tombstone metadata, derived-output invalidation, and future
+  sync conflict behavior.
 - Backup/export split follow-ups: encrypted-envelope UX, hosted/sync backup
-  policy, owner export archive layout, and restore warnings beyond the default
-  local `.widenote` full-backup path.
-- Deletion and purge: 30-day recoverable window UX, permanent purge semantics,
-  minimal tombstone metadata, and future sync conflict handling.
-- Memory data model: types, provenance, confidence, editing, deletion, and invalidation.
-- Encrypted sync: object model, key management, device pairing, recovery, and attachment handling.
-- Agent Pack schema: manifest shape, versioning, permissions, subscriptions, tools, UI blocks, and compatibility.
-- Script plugin runtime: JS/WASM/QuickJS options, sandboxing, store edition limits, and community edition behavior.
-- Backend minimum version: which services belong in the first self-hosted bundle.
-- Store and community edition split: high-risk inputs, dynamic UI, scripting, and distribution.
+  policy, owner-export archive layout, and restore warnings beyond the default
+  local secret-bearing `.widenote` full-backup path.
+- Encrypted sync: object model, key management, device pairing, recovery, and
+  attachment handling while preserving local-first source truth.
+- Community/script runtime: JS/WASM/QuickJS options, sandboxing, store-edition
+  limits, high-risk permission gates, and whether scripted packs can enter the
+  bundled marketplace.
+- Backend minimum version: which optional services belong in the first
+  self-hosted bundle without making account, backend, sync, runner, or registry
+  access a prerequisite for core use.
+- Memory revision/history UX: whether accepted Memory needs a separate
+  user-visible history table before sync, and how history interacts with
+  tombstones, source refs, and derived-output invalidation.

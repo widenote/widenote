@@ -109,6 +109,36 @@ Sources:
 - `docs/decisions/0003-build-agent-runtime-kernel.md`.
 - `docs/decisions/0007-defer-cloud-sync-from-core-phase-one.md`.
 
+### Clean-Room Reference Use
+
+Trigger:
+
+- A change uses Memex, Omi, or another external product as a capability,
+  interaction, architecture, marketplace, plugin, agent, or UI reference.
+- A research note, RFC, ADR, schema, Pack, prompt, fixture, test, or mobile
+  implementation claims reference-product parity.
+
+Rule:
+
+- Work from WideNote-authored specs, not copied reference implementation.
+- Public capability lists, interaction patterns, docs, and high-level
+  architecture may inform research and acceptance criteria.
+- Do not copy reference code, database schemas, migrations, prompts, private
+  APIs, UI assets, proprietary algorithms, or test data.
+- Durable behavior belongs in WideNote research, ADRs/RFCs, schemas, module
+  READMEs, and tests.
+
+Allowed deterministic checks:
+
+- License and provenance review for copied files or generated artifacts.
+- Schema, fixture, prompt, and asset diffs that check WideNote ownership.
+- Acceptance tests that validate WideNote behavior and outcomes.
+
+Sources:
+
+- `docs/architecture/current-contracts.md`: Clean-room reference use.
+- `docs/decisions/0006-use-clean-room-parity-specs.md`.
+
 ### Privacy, Secrets, And High-Risk Capabilities
 
 Trigger:

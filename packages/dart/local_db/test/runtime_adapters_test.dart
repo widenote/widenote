@@ -64,6 +64,7 @@ void main() {
           subscriptionId: 'sub.main',
           triggerEventId: 'event-round-trip',
           status: runtime.RuntimeTaskStatus.waiting,
+          runMode: runtime.RunMode.confirm,
           dependencyTaskIds: const <String>['task-before'],
           missingDependencyIds: const <String>['sub.missing'],
           attempts: 2,
@@ -133,6 +134,7 @@ void main() {
         expect(readTask.subscriptionId, task.subscriptionId);
         expect(readTask.triggerEventId, task.triggerEventId);
         expect(readTask.status, task.status);
+        expect(readTask.runMode, task.runMode);
         expect(readTask.dependencyTaskIds, task.dependencyTaskIds);
         expect(readTask.missingDependencyIds, task.missingDependencyIds);
         expect(readTask.attempts, task.attempts);
@@ -140,6 +142,8 @@ void main() {
         expect(readTask.error, task.error);
         expect(readTask.createdAt, task.createdAt);
         expect(readTask.updatedAt, task.updatedAt);
+        final persistedTask = database.runtimeTasks.readById(task.id)!;
+        expect(persistedTask.payload['runtime_task_run_mode'], 'confirm');
 
         final readRun = await store.readRunById(run.id);
         expect(readRun, isNotNull);
