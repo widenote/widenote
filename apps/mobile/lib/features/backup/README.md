@@ -18,6 +18,9 @@ the local database after an explicit replace-all confirmation.
   Provider credential values and allowlisted app-owned secure-storage settings
   are preserved so restore can use configured model providers, AMap reverse
   geocoding, and MiMo ASR immediately.
+- Adds support-only diagnostic log files under `diagnostics/` for debug/profile
+  builds and release builds with an explicit non-formal flavor. Formal release
+  flavors and unflavored release builds omit these extra files.
 - Runs archive compression and decompression off the main Flutter isolate, and
   imports the extracted SQLite snapshot from a staging directory.
 - Includes local capture media bytes in the `.widenote` archive when the
@@ -28,8 +31,11 @@ the local database after an explicit replace-all confirmation.
   External `.widenote` opens load the file into the Backup page and wait for the
   same destructive replace-all confirmation as in-app import.
 - Treats `.widenote` archives as secret-bearing local files because provider
-  API keys, allowlisted secure-storage credentials, and provider payload fields
-  are included. The UI tells users to keep backups in a trusted destination.
+  API keys, allowlisted secure-storage credentials, provider payload fields,
+  and non-formal diagnostic logs can be included. The UI tells users to keep
+  backups in a trusted destination.
+- Ignores diagnostic files during import; they are extracted and checksum
+  verified with the rest of the archive but do not become restored user data.
 - Excludes local ASR model files from backup; restored devices must redownload
   local SenseVoice model files before local ASR can run.
 - Keeps legacy JSON and Markdown projections out of the default mobile restore

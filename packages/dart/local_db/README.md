@@ -97,6 +97,9 @@ backup shape. It writes a zip-compatible compressed directory archive with:
   truth database, including provider API key values.
 - `widenote-backup/media/capture_media/**`: local capture media files whose
   attachment storage path is under `local://capture_media/`.
+- optional `widenote-backup/diagnostics/*.log` files for non-formal mobile
+  builds, plus `widenote-backup/diagnostics/export-info.txt`. These are
+  checksum-verified support attachments and are ignored by restore.
 
 Archive writes use a file-streaming zip encoder and temp-file rename. Archive
 imports use a streamed zip decoder, extract into a staging directory, and verify
@@ -180,7 +183,8 @@ secret-boundary manifest validation, legacy safe-backup provider credential
 re-entry reports, full directory-backup credential restore, encrypted-full
 guardrails, and runtime EventStore/TraceSink adapters. Backup tests also cover
 the directory `.widenote` archive, full SQLite snapshots, media entries,
-checksum verification, and the legacy Markdown projection boundary.
+diagnostic support entries, checksum verification, and the legacy Markdown
+projection boundary.
 Core tool catalog tests cover DB-backed Context Packet, Memory read/propose,
 todo suggestion, and redacted trace read tools, including required permission
 metadata, source refs, limits, redaction, and invalid-input behavior.

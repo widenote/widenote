@@ -2647,7 +2647,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get backupSecretWarning =>
-      '完整备份会包含模型提供商和 allowlist 安全存储 Key，请只保存到可信位置。';
+      '完整备份会包含模型提供商和 allowlist 安全存储 Key；非正式构建还可能包含诊断日志，请只保存到可信位置。';
 
   @override
   String get backupRestoreBoundary =>
@@ -2659,7 +2659,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get backupFullSecretBoundary =>
-      '完整 .widenote 备份会包含 Provider、AMap 和 MiMo ASR Key，恢复后可直接使用已配置功能。';
+      '完整 .widenote 备份会包含 Provider、AMap 和 MiMo ASR Key；非正式构建还会附带恢复时忽略的支持诊断。';
 
   @override
   String backupLegacyProviderCredentialReentryCount(int count) {

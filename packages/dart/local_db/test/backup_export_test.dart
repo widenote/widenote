@@ -827,123 +827,193 @@ void main() {
       );
     });
 
-    test(
-      'writes a directory snapshot archive without JSON or Markdown entries',
-      () async {
-        final temp = await Directory.systemTemp.createTemp(
-          'widenote-directory-archive-',
-        );
-        addTearDown(() async {
-          if (await temp.exists()) {
-            await temp.delete(recursive: true);
-          }
-        });
-        final sourcePath = '${temp.path}/source.sqlite';
-        final source = WideNoteLocalDatabase.openPath(sourcePath);
-        final target = WideNoteLocalDatabase.inMemory();
-        addTearDown(source.close);
-        addTearDown(target.close);
-        _seedBackupSource(source);
+    test('writes a directory snapshot archive with support files', () async {
+      final temp = await Directory.systemTemp.createTemp(
+        'widenote-directory-archive-',
+      );
+      addTearDown(() async {
+        if (await temp.exists()) {
+          await temp.delete(recursive: true);
+        }
+      });
+      final sourcePath = '${temp.path}/source.sqlite';
+      final source = WideNoteLocalDatabase.openPath(sourcePath);
+      final target = WideNoteLocalDatabase.inMemory();
+      addTearDown(source.close);
+      addTearDown(target.close);
+      _seedBackupSource(source);
 
-        final backup = LocalBackupService(
-          source,
-          clock: () => DateTime.utc(2026, 7, 1, 9),
-        ).exportBackup(mode: LocalBackupMode.full);
-        final staging = Directory('${temp.path}/directory-source');
-        await LocalBackupDatabaseSnapshotter.writeFullSnapshot(
-          sourceDatabasePath: sourcePath,
-          outputDatabasePath: '${staging.path}/data/widenote.sqlite',
-        );
-        final mediaFile = File(
-          '${staging.path}/media/capture_media/photos/demo.jpg',
-        );
-        await mediaFile.parent.create(recursive: true);
-        await mediaFile.writeAsBytes(<int>[8, 6, 7, 5, 3, 0, 9]);
-        final supportFile = File(
-          '${staging.path}/config/location_context.wnconfig',
-        );
-        await supportFile.parent.create(recursive: true);
-        await supportFile.writeAsString('amap_key=secret');
+      final backup = LocalBackupService(
+        source,
+        clock: () => DateTime.utc(2026, 7, 1, 9),
+      ).exportBackup(mode: LocalBackupMode.full);
+      final staging = Directory('${temp.path}/directory-source');
+      await LocalBackupDatabaseSnapshotter.writeFullSnapshot(
+        sourceDatabasePath: sourcePath,
+        outputDatabasePath: '${staging.path}/data/widenote.sqlite',
+      );
+      final mediaFile = File(
+        '${staging.path}/media/capture_media/photos/demo.jpg',
+      );
+      await mediaFile.parent.create(recursive: true);
+      await mediaFile.writeAsBytes(<int>[8, 6, 7, 5, 3, 0, 9]);
+      final supportFile = File(
+        '${staging.path}/config/location_context.wnconfig',
+      );
+      await supportFile.parent.create(recursive: true);
+      await supportFile.writeAsString('amap_key=secret');
+      final diagnosticLog = File('${staging.path}/diagnostics/state.log');
+      await diagnosticLog.parent.create(recursive: true);
+      await diagnosticLog.writeAsString('{"channel":"dev"}\n');
+      final diagnosticInfo = File(
+        '${staging.path}/diagnostics/export-info.txt',
+      );
+      await diagnosticInfo.writeAsString('build_flavor=dev');
 
-        final archivePath = '${temp.path}/directory-backup.widenote';
-        final writeResult = await LocalBackupDirectoryArchiveCodec.writeArchive(
+      final archivePath = '${temp.path}/directory-backup.widenote';
+      final writeResult = await LocalBackupDirectoryArchiveCodec.writeArchive(
+        sourceDirectory: staging.path,
+        outputPath: archivePath,
+        createdAt: backup.manifest.createdAt,
+        localDbSchemaVersion: backup.manifest.localDbSchemaVersion,
+        recordCounts: backup.manifest.recordCounts,
+      );
+
+      expect(writeResult.path, archivePath);
+      expect(
+        writeResult.manifest.format,
+        LocalBackupDirectoryArchiveCodec.formatId,
+      );
+      expect(writeResult.manifest.backupMode, LocalBackupMode.full);
+      expect(writeResult.manifest.includesSecrets, isTrue);
+      expect(writeResult.manifest.recordCounts, containsPair('captures', 1));
+      expect(
+        writeResult.manifest.entries.map((entry) => entry.path),
+        containsAll(<String>[
+          LocalBackupDirectoryArchiveCodec.databasePath,
+          '${LocalBackupDirectoryArchiveCodec.rootDirectory}/media/'
+              'capture_media/photos/demo.jpg',
+          '${LocalBackupDirectoryArchiveCodec.rootDirectory}/config/'
+              'location_context.wnconfig',
+          '${LocalBackupDirectoryArchiveCodec.rootDirectory}/diagnostics/'
+              'state.log',
+          '${LocalBackupDirectoryArchiveCodec.rootDirectory}/diagnostics/'
+              'export-info.txt',
+        ]),
+      );
+
+      final manifest = await LocalBackupDirectoryArchiveCodec.readManifest(
+        archivePath,
+      );
+      expect(manifest.recordCounts, containsPair('trace_events', 1));
+
+      final extract = await LocalBackupDirectoryArchiveCodec.extractToDirectory(
+        archivePath: archivePath,
+        stagingDirectory: '${temp.path}/directory-restore',
+      );
+      expect(await File(extract.mediaFiles.single.path).readAsBytes(), <int>[
+        8,
+        6,
+        7,
+        5,
+        3,
+        0,
+        9,
+      ]);
+      expect(
+        await File(
+          '${temp.path}/directory-restore/config/location_context.wnconfig',
+        ).readAsString(),
+        'amap_key=secret',
+      );
+      expect(
+        await File(
+          '${temp.path}/directory-restore/diagnostics/state.log',
+        ).readAsString(),
+        '{"channel":"dev"}\n',
+      );
+      expect(
+        await File(
+          '${temp.path}/directory-restore/diagnostics/export-info.txt',
+        ).readAsString(),
+        'build_flavor=dev',
+      );
+
+      final snapshot = WideNoteLocalDatabase.openPath(extract.databasePath);
+      addTearDown(snapshot.close);
+      final provider = snapshot.modelProviderConfigs.readDefault()!;
+      expect(provider.hasApiKey, isTrue);
+      expect(provider.apiKey, _backupCredential());
+      expect(provider.payload.toString(), contains(_backupCredential()));
+
+      final report = LocalBackupService(target).importBackup(
+        LocalBackupService(snapshot).exportBackup(mode: LocalBackupMode.full),
+        strategy: LocalBackupImportStrategy.replaceAll,
+      );
+      expect(report.backupMode, LocalBackupMode.full);
+      expect(report.includesSecrets, isTrue);
+      expect(report.requiresCredentialReentry, isFalse);
+      expect(target.captures.readById('capture-backup'), isNotNull);
+      expect(
+        target.modelProviderConfigs.readDefault()!.apiKey,
+        _backupCredential(),
+      );
+    });
+
+    test('rejects JSON and Markdown files in directory archives', () async {
+      final temp = await Directory.systemTemp.createTemp(
+        'widenote-directory-archive-json-',
+      );
+      addTearDown(() async {
+        if (await temp.exists()) {
+          await temp.delete(recursive: true);
+        }
+      });
+      final sourcePath = '${temp.path}/source.sqlite';
+      final source = WideNoteLocalDatabase.openPath(sourcePath);
+      addTearDown(source.close);
+      _seedBackupSource(source);
+
+      final backup = LocalBackupService(
+        source,
+        clock: () => DateTime.utc(2026, 7, 1, 9),
+      ).exportBackup(mode: LocalBackupMode.full);
+      final staging = Directory('${temp.path}/directory-source');
+      await LocalBackupDatabaseSnapshotter.writeFullSnapshot(
+        sourceDatabasePath: sourcePath,
+        outputDatabasePath: '${staging.path}/data/widenote.sqlite',
+      );
+      final jsonFile = File('${staging.path}/diagnostics/state.json');
+      await jsonFile.parent.create(recursive: true);
+      await jsonFile.writeAsString('{"channel":"dev"}');
+
+      await expectLater(
+        LocalBackupDirectoryArchiveCodec.writeArchive(
           sourceDirectory: staging.path,
-          outputPath: archivePath,
+          outputPath: '${temp.path}/directory-backup.widenote',
           createdAt: backup.manifest.createdAt,
           localDbSchemaVersion: backup.manifest.localDbSchemaVersion,
           recordCounts: backup.manifest.recordCounts,
-        );
+        ),
+        throwsA(isA<FormatException>()),
+      );
 
-        expect(writeResult.path, archivePath);
-        expect(
-          writeResult.manifest.format,
-          LocalBackupDirectoryArchiveCodec.formatId,
-        );
-        expect(writeResult.manifest.backupMode, LocalBackupMode.full);
-        expect(writeResult.manifest.includesSecrets, isTrue);
-        expect(writeResult.manifest.recordCounts, containsPair('captures', 1));
-        expect(
-          writeResult.manifest.entries.map((entry) => entry.path),
-          containsAll(<String>[
-            LocalBackupDirectoryArchiveCodec.databasePath,
-            '${LocalBackupDirectoryArchiveCodec.rootDirectory}/media/'
-                'capture_media/photos/demo.jpg',
-            '${LocalBackupDirectoryArchiveCodec.rootDirectory}/config/'
-                'location_context.wnconfig',
-          ]),
-        );
-        expect(
-          writeResult.manifest.entries.map((entry) => entry.path),
-          everyElement(allOf(isNot(endsWith('.json')), isNot(endsWith('.md')))),
-        );
+      await jsonFile.delete();
+      await File(
+        '${staging.path}/diagnostics/readme.md',
+      ).writeAsString('# Diagnostic notes');
 
-        final manifest = await LocalBackupDirectoryArchiveCodec.readManifest(
-          archivePath,
-        );
-        expect(manifest.recordCounts, containsPair('trace_events', 1));
-
-        final extract =
-            await LocalBackupDirectoryArchiveCodec.extractToDirectory(
-              archivePath: archivePath,
-              stagingDirectory: '${temp.path}/directory-restore',
-            );
-        expect(await File(extract.mediaFiles.single.path).readAsBytes(), <int>[
-          8,
-          6,
-          7,
-          5,
-          3,
-          0,
-          9,
-        ]);
-        expect(
-          await File(
-            '${temp.path}/directory-restore/config/location_context.wnconfig',
-          ).readAsString(),
-          'amap_key=secret',
-        );
-
-        final snapshot = WideNoteLocalDatabase.openPath(extract.databasePath);
-        addTearDown(snapshot.close);
-        final provider = snapshot.modelProviderConfigs.readDefault()!;
-        expect(provider.hasApiKey, isTrue);
-        expect(provider.apiKey, _backupCredential());
-        expect(provider.payload.toString(), contains(_backupCredential()));
-
-        final report = LocalBackupService(target).importBackup(
-          LocalBackupService(snapshot).exportBackup(mode: LocalBackupMode.full),
-          strategy: LocalBackupImportStrategy.replaceAll,
-        );
-        expect(report.backupMode, LocalBackupMode.full);
-        expect(report.includesSecrets, isTrue);
-        expect(report.requiresCredentialReentry, isFalse);
-        expect(target.captures.readById('capture-backup'), isNotNull);
-        expect(
-          target.modelProviderConfigs.readDefault()!.apiKey,
-          _backupCredential(),
-        );
-      },
-    );
+      await expectLater(
+        LocalBackupDirectoryArchiveCodec.writeArchive(
+          sourceDirectory: staging.path,
+          outputPath: '${temp.path}/directory-backup.widenote',
+          createdAt: backup.manifest.createdAt,
+          localDbSchemaVersion: backup.manifest.localDbSchemaVersion,
+          recordCounts: backup.manifest.recordCounts,
+        ),
+        throwsA(isA<FormatException>()),
+      );
+    });
   });
 
   group('LocalBackupCodec', () {

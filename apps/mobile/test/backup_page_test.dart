@@ -14,6 +14,54 @@ import 'package:widenote_mobile/features/transcription/transcription_settings.da
 import 'package:widenote_mobile/l10n/l10n.dart';
 
 void main() {
+  test('backup diagnostic logs are skipped for formal release builds', () {
+    expect(
+      shouldIncludeBackupDiagnosticLogs(flavor: 'prod', isReleaseMode: true),
+      isFalse,
+    );
+    expect(
+      shouldIncludeBackupDiagnosticLogs(flavor: 'Prod', isReleaseMode: true),
+      isFalse,
+    );
+    expect(
+      shouldIncludeBackupDiagnosticLogs(
+        flavor: 'production',
+        isReleaseMode: true,
+      ),
+      isFalse,
+    );
+    expect(
+      shouldIncludeBackupDiagnosticLogs(
+        flavor: 'official',
+        isReleaseMode: true,
+      ),
+      isFalse,
+    );
+    expect(
+      shouldIncludeBackupDiagnosticLogs(flavor: '', isReleaseMode: true),
+      isFalse,
+    );
+    expect(
+      shouldIncludeBackupDiagnosticLogs(flavor: null, isReleaseMode: true),
+      isFalse,
+    );
+    expect(
+      shouldIncludeBackupDiagnosticLogs(flavor: 'prod', isReleaseMode: false),
+      isTrue,
+    );
+    expect(
+      shouldIncludeBackupDiagnosticLogs(flavor: 'dev', isReleaseMode: true),
+      isTrue,
+    );
+    expect(
+      shouldIncludeBackupDiagnosticLogs(
+        flavor: 'internal',
+        isReleaseMode: true,
+      ),
+      isTrue,
+    );
+  });
+
   testWidgets('backup page renders export and import controls', (tester) async {
     final database = WideNoteLocalDatabase.inMemory();
     await _pumpBackupPage(tester, database: database);
@@ -62,6 +110,188 @@ void main() {
     expect(find.byKey(const Key('backup-copy-markdown-button')), findsNothing);
     expect(find.byKey(const Key('backup-export-markdown')), findsNothing);
     expect(find.textContaining(_backupPageCredential()), findsNothing);
+  });
+
+  test('non-formal file export attaches diagnostic log files', () async {
+    final temp = await Directory.systemTemp.createTemp(
+      'widenote-dev-backup-diagnostics-',
+    );
+    addTearDown(() async {
+      if (await temp.exists()) {
+        await temp.delete(recursive: true);
+      }
+    });
+    final support = Directory('${temp.path}/support')..createSync();
+    final data = Directory('${support.path}/local-data')
+      ..createSync(recursive: true);
+    final database = WideNoteLocalDatabase.openPath(
+      '${data.path}/widenote.sqlite',
+    );
+    addTearDown(database.close);
+    _seedDiagnosticRows(database);
+
+    final backup = LocalBackupService(
+      database,
+    ).exportBackup(mode: LocalBackupMode.full);
+    final store = AppSupportBackupFileStore(
+      supportDirectory: support,
+      includeDiagnosticLogs: true,
+      buildFlavor: 'dev',
+      buildMode: 'debug',
+    );
+
+    final result = await store.saveExport(
+      backup: backup,
+      createdAt: DateTime.utc(2026, 7, 2, 12, 30),
+    );
+
+    final manifest = await LocalBackupDirectoryArchiveCodec.readManifest(
+      result.archivePath,
+    );
+    expect(
+      manifest.entries.map((entry) => entry.path),
+      containsAll(<String>[
+        '${LocalBackupDirectoryArchiveCodec.rootDirectory}/diagnostics/'
+            'export-info.txt',
+        '${LocalBackupDirectoryArchiveCodec.rootDirectory}/diagnostics/'
+            'event_log.log',
+        '${LocalBackupDirectoryArchiveCodec.rootDirectory}/diagnostics/'
+            'runtime_tasks.log',
+        '${LocalBackupDirectoryArchiveCodec.rootDirectory}/diagnostics/'
+            'runtime_runs.log',
+        '${LocalBackupDirectoryArchiveCodec.rootDirectory}/diagnostics/'
+            'trace_events.log',
+      ]),
+    );
+
+    await LocalBackupDirectoryArchiveCodec.extractToDirectory(
+      archivePath: result.archivePath,
+      stagingDirectory: '${temp.path}/extract',
+    );
+    expect(
+      await File(
+        '${temp.path}/extract/diagnostics/export-info.txt',
+      ).readAsString(),
+      allOf(
+        contains('build_flavor=dev'),
+        contains('build_mode=debug'),
+        contains('trace_event_rows=1'),
+      ),
+    );
+    expect(
+      await File(
+        '${temp.path}/extract/diagnostics/trace_events.log',
+      ).readAsString(),
+      allOf(contains('trace-diagnostic'), contains('diagnostic output')),
+    );
+  });
+
+  test('formal file export omits diagnostic log files', () async {
+    final temp = await Directory.systemTemp.createTemp(
+      'widenote-prod-backup-diagnostics-',
+    );
+    addTearDown(() async {
+      if (await temp.exists()) {
+        await temp.delete(recursive: true);
+      }
+    });
+    final support = Directory('${temp.path}/support')..createSync();
+    final data = Directory('${support.path}/local-data')
+      ..createSync(recursive: true);
+    final database = WideNoteLocalDatabase.openPath(
+      '${data.path}/widenote.sqlite',
+    );
+    addTearDown(database.close);
+    _seedDiagnosticRows(database);
+
+    final backup = LocalBackupService(
+      database,
+    ).exportBackup(mode: LocalBackupMode.full);
+    final store = AppSupportBackupFileStore(
+      supportDirectory: support,
+      includeDiagnosticLogs: false,
+      buildFlavor: 'prod',
+      buildMode: 'release',
+    );
+
+    final result = await store.saveExport(
+      backup: backup,
+      createdAt: DateTime.utc(2026, 7, 2, 12, 30),
+    );
+
+    final manifest = await LocalBackupDirectoryArchiveCodec.readManifest(
+      result.archivePath,
+    );
+    expect(
+      manifest.entries.map((entry) => entry.path),
+      isNot(
+        contains(
+          '${LocalBackupDirectoryArchiveCodec.rootDirectory}/diagnostics/'
+          'trace_events.log',
+        ),
+      ),
+    );
+  });
+
+  test('file import ignores diagnostic support files', () async {
+    final temp = await Directory.systemTemp.createTemp(
+      'widenote-import-diagnostics-',
+    );
+    addTearDown(() async {
+      if (await temp.exists()) {
+        await temp.delete(recursive: true);
+      }
+    });
+    final sourcePath = '${temp.path}/source.sqlite';
+    final source = WideNoteLocalDatabase.openPath(sourcePath);
+    final target = WideNoteLocalDatabase.inMemory();
+    addTearDown(source.close);
+    addTearDown(target.close);
+    _seedLocalData(source);
+
+    final backup = LocalBackupService(
+      source,
+    ).exportBackup(mode: LocalBackupMode.full);
+    final archiveSource = Directory('${temp.path}/archive-source');
+    await LocalBackupDatabaseSnapshotter.writeFullSnapshot(
+      sourceDatabasePath: sourcePath,
+      outputDatabasePath: '${archiveSource.path}/data/widenote.sqlite',
+    );
+    final diagnosticDirectory = Directory('${archiveSource.path}/diagnostics');
+    await diagnosticDirectory.create(recursive: true);
+    await File(
+      '${diagnosticDirectory.path}/event_log.log',
+    ).writeAsString('{"id":"event-diagnostic-only"}\n');
+    await File(
+      '${diagnosticDirectory.path}/trace_events.log',
+    ).writeAsString('{"id":"trace-diagnostic-only"}\n');
+    await File(
+      '${diagnosticDirectory.path}/export-info.txt',
+    ).writeAsString('build_flavor=dev\n');
+
+    final archivePath = '${temp.path}/diagnostic-import.widenote';
+    await LocalBackupDirectoryArchiveCodec.writeArchive(
+      sourceDirectory: archiveSource.path,
+      outputPath: archivePath,
+      createdAt: backup.manifest.createdAt,
+      localDbSchemaVersion: backup.manifest.localDbSchemaVersion,
+      recordCounts: backup.manifest.recordCounts,
+    );
+    final store = AppSupportBackupFileStore(
+      supportDirectory: Directory('${temp.path}/support')..createSync(),
+    );
+
+    final payload = await store.readArchive(archivePath);
+    addTearDown(() => store.discardPreparedImport(payload));
+    final report = LocalBackupService(target).importBackup(
+      payload.backup,
+      strategy: LocalBackupImportStrategy.replaceAll,
+    );
+
+    expect(report.backupMode, LocalBackupMode.full);
+    expect(target.captures.readById('capture-backup-page'), isNotNull);
+    expect(target.eventLog.readById('event-diagnostic-only'), isNull);
+    expect(target.traceEvents.readById('trace-diagnostic-only'), isNull);
   });
 
   testWidgets(
@@ -579,6 +809,67 @@ void _seedStaleLocalData(WideNoteLocalDatabase database) {
         updatedAt: now,
       ),
     );
+}
+
+void _seedDiagnosticRows(WideNoteLocalDatabase database) {
+  final now = DateTime.utc(2026, 7, 2, 12);
+  database.eventLog.append(
+    EventLogEntry(
+      id: 'event-diagnostic',
+      type: 'wn.capture.created',
+      actor: 'user',
+      subjectRef: const <String, Object?>{
+        'kind': 'capture',
+        'id': 'capture-diagnostic',
+      },
+      payload: const <String, Object?>{'note': 'diagnostic export source'},
+      createdAt: now,
+    ),
+  );
+  database.runtimeTasks.insert(
+    RuntimeTaskRecord(
+      id: 'task-diagnostic',
+      packId: 'pack.default',
+      packVersion: '0.1.0',
+      agentId: 'agent.capture',
+      handlerId: 'capture.default',
+      subscriptionId: 'sub.capture',
+      triggerEventId: 'event-diagnostic',
+      status: 'completed',
+      createdAt: now,
+      updatedAt: now,
+    ),
+  );
+  database.runtimeRuns.insert(
+    RuntimeRunRecord(
+      id: 'run-diagnostic',
+      taskId: 'task-diagnostic',
+      packId: 'pack.default',
+      packVersion: '0.1.0',
+      agentId: 'agent.capture',
+      handlerId: 'capture.default',
+      status: 'completed',
+      startedAt: now,
+      completedAt: now.add(const Duration(milliseconds: 8)),
+      attempt: 1,
+    ),
+  );
+  database.traceEvents.insert(
+    TraceEventRecord(
+      id: 'trace-diagnostic',
+      name: 'runtime.handler.output',
+      level: 'debug',
+      runIdOverride: 'run-diagnostic',
+      message: 'diagnostic output',
+      sourceEventId: 'event-diagnostic',
+      sourceRunId: 'run-diagnostic',
+      sourceTaskId: 'task-diagnostic',
+      packId: 'pack.default',
+      agentId: 'agent.capture',
+      payload: const <String, Object?>{'rows': 1},
+      createdAt: now.add(const Duration(milliseconds: 8)),
+    ),
+  );
 }
 
 String _backupPageCredential() {
