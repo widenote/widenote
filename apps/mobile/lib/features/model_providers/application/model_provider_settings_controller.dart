@@ -87,6 +87,19 @@ final class ModelProviderSettingsState {
     return null;
   }
 
+  ModelProviderConfig? providerForCapability(ModelCapability capability) {
+    final defaultProvider = this.defaultProvider;
+    if (defaultProvider?.capabilities.contains(capability) ?? false) {
+      return defaultProvider;
+    }
+    for (final provider in providers) {
+      if (provider.capabilities.contains(capability)) {
+        return provider;
+      }
+    }
+    return null;
+  }
+
   ProviderConnectionSnapshot connectionFor(String providerId) {
     return connectionResults[providerId] ?? const ProviderConnectionSnapshot();
   }
@@ -420,7 +433,8 @@ class ModelProviderSettingsController
   void _refreshRuntimeModelClient() {
     ref
       ..invalidate(modelClientProvider)
-      ..invalidate(chatModelClientProvider);
+      ..invalidate(chatModelClientProvider)
+      ..invalidate(visionModelClientProvider);
   }
 }
 
@@ -516,7 +530,7 @@ ModelProviderConfig? _configFromRecord(ModelProviderConfigRecord record) {
     model: record.model,
     apiKey: record.apiKey,
     accessMode: _accessModeFromRecord(record) ?? kind.defaultAccessMode,
-    capabilities: _capabilitiesFromRecord(record),
+    capabilities: _capabilitiesFromRecord(record, kind),
   );
 }
 
@@ -569,7 +583,10 @@ ModelProviderKind? _kindFromRecord(ModelProviderConfigRecord record) {
   return null;
 }
 
-Set<ModelCapability> _capabilitiesFromRecord(ModelProviderConfigRecord record) {
+Set<ModelCapability> _capabilitiesFromRecord(
+  ModelProviderConfigRecord record,
+  ModelProviderKind kind,
+) {
   final capabilities = <ModelCapability>{};
   for (final name in record.capabilities.whereType<String>()) {
     for (final capability in ModelCapability.values) {
@@ -578,6 +595,17 @@ Set<ModelCapability> _capabilitiesFromRecord(ModelProviderConfigRecord record) {
         break;
       }
     }
+  }
+  if (capabilities.isEmpty) {
+    return defaultCapabilitiesForModel(kind, record.model);
+  }
+  final inferred = defaultCapabilitiesForModel(kind, record.model);
+  if (_shouldBackfillInferredCapabilities(
+    stored: capabilities,
+    inferred: inferred,
+    payload: record.payload,
+  )) {
+    return inferred;
   }
   return capabilities;
 }
@@ -594,6 +622,25 @@ ModelProviderAccessMode? _accessModeFromRecord(
   } on StateError {
     return null;
   }
+}
+
+bool _shouldBackfillInferredCapabilities({
+  required Set<ModelCapability> stored,
+  required Set<ModelCapability> inferred,
+  required Map<String, Object?> payload,
+}) {
+  if (payload['capabilities_source'] == 'explicit') {
+    return false;
+  }
+  final storedOnlyText =
+      stored.length == 2 &&
+      stored.contains(ModelCapability.chat) &&
+      stored.contains(ModelCapability.completion);
+  final inferredHasMedia =
+      inferred.contains(ModelCapability.vision) ||
+      inferred.contains(ModelCapability.audio) ||
+      inferred.contains(ModelCapability.video);
+  return storedOnlyText && inferredHasMedia;
 }
 
 ModelProviderConfigRecord _recordFromConfig(
@@ -618,6 +665,7 @@ ModelProviderConfigRecord _recordFromConfig(
     payload: <String, Object?>{
       'secret_storage': 'local_db_backup',
       'access_mode': config.effectiveAccessMode.wireName,
+      'capabilities_source': 'explicit',
     },
     createdAt: createdAt,
     updatedAt: updatedAt,

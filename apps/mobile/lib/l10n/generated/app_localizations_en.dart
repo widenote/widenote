@@ -2704,6 +2704,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Used by chat answers and model-backed Agent Pack work in this slice.';
 
   @override
+  String get providerSettingsVisionRoleTitle => 'Vision semantic agent';
+
+  @override
+  String get providerSettingsVisionRoleDescription =>
+      'Used by capture image preprocessing. It requires a provider tagged with Vision.';
+
+  @override
+  String get providerSettingsVisionRoleUnavailable =>
+      'No Vision provider configured';
+
+  @override
   String get providerSettingsAgentRoleTitle => 'Per-Agent overrides';
 
   @override
@@ -2727,10 +2738,48 @@ class AppLocalizationsEn extends AppLocalizations {
   String get providerSettingsCapabilityCompletion => 'Completion';
 
   @override
+  String get providerSettingsCapabilityVision => 'Vision';
+
+  @override
+  String get providerSettingsCapabilityAudio => 'Audio';
+
+  @override
+  String get providerSettingsCapabilityVideo => 'Video';
+
+  @override
+  String get providerSettingsCapabilityTextOnly => 'Text only';
+
+  @override
   String get providerSettingsCapabilityOfflineFallback => 'Local raw capture';
 
   @override
   String get providerSettingsCapabilityByok => 'BYOK local storage';
+
+  @override
+  String get providerCapabilityPreviewTitle => 'Model capability tags';
+
+  @override
+  String get providerCapabilityVisionOverrideTitle => 'Supports image input';
+
+  @override
+  String get providerCapabilityVisionOverrideSubtitle =>
+      'Enable only when this model can accept image content for capture understanding.';
+
+  @override
+  String get providerCapabilityAudioOverrideTitle =>
+      'Supports speech or audio input';
+
+  @override
+  String get providerCapabilityAudioOverrideSubtitle =>
+      'Enable only when this model can accept audio content or speech transcription requests.';
+
+  @override
+  String get providerCapabilityVideoOverrideTitle =>
+      'Supports video input or generation';
+
+  @override
+  String get providerCapabilityVideoOverrideSubtitle =>
+      'Enable only when this model can accept video content or run video generation tasks.';
 
   @override
   String get providerClearKeyTitle => 'Clear saved API key';

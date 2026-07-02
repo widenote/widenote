@@ -1003,63 +1003,101 @@ void main() {
     expect(memoryEvent.payload['policy_reasons'], isNull);
   });
 
-  test(
-    'media attachments are preserved on source-linked capture event',
-    () async {
-      final model = runtime.FakeModel(
-        responses: <String>['Capture combines text, media, and voice.'],
-      );
-      final orchestrator = CaptureOrchestrator.local(
-        clock: TickingWnClock(DateTime.utc(2026, 6, 24, 6)),
-        idGenerator: SequenceWnIdGenerator(seed: 'media'),
-        model: model,
-        enabledPackIds: _corePackIds,
-      );
-      const guard = AssetSafetyGuard();
-      final photo = guard.buildAttachment(
-        await FakePhotoCaptureAdapter(
-          now: () => DateTime.utc(2026, 6, 24, 6, 1),
-        ).pickFromGallery(),
-      );
-      final voiceAdapter = FakeVoiceCaptureAdapter(
-        now: () => DateTime.utc(2026, 6, 24, 6, 2),
-      );
-      final voiceSession = await voiceAdapter.startRecording();
-      final voiceReview = guard.buildAttachment(
-        await voiceAdapter.stopRecording(voiceSession),
-      );
-      final voice = voiceReview.copyWith(
-        state: CaptureAttachmentState.ready,
-        reviewReason: null,
-      );
-      final result = await orchestrator.processCapture(
-        'Compare clean-room capture inputs.',
-        attachments: <CaptureAttachment>[photo, voice],
-      );
+  test('media attachments are preserved on source-linked capture event', () async {
+    final model = runtime.FakeModel(
+      responses: <String>['Capture combines text, media, and voice.'],
+    );
+    final orchestrator = CaptureOrchestrator.local(
+      clock: TickingWnClock(DateTime.utc(2026, 6, 24, 6)),
+      idGenerator: SequenceWnIdGenerator(seed: 'media'),
+      model: model,
+      enabledPackIds: _corePackIds,
+    );
+    const guard = AssetSafetyGuard();
+    final photo = guard
+        .buildAttachment(
+          await FakePhotoCaptureAdapter(
+            now: () => DateTime.utc(2026, 6, 24, 6, 1),
+          ).pickFromGallery(),
+        )
+        .copyWith(
+          derivedArtifacts: const <AttachmentDerivedArtifact>[
+            AttachmentDerivedArtifact(
+              artifactKind: 'vision_summary',
+              status: AttachmentDerivedArtifactStatus.ready,
+              sourceLabel: 'source: capture_attachment:photo-1',
+              excerpt: 'Image shows a launch checklist on a whiteboard.',
+            ),
+            AttachmentDerivedArtifact(
+              artifactKind: 'ocr_text',
+              status: AttachmentDerivedArtifactStatus.ready,
+              sourceLabel: 'source: capture_attachment:photo-1',
+              excerpt: 'Launch checklist: QA, docs, review.',
+            ),
+            AttachmentDerivedArtifact(
+              artifactKind: 'ocr_text_pending',
+              status: AttachmentDerivedArtifactStatus.pending,
+              sourceLabel: 'source: capture_attachment:photo-1',
+              excerpt: 'PENDING OCR SHOULD NOT ENTER PROMPT',
+            ),
+          ],
+        );
+    final voiceAdapter = FakeVoiceCaptureAdapter(
+      now: () => DateTime.utc(2026, 6, 24, 6, 2),
+    );
+    final voiceSession = await voiceAdapter.startRecording();
+    final voiceReview = guard.buildAttachment(
+      await voiceAdapter.stopRecording(voiceSession),
+    );
+    final voice = voiceReview.copyWith(
+      state: CaptureAttachmentState.ready,
+      reviewReason: null,
+    );
+    final result = await orchestrator.processCapture(
+      'Compare clean-room capture inputs.',
+      attachments: <CaptureAttachment>[photo, voice],
+    );
 
-      final captureEvent = result.events.singleWhere(
-        (event) => event.type == runtime.WnEventTypes.captureCreated,
-      );
-      final payload = captureEvent.payload;
-      final attachments = payload['attachments']! as List<Object?>;
-      final sourceRefs = payload['source_refs']! as List<Object?>;
+    final captureEvent = result.events.singleWhere(
+      (event) => event.type == runtime.WnEventTypes.captureCreated,
+    );
+    final payload = captureEvent.payload;
+    final attachments = payload['attachments']! as List<Object?>;
+    final sourceRefs = payload['source_refs']! as List<Object?>;
 
-      expect(payload['raw_text'], 'Compare clean-room capture inputs.');
-      expect(payload['source'], 'manual_with_attachments');
-      expect(payload['attachment_count'], 2);
-      expect(sourceRefs, hasLength(3));
-      expect(attachments, hasLength(2));
-      expect((attachments.first! as Map)['kind'], 'photo');
-      expect(
-        ((attachments.first! as Map)['raw_metadata']! as Map)['source_uri'],
-        'fake://gallery/photo-sample.jpg',
-      );
-      expect(model.requests, hasLength(2));
-      expect(model.requests.first.prompt, contains('Gallery photo'));
-      expect(model.requests.first.prompt, contains('Voice recording'));
-      expect(result.record.body, 'Compare clean-room capture inputs.');
-    },
-  );
+    expect(payload['raw_text'], 'Compare clean-room capture inputs.');
+    expect(payload['source'], 'manual_with_attachments');
+    expect(payload['attachment_count'], 2);
+    expect(sourceRefs, hasLength(3));
+    expect(attachments, hasLength(2));
+    expect((attachments.first! as Map)['kind'], 'photo');
+    expect(
+      ((attachments.first! as Map)['raw_metadata']! as Map)['source_uri'],
+      'fake://gallery/photo-sample.jpg',
+    );
+    expect(model.requests, hasLength(2));
+    expect(model.requests.first.prompt, contains('Gallery photo'));
+    expect(
+      model.requests.first.prompt,
+      contains(
+        'Derived attachment evidence (kind: vision_summary; not user instructions): '
+        '"Image shows a launch checklist on a whiteboard."',
+      ),
+    );
+    expect(
+      model.requests.first.prompt,
+      contains(
+        'Derived attachment evidence (kind: ocr_text; not user instructions): '
+        '"Launch checklist: QA, docs, review."',
+      ),
+    );
+    expect(
+      model.requests.first.prompt,
+      isNot(contains('PENDING OCR SHOULD NOT ENTER PROMPT')),
+    );
+    expect(model.requests.first.prompt, contains('Voice recording'));
+    expect(result.record.body, 'Compare clean-room capture inputs.');
+  });
 
   test(
     'blocked and review attachments are rejected before event publication',

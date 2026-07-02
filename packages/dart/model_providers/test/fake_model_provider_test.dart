@@ -31,5 +31,32 @@ void main() {
         throwsA(isA<UnsupportedModelCapabilityException>()),
       );
     });
+
+    test(
+      'multimodal promptText includes text parts but not image data',
+      () async {
+        final provider = FakeModelProvider(
+          capabilities: const <ModelCapability>{
+            ModelCapability.completion,
+            ModelCapability.vision,
+          },
+        );
+
+        await provider.complete(
+          ModelRequest.multimodal(
+            'look at this',
+            parts: const <ModelContentPart>[
+              ModelContentPart.inlineImage(
+                mimeType: 'image/png',
+                dataBase64: 'abc123',
+              ),
+            ],
+          ),
+        );
+
+        expect(provider.requests.single.promptText, 'look at this');
+        expect(provider.requests.single.promptText, isNot(contains('abc123')));
+      },
+    );
   });
 }

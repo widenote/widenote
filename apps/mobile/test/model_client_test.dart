@@ -276,6 +276,100 @@ void main() {
     },
   );
 
+  test(
+    'visionModelClientProvider routes to a vision-capable provider',
+    () async {
+      var textProviderHits = 0;
+      var visionProviderHits = 0;
+      final textEndpoint = await _serve((request) async {
+        textProviderHits += 1;
+        await utf8.decodeStream(request);
+        request.response
+          ..statusCode = HttpStatus.ok
+          ..headers.contentType = ContentType.json
+          ..write(
+            jsonEncode(<String, Object?>{
+              'id': 'text-provider',
+              'model': 'text-model',
+              'choices': <Map<String, Object?>>[
+                <String, Object?>{
+                  'message': <String, Object?>{'content': 'Text response.'},
+                },
+              ],
+            }),
+          );
+        await request.response.close();
+      });
+      final visionEndpoint = await _serve((request) async {
+        visionProviderHits += 1;
+        final body = jsonDecode(await utf8.decodeStream(request)) as Map;
+        final messages = body['messages'] as List<Object?>;
+        final user = messages.single as Map<String, Object?>;
+        expect(jsonEncode(user['content']), contains('image_url'));
+        request.response
+          ..statusCode = HttpStatus.ok
+          ..headers.contentType = ContentType.json
+          ..write(
+            jsonEncode(<String, Object?>{
+              'id': 'vision-provider',
+              'model': 'xiaomi/mimo-v2.5',
+              'choices': <Map<String, Object?>>[
+                <String, Object?>{
+                  'message': <String, Object?>{'content': 'Image understood.'},
+                },
+              ],
+            }),
+          );
+        await request.response.close();
+      });
+      final database = WideNoteLocalDatabase.inMemory();
+      addTearDown(database.close);
+      _insertProvider(
+        database,
+        id: 'provider-text',
+        displayName: 'Text provider',
+        endpoint: textEndpoint,
+        model: 'deepseek-v4-flash',
+      );
+      _insertProvider(
+        database,
+        id: 'provider-vision',
+        providerKind: ModelProviderKind.openRouter.name,
+        displayName: 'Vision provider',
+        endpoint: visionEndpoint,
+        model: 'xiaomi/mimo-v2.5',
+        isDefault: false,
+        capabilities: const <Object?>['chat', 'completion', 'vision'],
+      );
+      final container = ProviderContainer(
+        overrides: [localDatabaseProvider.overrideWithValue(database)],
+      );
+      addTearDown(container.dispose);
+
+      final textResponse = await container
+          .read(modelClientProvider)
+          .complete(const runtime.ModelRequest(prompt: 'Use text model.'));
+      final visionResponse = await container
+          .read(visionModelClientProvider)
+          .complete(
+            const runtime.ModelRequest(
+              prompt: 'Describe this image.',
+              attachments: <runtime.ModelRequestAttachment>[
+                runtime.ModelRequestAttachment.inlineImage(
+                  mimeType: 'image/png',
+                  dataBase64: 'abc123',
+                ),
+              ],
+            ),
+          );
+
+      expect(textResponse.raw['provider_id'], 'provider-text');
+      expect(visionResponse.raw['provider_id'], 'provider-vision');
+      expect(textProviderHits, 1);
+      expect(visionProviderHits, 1);
+    },
+  );
+
   test('saving and deleting providers refreshes modelClientProvider', () async {
     final endpoint = await _providerEndpoint('Saved provider memory.');
     final database = WideNoteLocalDatabase.inMemory();
@@ -830,6 +924,7 @@ void _insertProvider(
   String model = 'local-provider-model',
   String apiKey = 'provider-secret',
   bool isDefault = true,
+  List<Object?> capabilities = const <Object?>['chat', 'completion'],
   DateTime? updatedAt,
 }) {
   final now = updatedAt ?? DateTime.utc(2026, 6, 24, 12);
@@ -843,7 +938,7 @@ void _insertProvider(
       isDefault: isDefault,
       hasApiKey: true,
       apiKey: apiKey,
-      capabilities: const <Object?>['chat', 'completion'],
+      capabilities: capabilities,
       createdAt: now,
       updatedAt: now,
     ),

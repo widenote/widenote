@@ -76,6 +76,8 @@ void main() {
       expect(modelCapabilityFromWireName('tool_use'), ModelCapability.toolUse);
       expect(modelCapabilityFromWireName('toolUse'), ModelCapability.toolUse);
       expect(ModelCapability.toolUse.wireName, 'tool_use');
+      expect(modelCapabilityFromWireName('video'), ModelCapability.video);
+      expect(ModelCapability.video.wireName, 'video');
     });
 
     test('presets choose compatibility endpoints and models', () {
@@ -109,6 +111,51 @@ void main() {
       expect(kimi.kind.usesAnthropicMessages, isFalse);
       expect(kimi.endpoint.path, '/v1');
       expect(kimi.model, isNotEmpty);
+    });
+
+    test('infers conservative media capability tags', () {
+      expect(
+        defaultCapabilitiesForModel(
+          ModelProviderKind.openRouter,
+          'xiaomi/mimo-v2.5',
+        ),
+        contains(ModelCapability.vision),
+      );
+      expect(
+        defaultCapabilitiesForModel(
+          ModelProviderKind.openRouter,
+          'openrouter/auto',
+        ),
+        isNot(contains(ModelCapability.vision)),
+      );
+      expect(
+        defaultCapabilitiesForModel(
+          ModelProviderKind.deepSeek,
+          'deepseek-v4-flash',
+        ),
+        isNot(contains(ModelCapability.vision)),
+      );
+      expect(
+        defaultCapabilitiesForModel(
+          ModelProviderKind.deepSeek,
+          'deepseek-v4-flash',
+        ),
+        isNot(contains(ModelCapability.video)),
+      );
+      expect(
+        defaultCapabilitiesForModel(
+          ModelProviderKind.openAi,
+          'whisper-large-v3',
+        ),
+        contains(ModelCapability.audio),
+      );
+      expect(
+        defaultCapabilitiesForModel(
+          ModelProviderKind.openRouter,
+          'google/veo-3.0-generate-preview',
+        ),
+        contains(ModelCapability.video),
+      );
     });
 
     test('does not require a key for local Ollama presets', () {

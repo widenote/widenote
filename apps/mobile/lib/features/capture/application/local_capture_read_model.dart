@@ -390,14 +390,15 @@ localdb.DerivedArtifactRecord _artifactRecordFromView({
     title: _artifactTitle(artifact),
     body: body,
     confidence: artifact.status == AttachmentDerivedArtifactStatus.ready
-        ? 'medium'
+        ? _artifactConfidence(attachment, fallback: 'medium')
         : 'low',
-    generatorId: 'capture.media.${artifact.artifactKind}',
+    generatorId: _artifactGeneratorId(attachment, artifact),
     generatorVersion: '1.0.0',
     payload: <String, Object?>{
       'artifact_status': artifact.status.wireName,
       'source_label': artifact.sourceLabel,
       if (artifact.reason != null) 'reason': artifact.reason,
+      ..._artifactMetadataPayload(attachment, artifact),
     },
   );
 }
@@ -613,6 +614,128 @@ String _artifactTitle(AttachmentDerivedArtifact artifact) {
     'shared_text' => 'Shared attachment text',
     _ => artifact.artifactKind,
   };
+}
+
+String _artifactGeneratorId(
+  CaptureAttachment attachment,
+  AttachmentDerivedArtifact artifact,
+) {
+  if (_isImagePreprocessingArtifact(attachment, artifact)) {
+    return 'capture.media.semantic_agent';
+  }
+  return 'capture.media.${artifact.artifactKind}';
+}
+
+String _artifactConfidence(
+  CaptureAttachment attachment, {
+  required String fallback,
+}) {
+  return _metadataString(attachment.rawMetadata, 'image_confidence') ??
+      fallback;
+}
+
+Map<String, Object?> _artifactMetadataPayload(
+  CaptureAttachment attachment,
+  AttachmentDerivedArtifact artifact,
+) {
+  if (!_isImagePreprocessingArtifact(attachment, artifact)) {
+    return const <String, Object?>{};
+  }
+  return <String, Object?>{
+    if (_metadataString(attachment.rawMetadata, 'sha256') != null)
+      'source_sha256': _metadataString(attachment.rawMetadata, 'sha256'),
+    if (_metadataString(attachment.rawMetadata, 'image_preprocessing_status') !=
+        null)
+      'preprocessing_status': _metadataString(
+        attachment.rawMetadata,
+        'image_preprocessing_status',
+      ),
+    if (_metadataString(attachment.rawMetadata, 'image_preprocessing_error') !=
+        null)
+      'reason': _metadataString(
+        attachment.rawMetadata,
+        'image_preprocessing_error',
+      ),
+    if (artifact.artifactKind == 'vision_summary')
+      'labels': _metadataStringList(attachment.rawMetadata, 'image_labels'),
+    if (artifact.artifactKind == 'ocr_text' &&
+        _metadataString(attachment.rawMetadata, 'ocr_text') == null)
+      'empty_reason': 'no_visible_text',
+    'derived_by': <String, Object?>{
+      if (_metadataString(
+            attachment.rawMetadata,
+            'image_preprocessing_prompt_version',
+          ) !=
+          null)
+        'prompt_version': _metadataString(
+          attachment.rawMetadata,
+          'image_preprocessing_prompt_version',
+        ),
+      if (_metadataString(
+            attachment.rawMetadata,
+            'image_preprocessing_provider_id',
+          ) !=
+          null)
+        'provider_id': _metadataString(
+          attachment.rawMetadata,
+          'image_preprocessing_provider_id',
+        ),
+      if (_metadataString(
+            attachment.rawMetadata,
+            'image_preprocessing_model',
+          ) !=
+          null)
+        'model': _metadataString(
+          attachment.rawMetadata,
+          'image_preprocessing_model',
+        ),
+      'image_upload': <String, Object?>{
+        if (_metadataString(attachment.rawMetadata, 'image_upload_mime_type') !=
+            null)
+          'mime_type': _metadataString(
+            attachment.rawMetadata,
+            'image_upload_mime_type',
+          ),
+        if (attachment.rawMetadata['image_upload_resize'] is String)
+          'resize': attachment.rawMetadata['image_upload_resize'],
+        if (attachment.rawMetadata['image_upload_byte_length'] is int)
+          'upload_byte_length':
+              attachment.rawMetadata['image_upload_byte_length'],
+        'bytes': 'not_included',
+      },
+    },
+  };
+}
+
+bool _isImagePreprocessingArtifact(
+  CaptureAttachment attachment,
+  AttachmentDerivedArtifact artifact,
+) {
+  return attachment.kind == CaptureAssetKind.photo &&
+      (artifact.artifactKind == 'vision_summary' ||
+          artifact.artifactKind == 'ocr_text') &&
+      _metadataString(attachment.rawMetadata, 'image_preprocessing_status') !=
+          null;
+}
+
+List<String> _metadataStringList(Map<String, Object?> metadata, String key) {
+  final direct = metadata[key];
+  if (direct is List) {
+    return direct
+        .whereType<String>()
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toList(growable: false);
+  }
+  final nested = _nestedMetadata(metadata)[key];
+  if (nested is List) {
+    return nested
+        .whereType<String>()
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toList(growable: false);
+  }
+  return const <String>[];
 }
 
 String _transcriptStatus(String? transcript) {

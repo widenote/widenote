@@ -4443,6 +4443,24 @@ abstract class AppLocalizations {
   /// **'Used by chat answers and model-backed Agent Pack work in this slice.'**
   String get providerSettingsTextRoleDescription;
 
+  /// No description provided for @providerSettingsVisionRoleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vision semantic agent'**
+  String get providerSettingsVisionRoleTitle;
+
+  /// No description provided for @providerSettingsVisionRoleDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Used by capture image preprocessing. It requires a provider tagged with Vision.'**
+  String get providerSettingsVisionRoleDescription;
+
+  /// No description provided for @providerSettingsVisionRoleUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No Vision provider configured'**
+  String get providerSettingsVisionRoleUnavailable;
+
   /// No description provided for @providerSettingsAgentRoleTitle.
   ///
   /// In en, this message translates to:
@@ -4485,6 +4503,30 @@ abstract class AppLocalizations {
   /// **'Completion'**
   String get providerSettingsCapabilityCompletion;
 
+  /// No description provided for @providerSettingsCapabilityVision.
+  ///
+  /// In en, this message translates to:
+  /// **'Vision'**
+  String get providerSettingsCapabilityVision;
+
+  /// No description provided for @providerSettingsCapabilityAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio'**
+  String get providerSettingsCapabilityAudio;
+
+  /// No description provided for @providerSettingsCapabilityVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Video'**
+  String get providerSettingsCapabilityVideo;
+
+  /// No description provided for @providerSettingsCapabilityTextOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Text only'**
+  String get providerSettingsCapabilityTextOnly;
+
   /// No description provided for @providerSettingsCapabilityOfflineFallback.
   ///
   /// In en, this message translates to:
@@ -4496,6 +4538,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'BYOK local storage'**
   String get providerSettingsCapabilityByok;
+
+  /// No description provided for @providerCapabilityPreviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Model capability tags'**
+  String get providerCapabilityPreviewTitle;
+
+  /// No description provided for @providerCapabilityVisionOverrideTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Supports image input'**
+  String get providerCapabilityVisionOverrideTitle;
+
+  /// No description provided for @providerCapabilityVisionOverrideSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable only when this model can accept image content for capture understanding.'**
+  String get providerCapabilityVisionOverrideSubtitle;
+
+  /// No description provided for @providerCapabilityAudioOverrideTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Supports speech or audio input'**
+  String get providerCapabilityAudioOverrideTitle;
+
+  /// No description provided for @providerCapabilityAudioOverrideSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable only when this model can accept audio content or speech transcription requests.'**
+  String get providerCapabilityAudioOverrideSubtitle;
+
+  /// No description provided for @providerCapabilityVideoOverrideTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Supports video input or generation'**
+  String get providerCapabilityVideoOverrideTitle;
+
+  /// No description provided for @providerCapabilityVideoOverrideSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable only when this model can accept video content or run video generation tasks.'**
+  String get providerCapabilityVideoOverrideSubtitle;
 
   /// No description provided for @providerClearKeyTitle.
   ///

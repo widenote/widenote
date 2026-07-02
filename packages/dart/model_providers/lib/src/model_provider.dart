@@ -4,6 +4,7 @@ enum ModelCapability {
   embedding,
   vision,
   audio,
+  video,
   streaming,
   toolUse,
 }
@@ -16,6 +17,7 @@ extension ModelCapabilityWireName on ModelCapability {
       ModelCapability.embedding => 'embedding',
       ModelCapability.vision => 'vision',
       ModelCapability.audio => 'audio',
+      ModelCapability.video => 'video',
       ModelCapability.streaming => 'streaming',
       ModelCapability.toolUse => 'tool_use',
     };
@@ -30,6 +32,7 @@ ModelCapability modelCapabilityFromWireName(String value) {
     'embedding' => ModelCapability.embedding,
     'vision' => ModelCapability.vision,
     'audio' => ModelCapability.audio,
+    'video' => ModelCapability.video,
     'streaming' => ModelCapability.streaming,
     'tool_use' || 'toolUse' => ModelCapability.toolUse,
     _ => throw StateError('Unknown model capability: $value'),
@@ -38,11 +41,52 @@ ModelCapability modelCapabilityFromWireName(String value) {
 
 enum ModelMessageRole { system, user, assistant, tool }
 
+enum ModelContentPartKind { text, inlineImage }
+
+final class ModelContentPart {
+  const ModelContentPart.text(String text)
+    : kind = ModelContentPartKind.text,
+      text = text,
+      mimeType = null,
+      dataBase64 = null,
+      sourceRef = const <String, Object?>{};
+
+  const ModelContentPart.inlineImage({
+    required String mimeType,
+    required String dataBase64,
+    Map<String, Object?> sourceRef = const <String, Object?>{},
+  }) : kind = ModelContentPartKind.inlineImage,
+       text = null,
+       mimeType = mimeType,
+       dataBase64 = dataBase64,
+       sourceRef = sourceRef;
+
+  final ModelContentPartKind kind;
+  final String? text;
+  final String? mimeType;
+  final String? dataBase64;
+  final Map<String, Object?> sourceRef;
+}
+
 final class ModelMessage {
-  const ModelMessage({required this.role, required this.content});
+  const ModelMessage({
+    required this.role,
+    required this.content,
+    this.parts = const <ModelContentPart>[],
+  });
 
   final ModelMessageRole role;
   final String content;
+  final List<ModelContentPart> parts;
+
+  bool get hasStructuredContent => parts.isNotEmpty;
+
+  List<ModelContentPart> get contentParts {
+    if (parts.isNotEmpty) {
+      return parts;
+    }
+    return <ModelContentPart>[ModelContentPart.text(content)];
+  }
 }
 
 final class ModelRequest {
@@ -67,13 +111,51 @@ final class ModelRequest {
     );
   }
 
+  factory ModelRequest.multimodal(
+    String prompt, {
+    required List<ModelContentPart> parts,
+    String? model,
+    Set<ModelCapability> requiredCapabilities = const {},
+    Map<String, Object?> metadata = const {},
+  }) {
+    final allParts = <ModelContentPart>[
+      ModelContentPart.text(prompt),
+      ...parts,
+    ];
+    final capabilities = <ModelCapability>{
+      ModelCapability.completion,
+      ...requiredCapabilities,
+      if (parts.any((part) => part.kind == ModelContentPartKind.inlineImage))
+        ModelCapability.vision,
+    };
+    return ModelRequest(
+      model: model,
+      requiredCapabilities: capabilities,
+      metadata: metadata,
+      messages: [
+        ModelMessage(
+          role: ModelMessageRole.user,
+          content: prompt,
+          parts: allParts,
+        ),
+      ],
+    );
+  }
+
   final List<ModelMessage> messages;
   final String? model;
   final Set<ModelCapability> requiredCapabilities;
   final Map<String, Object?> metadata;
 
   String get promptText {
-    return messages.map((message) => message.content).join('\n');
+    return messages
+        .expand(
+          (message) => message.contentParts
+              .where((part) => part.kind == ModelContentPartKind.text)
+              .map((part) => part.text ?? ''),
+        )
+        .where((text) => text.trim().isNotEmpty)
+        .join('\n');
   }
 }
 

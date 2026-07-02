@@ -142,6 +142,65 @@ void main() {
     },
   );
 
+  testWidgets(
+    'provider settings tags vision models for semantic agent routing',
+    (tester) async {
+      final database = WideNoteLocalDatabase.inMemory();
+      addTearDown(database.close);
+      await _pumpSettings(tester, database: database);
+
+      await _addProvider(
+        tester,
+        displayName: 'OpenRouter MIMO',
+        endpoint: 'https://openrouter.ai/api/v1',
+        model: 'xiaomi/mimo-v2.5',
+        kindLabel: 'OpenRouter',
+      );
+
+      expect(find.text('Vision'), findsWidgets);
+      expect(find.text('Vision semantic agent'), findsOneWidget);
+      expect(find.text('OpenRouter MIMO / xiaomi/mimo-v2.5'), findsWidgets);
+
+      final persisted = database.modelProviderConfigs.readById(
+        'openrouter-mimo',
+      )!;
+      expect(persisted.capabilities, contains(ModelCapability.vision.name));
+    },
+  );
+
+  testWidgets('provider settings tags video models and text-only fallback', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    await _pumpSettings(tester, database: database);
+
+    await tester.tap(find.byKey(const Key('provider-add-button')));
+    await tester.pumpAndSettle();
+    await _selectProviderKind(tester, 'OpenRouter');
+
+    expect(find.text('Text only'), findsWidgets);
+
+    await tester.enterText(
+      find.byKey(const Key('provider-name-field')),
+      'OpenRouter Video',
+    );
+    await _setCustomModel(tester, 'google/veo-3.0-generate-preview');
+    expect(find.text('Video'), findsWidgets);
+    await tester.enterText(
+      find.byKey(const Key('provider-api-key-field')),
+      _runtimeCredential(),
+    );
+    await tester.tap(find.byKey(const Key('provider-save-button')));
+    await tester.pumpAndSettle();
+
+    final persisted = database.modelProviderConfigs.readById(
+      'openrouter-video',
+    )!;
+    expect(persisted.capabilities, contains(ModelCapability.video.name));
+    expect(find.text('Video'), findsWidgets);
+  });
+
   testWidgets('provider settings can clear a saved API key', (tester) async {
     final database = WideNoteLocalDatabase.inMemory();
     addTearDown(database.close);
@@ -475,7 +534,7 @@ void main() {
       find.byKey(const Key('provider-api-key-field')),
       _runtimeCredential(),
     );
-    await tester.tap(find.byKey(const Key('provider-fetch-models-button')));
+    await _tapFetchModels(tester);
     await tester.pumpAndSettle();
 
     expect(modelListService.requests.single.kind, ModelProviderKind.deepSeek);
@@ -575,7 +634,7 @@ void main() {
       _runtimeCredential(),
     );
 
-    await tester.tap(find.byKey(const Key('provider-fetch-models-button')));
+    await _tapFetchModels(tester);
     await tester.pumpAndSettle();
     expect(
       find.text(
@@ -584,7 +643,7 @@ void main() {
       findsOneWidget,
     );
 
-    await tester.tap(find.byKey(const Key('provider-fetch-models-button')));
+    await _tapFetchModels(tester);
     await tester.pumpAndSettle();
     expect(
       find.text(
@@ -876,14 +935,30 @@ String? _selectedModel(WidgetTester tester) {
 }
 
 Future<void> _selectModel(WidgetTester tester, String label) async {
-  await tester.tap(find.byKey(const Key('provider-model-field')));
+  final field = find.byKey(const Key('provider-model-field'));
+  await tester.ensureVisible(field);
+  await tester.pumpAndSettle();
+  await tester.tap(field);
   await tester.pumpAndSettle();
   await tester.tap(find.text(label).last);
   await tester.pumpAndSettle();
 }
 
+Future<void> _tapFetchModels(WidgetTester tester) async {
+  await _scrollProviderDialogToTop(tester);
+  final button = find.byKey(const Key('provider-fetch-models-button'));
+  await tester.ensureVisible(button);
+  await tester.pumpAndSettle();
+  await tester.tap(button);
+  await tester.pumpAndSettle();
+}
+
 Future<void> _setCustomModel(WidgetTester tester, String model) async {
-  await tester.tap(find.byKey(const Key('provider-model-field')));
+  await _scrollProviderDialogToTop(tester);
+  final field = find.byKey(const Key('provider-model-field'));
+  await tester.ensureVisible(field);
+  await tester.pumpAndSettle();
+  await tester.tap(field);
   await tester.pumpAndSettle();
   final english = find.text('Custom model ID');
   final customFinder = english.evaluate().isNotEmpty
@@ -895,6 +970,15 @@ Future<void> _setCustomModel(WidgetTester tester, String model) async {
     find.byKey(const Key('provider-custom-model-field')),
     model,
   );
+  await tester.pumpAndSettle();
+}
+
+Future<void> _scrollProviderDialogToTop(WidgetTester tester) async {
+  final scrollable = find.byKey(const Key('provider-form-scroll'));
+  if (scrollable.evaluate().isEmpty) {
+    return;
+  }
+  await tester.drag(scrollable, const Offset(0, 600), warnIfMissed: false);
   await tester.pumpAndSettle();
 }
 

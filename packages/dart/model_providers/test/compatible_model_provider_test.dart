@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:test/test.dart';
 import 'package:widenote_model_providers/model_providers.dart';
@@ -64,6 +65,60 @@ void main() {
       expect(response.usage.totalTokens, 11);
       expect(response.metadata['finish_reason'], 'stop');
     });
+
+    test(
+      'constructs multimodal image content without local source paths',
+      () async {
+        final http = FakeModelProviderHttpClient(
+          responses: <ModelProviderHttpResponse>[_openAiTextResponse('done')],
+        );
+        final provider = OpenAiCompatibleModelProvider(
+          config: _config(ModelProviderKind.openAiCompatible).copyWith(
+            capabilities: const <ModelCapability>{
+              ModelCapability.chat,
+              ModelCapability.completion,
+              ModelCapability.vision,
+            },
+          ),
+          httpClient: http,
+        );
+
+        await provider.complete(
+          ModelRequest.multimodal(
+            'Analyze this image.',
+            parts: const <ModelContentPart>[
+              ModelContentPart.inlineImage(
+                mimeType: 'image/png',
+                dataBase64: 'abc123',
+                sourceRef: <String, Object?>{
+                  'kind': 'capture_attachment',
+                  'id': 'attachment-1',
+                },
+              ),
+            ],
+            metadata: const <String, Object?>{'capture_id': 'capture-1'},
+          ),
+        );
+
+        final request = http.requests.single;
+        final messages = request.body['messages']! as List<Object?>;
+        final user = messages.single as Map<String, Object?>;
+        expect(user['role'], 'user');
+        expect(user['content'], <Object?>[
+          <String, Object?>{'type': 'text', 'text': 'Analyze this image.'},
+          <String, Object?>{
+            'type': 'image_url',
+            'image_url': <String, Object?>{
+              'url': 'data:image/png;base64,abc123',
+            },
+          },
+        ]);
+        expect(jsonEncode(request.body), isNot(contains('/Users/guangmo')));
+        expect(request.body['metadata'], <String, Object?>{
+          'capture_id': 'capture-1',
+        });
+      },
+    );
 
     test('classifies authentication, rate limit, and server errors', () async {
       for (final item in <({int status, ModelProviderErrorKind kind})>[
@@ -416,6 +471,68 @@ void main() {
       expect(response.usage.inputTokens, 5);
       expect(response.metadata['finish_reason'], 'end_turn');
     });
+
+    test(
+      'constructs multimodal image content without local source paths',
+      () async {
+        final http = FakeModelProviderHttpClient(
+          responses: <ModelProviderHttpResponse>[
+            ModelProviderHttpResponse(
+              statusCode: 200,
+              body: <String, Object?>{
+                'model': 'anthropic-model',
+                'content': <Object?>[
+                  <String, Object?>{'type': 'text', 'text': 'done'},
+                ],
+              },
+            ),
+          ],
+        );
+        final provider = AnthropicCompatibleModelProvider(
+          config: _config(ModelProviderKind.mimo).copyWith(
+            capabilities: const <ModelCapability>{
+              ModelCapability.chat,
+              ModelCapability.completion,
+              ModelCapability.vision,
+            },
+          ),
+          httpClient: http,
+        );
+
+        await provider.complete(
+          ModelRequest.multimodal(
+            'Analyze this image.',
+            parts: const <ModelContentPart>[
+              ModelContentPart.inlineImage(
+                mimeType: 'image/jpeg',
+                dataBase64: 'abc123',
+                sourceRef: <String, Object?>{
+                  'kind': 'capture_attachment',
+                  'id': 'attachment-1',
+                },
+              ),
+            ],
+          ),
+        );
+
+        final request = http.requests.single;
+        final messages = request.body['messages']! as List<Object?>;
+        final user = messages.single as Map<String, Object?>;
+        expect(user['role'], 'user');
+        expect(user['content'], <Object?>[
+          <String, Object?>{'type': 'text', 'text': 'Analyze this image.'},
+          <String, Object?>{
+            'type': 'image',
+            'source': <String, Object?>{
+              'type': 'base64',
+              'media_type': 'image/jpeg',
+              'data': 'abc123',
+            },
+          },
+        ]);
+        expect(jsonEncode(request.body), isNot(contains('/Users/guangmo')));
+      },
+    );
 
     test(
       'accepts Anthropic-compatible base endpoints by appending messages path',

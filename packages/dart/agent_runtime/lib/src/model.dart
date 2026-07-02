@@ -10,10 +10,26 @@ final class ModelRequest {
   const ModelRequest({
     required this.prompt,
     this.context = const <String, Object?>{},
+    this.attachments = const <ModelRequestAttachment>[],
   });
 
   final String prompt;
   final JsonMap context;
+  final List<ModelRequestAttachment> attachments;
+
+  bool get hasAttachments => attachments.isNotEmpty;
+}
+
+final class ModelRequestAttachment {
+  const ModelRequestAttachment.inlineImage({
+    required this.mimeType,
+    required this.dataBase64,
+    this.sourceRef = const <String, Object?>{},
+  });
+
+  final String mimeType;
+  final String dataBase64;
+  final JsonMap sourceRef;
 }
 
 final class ModelResponse {
