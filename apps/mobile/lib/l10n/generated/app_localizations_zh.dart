@@ -2101,6 +2101,63 @@ class AppLocalizationsZh extends AppLocalizations {
   String get traceConsoleRedactedValue => '[已脱敏]';
 
   @override
+  String get traceConsoleEventsFilteredEmpty => '没有符合当前过滤条件的日志事件。';
+
+  @override
+  String get traceConsoleBackTooltip => '从日志中心返回';
+
+  @override
+  String get agentConsoleAgentsTitle => 'Agent 运行';
+
+  @override
+  String get agentConsoleAgentsSubtitle => '查看本地运行、任务、禁用控制和每次运行的追踪摘要。';
+
+  @override
+  String get agentConsoleAgentsEntryTitle => 'Agent 运行与任务';
+
+  @override
+  String get agentConsoleAgentsEntryBody => '在单独页面查看较长的运行和任务列表。';
+
+  @override
+  String get agentConsoleOpenAgentsButton => '打开运行';
+
+  @override
+  String get traceRawOpenButton => '查看原始日志';
+
+  @override
+  String get traceRawTitle => '原始日志';
+
+  @override
+  String get traceRawSubtitle => '这条追踪的本地运行证据。';
+
+  @override
+  String get traceRawWarningTitle => '本机私有日志';
+
+  @override
+  String get traceRawWarningBody =>
+      '这里可能显示原始 prompt 和工具数据。本页不提供复制、分享或导出操作，也不得用于外部审查。';
+
+  @override
+  String get traceRawNotFoundTitle => '原始日志不可用';
+
+  @override
+  String get traceRawNotFoundBody => '本地存储中没有找到这条追踪。';
+
+  @override
+  String get traceRawMetadataTitle => '元数据';
+
+  @override
+  String get traceRawMessageTitle => '原始消息';
+
+  @override
+  String get traceRawPayloadTitle => '原始 payload';
+
+  @override
+  String traceRawPolicyRedactedCount(int count) {
+    return '$count 个凭证、路径或媒体字段已按策略遮蔽';
+  }
+
+  @override
   String get providerSettingsTitle => '模型提供商';
 
   @override

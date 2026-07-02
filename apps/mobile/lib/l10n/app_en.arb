@@ -1330,6 +1330,31 @@
     }
   },
   "traceConsoleRedactedValue": "[redacted]",
+  "traceConsoleEventsFilteredEmpty": "No log events match this filter.",
+  "traceConsoleBackTooltip": "Back from Log Center",
+  "agentConsoleAgentsTitle": "Agent runs",
+  "agentConsoleAgentsSubtitle": "Inspect local runs, tasks, disabled controls, and per-run trace summaries.",
+  "agentConsoleAgentsEntryTitle": "Agent runs and tasks",
+  "agentConsoleAgentsEntryBody": "Open the longer run and task lists on their own page.",
+  "agentConsoleOpenAgentsButton": "Open runs",
+  "traceRawOpenButton": "View raw log",
+  "traceRawTitle": "Raw log",
+  "traceRawSubtitle": "Local-only runtime evidence for this trace.",
+  "traceRawWarningTitle": "Local private log",
+  "traceRawWarningBody": "Raw prompt and tool data may appear here. This page does not provide copy, share, or export actions, and it must not be used for external review.",
+  "traceRawNotFoundTitle": "Raw log unavailable",
+  "traceRawNotFoundBody": "This trace was not found in local storage.",
+  "traceRawMetadataTitle": "Metadata",
+  "traceRawMessageTitle": "Raw message",
+  "traceRawPayloadTitle": "Raw payload",
+  "traceRawPolicyRedactedCount": "{count, plural, =1{1 credential, path, or media field masked by policy} other{{count} credential, path, or media fields masked by policy}}",
+  "@traceRawPolicyRedactedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "providerSettingsTitle": "Model Providers",
   "providerSettingsSubtitle": "Choose how WideNote agents reach models, what the default runtime model is, and which capabilities are safe to use.",
   "providerSettingsAdd": "Add provider",

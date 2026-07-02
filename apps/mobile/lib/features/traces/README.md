@@ -29,7 +29,10 @@ copy and never imply that a disabled control queued work successfully.
 ## Public Surface
 
 - `TraceConsolePage`
+- `TraceAgentsPage`
+- `TraceRawPage`
 - `traceConsoleControllerProvider`
+- `rawTraceViewModelProvider`
 
 ## Generated Artifacts
 

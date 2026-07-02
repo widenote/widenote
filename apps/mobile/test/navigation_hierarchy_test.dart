@@ -268,6 +268,20 @@ void main() {
         firstParentKey: Key('settings-page'),
         secondParentKey: Key('home-page'),
       ),
+      _DeepLinkCase(
+        path: '/settings/traces/agents',
+        pageKey: Key('trace-agents-page'),
+        firstParentKey: Key('trace-console-page'),
+        secondParentKey: Key('settings-page'),
+        thirdParentKey: Key('home-page'),
+      ),
+      _DeepLinkCase(
+        path: '/settings/traces/raw/missing-trace',
+        pageKey: Key('trace-raw-page'),
+        firstParentKey: Key('trace-console-page'),
+        secondParentKey: Key('settings-page'),
+        thirdParentKey: Key('home-page'),
+      ),
     ];
 
     for (final routeCase in cases) {
@@ -300,6 +314,21 @@ void main() {
         await tester.pumpAndSettle();
         expect(
           find.byKey(secondParentKey),
+          findsOneWidget,
+          reason: routeCase.path,
+        );
+      }
+
+      final thirdParentKey = routeCase.thirdParentKey;
+      if (thirdParentKey != null) {
+        expect(
+          await tester.binding.handlePopRoute(),
+          isTrue,
+          reason: routeCase.path,
+        );
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(thirdParentKey),
           findsOneWidget,
           reason: routeCase.path,
         );
@@ -339,6 +368,18 @@ void main() {
         pageKey: Key('trace-console-page'),
         firstParentKey: Key('plugins-page'),
       ),
+      _DeepLinkCase(
+        path: '/plugins/traces/agents',
+        pageKey: Key('trace-agents-page'),
+        firstParentKey: Key('trace-console-page'),
+        secondParentKey: Key('plugins-page'),
+      ),
+      _DeepLinkCase(
+        path: '/plugins/traces/raw/missing-trace',
+        pageKey: Key('trace-raw-page'),
+        firstParentKey: Key('trace-console-page'),
+        secondParentKey: Key('plugins-page'),
+      ),
     ];
 
     for (final routeCase in cases) {
@@ -360,6 +401,21 @@ void main() {
         findsOneWidget,
         reason: routeCase.path,
       );
+
+      final secondParentKey = routeCase.secondParentKey;
+      if (secondParentKey != null) {
+        expect(
+          await tester.binding.handlePopRoute(),
+          isTrue,
+          reason: routeCase.path,
+        );
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(secondParentKey),
+          findsOneWidget,
+          reason: routeCase.path,
+        );
+      }
 
       expect(
         await tester.binding.handlePopRoute(),
@@ -385,12 +441,14 @@ class _DeepLinkCase {
     required this.pageKey,
     required this.firstParentKey,
     this.secondParentKey,
+    this.thirdParentKey,
   });
 
   final String path;
   final Key pageKey;
   final Key firstParentKey;
   final Key? secondParentKey;
+  final Key? thirdParentKey;
 }
 
 class _SelectedTabCase {

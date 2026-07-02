@@ -3843,6 +3843,114 @@ abstract class AppLocalizations {
   /// **'[redacted]'**
   String get traceConsoleRedactedValue;
 
+  /// No description provided for @traceConsoleEventsFilteredEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No log events match this filter.'**
+  String get traceConsoleEventsFilteredEmpty;
+
+  /// No description provided for @traceConsoleBackTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Back from Log Center'**
+  String get traceConsoleBackTooltip;
+
+  /// No description provided for @agentConsoleAgentsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent runs'**
+  String get agentConsoleAgentsTitle;
+
+  /// No description provided for @agentConsoleAgentsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspect local runs, tasks, disabled controls, and per-run trace summaries.'**
+  String get agentConsoleAgentsSubtitle;
+
+  /// No description provided for @agentConsoleAgentsEntryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent runs and tasks'**
+  String get agentConsoleAgentsEntryTitle;
+
+  /// No description provided for @agentConsoleAgentsEntryBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the longer run and task lists on their own page.'**
+  String get agentConsoleAgentsEntryBody;
+
+  /// No description provided for @agentConsoleOpenAgentsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Open runs'**
+  String get agentConsoleOpenAgentsButton;
+
+  /// No description provided for @traceRawOpenButton.
+  ///
+  /// In en, this message translates to:
+  /// **'View raw log'**
+  String get traceRawOpenButton;
+
+  /// No description provided for @traceRawTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Raw log'**
+  String get traceRawTitle;
+
+  /// No description provided for @traceRawSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Local-only runtime evidence for this trace.'**
+  String get traceRawSubtitle;
+
+  /// No description provided for @traceRawWarningTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Local private log'**
+  String get traceRawWarningTitle;
+
+  /// No description provided for @traceRawWarningBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Raw prompt and tool data may appear here. This page does not provide copy, share, or export actions, and it must not be used for external review.'**
+  String get traceRawWarningBody;
+
+  /// No description provided for @traceRawNotFoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Raw log unavailable'**
+  String get traceRawNotFoundTitle;
+
+  /// No description provided for @traceRawNotFoundBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This trace was not found in local storage.'**
+  String get traceRawNotFoundBody;
+
+  /// No description provided for @traceRawMetadataTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Metadata'**
+  String get traceRawMetadataTitle;
+
+  /// No description provided for @traceRawMessageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Raw message'**
+  String get traceRawMessageTitle;
+
+  /// No description provided for @traceRawPayloadTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Raw payload'**
+  String get traceRawPayloadTitle;
+
+  /// No description provided for @traceRawPolicyRedactedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 credential, path, or media field masked by policy} other{{count} credential, path, or media fields masked by policy}}'**
+  String traceRawPolicyRedactedCount(int count);
+
   /// No description provided for @providerSettingsTitle.
   ///
   /// In en, this message translates to:
