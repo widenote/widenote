@@ -60,7 +60,7 @@ final transcriptionServiceProvider = Provider<TranscriptionService>((ref) {
 });
 
 final transcriptionDownloadManagerProvider =
-    Provider<TranscriptionDownloadManager?>((ref) {
+    Provider<TranscriptionModelDownloadController?>((ref) {
       final supportDirectory = ref.watch(appSupportDirectoryProvider);
       if (supportDirectory == null) {
         return null;

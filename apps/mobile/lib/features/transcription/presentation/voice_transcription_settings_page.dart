@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n.dart';
+import '../transcription_download_manager.dart';
 import '../transcription_service.dart';
 import '../transcription_settings.dart';
 
@@ -25,6 +26,7 @@ class _VoiceTranscriptionSettingsPageState
   bool _downloadingModel = false;
   bool _deletingModel = false;
   bool _retrying = false;
+  TranscriptionModelDownloadSnapshot? _activeDownloadSnapshot;
 
   @override
   void dispose() {
@@ -52,18 +54,19 @@ class _VoiceTranscriptionSettingsPageState
       ),
       data: (settings) {
         _syncTextFields(settings);
+        final modelSettings = _settingsWithActiveDownload(settings);
         return ListView(
           key: const Key('voice-transcription-settings-page'),
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 112),
           children: [
             const _PageHeader(),
             const SizedBox(height: 16),
-            _StatusSurface(settings: settings),
+            _StatusSurface(settings: modelSettings),
             const SizedBox(height: 12),
             _EngineSurface(settings: settings),
             const SizedBox(height: 12),
             _LocalModelSurface(
-              settings: settings,
+              settings: modelSettings,
               downloading: _downloadingModel,
               deleting: _deletingModel,
               onDownload: () => unawaited(_downloadLocalModel()),
@@ -89,6 +92,22 @@ class _VoiceTranscriptionSettingsPageState
           ],
         );
       },
+    );
+  }
+
+  VoiceTranscriptionSettings _settingsWithActiveDownload(
+    VoiceTranscriptionSettings settings,
+  ) {
+    final snapshot = _activeDownloadSnapshot;
+    if (snapshot == null) {
+      return settings;
+    }
+    return settings.copyWith(
+      localModelState: snapshot.state,
+      downloadProgress: snapshot.progress,
+      lastErrorCode: snapshot.errorCode,
+      lastErrorMessage: snapshot.errorMessage,
+      clearError: snapshot.errorCode == null && snapshot.errorMessage == null,
     );
   }
 
@@ -138,10 +157,25 @@ class _VoiceTranscriptionSettingsPageState
       );
       return;
     }
-    setState(() => _downloadingModel = true);
+    setState(() {
+      _downloadingModel = true;
+      _activeDownloadSnapshot = const TranscriptionModelDownloadSnapshot(
+        state: LocalTranscriptionModelState.downloading,
+      );
+    });
     final l10n = context.l10n;
     try {
-      final result = await manager.downloadDefaultModel();
+      final result = await manager.downloadDefaultModel(
+        onProgress: (snapshot) {
+          if (!mounted) {
+            return;
+          }
+          setState(() => _activeDownloadSnapshot = snapshot);
+        },
+      );
+      if (mounted) {
+        setState(() => _activeDownloadSnapshot = result);
+      }
       await ref
           .read(voiceTranscriptionSettingsControllerProvider.notifier)
           .reload();
@@ -161,7 +195,10 @@ class _VoiceTranscriptionSettingsPageState
       );
     } finally {
       if (mounted) {
-        setState(() => _downloadingModel = false);
+        setState(() {
+          _downloadingModel = false;
+          _activeDownloadSnapshot = null;
+        });
       }
     }
   }
