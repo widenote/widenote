@@ -50,14 +50,15 @@ void main() {
     );
     await _tap(tester, const Key('trace-console-raw-logs-entry-button'));
     expect(find.byKey(const Key('trace-raw-logs-page')), findsOneWidget);
-    await _scrollTo(tester, const Key('trace-raw-log-trace-warning'));
-    expect(find.text('runtime.permission.denied'), findsOneWidget);
-    expect(find.text('pack_id: pack.default'), findsWidgets);
-    expect(find.text('agent_id: agent.capture_loop'), findsWidgets);
+    await _scrollTo(tester, const Key('trace-raw-text-box'));
+    expect(find.byKey(const Key('trace-raw-text-box')), findsOneWidget);
+    expect(find.textContaining('runtime.permission.denied'), findsOneWidget);
+    expect(find.textContaining('pack_id: pack.default'), findsWidgets);
+    expect(find.textContaining('agent_id: agent.capture_loop'), findsWidgets);
     expect(find.textContaining('duration_ms: 8'), findsWidgets);
   });
 
-  testWidgets('trace source navigation opens timeline source route', (
+  testWidgets('raw log stream includes source references as text', (
     tester,
   ) async {
     final database = WideNoteLocalDatabase.inMemory();
@@ -70,13 +71,12 @@ void main() {
     await tester.pumpAndSettle();
 
     await _tap(tester, const Key('trace-console-raw-logs-entry-button'));
-    await _scrollTo(tester, const Key('trace-raw-log-trace-ok'));
-    await _tap(tester, const Key('trace-console-open-source-trace-ok'));
 
-    expect(find.byKey(const Key('timeline-item-detail-page')), findsOneWidget);
+    await _scrollTo(tester, const Key('trace-raw-text-box'));
+    expect(find.byKey(const Key('trace-raw-text-box')), findsOneWidget);
     expect(
-      find.byKey(const Key('timeline-item-detail-not-found')),
-      findsOneWidget,
+      find.textContaining('source_event_id: capture-source'),
+      findsWidgets,
     );
   });
 
@@ -92,8 +92,8 @@ void main() {
     await tester.pumpAndSettle();
 
     await _tap(tester, const Key('trace-console-raw-logs-entry-button'));
-    await _scrollTo(tester, const Key('trace-console-empty'));
-    expect(find.byKey(const Key('trace-console-empty')), findsOneWidget);
+    await _scrollTo(tester, const Key('trace-raw-text-box'));
+    expect(find.textContaining('No runtime logs yet.'), findsOneWidget);
     expect(find.textContaining('task-queued-capture'), findsNothing);
     expect(find.textContaining('fake executor'), findsNothing);
   });

@@ -2425,7 +2425,58 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get traceRawWarningBody =>
-      'Raw prompt and tool data may appear here. This page does not provide copy, share, or export actions, and it must not be used for external review.';
+      'Raw prompt and tool data may appear here. Copied text stays policy-masked, but private logs should not be used for external review.';
+
+  @override
+  String get traceRawSearchTitle => 'Find raw logs';
+
+  @override
+  String get traceRawSearchLabel => 'Search';
+
+  @override
+  String get traceRawSearchHint => 'Trace id, status, prompt, or payload';
+
+  @override
+  String get traceRawClearSearchTooltip => 'Clear search';
+
+  @override
+  String get traceRawStreamTitle => 'Raw log stream';
+
+  @override
+  String get traceRawCopyPageTooltip => 'Copy current page';
+
+  @override
+  String get traceRawCopiedSnackbar => 'Current raw log page copied.';
+
+  @override
+  String get traceRawNoMatches =>
+      'No raw logs match the current search and filter.';
+
+  @override
+  String get traceRawNoLogsStatus => 'No raw logs to display.';
+
+  @override
+  String traceRawPageStatus(
+    int page,
+    int pageCount,
+    int start,
+    int end,
+    int total,
+  ) {
+    return 'Page $page of $pageCount - $start-$end of $total';
+  }
+
+  @override
+  String get traceRawFirstPageTooltip => 'First page';
+
+  @override
+  String get traceRawPreviousPageTooltip => 'Previous page';
+
+  @override
+  String get traceRawNextPageTooltip => 'Next page';
+
+  @override
+  String get traceRawLastPageTooltip => 'Last page';
 
   @override
   String get traceRawNotFoundTitle => 'Raw log unavailable';

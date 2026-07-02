@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../l10n/l10n.dart';
@@ -42,33 +43,96 @@ class TraceRawLogsPage extends ConsumerStatefulWidget {
 }
 
 class _TraceRawLogsPageState extends ConsumerState<TraceRawLogsPage> {
+  static const _pageSize = 25;
+
   AgentConsoleFilter _filter = AgentConsoleFilter.all;
+  late final TextEditingController _searchController;
+  String _query = '';
+  int _pageIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final snapshot = ref.watch(traceConsoleControllerProvider);
-    final rawLogs = snapshot.rawLogsForFilter(_filter);
-    return SelectionContainer.disabled(
-      child: ListView(
-        key: const Key('trace-raw-logs-page'),
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-        children: [
-          _BackHeader(
-            title: l10n.traceConsoleEventsTitle,
-            subtitle: l10n.traceConsoleEventsSubtitle,
-          ),
-          const SizedBox(height: 16),
-          _RawWarning(),
-          const SizedBox(height: 16),
-          _FilterBar(
-            selected: _filter,
-            onSelected: (filter) => setState(() => _filter = filter),
-          ),
-          const SizedBox(height: 16),
-          _RawLogList(logs: rawLogs, hasAnyLogs: snapshot.rawLogs.isNotEmpty),
-        ],
-      ),
+    final rawLogs = _logsForQuery(snapshot.rawLogsForFilter(_filter), _query);
+    final pageCount = rawLogs.isEmpty
+        ? 1
+        : ((rawLogs.length + _pageSize - 1) ~/ _pageSize);
+    final maxPageIndex = pageCount - 1;
+    final pageIndex = _pageIndex > maxPageIndex ? maxPageIndex : _pageIndex;
+    final pageStart = rawLogs.isEmpty ? 0 : pageIndex * _pageSize;
+    final pageLogs = rawLogs
+        .skip(pageStart)
+        .take(_pageSize)
+        .toList(growable: false);
+    final pageText = _rawLogPageText(pageLogs);
+    return ListView(
+      key: const Key('trace-raw-logs-page'),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      children: [
+        _BackHeader(
+          title: l10n.traceConsoleEventsTitle,
+          subtitle: l10n.traceConsoleEventsSubtitle,
+        ),
+        const SizedBox(height: 16),
+        _RawWarning(),
+        const SizedBox(height: 16),
+        _FilterBar(
+          selected: _filter,
+          onSelected: (filter) => setState(() {
+            _filter = filter;
+            _pageIndex = 0;
+          }),
+        ),
+        const SizedBox(height: 16),
+        _RawLogSearch(
+          controller: _searchController,
+          query: _query,
+          onChanged: (value) => setState(() {
+            _query = value;
+            _pageIndex = 0;
+          }),
+          onClear: () => setState(() {
+            _searchController.clear();
+            _query = '';
+            _pageIndex = 0;
+          }),
+        ),
+        const SizedBox(height: 16),
+        _RawLogTextViewer(
+          pageText: pageText,
+          pageIndex: pageIndex,
+          pageCount: pageCount,
+          pageStart: pageStart,
+          pageLength: pageLogs.length,
+          totalCount: rawLogs.length,
+          hasAnyLogs: snapshot.rawLogs.isNotEmpty,
+          onCopy: pageText.isEmpty ? null : () => _copyPageText(pageText),
+          onPageChanged: (page) => setState(() => _pageIndex = page),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _copyPageText(String text) async {
+    await Clipboard.setData(ClipboardData(text: text));
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.l10n.traceRawCopiedSnackbar)),
     );
   }
 }
@@ -634,117 +698,143 @@ class _TaskRow extends StatelessWidget {
   }
 }
 
-class _RawLogList extends StatelessWidget {
-  const _RawLogList({required this.logs, required this.hasAnyLogs});
+class _RawLogSearch extends StatelessWidget {
+  const _RawLogSearch({
+    required this.controller,
+    required this.query,
+    required this.onChanged,
+    required this.onClear,
+  });
 
-  final List<RawTraceViewModel> logs;
-  final bool hasAnyLogs;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    if (logs.isEmpty) {
-      return _Surface(
-        icon: Icons.receipt_long_outlined,
-        title: l10n.traceConsoleEventsTitle,
-        child: Text(
-          hasAnyLogs
-              ? l10n.traceConsoleEventsFilteredEmpty
-              : l10n.traceConsoleEmpty,
-          key: const Key('trace-console-empty'),
-        ),
-      );
-    }
-    return Column(
-      children: [
-        for (var index = 0; index < logs.length; index++) ...[
-          if (index > 0) const SizedBox(height: 16),
-          _RawLogCard(log: logs[index]),
-        ],
-      ],
-    );
-  }
-}
-
-class _RawLogCard extends StatelessWidget {
-  const _RawLogCard({required this.log});
-
-  final RawTraceViewModel log;
+  final TextEditingController controller;
+  final String query;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return _Surface(
-      key: Key('trace-raw-log-${log.id}'),
-      icon: _statusIcon(log.status),
-      title: log.title,
+      icon: Icons.search,
+      title: l10n.traceRawSearchTitle,
+      child: TextField(
+        key: const Key('trace-raw-search-field'),
+        controller: controller,
+        decoration: InputDecoration(
+          labelText: l10n.traceRawSearchLabel,
+          hintText: l10n.traceRawSearchHint,
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: query.isEmpty
+              ? null
+              : IconButton(
+                  key: const Key('trace-raw-search-clear'),
+                  tooltip: l10n.traceRawClearSearchTooltip,
+                  onPressed: onClear,
+                  icon: const Icon(Icons.clear),
+                ),
+        ),
+        onChanged: onChanged,
+      ),
+    );
+  }
+}
+
+class _RawLogTextViewer extends StatelessWidget {
+  const _RawLogTextViewer({
+    required this.pageText,
+    required this.pageIndex,
+    required this.pageCount,
+    required this.pageStart,
+    required this.pageLength,
+    required this.totalCount,
+    required this.hasAnyLogs,
+    required this.onCopy,
+    required this.onPageChanged,
+  });
+
+  final String pageText;
+  final int pageIndex;
+  final int pageCount;
+  final int pageStart;
+  final int pageLength;
+  final int totalCount;
+  final bool hasAnyLogs;
+  final VoidCallback? onCopy;
+  final ValueChanged<int> onPageChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final hasMatches = pageText.isNotEmpty;
+    final start = hasMatches ? pageStart + 1 : 0;
+    final end = hasMatches ? pageStart + pageLength : 0;
+    final displayText = hasMatches
+        ? pageText
+        : hasAnyLogs
+        ? l10n.traceRawNoMatches
+        : l10n.traceConsoleEmpty;
+    return _Surface(
+      icon: Icons.subject_outlined,
+      title: l10n.traceRawStreamTitle,
       child: Column(
-        key: Key('trace-raw-log-body-${log.id}'),
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
+          Row(
             children: [
-              _Tag(label: l10n.agentConsoleSeverity(log.severity)),
-              _Tag(label: l10n.agentConsoleStatus(log.status)),
-              _Tag(
-                label: l10n.agentConsoleCreated(_formatDateTime(log.createdAt)),
+              Expanded(
+                child: Text(
+                  hasMatches
+                      ? l10n.traceRawPageStatus(
+                          pageIndex + 1,
+                          pageCount,
+                          start,
+                          end,
+                          totalCount,
+                        )
+                      : l10n.traceRawNoLogsStatus,
+                  key: const Key('trace-raw-page-status'),
+                  style: _mutedStyle(context),
+                ),
+              ),
+              IconButton(
+                key: const Key('trace-raw-copy-button'),
+                tooltip: l10n.traceRawCopyPageTooltip,
+                onPressed: onCopy,
+                icon: const Icon(Icons.copy),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          _RawLogSectionTitle(label: l10n.traceRawMetadataTitle),
-          const SizedBox(height: 4),
-          for (final entry in log.metadata)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 2),
-              child: Text(
-                '${entry.key}: ${entry.value}',
-                style: Theme.of(context).textTheme.bodySmall,
+          DecoratedBox(
+            key: const Key('trace-raw-text-box'),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF7F9FC),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFD8DDE6)),
+            ),
+            child: SizedBox(
+              width: double.infinity,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: SelectableText(
+                    displayText,
+                    key: const Key('trace-raw-text'),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
+                  ),
+                ),
               ),
             ),
-          const SizedBox(height: 12),
-          _RawLogSectionTitle(label: l10n.traceRawMessageTitle),
-          const SizedBox(height: 4),
-          Text(
-            log.message.isEmpty ? l10n.traceConsoleNoMessage : log.message,
-            key: Key('trace-raw-log-message-${log.id}'),
           ),
           const SizedBox(height: 12),
-          _RawLogSectionTitle(label: l10n.traceRawPayloadTitle),
-          const SizedBox(height: 4),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Text(
-              log.payloadJson,
-              key: Key('trace-raw-log-payload-${log.id}'),
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
-            ),
-          ),
-          if (log.redactedPayloadFieldCount > 0) ...[
-            const SizedBox(height: 8),
-            Text(
-              l10n.traceRawPolicyRedactedCount(log.redactedPayloadFieldCount),
-              key: Key('trace-raw-log-redacted-count-${log.id}'),
-              style: _mutedStyle(context),
-            ),
-          ],
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _RawLogSourceAction(log: log),
-              OutlinedButton.icon(
-                key: Key('trace-console-open-raw-${log.id}'),
-                onPressed: () => _openRawTrace(context, log.id),
-                icon: const Icon(Icons.receipt_long_outlined),
-                label: Text(l10n.traceRawOpenButton),
-              ),
-            ],
+          _RawLogPager(
+            pageIndex: pageIndex,
+            pageCount: pageCount,
+            enabled: totalCount > 0,
+            onPageChanged: onPageChanged,
           ),
         ],
       ),
@@ -752,43 +842,72 @@ class _RawLogCard extends StatelessWidget {
   }
 }
 
-class _RawLogSectionTitle extends StatelessWidget {
-  const _RawLogSectionTitle({required this.label});
+class _RawLogPager extends StatelessWidget {
+  const _RawLogPager({
+    required this.pageIndex,
+    required this.pageCount,
+    required this.enabled,
+    required this.onPageChanged,
+  });
 
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: Theme.of(
-        context,
-      ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
-    );
-  }
-}
-
-class _RawLogSourceAction extends StatelessWidget {
-  const _RawLogSourceAction({required this.log});
-
-  final RawTraceViewModel log;
+  final int pageIndex;
+  final int pageCount;
+  final bool enabled;
+  final ValueChanged<int> onPageChanged;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final eventId = log.sourceEventId;
-    if (eventId == null || eventId.isEmpty) {
-      return Text(l10n.traceConsoleNoSource, style: _mutedStyle(context));
-    }
-    return OutlinedButton.icon(
-      key: Key('trace-console-open-source-${log.id}'),
-      onPressed: () {
-        context.push('/timeline/items/${Uri.encodeComponent(eventId)}');
-      },
-      icon: const Icon(Icons.open_in_new),
-      label: Text(l10n.traceConsoleOpenSourceButton),
+    final canGoBack = enabled && pageIndex > 0;
+    final canGoForward = enabled && pageIndex < pageCount - 1;
+    return Row(
+      key: const Key('trace-raw-pager'),
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        IconButton(
+          key: const Key('trace-raw-first-page'),
+          tooltip: l10n.traceRawFirstPageTooltip,
+          onPressed: canGoBack ? () => onPageChanged(0) : null,
+          icon: const Icon(Icons.first_page),
+        ),
+        IconButton(
+          key: const Key('trace-raw-previous-page'),
+          tooltip: l10n.traceRawPreviousPageTooltip,
+          onPressed: canGoBack ? () => onPageChanged(pageIndex - 1) : null,
+          icon: const Icon(Icons.chevron_left),
+        ),
+        IconButton(
+          key: const Key('trace-raw-next-page'),
+          tooltip: l10n.traceRawNextPageTooltip,
+          onPressed: canGoForward ? () => onPageChanged(pageIndex + 1) : null,
+          icon: const Icon(Icons.chevron_right),
+        ),
+        IconButton(
+          key: const Key('trace-raw-last-page'),
+          tooltip: l10n.traceRawLastPageTooltip,
+          onPressed: canGoForward ? () => onPageChanged(pageCount - 1) : null,
+          icon: const Icon(Icons.last_page),
+        ),
+      ],
     );
   }
+}
+
+List<RawTraceViewModel> _logsForQuery(
+  List<RawTraceViewModel> logs,
+  String query,
+) {
+  final normalized = query.trim().toLowerCase();
+  if (normalized.isEmpty) {
+    return logs;
+  }
+  return logs
+      .where((log) => log.rawText.toLowerCase().contains(normalized))
+      .toList(growable: false);
+}
+
+String _rawLogPageText(List<RawTraceViewModel> logs) {
+  return logs.map((log) => log.rawText).join('\n\n---\n\n');
 }
 
 class _RawWarning extends StatelessWidget {
@@ -938,7 +1057,6 @@ class _Surface extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.child,
-    super.key,
   });
 
   final IconData icon;
@@ -1071,8 +1189,4 @@ String _traceChildPath(BuildContext context, String childPath) {
       ? '/plugins/traces'
       : '/settings/traces';
   return '$prefix/$childPath';
-}
-
-void _openRawTrace(BuildContext context, String traceId) {
-  context.push(_traceChildPath(context, 'raw/${Uri.encodeComponent(traceId)}'));
 }

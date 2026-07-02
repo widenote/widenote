@@ -381,6 +381,28 @@ final class RawTraceViewModel {
   final int redactedPayloadFieldCount;
   final List<RawTraceField> metadata;
   final String? sourceEventId;
+
+  String get rawText {
+    final buffer = StringBuffer()
+      ..writeln(
+        '[${createdAt.toUtc().toIso8601String()}] $title '
+        'status=$status severity=$severity id=$id',
+      );
+    for (final field in metadata) {
+      buffer.writeln('${field.key}: ${field.value}');
+    }
+    buffer
+      ..writeln('message:')
+      ..writeln(message)
+      ..writeln('payload:')
+      ..write(payloadJson);
+    if (redactedPayloadFieldCount > 0) {
+      buffer
+        ..writeln()
+        ..write('redacted_fields: $redactedPayloadFieldCount');
+    }
+    return buffer.toString();
+  }
 }
 
 @immutable
