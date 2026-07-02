@@ -428,9 +428,9 @@ void main() {
     expect(_fieldText(tester, 'provider-name-field'), 'DeepSeek');
     expect(
       _fieldText(tester, 'provider-endpoint-field'),
-      'https://api.deepseek.com',
+      'https://api.deepseek.com/anthropic',
     );
-    expect(_selectedModel(tester), 'deepseek-v4-pro');
+    expect(_selectedModel(tester), 'deepseek-v4-flash');
 
     await _selectProviderKind(tester, 'Kimi');
 

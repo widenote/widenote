@@ -49,10 +49,11 @@ void main() {
       );
     });
 
-    test('derives DeepSeek models endpoint from root endpoint', () async {
+    test('derives DeepSeek Anthropic models endpoints', () async {
       final http = FakeModelProviderHttpClient(
         responses: <ModelProviderHttpResponse>[
-          _openAiModelsResponse(<String>['deepseek-chat', 'deepseek-reasoner']),
+          _openAiModelsResponse(<String>['deepseek-v4-flash']),
+          _openAiModelsResponse(<String>['deepseek-v4-flash']),
         ],
       );
       final service = AdapterModelProviderModelListService(httpClient: http);
@@ -64,12 +65,27 @@ void main() {
           apiKey: _runtimeCredential(),
         ),
       );
-
-      expect(result.models, <String>['deepseek-chat', 'deepseek-reasoner']);
-      expect(
-        http.requests.single.endpoint.toString(),
-        'https://api.deepseek.com/models',
+      final legacyRootResult = await service.listModels(
+        ModelProviderConfig.preset(
+          id: 'deepseek-legacy',
+          kind: ModelProviderKind.deepSeek,
+          endpoint: Uri.parse('https://api.deepseek.com'),
+          apiKey: _runtimeCredential(),
+        ),
       );
+
+      expect(result.models, <String>['deepseek-v4-flash']);
+      expect(legacyRootResult.models, <String>['deepseek-v4-flash']);
+      expect(
+        http.requests[0].endpoint.toString(),
+        'https://api.deepseek.com/anthropic/v1/models',
+      );
+      expect(
+        http.requests[1].endpoint.toString(),
+        'https://api.deepseek.com/anthropic/v1/models',
+      );
+      expect(http.requests[0].headers['x-api-key'], _runtimeCredential());
+      expect(http.requests[0].headers['anthropic-version'], '2023-06-01');
     });
 
     test('fetches Gemini models through native list endpoint', () async {

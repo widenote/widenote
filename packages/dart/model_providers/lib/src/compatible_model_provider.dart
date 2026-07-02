@@ -199,7 +199,7 @@ final class AnthropicCompatibleModelProvider implements ModelProvider {
     final httpResponse = await _sendRequest(
       id,
       () => httpClient.postJson(
-        _anthropicMessagesEndpoint(config.endpoint),
+        _anthropicMessagesEndpoint(config),
         headers: _anthropicHeaders(config),
         body: _buildBody(request),
         timeout: timeout,
@@ -308,7 +308,11 @@ bool _endsWithOpenAiChatCompletionsPath(List<String> segments) {
       segments.last == 'completions';
 }
 
-Uri _anthropicMessagesEndpoint(Uri endpoint) {
+Uri _anthropicMessagesEndpoint(ModelProviderConfig config) {
+  final endpoint = _normalizeDeepSeekAnthropicEndpoint(
+    config,
+    terminalSegment: 'messages',
+  );
   final segments = endpoint.pathSegments
       .where((segment) => segment.isNotEmpty)
       .toList(growable: false);
@@ -325,6 +329,31 @@ Uri _anthropicMessagesEndpoint(Uri endpoint) {
 
 bool _endsWithMessagesPath(List<String> segments) {
   return segments.isNotEmpty && segments.last == 'messages';
+}
+
+Uri _normalizeDeepSeekAnthropicEndpoint(
+  ModelProviderConfig config, {
+  required String terminalSegment,
+}) {
+  final endpoint = config.endpoint;
+  if (config.kind != ModelProviderKind.deepSeek ||
+      endpoint.host.toLowerCase() != 'api.deepseek.com') {
+    return endpoint;
+  }
+  final segments = endpoint.pathSegments
+      .where((segment) => segment.isNotEmpty)
+      .toList(growable: false);
+  if (segments.isEmpty) {
+    return endpoint.replace(pathSegments: const <String>['anthropic']);
+  }
+  if (segments.length == 2 &&
+      segments[0] == 'v1' &&
+      segments[1] == terminalSegment) {
+    return endpoint.replace(
+      pathSegments: <String>['anthropic', 'v1', terminalSegment],
+    );
+  }
+  return endpoint;
 }
 
 Map<String, String> _openAiHeaders(String apiKey) {

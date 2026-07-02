@@ -190,22 +190,14 @@ void main() {
       final http = FakeModelProviderHttpClient(
         responses: <ModelProviderHttpResponse>[
           _openAiTextResponse('OpenAI OK'),
-          _openAiTextResponse('DeepSeek OK'),
           _openAiTextResponse('Gemini OK'),
+          _openAiTextResponse('OpenAI DeepSeek gateway OK'),
         ],
       );
       final openAiProvider = OpenAiCompatibleModelProvider(
         config: ModelProviderConfig.preset(
           id: 'openai',
           kind: ModelProviderKind.openAi,
-          apiKey: _runtimeCredential(),
-        ),
-        httpClient: http,
-      );
-      final deepSeekProvider = OpenAiCompatibleModelProvider(
-        config: ModelProviderConfig.preset(
-          id: 'deepseek',
-          kind: ModelProviderKind.deepSeek,
           apiKey: _runtimeCredential(),
         ),
         httpClient: http,
@@ -218,18 +210,29 @@ void main() {
         ),
         httpClient: http,
       );
+      final openAiDeepSeekGatewayProvider = OpenAiCompatibleModelProvider(
+        config: ModelProviderConfig.preset(
+          id: 'deepseek-openai-gateway',
+          kind: ModelProviderKind.openAiCompatible,
+          endpoint: Uri.parse('https://api.deepseek.com/v1'),
+          apiKey: _runtimeCredential(),
+        ),
+        httpClient: http,
+      );
 
       expect(
         (await openAiProvider.complete(ModelRequest.text('hello'))).text,
         'OpenAI OK',
       );
       expect(
-        (await deepSeekProvider.complete(ModelRequest.text('hello'))).text,
-        'DeepSeek OK',
-      );
-      expect(
         (await geminiProvider.complete(ModelRequest.text('hello'))).text,
         'Gemini OK',
+      );
+      expect(
+        (await openAiDeepSeekGatewayProvider.complete(
+          ModelRequest.text('hello'),
+        )).text,
+        'OpenAI DeepSeek gateway OK',
       );
 
       expect(
@@ -238,11 +241,11 @@ void main() {
       );
       expect(
         http.requests[1].endpoint.toString(),
-        'https://api.deepseek.com/chat/completions',
+        'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
       );
       expect(
         http.requests[2].endpoint.toString(),
-        'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+        'https://api.deepseek.com/v1/chat/completions',
       );
     });
 
@@ -413,6 +416,75 @@ void main() {
     );
 
     test(
+      'routes DeepSeek preset and legacy root endpoint through Anthropic messages',
+      () async {
+        final http = FakeModelProviderHttpClient(
+          responses: <ModelProviderHttpResponse>[
+            ModelProviderHttpResponse(
+              statusCode: 200,
+              body: <String, Object?>{
+                'model': 'deepseek-v4-flash',
+                'content': <Object?>[
+                  <String, Object?>{'type': 'text', 'text': 'Preset OK'},
+                ],
+              },
+            ),
+            ModelProviderHttpResponse(
+              statusCode: 200,
+              body: <String, Object?>{
+                'model': 'deepseek-v4-flash',
+                'content': <Object?>[
+                  <String, Object?>{'type': 'text', 'text': 'Legacy OK'},
+                ],
+              },
+            ),
+          ],
+        );
+        final presetProvider = AnthropicCompatibleModelProvider(
+          config: ModelProviderConfig.preset(
+            id: 'deepseek',
+            kind: ModelProviderKind.deepSeek,
+            apiKey: _runtimeCredential(),
+          ),
+          httpClient: http,
+        );
+        final legacyRootProvider = AnthropicCompatibleModelProvider(
+          config: ModelProviderConfig.preset(
+            id: 'deepseek-legacy',
+            kind: ModelProviderKind.deepSeek,
+            endpoint: Uri.parse('https://api.deepseek.com'),
+            model: 'deepseek-v4-flash',
+            apiKey: _runtimeCredential(),
+          ),
+          httpClient: http,
+        );
+
+        expect(
+          (await presetProvider.complete(ModelRequest.text('hello'))).text,
+          'Preset OK',
+        );
+        expect(
+          (await legacyRootProvider.complete(ModelRequest.text('hello'))).text,
+          'Legacy OK',
+        );
+
+        for (final request in http.requests) {
+          expect(
+            request.endpoint.toString(),
+            'https://api.deepseek.com/anthropic/v1/messages',
+          );
+          expect(request.headers['x-api-key'], _runtimeCredential());
+          expect(request.headers['authorization'], isNull);
+          expect(request.headers['anthropic-version'], '2023-06-01');
+          expect(request.body['model'], 'deepseek-v4-flash');
+          expect(request.body['thinking'], <String, Object?>{
+            'type': 'disabled',
+          });
+        }
+      },
+    );
+
+    test(
       'uses Bearer authorization for MiniMax Anthropic-compatible API',
       () async {
         final http = FakeModelProviderHttpClient(
@@ -464,7 +536,6 @@ void main() {
           ModelProviderKind.openAi,
           ModelProviderKind.gemini,
           ModelProviderKind.openRouter,
-          ModelProviderKind.deepSeek,
           ModelProviderKind.kimi,
           ModelProviderKind.qwen,
           ModelProviderKind.doubao,
@@ -486,6 +557,7 @@ void main() {
       () {
         for (final kind in <ModelProviderKind>[
           ModelProviderKind.anthropic,
+          ModelProviderKind.deepSeek,
           ModelProviderKind.miniMax,
           ModelProviderKind.mimo,
         ]) {
