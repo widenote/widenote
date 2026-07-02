@@ -1351,7 +1351,40 @@
   "traceRawTitle": "Raw log detail",
   "traceRawSubtitle": "Local-only runtime evidence for this trace.",
   "traceRawWarningTitle": "Local private log",
-  "traceRawWarningBody": "Raw prompt and tool data may appear here. This page does not provide copy, share, or export actions, and it must not be used for external review.",
+  "traceRawWarningBody": "Raw prompt and tool data may appear here. Copied text stays policy-masked, but private logs should not be used for external review.",
+  "traceRawSearchTitle": "Find raw logs",
+  "traceRawSearchLabel": "Search",
+  "traceRawSearchHint": "Trace id, status, prompt, or payload",
+  "traceRawClearSearchTooltip": "Clear search",
+  "traceRawStreamTitle": "Raw log stream",
+  "traceRawCopyPageTooltip": "Copy current page",
+  "traceRawCopiedSnackbar": "Current raw log page copied.",
+  "traceRawNoMatches": "No raw logs match the current search and filter.",
+  "traceRawNoLogsStatus": "No raw logs to display.",
+  "traceRawPageStatus": "Page {page} of {pageCount} - {start}-{end} of {total}",
+  "@traceRawPageStatus": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      },
+      "pageCount": {
+        "type": "int"
+      },
+      "start": {
+        "type": "int"
+      },
+      "end": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "traceRawFirstPageTooltip": "First page",
+  "traceRawPreviousPageTooltip": "Previous page",
+  "traceRawNextPageTooltip": "Next page",
+  "traceRawLastPageTooltip": "Last page",
   "traceRawNotFoundTitle": "Raw log unavailable",
   "traceRawNotFoundBody": "This trace was not found in local storage.",
   "traceRawMetadataTitle": "Metadata",

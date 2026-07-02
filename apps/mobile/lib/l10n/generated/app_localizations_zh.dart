@@ -2165,7 +2165,57 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get traceRawWarningBody =>
-      '这里可能显示原始 prompt 和工具数据。本页不提供复制、分享或导出操作，也不得用于外部审查。';
+      '这里可能显示原始 prompt 和工具数据。复制文本会继续按策略遮蔽，但私有日志不应用于外部审查。';
+
+  @override
+  String get traceRawSearchTitle => '查找原始日志';
+
+  @override
+  String get traceRawSearchLabel => '搜索';
+
+  @override
+  String get traceRawSearchHint => '追踪 ID、状态、prompt 或 payload';
+
+  @override
+  String get traceRawClearSearchTooltip => '清空搜索';
+
+  @override
+  String get traceRawStreamTitle => '原始日志流';
+
+  @override
+  String get traceRawCopyPageTooltip => '复制当前页';
+
+  @override
+  String get traceRawCopiedSnackbar => '已复制当前原始日志页。';
+
+  @override
+  String get traceRawNoMatches => '没有符合当前搜索和过滤条件的原始日志。';
+
+  @override
+  String get traceRawNoLogsStatus => '没有可显示的原始日志。';
+
+  @override
+  String traceRawPageStatus(
+    int page,
+    int pageCount,
+    int start,
+    int end,
+    int total,
+  ) {
+    return '第 $page/$pageCount 页 - $start-$end / $total';
+  }
+
+  @override
+  String get traceRawFirstPageTooltip => '第一页';
+
+  @override
+  String get traceRawPreviousPageTooltip => '上一页';
+
+  @override
+  String get traceRawNextPageTooltip => '下一页';
+
+  @override
+  String get traceRawLastPageTooltip => '最后一页';
 
   @override
   String get traceRawNotFoundTitle => '原始日志不可用';

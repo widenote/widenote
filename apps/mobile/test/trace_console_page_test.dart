@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:widenote_local_db/widenote_local_db.dart';
@@ -123,31 +124,66 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Raw logs: 1'), findsWidgets);
-    expect(find.byKey(const Key('trace-raw-log-trace-1')), findsNothing);
+    expect(find.byKey(const Key('trace-raw-text-box')), findsNothing);
   });
 
   testWidgets('raw logs page renders local raw trace rows', (tester) async {
     final database = WideNoteLocalDatabase.inMemory();
-    database.traceEvents.insert(_trace('trace-1', 'runtime.handler.output'));
+    database.traceEvents
+      ..insert(_trace('trace-1', 'runtime.handler.output'))
+      ..insert(
+        _trace(
+          'trace-secret',
+          'runtime.tool.completed',
+          message: 'authorization token SHOULD_NOT_RENDER',
+          payload: const <String, Object?>{
+            'api_key': 'SHOULD_NOT_RENDER',
+            'safe': 'visible',
+          },
+        ),
+      );
+    final clipboardCalls = <MethodCall>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          clipboardCalls.add(call);
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
     await _pumpTraceRawLogs(tester, database);
 
     expect(find.byKey(const Key('trace-raw-logs-page')), findsOneWidget);
     expect(find.byKey(const Key('trace-raw-warning')), findsOneWidget);
     expect(find.byKey(const Key('agent-console-filter-all')), findsOneWidget);
-    expect(find.byType(SelectableText), findsNothing);
-    expect(find.byIcon(Icons.copy), findsNothing);
+    expect(find.byKey(const Key('trace-raw-search-field')), findsOneWidget);
+    expect(find.byKey(const Key('trace-raw-text-box')), findsOneWidget);
+    expect(find.byType(SelectableText), findsOneWidget);
+    expect(find.byIcon(Icons.copy), findsOneWidget);
     expect(find.byIcon(Icons.share), findsNothing);
-    await _scrollTo(tester, const Key('trace-raw-log-trace-1'));
-    expect(find.byKey(const Key('trace-raw-log-trace-1')), findsOneWidget);
-    expect(find.text('runtime.handler.output'), findsOneWidget);
+    expect(find.text('Page 1 of 1 - 1-2 of 2'), findsOneWidget);
+    expect(find.textContaining('runtime.handler.output'), findsOneWidget);
     expect(find.textContaining('trace-1'), findsWidgets);
     expect(find.textContaining('Generated local output'), findsOneWidget);
-    expect(
-      find.byKey(const Key('trace-console-open-raw-trace-1')),
-      findsOneWidget,
-    );
-    expect(find.text('pack_id: pack.default'), findsOneWidget);
-    expect(find.text('agent_id: agent.capture_loop'), findsOneWidget);
+    expect(find.textContaining('pack_id: pack.default'), findsOneWidget);
+    expect(find.textContaining('agent_id: agent.capture_loop'), findsOneWidget);
+
+    await _tap(tester, const Key('trace-raw-copy-button'));
+
+    expect(clipboardCalls, hasLength(1));
+    final arguments = clipboardCalls.single.arguments as Map<Object?, Object?>;
+    final copiedText = arguments['text'] as String;
+    expect(copiedText, contains('trace-1'));
+    expect(copiedText, contains('[redacted]'));
+    expect(copiedText, isNot(contains('SHOULD_NOT_RENDER')));
+    expect(find.text('Current raw log page copied.'), findsOneWidget);
   });
 
   testWidgets('raw logs page filters raw logs by status', (tester) async {
@@ -164,12 +200,68 @@ void main() {
       );
     await _pumpTraceRawLogs(tester, database);
 
-    expect(find.byKey(const Key('trace-raw-log-trace-ok')), findsOneWidget);
-    expect(find.byKey(const Key('trace-raw-log-trace-denied')), findsOneWidget);
+    expect(find.textContaining('trace-ok'), findsOneWidget);
+    expect(find.textContaining('trace-denied'), findsOneWidget);
 
     await _tap(tester, const Key('agent-console-filter-denied'));
-    expect(find.byKey(const Key('trace-raw-log-trace-ok')), findsNothing);
-    expect(find.byKey(const Key('trace-raw-log-trace-denied')), findsOneWidget);
+    expect(find.textContaining('trace-ok'), findsNothing);
+    expect(find.textContaining('trace-denied'), findsOneWidget);
+  });
+
+  testWidgets('raw logs page searches the plain text stream', (tester) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    database.traceEvents
+      ..insert(
+        _trace(
+          'trace-alpha',
+          'runtime.handler.output',
+          message: 'Alpha generated output',
+        ),
+      )
+      ..insert(
+        _trace(
+          'trace-beta',
+          'runtime.tool.completed',
+          message: 'Needle payload output',
+        ),
+      );
+    await _pumpTraceRawLogs(tester, database);
+
+    await tester.enterText(
+      find.byKey(const Key('trace-raw-search-field')),
+      'needle',
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('trace-beta'), findsOneWidget);
+    expect(find.textContaining('trace-alpha'), findsNothing);
+
+    await tester.tap(find.byKey(const Key('trace-raw-search-clear')));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('trace-beta'), findsOneWidget);
+    expect(find.textContaining('trace-alpha'), findsOneWidget);
+  });
+
+  testWidgets('raw logs page paginates the plain text stream', (tester) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    for (var index = 1; index <= 26; index++) {
+      final id = index.toString().padLeft(3, '0');
+      database.traceEvents.insert(
+        _trace('trace-$id', 'runtime.handler.output', message: 'page log $id'),
+      );
+    }
+    await _pumpTraceRawLogs(tester, database);
+
+    expect(find.text('Page 1 of 2 - 1-25 of 26'), findsOneWidget);
+    expect(find.textContaining('trace-026'), findsOneWidget);
+    expect(find.textContaining('trace-001'), findsNothing);
+
+    await _tap(tester, const Key('trace-raw-next-page'));
+
+    expect(find.text('Page 2 of 2 - 26-26 of 26'), findsOneWidget);
+    expect(find.textContaining('trace-001'), findsOneWidget);
+    expect(find.textContaining('trace-026'), findsNothing);
   });
 
   testWidgets('agent console opens agent run page from compact entry', (
@@ -273,13 +365,11 @@ void main() {
 
     await _pumpTraceRawLogs(tester, database);
 
-    await _scrollTo(tester, const Key('trace-raw-log-trace-delegate-success'));
     expect(find.textContaining('child_delegation_id'), findsWidgets);
     expect(find.textContaining('run-child-1'), findsWidgets);
     expect(find.textContaining('child_status'), findsWidgets);
     expect(find.textContaining('succeeded'), findsWidgets);
 
-    await _scrollTo(tester, const Key('trace-raw-log-trace-delegate-rejected'));
     expect(find.textContaining('rejected'), findsWidgets);
     expect(find.textContaining('violation_codes'), findsWidgets);
     expect(find.textContaining('run_mode_escalation'), findsWidgets);
@@ -330,10 +420,9 @@ void main() {
     );
 
     await _pumpTraceRawLogs(tester, database);
-    await _scrollTo(tester, const Key('trace-raw-log-trace-secret'));
 
     expect(find.textContaining('SHOULD_NOT_RENDER'), findsNothing);
-    expect(find.text('[redacted]'), findsWidgets);
+    expect(find.textContaining('[redacted]'), findsWidgets);
     expect(find.textContaining('safe'), findsOneWidget);
     expect(find.textContaining('visible'), findsOneWidget);
   });
@@ -391,7 +480,6 @@ void main() {
     );
 
     await _pumpTraceRawLogs(tester, database);
-    await _scrollTo(tester, const Key('trace-raw-log-trace-raw'));
 
     expect(
       find.textContaining('Summarize the capture exactly.'),
@@ -431,7 +519,6 @@ void main() {
     expect(find.byKey(const Key('trace-raw-page')), findsOneWidget);
     expect(find.byKey(const Key('trace-raw-warning')), findsOneWidget);
     expect(find.byType(SelectableText), findsNothing);
-    expect(find.byIcon(Icons.copy), findsNothing);
     expect(find.byIcon(Icons.share), findsNothing);
     expect(find.textContaining('Raw local message'), findsOneWidget);
     expect(find.textContaining('raw_prompt'), findsOneWidget);
@@ -458,43 +545,6 @@ void main() {
     expect(find.byKey(const Key('trace-raw-not-found')), findsOneWidget);
   });
 
-  testWidgets('agent console source detail returns with system back', (
-    tester,
-  ) async {
-    final database = WideNoteLocalDatabase.inMemory();
-    database.traceEvents.insert(
-      _trace(
-        'trace-source',
-        'runtime.handler.output',
-        eventId: 'capture-from-trace',
-      ),
-    );
-
-    await _pumpTraceConsoleRouter(tester, database);
-    await _tap(tester, const Key('trace-console-raw-logs-entry-button'));
-    await _scrollTo(
-      tester,
-      const Key('trace-console-open-source-trace-source'),
-    );
-    await tester.tap(
-      find.byKey(const Key('trace-console-open-source-trace-source')),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const Key('trace-source-destination')), findsOneWidget);
-    expect(find.text('capture-from-trace'), findsOneWidget);
-
-    await tester.binding.handlePopRoute();
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const Key('trace-raw-logs-page')), findsOneWidget);
-    expect(find.byKey(const Key('trace-source-destination')), findsNothing);
-
-    await tester.binding.handlePopRoute();
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('trace-console-page')), findsOneWidget);
-  });
-
   testWidgets('raw trace detail returns through raw logs with system back', (
     tester,
   ) async {
@@ -503,9 +553,11 @@ void main() {
       _trace('trace-raw-route', 'runtime.handler.output'),
     );
 
-    await _pumpTraceConsoleRouter(tester, database);
-    await _tap(tester, const Key('trace-console-raw-logs-entry-button'));
-    await _tap(tester, const Key('trace-console-open-raw-trace-raw-route'));
+    await _pumpTraceConsoleRouter(
+      tester,
+      database,
+      initialLocation: '/settings/traces/raw/trace-raw-route',
+    );
 
     expect(find.byKey(const Key('trace-raw-page')), findsOneWidget);
     expect(find.textContaining('trace-raw-route'), findsWidgets);
@@ -601,11 +653,12 @@ Future<void> _pumpRawTrace(
 
 Future<void> _pumpTraceConsoleRouter(
   WidgetTester tester,
-  WideNoteLocalDatabase database,
-) async {
+  WideNoteLocalDatabase database, {
+  String initialLocation = '/settings/traces',
+}) async {
   addTearDown(database.close);
   final router = GoRouter(
-    initialLocation: '/settings/traces',
+    initialLocation: initialLocation,
     routes: [
       GoRoute(
         path: '/settings',

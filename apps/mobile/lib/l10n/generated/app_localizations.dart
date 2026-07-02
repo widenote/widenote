@@ -3972,8 +3972,98 @@ abstract class AppLocalizations {
   /// No description provided for @traceRawWarningBody.
   ///
   /// In en, this message translates to:
-  /// **'Raw prompt and tool data may appear here. This page does not provide copy, share, or export actions, and it must not be used for external review.'**
+  /// **'Raw prompt and tool data may appear here. Copied text stays policy-masked, but private logs should not be used for external review.'**
   String get traceRawWarningBody;
+
+  /// No description provided for @traceRawSearchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Find raw logs'**
+  String get traceRawSearchTitle;
+
+  /// No description provided for @traceRawSearchLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get traceRawSearchLabel;
+
+  /// No description provided for @traceRawSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Trace id, status, prompt, or payload'**
+  String get traceRawSearchHint;
+
+  /// No description provided for @traceRawClearSearchTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get traceRawClearSearchTooltip;
+
+  /// No description provided for @traceRawStreamTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Raw log stream'**
+  String get traceRawStreamTitle;
+
+  /// No description provided for @traceRawCopyPageTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy current page'**
+  String get traceRawCopyPageTooltip;
+
+  /// No description provided for @traceRawCopiedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Current raw log page copied.'**
+  String get traceRawCopiedSnackbar;
+
+  /// No description provided for @traceRawNoMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'No raw logs match the current search and filter.'**
+  String get traceRawNoMatches;
+
+  /// No description provided for @traceRawNoLogsStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'No raw logs to display.'**
+  String get traceRawNoLogsStatus;
+
+  /// No description provided for @traceRawPageStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Page {page} of {pageCount} - {start}-{end} of {total}'**
+  String traceRawPageStatus(
+    int page,
+    int pageCount,
+    int start,
+    int end,
+    int total,
+  );
+
+  /// No description provided for @traceRawFirstPageTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'First page'**
+  String get traceRawFirstPageTooltip;
+
+  /// No description provided for @traceRawPreviousPageTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous page'**
+  String get traceRawPreviousPageTooltip;
+
+  /// No description provided for @traceRawNextPageTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Next page'**
+  String get traceRawNextPageTooltip;
+
+  /// No description provided for @traceRawLastPageTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Last page'**
+  String get traceRawLastPageTooltip;
 
   /// No description provided for @traceRawNotFoundTitle.
   ///
