@@ -87,6 +87,10 @@ class SourceTodo {
     required this.title,
     required this.sourceLabel,
     required this.statusLabel,
+    this.suggestionKind = 'quiet',
+    this.confidenceLabel = 'low',
+    this.reasonLabel,
+    this.scheduledAtLabel,
     this.sourceCaptureId,
     this.sourceEventId,
     this.isSuggested = true,
@@ -96,9 +100,16 @@ class SourceTodo {
   final String title;
   final String sourceLabel;
   final String statusLabel;
+  final String suggestionKind;
+  final String confidenceLabel;
+  final String? reasonLabel;
+  final String? scheduledAtLabel;
   final String? sourceCaptureId;
   final String? sourceEventId;
   final bool isSuggested;
+
+  bool get isAction => suggestionKind == 'action';
+  bool get isSchedule => suggestionKind == 'schedule';
 }
 
 @immutable

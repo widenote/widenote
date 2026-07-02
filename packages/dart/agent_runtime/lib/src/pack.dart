@@ -417,17 +417,21 @@ void _compareOfficialGuardrails(
   }
 
   if (manifest.id == 'pack.todo') {
+    const expectedTodoPermissions = <String>{
+      ModelPermissions.complete,
+      'todo.suggest',
+    };
     _expectSetEqual(
       issues,
       'pack.todo.permissions',
       pack.requiredPermissions,
-      const <String>{'todo.suggest'},
+      expectedTodoPermissions,
     );
     _expectSetEqual(
       issues,
       'pack.todo.manifest_permissions',
       manifest.requiredPermissions,
-      const <String>{'todo.suggest'},
+      expectedTodoPermissions,
     );
     _expectSetEqual(
       issues,

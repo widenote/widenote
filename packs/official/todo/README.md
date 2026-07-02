@@ -22,11 +22,29 @@ Current public surface:
 
 The manifest declares:
 
-- Permission requests: `todo.suggest`
+- Permission requests: `model.complete`, `todo.suggest`
 - Subscription: `wn.capture.created`
 - Native agent: `agent.todo_loop`
+- Prompt ref: `todo.suggestion.v1`
 - Retry policy: `max_attempts = 2`
 - Output event: `wn.todo.suggested`
+
+`agent.todo_loop` asks the configured model whether the capture is `action`,
+`schedule`, or `quiet`. `wn.todo.suggested` is emitted only when the model
+returns `action` or `schedule`. Its payload includes:
+
+- `text`: user-facing suggestion title
+- `suggestion_kind`: `action` or `schedule`
+- `status_label`: lifecycle/status display label
+- `suggestion_confidence`: model confidence label
+- `suggestion_reason`: short machine-readable reason
+- `scheduled_at_label`: optional local time cue for schedule candidates
+- `source_event_id` and runtime-added source refs
+
+Captures that are ordinary diary, state, observation, or product-note records
+must not emit `wn.todo.suggested`; they remain available through the source
+timeline and other derived surfaces. Core must not put a local keyword or
+regular-expression classifier in front of this model-backed decision.
 
 ## Dependencies
 

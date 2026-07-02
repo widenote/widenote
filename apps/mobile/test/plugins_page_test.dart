@@ -72,7 +72,7 @@ void main() {
     ]);
 
     final todoPack = builtInPacks.singleWhere((pack) => pack.id == 'pack.todo');
-    expect(todoPack.permissions, <String>['todo.suggest']);
+    expect(todoPack.permissions, <String>['model.complete', 'todo.suggest']);
     expect(todoPack.outputEvents, <String>['wn.todo.suggested']);
 
     final pkmPack = builtInPacks.singleWhere(
@@ -106,6 +106,7 @@ void main() {
         'pack.default:timeline.read',
         'pack.default:knowledge.read',
         'pack.default:semantic_search.query',
+        'pack.todo:model.complete',
         'pack.todo:todo.suggest',
         'pack.pkm_library:model.complete',
         'pack.pkm_library:artifact.write',
@@ -326,7 +327,10 @@ void main() {
     );
 
     final todoManifest = officialPackManifestSnapshot('pack.todo');
-    expect(todoManifest.requiredPermissions, <String>{'todo.suggest'});
+    expect(todoManifest.requiredPermissions, <String>{
+      'model.complete',
+      'todo.suggest',
+    });
     expect(
       todoManifest.agentDefinitions.values
           .expand((definition) => definition.outputEvents)
@@ -377,8 +381,7 @@ void main() {
     expect(find.text('9 permissions'), findsOneWidget);
     expect(find.text('4 permissions'), findsOneWidget);
     expect(find.text('3 outputs'), findsOneWidget);
-    expect(find.text('1 permission'), findsOneWidget);
-    expect(find.text('2 permissions'), findsOneWidget);
+    expect(find.text('2 permissions'), findsNWidgets(2));
     expect(find.text('1 output'), findsNWidgets(3));
     expect(
       find.byKey(const Key('pack-marketplace-source-pack.pkm_library')),
@@ -408,6 +411,10 @@ void main() {
       findsOneWidget,
     );
     expect(
+      find.byKey(const Key('permission-row-pack.todo-model.complete')),
+      findsOneWidget,
+    );
+    expect(
       find.byKey(const Key('permission-row-pack.pkm_library-model.complete')),
       findsOneWidget,
     );
@@ -418,9 +425,10 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('pack.default'), findsWidgets);
+    expect(find.text('pack.todo'), findsWidgets);
     expect(find.text('pack.pkm_library'), findsWidgets);
     expect(find.text('pack.transcript_correction'), findsWidgets);
-    expect(find.text('medium risk'), findsNWidgets(3));
+    expect(find.text('medium risk'), findsNWidgets(4));
     expect(find.text('low risk'), findsWidgets);
     expect(find.text('Built-in / available'), findsWidgets);
     expect(

@@ -458,17 +458,38 @@ final class CaptureOrchestrator {
         title: 'No todo suggested',
         sourceLabel: 'source: $sourceCaptureId',
         statusLabel: 'not suggested',
+        suggestionKind: 'quiet',
+        confidenceLabel: 'low',
+        reasonLabel: 'model_no_suggestion',
         sourceCaptureId: sourceCaptureId,
         sourceEventId: capture.id,
         isSuggested: false,
       );
     }
+    final suggestionKind = _string(
+      todoEvent.payload['suggestion_kind'],
+      fallback: 'quiet',
+    );
     return SourceTodo(
       id: todoEvent.id,
       title: _string(todoEvent.payload['text'], fallback: 'Review capture'),
       sourceLabel:
           'source: ${todoEvent.subjectRef?.id ?? todoEvent.causationId ?? capture.id}',
-      statusLabel: 'suggested by agent',
+      statusLabel: _string(
+        todoEvent.payload['status_label'],
+        fallback: suggestionKind == 'schedule'
+            ? 'schedule candidate'
+            : 'suggested action',
+      ),
+      suggestionKind: suggestionKind,
+      confidenceLabel: _string(
+        todoEvent.payload['suggestion_confidence'],
+        fallback: 'high',
+      ),
+      reasonLabel: _nullableString(todoEvent.payload['suggestion_reason']),
+      scheduledAtLabel: _nullableString(
+        todoEvent.payload['scheduled_at_label'],
+      ),
       sourceCaptureId: todoEvent.subjectRef?.id,
       sourceEventId: _string(
         todoEvent.payload['source_event_id'],
@@ -880,7 +901,7 @@ final class _CaptureAgent implements runtime.AgentHandler {
       text: text,
       sourceEventId: event.id,
     );
-    final candidate = _applyLocalCaptureRisk(_memoryCandidate(summary), text);
+    final candidate = _memoryCandidate(summary);
 
     return runtime.AgentHandlerResult(
       events: <runtime.WnEventDraft>[
@@ -1000,21 +1021,6 @@ final class _MemoryCandidateEnvelope {
   final String? sensitivity;
   final String? durability;
   final List<String> policyReasons;
-
-  _MemoryCandidateEnvelope copyWith({
-    String? memoryType,
-    String? sensitivity,
-    List<String>? policyReasons,
-  }) {
-    return _MemoryCandidateEnvelope(
-      text: text,
-      memoryType: memoryType ?? this.memoryType,
-      confidence: confidence,
-      sensitivity: sensitivity ?? this.sensitivity,
-      durability: durability,
-      policyReasons: policyReasons ?? this.policyReasons,
-    );
-  }
 }
 
 _MemoryCandidateEnvelope _memoryCandidate(runtime.ModelResponse response) {
@@ -1053,95 +1059,6 @@ _MemoryCandidateEnvelope _memoryCandidate(runtime.ModelResponse response) {
     policyReasons: reasons,
   );
 }
-
-_MemoryCandidateEnvelope _applyLocalCaptureRisk(
-  _MemoryCandidateEnvelope candidate,
-  String sourceText,
-) {
-  final risk = _localCaptureRisk(sourceText);
-  if (risk == null) {
-    return candidate;
-  }
-  final reasons = <String>{
-    ...candidate.policyReasons,
-    'local_sensitive_detector',
-    risk.reason,
-  }.toList(growable: false);
-  return candidate.copyWith(
-    memoryType: risk.memoryType,
-    sensitivity: risk.sensitivity == null
-        ? null
-        : _strongerSensitivity(candidate.sensitivity, risk.sensitivity!),
-    policyReasons: reasons,
-  );
-}
-
-_LocalCaptureRisk? _localCaptureRisk(String sourceText) {
-  final text = sourceText.toLowerCase();
-  if (_credentialRisk.hasMatch(text)) {
-    return const _LocalCaptureRisk(
-      reason: 'credential_like_source',
-    );
-  }
-  if (_healthRisk.hasMatch(text)) {
-    return const _LocalCaptureRisk(
-      memoryType: 'health',
-      sensitivity: 'medium',
-      reason: 'health_source',
-    );
-  }
-  if (_financeRisk.hasMatch(text)) {
-    return const _LocalCaptureRisk(
-      memoryType: 'finance',
-      sensitivity: 'medium',
-      reason: 'finance_source',
-    );
-  }
-  return null;
-}
-
-String _strongerSensitivity(String? current, String fallback) {
-  final currentRank = _sensitivityRank(current);
-  final fallbackRank = _sensitivityRank(fallback);
-  final normalized = current?.trim().toLowerCase();
-  return currentRank >= fallbackRank && normalized != null
-      ? normalized
-      : fallback;
-}
-
-int _sensitivityRank(String? value) {
-  return switch (value?.trim().toLowerCase()) {
-    'high' => 3,
-    'medium' => 2,
-    'low' => 1,
-    _ => 0,
-  };
-}
-
-final class _LocalCaptureRisk {
-  const _LocalCaptureRisk({
-    required this.reason,
-    this.memoryType,
-    this.sensitivity,
-  });
-
-  final String? memoryType;
-  final String? sensitivity;
-  final String reason;
-}
-
-final RegExp _credentialRisk = RegExp(
-  r'(sk-|akia|token|secret|password|credential|api[_ -]?key|口令|密码|凭据|门禁|证件号|护照)',
-  caseSensitive: false,
-);
-final RegExp _healthRisk = RegExp(
-  r'(health|medical|migraine|doctor|pain|knee|sleep|anxiety|medication|医生|医疗|偏头痛|头痛|焦虑|膝盖|不适|疼|痛|睡|口干|配速|跑步|长跑|公里)',
-  caseSensitive: false,
-);
-final RegExp _financeRisk = RegExp(
-  r'(finance|invoice|tax|receipt|reimburse|amount|财务|税务|报销|收据|金额|账本|发票)',
-  caseSensitive: false,
-);
 
 final class _PkmProfileAgent implements runtime.AgentHandler {
   const _PkmProfileAgent();
@@ -1413,6 +1330,15 @@ final class _TodoAgent implements runtime.AgentHandler {
     runtime.WnEvent event,
   ) async {
     final text = _captureTextFromPayload(event.payload);
+    final response = await _suggestTodo(
+      context.model,
+      text: text,
+      sourceEventId: event.id,
+    );
+    final suggestion = _todoSuggestion(response);
+    if (!suggestion.isSuggested) {
+      return const runtime.AgentHandlerResult();
+    }
     final subject =
         event.subjectRef ?? runtime.SubjectRef(kind: 'capture', id: event.id);
 
@@ -1422,13 +1348,127 @@ final class _TodoAgent implements runtime.AgentHandler {
           type: runtime.WnEventTypes.todoSuggested,
           subjectRef: subject,
           payload: <String, Object?>{
-            'text': 'Follow up: ${previewText(text)}',
+            'text': suggestion.title,
+            'suggestion_kind': suggestion.kind,
+            'status_label': suggestion.statusLabel,
+            'suggestion_confidence': suggestion.confidence,
+            'suggestion_reason': suggestion.reason,
+            if (suggestion.scheduledAtLabel != null)
+              'scheduled_at_label': suggestion.scheduledAtLabel,
             'source_event_id': event.id,
           },
         ),
       ],
     );
   }
+}
+
+Future<runtime.ModelResponse> _suggestTodo(
+  runtime.ModelClient model, {
+  required String text,
+  required String sourceEventId,
+}) async {
+  return model.complete(
+    runtime.ModelRequest(
+      prompt: buildTodoSuggestionPrompt(
+        text: text,
+        sourceEventId: sourceEventId,
+      ),
+      context: <String, Object?>{
+        'prompt_ref': todoSuggestionPromptRef,
+        'source_event_id': sourceEventId,
+      },
+    ),
+  );
+}
+
+final class _TodoSuggestionEnvelope {
+  const _TodoSuggestionEnvelope({
+    required this.kind,
+    required this.title,
+    required this.statusLabel,
+    required this.confidence,
+    required this.reason,
+    this.scheduledAtLabel,
+  });
+
+  final String kind;
+  final String title;
+  final String statusLabel;
+  final String confidence;
+  final String reason;
+  final String? scheduledAtLabel;
+
+  bool get isSuggested => kind == 'action' || kind == 'schedule';
+}
+
+_TodoSuggestionEnvelope _todoSuggestion(runtime.ModelResponse response) {
+  final parsed = _jsonObject(response.text);
+  final raw = response.raw;
+  final kind = _normalizedTodoKind(
+    _metadataString(parsed, 'kind') ?? _metadataString(raw, 'kind'),
+  );
+  final title =
+      _metadataString(parsed, 'title') ?? _metadataString(raw, 'title');
+  final confidence =
+      _normalizedTodoConfidence(
+        _metadataString(parsed, 'confidence') ??
+            _metadataString(raw, 'confidence'),
+      ) ??
+      'low';
+  final reason =
+      _metadataString(parsed, 'reason') ??
+      _metadataString(raw, 'reason') ??
+      (parsed == null ? 'model_output_unstructured' : 'model_metadata_missing');
+  final scheduledAtLabel =
+      _metadataString(parsed, 'scheduled_at_label') ??
+      _metadataString(raw, 'scheduled_at_label');
+
+  if (kind == null || kind == 'quiet') {
+    return _TodoSuggestionEnvelope(
+      kind: 'quiet',
+      title: '',
+      statusLabel: 'not suggested',
+      confidence: confidence,
+      reason: reason,
+    );
+  }
+  if (title == null) {
+    return _TodoSuggestionEnvelope(
+      kind: 'quiet',
+      title: '',
+      statusLabel: 'not suggested',
+      confidence: confidence,
+      reason: 'model_title_missing',
+    );
+  }
+
+  return _TodoSuggestionEnvelope(
+    kind: kind,
+    title: title,
+    statusLabel: kind == 'schedule' ? 'schedule candidate' : 'suggested action',
+    confidence: confidence,
+    reason: reason,
+    scheduledAtLabel: scheduledAtLabel,
+  );
+}
+
+String? _normalizedTodoKind(String? value) {
+  return switch (value) {
+    'action' => 'action',
+    'schedule' => 'schedule',
+    'quiet' => 'quiet',
+    _ => null,
+  };
+}
+
+String? _normalizedTodoConfidence(String? value) {
+  return switch (value) {
+    'high' => 'high',
+    'medium' => 'medium',
+    'low' => 'low',
+    _ => null,
+  };
 }
 
 final class _TranscriptCorrectionAgent implements runtime.AgentHandler {
@@ -1494,6 +1534,13 @@ String _string(Object? value, {required String fallback}) {
     return value;
   }
   return fallback;
+}
+
+String? _nullableString(Object? value) {
+  if (value is String && value.trim().isNotEmpty) {
+    return value;
+  }
+  return null;
 }
 
 List<String> _stringList(Object? value) {

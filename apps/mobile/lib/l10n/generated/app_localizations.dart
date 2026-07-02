@@ -1997,13 +1997,13 @@ abstract class AppLocalizations {
   /// No description provided for @todosTitle.
   ///
   /// In en, this message translates to:
-  /// **'Todos'**
+  /// **'Actions'**
   String get todosTitle;
 
   /// No description provided for @todosSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Source-linked actions with visible record provenance.'**
+  /// **'Source-linked action items and schedule candidates, separated from ordinary records.'**
   String get todosSubtitle;
 
   /// No description provided for @todosSurfaceTitle.
@@ -2017,6 +2017,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No source-linked todos yet.'**
   String get todosEmpty;
+
+  /// No description provided for @todoActionsSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Action items'**
+  String get todoActionsSectionTitle;
+
+  /// No description provided for @todoActionsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No clear action items yet.'**
+  String get todoActionsEmpty;
+
+  /// No description provided for @todoSchedulesSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule candidates'**
+  String get todoSchedulesSectionTitle;
+
+  /// No description provided for @todoSchedulesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No schedule candidates yet.'**
+  String get todoSchedulesEmpty;
+
+  /// No description provided for @todoStatusSuggestedAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested action'**
+  String get todoStatusSuggestedAction;
+
+  /// No description provided for @todoStatusScheduleCandidate.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule candidate'**
+  String get todoStatusScheduleCandidate;
+
+  /// No description provided for @todoQuietTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Kept out of actions'**
+  String get todoQuietTitle;
+
+  /// No description provided for @todoQuietSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one {# record did not have a clear action or schedule intent. It stays on the timeline.} other {# records did not have clear action or schedule intent. They stay on the timeline.}}'**
+  String todoQuietSummary(num count);
+
+  /// No description provided for @todoScheduledForLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Time cue: {time}'**
+  String todoScheduledForLabel(String time);
 
   /// No description provided for @timelineTitle.
   ///

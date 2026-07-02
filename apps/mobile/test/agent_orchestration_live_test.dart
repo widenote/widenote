@@ -70,6 +70,7 @@ void main() {
                 .toSet();
             var observedAcceptedCount = 0;
             var observedReviewCount = 0;
+            var observedTodoCount = 0;
 
             for (final scenario in scenarios) {
               final result = await orchestrator.processCapture(
@@ -116,11 +117,15 @@ void main() {
                 result.reviewCandidate == null,
                 isNot(result.memoryItem.needsReview),
               );
-              expect(result.todo.isSuggested, isTrue);
-              expect(
-                result.todo.title,
-                contains(scenario.input.substring(0, 20)),
-              );
+              if (result.todo.isSuggested) {
+                observedTodoCount += 1;
+                expect(
+                  result.todo.title,
+                  contains(scenario.input.substring(0, 20)),
+                );
+              } else {
+                expect(result.todo.statusLabel, 'not suggested');
+              }
               expect(result.acceptedMemoryCount, observedAcceptedCount);
               expect(result.reviewMemoryCount, observedReviewCount);
               _expectSummaryMatchesScenario(
@@ -141,7 +146,7 @@ void main() {
                         event.type == runtime.WnEventTypes.memoryProposed,
                   )
                   .length,
-              scenarios.length,
+              observedTodoCount,
             );
             expect(
               events
@@ -537,7 +542,7 @@ void _expectScenarioEventShape(
       runtime.WnEventTypes.memoryProposed,
       runtime.WnEventTypes.cardCreated,
       runtime.WnEventTypes.insightCreated,
-      runtime.WnEventTypes.todoSuggested,
+      if (result.todo.isSuggested) runtime.WnEventTypes.todoSuggested,
       runtime.WnEventTypes.artifactCreated,
     ]),
   );
@@ -545,7 +550,7 @@ void _expectScenarioEventShape(
     runtime.WnEventTypes.memoryProposed,
     runtime.WnEventTypes.cardCreated,
     runtime.WnEventTypes.insightCreated,
-    runtime.WnEventTypes.todoSuggested,
+    if (result.todo.isSuggested) runtime.WnEventTypes.todoSuggested,
     runtime.WnEventTypes.artifactCreated,
   ]) {
     expect(
@@ -591,14 +596,16 @@ void _expectScenarioEventShape(
     containsAll(<String>[result.record.id, checkedSourceEventId]),
   );
 
-  final todoEvent = result.events.singleWhere(
-    (event) => event.type == runtime.WnEventTypes.todoSuggested,
-  );
-  expect(todoEvent.packId, 'pack.todo');
-  expect(todoEvent.agentId, 'agent.todo_loop');
-  expect(todoEvent.payload['source_event_id'], checkedSourceEventId);
-  expect(result.todo.sourceCaptureId, result.record.id);
-  expect(result.todo.sourceEventId, checkedSourceEventId);
+  if (result.todo.isSuggested) {
+    final todoEvent = result.events.singleWhere(
+      (event) => event.type == runtime.WnEventTypes.todoSuggested,
+    );
+    expect(todoEvent.packId, 'pack.todo');
+    expect(todoEvent.agentId, 'agent.todo_loop');
+    expect(todoEvent.payload['source_event_id'], checkedSourceEventId);
+    expect(result.todo.sourceCaptureId, result.record.id);
+    expect(result.todo.sourceEventId, checkedSourceEventId);
+  }
 
   final artifactEvent = result.events.singleWhere(
     (event) => event.type == runtime.WnEventTypes.artifactCreated,

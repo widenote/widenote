@@ -1,4 +1,5 @@
 const captureMemoryPromptRef = 'capture.memory_candidate.v2';
+const todoSuggestionPromptRef = 'todo.suggestion.v1';
 const pkmProfilePromptRef = 'pkm.profile_entry.v1';
 
 const captureMemoryPromptCaptureTextMarker = 'Capture text:';
@@ -30,6 +31,40 @@ String buildCaptureMemoryPrompt({
     '- durability must be one of: durable, transient.',
     '- For ordinary explicit work, project, preference, or task context, use low sensitivity and high or medium confidence.',
     '- For health, finance, location, credential-like, sensitive, ambiguous, or weakly evidenced content, choose the matching type, sensitivity, and confidence so WideNote can route it to review.',
+    '',
+    'Source event id: $sourceEventId',
+    captureMemoryPromptCaptureTextMarker,
+    captureText,
+  ].join('\n');
+}
+
+String buildTodoSuggestionPrompt({
+  required String text,
+  required String sourceEventId,
+}) {
+  final captureText = text.trim().isEmpty ? '(empty capture)' : text.trim();
+  return <String>[
+    'You are the WideNote Todo Loop Agent.',
+    '',
+    'Task:',
+    '- Decide whether one raw, local-first capture should become an action item, a schedule candidate, or no todo suggestion.',
+    '- Use semantic judgment from the full capture, not keyword matching.',
+    '- Treat ordinary diary, status, observation, idea, or product-note captures as quiet unless the source clearly asks for a future action or scheduled commitment.',
+    '- Use action for an explicit task, follow-up, errand, message, review, fix, purchase, cleanup, or other user-actionable commitment without a concrete time cue.',
+    '- Use schedule for an explicit action, event, appointment, meeting, reminder, deadline, or commitment with a concrete date, time, or time cue.',
+    '- Do not invent actions, dates, people, or urgency. Preserve the source language when possible.',
+    '- This output is a derived suggestion only. It does not write Calendar or Reminder data.',
+    '',
+    'Output:',
+    '- Return exactly one JSON object and nothing else.',
+    '- Do not wrap the JSON in Markdown, code fences, bullets, headings, or commentary.',
+    '- Shape: {"kind":"quiet","title":"","confidence":"high","reason":"ordinary_record","scheduled_at_label":null}',
+    '- kind must be one of: action, schedule, quiet.',
+    '- title: for action or schedule, a concise user-facing label under 80 characters. For quiet, use an empty string.',
+    '- confidence must be one of: high, medium, low.',
+    '- reason: short machine-readable explanation such as explicit_action, explicit_schedule, ordinary_record, ambiguous, or insufficient_evidence.',
+    '- scheduled_at_label: copy only the explicit date/time/time cue from the source for schedule; otherwise null.',
+    '- If unsure whether this is actionable, choose quiet with confidence low or medium.',
     '',
     'Source event id: $sourceEventId',
     captureMemoryPromptCaptureTextMarker,

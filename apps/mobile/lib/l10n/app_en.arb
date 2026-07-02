@@ -557,10 +557,26 @@
   "chatErrorModelNotConfigured": "Model access is not configured. Add a provider in Settings, then retry.",
   "chatErrorModelEmptyAnswer": "The model returned no answer. Retry or choose another provider.",
   "chatErrorModelUnavailable": "The model is unavailable. Check provider settings or retry.",
-  "todosTitle": "Todos",
-  "todosSubtitle": "Source-linked actions with visible record provenance.",
+  "todosTitle": "Actions",
+  "todosSubtitle": "Source-linked action items and schedule candidates, separated from ordinary records.",
   "todosSurfaceTitle": "Source-linked todos",
   "todosEmpty": "No source-linked todos yet.",
+  "todoActionsSectionTitle": "Action items",
+  "todoActionsEmpty": "No clear action items yet.",
+  "todoSchedulesSectionTitle": "Schedule candidates",
+  "todoSchedulesEmpty": "No schedule candidates yet.",
+  "todoStatusSuggestedAction": "Suggested action",
+  "todoStatusScheduleCandidate": "Schedule candidate",
+  "todoQuietTitle": "Kept out of actions",
+  "todoQuietSummary": "{count, plural, one {# record did not have a clear action or schedule intent. It stays on the timeline.} other {# records did not have clear action or schedule intent. They stay on the timeline.}}",
+  "todoScheduledForLabel": "Time cue: {time}",
+  "@todoScheduledForLabel": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "timelineTitle": "Timeline",
   "timelineSubtitle": "Browse captures, cards, Memory, insights, and todos.",
   "timelineSearchTooltip": "Search timeline",

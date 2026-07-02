@@ -31,6 +31,7 @@
   "default_run_mode": "auto",
   "entrypoint_kind": "native",
   "permissions": [
+    "model.complete",
     "todo.suggest"
   ],
   "subscriptions": [
@@ -50,9 +51,10 @@
       "runtime": "native",
       "run_mode": "auto",
       "name": "Todo Loop Agent",
-      "prompt_ref": null,
-      "model_profile_ref": null,
+      "prompt_ref": "todo.suggestion.v1",
+      "model_profile_ref": "local_or_user_selected_model",
       "permissions": [
+        "model.complete",
         "todo.suggest"
       ],
       "tools": [
@@ -66,7 +68,13 @@
       }
     }
   ],
-  "model_profiles": [],
+  "model_profiles": [
+    {
+      "id": "local_or_user_selected_model",
+      "purpose": "Decide whether captures should become source-linked action items, schedule candidates, or no todo suggestion.",
+      "required": false
+    }
+  ],
   "tools": [
     {
       "id": "todo.suggest",

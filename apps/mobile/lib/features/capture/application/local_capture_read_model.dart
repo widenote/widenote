@@ -74,6 +74,11 @@ final class LocalCaptureReadModelStore {
           'title': todo.title,
           'source_label': todo.sourceLabel,
           'status_label': todo.statusLabel,
+          'suggestion_kind': todo.suggestionKind,
+          'suggestion_confidence': todo.confidenceLabel,
+          if (todo.reasonLabel != null) 'suggestion_reason': todo.reasonLabel,
+          if (todo.scheduledAtLabel != null)
+            'scheduled_at_label': todo.scheduledAtLabel,
         },
         createdAt: DateTime.now().toUtc(),
         updatedAt: DateTime.now().toUtc(),
@@ -599,6 +604,10 @@ SourceTodo _todoView(localdb.TodoRecord record) {
       _string(record.payload['title']) ??
       _string(record.payload['text']) ??
       'Review capture';
+  final suggestionKind = _string(record.payload['suggestion_kind']) ?? 'quiet';
+  final statusLabel =
+      _string(record.payload['status_label']) ??
+      (suggestionKind == 'quiet' ? 'not suggested' : record.status);
   return SourceTodo(
     id: record.id,
     title: title,
@@ -611,9 +620,16 @@ SourceTodo _todoView(localdb.TodoRecord record) {
           sourceEventId: record.sourceEventId,
           sourcePrefix: 'source',
         ),
-    statusLabel: _string(record.payload['status_label']) ?? record.status,
+    statusLabel: statusLabel,
+    suggestionKind: suggestionKind,
+    confidenceLabel: _string(record.payload['suggestion_confidence']) ?? 'low',
+    reasonLabel:
+        _string(record.payload['suggestion_reason']) ??
+        'legacy_missing_suggestion_kind',
+    scheduledAtLabel: _string(record.payload['scheduled_at_label']),
     sourceCaptureId: record.sourceCaptureId,
     sourceEventId: record.sourceEventId,
+    isSuggested: suggestionKind != 'quiet',
   );
 }
 

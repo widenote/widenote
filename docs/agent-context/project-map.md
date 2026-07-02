@@ -11,6 +11,7 @@ It should stay short. It points to the right local context instead of duplicatin
 
 ## Architecture
 
+- `docs/architecture/operational-principles.md`
 - `docs/architecture/current-contracts.md`
 - `docs/architecture/overview.md`
 - `docs/architecture/project-structure.md`

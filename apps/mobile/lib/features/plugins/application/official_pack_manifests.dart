@@ -221,7 +221,7 @@ const officialPackManifestMaps = <String, Map<String, Object?>>{
     },
     'default_run_mode': 'auto',
     'entrypoint_kind': 'native',
-    'permissions': <String>['todo.suggest'],
+    'permissions': <String>['model.complete', 'todo.suggest'],
     'subscriptions': <Map<String, Object?>>[
       <String, Object?>{
         'id': 'sub.todo_capture_created',
@@ -237,15 +237,22 @@ const officialPackManifestMaps = <String, Map<String, Object?>>{
         'runtime': 'native',
         'run_mode': 'auto',
         'name': 'Todo Loop Agent',
-        'prompt_ref': null,
-        'model_profile_ref': null,
-        'permissions': <String>['todo.suggest'],
+        'prompt_ref': 'todo.suggestion.v1',
+        'model_profile_ref': 'local_or_user_selected_model',
+        'permissions': <String>['model.complete', 'todo.suggest'],
         'tools': <String>['todo.suggest'],
         'output_events': <String>['wn.todo.suggested'],
         'retry_policy': <String, Object?>{'max_attempts': 2},
       },
     ],
-    'model_profiles': <Map<String, Object?>>[],
+    'model_profiles': <Map<String, Object?>>[
+      <String, Object?>{
+        'id': 'local_or_user_selected_model',
+        'purpose':
+            'Decide whether captures should become source-linked action items, schedule candidates, or no todo suggestion.',
+        'required': false,
+      },
+    ],
     'tools': <Map<String, Object?>>[
       <String, Object?>{
         'id': 'todo.suggest',

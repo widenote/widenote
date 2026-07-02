@@ -123,7 +123,7 @@ void main() {
       ],
     );
 
-    const captureText = 'Met Lin about WideNote source-linked todos.';
+    const captureText = 'Review Lin WideNote source-linked todos.';
     await _submitQuickCapture(tester, captureText);
     await _openTab(tester, const Key('tab-chat'));
     await _sendChat(tester, 'Lin 的待办是什么？');
@@ -543,6 +543,22 @@ final class _CaptureTestModel implements runtime.ModelClient {
 
   @override
   Future<runtime.ModelResponse> complete(runtime.ModelRequest request) async {
+    if (request.context['prompt_ref'] == todoSuggestionPromptRef) {
+      return runtime.ModelResponse(
+        text: jsonEncode(<String, Object?>{
+          'kind': 'action',
+          'title': _captureText(request.prompt),
+          'confidence': 'high',
+          'reason': 'explicit_action',
+          'scheduled_at_label': null,
+        }),
+        raw: const <String, Object?>{
+          'kind': 'action',
+          'confidence': 'high',
+          'reason': 'explicit_action',
+        },
+      );
+    }
     return runtime.ModelResponse(
       text: _captureText(request.prompt),
       raw: const <String, Object?>{

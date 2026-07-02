@@ -329,7 +329,10 @@ void main() {
         'card.write',
         'insight.write',
       })
-      ..grantAll('pack.todo', <String>{'todo.suggest'});
+      ..grantAll('pack.todo', <String>{
+        ModelPermissions.complete,
+        'todo.suggest',
+      });
     final kernel = _blankKernel(
       store: store,
       traceSink: traceSink,
@@ -381,7 +384,10 @@ void main() {
           id: 'pack.todo',
           name: 'Todo extraction loop',
           version: '0.1.0',
-          requiredPermissions: <String>{'todo.suggest'},
+          requiredPermissions: <String>{
+            ModelPermissions.complete,
+            'todo.suggest',
+          },
           subscriptions: <Subscription>[
             Subscription(
               id: 'sub.todo_capture_created',
@@ -392,7 +398,10 @@ void main() {
           agentDefinitions: <String, AgentDefinition>{
             'agent.todo_loop': AgentDefinition(
               id: 'agent.todo_loop',
-              requiredPermissions: <String>{'todo.suggest'},
+              requiredPermissions: <String>{
+                ModelPermissions.complete,
+                'todo.suggest',
+              },
               outputEvents: <String>{WnEventTypes.todoSuggested},
             ),
           },
@@ -1676,7 +1685,10 @@ void main() {
             id: 'pack.todo',
             name: 'Todo Extraction Loop',
             version: '0.1.0',
-            requiredPermissions: <String>{'todo.suggest'},
+            requiredPermissions: <String>{
+              ModelPermissions.complete,
+              'todo.suggest',
+            },
             subscriptions: <Subscription>[
               Subscription(
                 id: 'sub.todo_capture_created',
@@ -1687,7 +1699,10 @@ void main() {
             agentDefinitions: <String, AgentDefinition>{
               'agent.todo_loop': AgentDefinition(
                 id: 'agent.todo_loop',
-                requiredPermissions: <String>{'todo.suggest'},
+                requiredPermissions: <String>{
+                  ModelPermissions.complete,
+                  'todo.suggest',
+                },
                 outputEvents: <String>{WnEventTypes.todoSuggested},
                 retryPolicy: RetryPolicy(maxAttempts: 2),
               ),
@@ -1719,7 +1734,11 @@ void main() {
 
       final badTodo = registry.checkManifestAlignment(
         _todoManifest(
-          permissions: const <String>{'todo.suggest', 'memory.propose'},
+          permissions: const <String>{
+            ModelPermissions.complete,
+            'todo.suggest',
+            'memory.propose',
+          },
         ),
       );
       expect(badTodo.isAligned, isFalse);
@@ -2512,7 +2531,10 @@ AgentPackManifestSnapshot _defaultManifest({
 }
 
 AgentPackManifestSnapshot _todoManifest({
-  Iterable<String> permissions = const <String>{'todo.suggest'},
+  Iterable<String> permissions = const <String>{
+    ModelPermissions.complete,
+    'todo.suggest',
+  },
   Iterable<String> outputEvents = const <String>{WnEventTypes.todoSuggested},
 }) {
   return AgentPackManifestSnapshot.fromJson(<String, Object?>{

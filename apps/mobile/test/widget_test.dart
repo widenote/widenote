@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -95,7 +96,7 @@ void main() {
     addTearDown(database.close);
     await _pumpApp(tester, database: database, closeDatabase: false);
 
-    const captureText = 'Hydrate this capture after relaunch.';
+    const captureText = 'Review this capture after relaunch.';
     await _submitQuickCapture(tester, captureText);
     final stateBeforeRelaunch = _readCaptureState(tester);
     final todo = stateBeforeRelaunch.todos.single;
@@ -121,7 +122,7 @@ void main() {
     expect(find.text(captureText), findsOneWidget);
     await _openTab(tester, const Key('tab-todos'));
     expect(find.byKey(Key('todo-row-${todo.id}')), findsOneWidget);
-    expect(find.text('Follow up: $captureText'), findsOneWidget);
+    expect(find.text(captureText), findsOneWidget);
   });
 
   testWidgets('backup export counts persisted captures and todos', (
@@ -131,7 +132,7 @@ void main() {
     addTearDown(database.close);
     await _pumpApp(tester, database: database, closeDatabase: false);
 
-    await _submitQuickCapture(tester, 'Count this capture in backup.');
+    await _submitQuickCapture(tester, 'Review this capture in backup.');
 
     final backup = LocalBackupService(database).exportBackup();
 
@@ -139,9 +140,12 @@ void main() {
     expect(backup.manifest.recordCounts['todos'], 1);
     expect(
       backup.captures.single.payload['text'],
-      'Count this capture in backup.',
+      'Review this capture in backup.',
     );
-    expect(backup.todos.single.payload['title'], startsWith('Follow up:'));
+    expect(
+      backup.todos.single.payload['title'],
+      'Review this capture in backup.',
+    );
   });
 
   testWidgets('quick capture creates record, auto-accepted Memory, and trace', (
@@ -490,8 +494,8 @@ void main() {
 
     expect(find.byKey(const Key('todos-page')), findsOneWidget);
     expect(find.byKey(Key('todo-row-${todo.id}')), findsOneWidget);
-    expect(find.text('Follow up: $captureText'), findsOneWidget);
-    expect(find.text('suggested by agent'), findsOneWidget);
+    expect(find.text(captureText), findsOneWidget);
+    expect(find.text('Suggested action'), findsOneWidget);
     expect(find.text('source: ${record.id}'), findsOneWidget);
     expect(
       _visibleTextValues(tester).where(
@@ -510,7 +514,7 @@ void main() {
 
       await _pumpApp(tester, database: database);
 
-      await _submitQuickCapture(tester, 'Persist mobile capture to SQLite.');
+      await _submitQuickCapture(tester, 'Review mobile capture in SQLite.');
 
       final events = await eventStore.readAll();
       final traces = await traceSink.readAll();
@@ -746,6 +750,23 @@ final class _CaptureTestModel implements runtime.ModelClient {
 
   @override
   Future<runtime.ModelResponse> complete(runtime.ModelRequest request) async {
+    if (request.context['prompt_ref'] == todoSuggestionPromptRef) {
+      final title = _captureText(request.prompt);
+      return runtime.ModelResponse(
+        text: jsonEncode(<String, Object?>{
+          'kind': 'action',
+          'title': title,
+          'confidence': 'high',
+          'reason': 'explicit_action',
+          'scheduled_at_label': null,
+        }),
+        raw: const <String, Object?>{
+          'kind': 'action',
+          'confidence': 'high',
+          'reason': 'explicit_action',
+        },
+      );
+    }
     return runtime.ModelResponse(text: _captureText(request.prompt), raw: raw);
   }
 }

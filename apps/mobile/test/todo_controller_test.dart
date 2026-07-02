@@ -16,7 +16,10 @@ void main() {
         payload: const <String, Object?>{
           'title': 'Review controller todo',
           'source_label': 'source: capture-1',
-          'status_label': 'suggested by agent',
+          'status_label': 'suggested action',
+          'suggestion_kind': 'action',
+          'suggestion_confidence': 'high',
+          'suggestion_reason': 'explicit_action',
         },
         createdAt: now,
         updatedAt: now,
@@ -34,17 +37,88 @@ void main() {
         .complete('todo-controller-1');
 
     expect(database.todos.readById('todo-controller-1')!.status, 'completed');
-    expect(
-      container.read(todoControllerProvider).items,
-      isEmpty,
-    );
+    expect(container.read(todoControllerProvider).items, isEmpty);
 
     container.read(todoControllerProvider.notifier).reopen('todo-controller-1');
 
     expect(database.todos.readById('todo-controller-1')!.status, 'open');
     expect(
       container.read(todoControllerProvider).items.single.statusLabel,
-      'suggested by agent',
+      'suggested action',
     );
+  });
+
+  test('todo controller groups model-suggested rows without local parsing', () {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    final now = DateTime.utc(2026, 7, 2, 8);
+    database.todos.insert(
+      TodoRecord(
+        id: 'legacy-missing-kind',
+        sourceCaptureId: 'capture-neutral',
+        payload: const <String, Object?>{
+          'title': 'Follow up: Review launch checklist tomorrow',
+          'source_label': 'source: capture-neutral',
+          'status_label': 'suggested by agent',
+        },
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+    database.todos.insert(
+      TodoRecord(
+        id: 'model-action',
+        sourceCaptureId: 'capture-action',
+        payload: const <String, Object?>{
+          'title': 'Review launch checklist',
+          'source_label': 'source: capture-action',
+          'status_label': 'suggested action',
+          'suggestion_kind': 'action',
+          'suggestion_confidence': 'high',
+          'suggestion_reason': 'explicit_action',
+        },
+        createdAt: now.add(const Duration(minutes: 1)),
+        updatedAt: now.add(const Duration(minutes: 1)),
+      ),
+    );
+    database.todos.insert(
+      TodoRecord(
+        id: 'model-schedule',
+        sourceCaptureId: 'capture-schedule',
+        payload: const <String, Object?>{
+          'title': 'Review launch issue tomorrow',
+          'source_label': 'source: capture-schedule',
+          'status_label': 'schedule candidate',
+          'suggestion_kind': 'schedule',
+          'suggestion_confidence': 'high',
+          'suggestion_reason': 'explicit_schedule',
+          'scheduled_at_label': 'tomorrow',
+        },
+        createdAt: now.add(const Duration(minutes: 2)),
+        updatedAt: now.add(const Duration(minutes: 2)),
+      ),
+    );
+    final container = ProviderContainer(
+      overrides: [localDatabaseProvider.overrideWithValue(database)],
+    );
+    addTearDown(container.dispose);
+
+    final state = container.read(todoControllerProvider);
+
+    expect(state.actionItems.map((item) => item.id), ['model-action']);
+    expect(state.scheduleItems.map((item) => item.id), ['model-schedule']);
+    expect(state.quietItems.map((item) => item.id), ['legacy-missing-kind']);
+    expect(
+      state.items.map((item) => item.id),
+      unorderedEquals(<String>['model-schedule', 'model-action']),
+    );
+    expect(state.quietCount, 1);
+    expect(state.actionItems.single.statusLabel, 'suggested action');
+    expect(state.scheduleItems.single.statusLabel, 'schedule candidate');
+    expect(state.scheduleItems.single.scheduledAtLabel, 'tomorrow');
+
+    container.read(todoControllerProvider.notifier).complete('model-schedule');
+
+    expect(database.todos.readById('model-schedule')!.status, 'open');
   });
 }

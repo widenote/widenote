@@ -323,10 +323,26 @@
   "chatErrorModelNotConfigured": "尚未配置模型访问。请先在设置里添加提供商，然后重试。",
   "chatErrorModelEmptyAnswer": "模型没有返回回答。请重试或切换提供商。",
   "chatErrorModelUnavailable": "模型暂不可用。请检查提供商设置或稍后重试。",
-  "todosTitle": "待办",
-  "todosSubtitle": "带有记录来源的可溯源行动项。",
+  "todosTitle": "待办与日程",
+  "todosSubtitle": "把可执行行动、带时间的安排候选和普通记录分开展示。",
   "todosSurfaceTitle": "来源关联待办",
   "todosEmpty": "还没有来源关联待办。",
+  "todoActionsSectionTitle": "行动项",
+  "todoActionsEmpty": "还没有明确行动项。",
+  "todoSchedulesSectionTitle": "日程候选",
+  "todoSchedulesEmpty": "还没有日程候选。",
+  "todoStatusSuggestedAction": "智能体建议行动",
+  "todoStatusScheduleCandidate": "日程候选",
+  "todoQuietTitle": "未进入待办",
+  "todoQuietSummary": "{count, plural, one {# 条记录没有明确行动或日程意图，仍保留在时间线。} other {# 条记录没有明确行动或日程意图，仍保留在时间线。}}",
+  "todoScheduledForLabel": "时间线索：{time}",
+  "@todoScheduledForLabel": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "timelineTitle": "时间线",
   "timelineSubtitle": "浏览记录、卡片、记忆、洞察和待办。",
   "timelineSearchTooltip": "搜索时间线",

@@ -1028,16 +1028,53 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatErrorModelUnavailable => '模型暂不可用。请检查提供商设置或稍后重试。';
 
   @override
-  String get todosTitle => '待办';
+  String get todosTitle => '待办与日程';
 
   @override
-  String get todosSubtitle => '带有记录来源的可溯源行动项。';
+  String get todosSubtitle => '把可执行行动、带时间的安排候选和普通记录分开展示。';
 
   @override
   String get todosSurfaceTitle => '来源关联待办';
 
   @override
   String get todosEmpty => '还没有来源关联待办。';
+
+  @override
+  String get todoActionsSectionTitle => '行动项';
+
+  @override
+  String get todoActionsEmpty => '还没有明确行动项。';
+
+  @override
+  String get todoSchedulesSectionTitle => '日程候选';
+
+  @override
+  String get todoSchedulesEmpty => '还没有日程候选。';
+
+  @override
+  String get todoStatusSuggestedAction => '智能体建议行动';
+
+  @override
+  String get todoStatusScheduleCandidate => '日程候选';
+
+  @override
+  String get todoQuietTitle => '未进入待办';
+
+  @override
+  String todoQuietSummary(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '# 条记录没有明确行动或日程意图，仍保留在时间线。',
+      one: '# 条记录没有明确行动或日程意图，仍保留在时间线。',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String todoScheduledForLabel(String time) {
+    return '时间线索：$time';
+  }
 
   @override
   String get timelineTitle => '时间线';
