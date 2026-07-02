@@ -120,7 +120,7 @@ void main() {
     );
     expect(find.text('1 provider'), findsOneWidget);
     expect(find.text('full local'), findsOneWidget);
-    expect(find.text('2 events / 1 warnings'), findsOneWidget);
+    expect(find.text('2 logs / 1 warnings'), findsOneWidget);
     expect(
       find.textContaining('Full .widenote backups include provider and'),
       findsOneWidget,

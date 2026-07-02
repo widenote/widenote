@@ -66,16 +66,16 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('trace-console-page')), findsOneWidget);
-    expect(find.text('Agent Console'), findsOneWidget);
+    expect(find.text('Log Center'), findsOneWidget);
     await tester.ensureVisible(
-      find.byKey(const Key('trace-console-events-entry-button')),
+      find.byKey(const Key('trace-console-raw-logs-entry-button')),
     );
     await tester.pumpAndSettle();
     await tester.tap(
-      find.byKey(const Key('trace-console-events-entry-button')),
+      find.byKey(const Key('trace-console-raw-logs-entry-button')),
     );
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('trace-events-page')), findsOneWidget);
+    expect(find.byKey(const Key('trace-raw-logs-page')), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('Chat model request failed.'),
       400,

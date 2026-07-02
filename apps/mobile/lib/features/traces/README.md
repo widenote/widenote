@@ -1,13 +1,13 @@
-# Agent Console / Trace Feature
+# Log Center / Trace Feature
 
 ## Purpose
 
-Shows the local Agent Runtime control surface for runs, tasks, approvals, and
-trace events.
+Shows the local Agent Runtime log center for raw logs, runs, tasks, approvals,
+and trace review.
 
 ## Boundary
 
-Owns the mobile Agent Console read model and presentation. It can inspect local
+Owns the mobile Log Center read model and presentation. It can inspect local
 runtime task/run/trace records, including raw prompt/model/tool details stored
 in local trace payloads, and render disabled retry/cancel controls when no live
 runtime control provider is available. It must not own runtime execution, task
@@ -29,7 +29,8 @@ copy and never imply that a disabled control queued work successfully.
 ## Public Surface
 
 - `TraceConsolePage`
-- `TraceEventsPage`
+- `TraceRawLogsPage`
+- `TraceEventsPage` legacy route compatibility alias
 - `TraceAgentsPage`
 - `TraceRawPage`
 - `traceConsoleControllerProvider`

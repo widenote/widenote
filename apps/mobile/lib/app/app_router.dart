@@ -140,24 +140,31 @@ GoRouter createAppRouter({String initialLocation = '/'}) {
                       GoRoute(
                         path: 'events',
                         name: 'settings-trace-events',
+                        redirect: (context, state) => '/settings/traces/raw',
+                      ),
+                      GoRoute(
+                        path: 'raw',
+                        name: 'settings-trace-raw-logs',
                         pageBuilder: (context, state) =>
-                            _noTransitionPage(state, const TraceEventsPage()),
+                            _noTransitionPage(state, const TraceRawLogsPage()),
+                        routes: [
+                          GoRoute(
+                            path: ':traceId',
+                            name: 'settings-trace-raw',
+                            pageBuilder: (context, state) => _noTransitionPage(
+                              state,
+                              TraceRawPage(
+                                traceId: state.pathParameters['traceId'] ?? '',
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       GoRoute(
                         path: 'agents',
                         name: 'settings-trace-agents',
                         pageBuilder: (context, state) =>
                             _noTransitionPage(state, const TraceAgentsPage()),
-                      ),
-                      GoRoute(
-                        path: 'raw/:traceId',
-                        name: 'settings-trace-raw',
-                        pageBuilder: (context, state) => _noTransitionPage(
-                          state,
-                          TraceRawPage(
-                            traceId: state.pathParameters['traceId'] ?? '',
-                          ),
-                        ),
                       ),
                     ],
                   ),

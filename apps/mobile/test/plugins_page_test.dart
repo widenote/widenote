@@ -742,7 +742,7 @@ void main() {
       _expectButtonSemantics(
         tester,
         const Key('trace-console-entry'),
-        'Agent Console',
+        'Log Center',
       );
     } finally {
       semantics.dispose();

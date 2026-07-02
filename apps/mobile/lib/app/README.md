@@ -56,7 +56,7 @@ All other pages are child pages:
   `/settings/system-permissions`, `/settings/model-providers`,
   `/settings/transcription`, `/settings/location`, `/settings/backup`,
   `/settings/traces`, `/settings/traces/agents`,
-  `/settings/traces/raw/:traceId`
+  `/settings/traces/raw`, `/settings/traces/raw/:traceId`
 - Plugins children: `/plugins/packs`
 
 UI controls that open direct child pages should use push-style navigation.
@@ -69,6 +69,8 @@ immediate back target.
 The Plugins tab may surface visual shortcuts for permissions, model providers,
 backup, and traces, but those shortcuts navigate to the Settings-owned
 `/settings/...` routes instead of declaring duplicate `/plugins/...` pages.
+The legacy `/settings/traces/events` path redirects to the canonical raw-log
+list at `/settings/traces/raw`.
 
 ## Generated Artifacts
 

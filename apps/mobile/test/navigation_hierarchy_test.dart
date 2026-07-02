@@ -277,7 +277,14 @@ void main() {
       ),
       _DeepLinkCase(
         path: '/settings/traces/events',
-        pageKey: Key('trace-events-page'),
+        pageKey: Key('trace-raw-logs-page'),
+        firstParentKey: Key('trace-console-page'),
+        secondParentKey: Key('settings-page'),
+        thirdParentKey: Key('home-page'),
+      ),
+      _DeepLinkCase(
+        path: '/settings/traces/raw',
+        pageKey: Key('trace-raw-logs-page'),
         firstParentKey: Key('trace-console-page'),
         secondParentKey: Key('settings-page'),
         thirdParentKey: Key('home-page'),
@@ -285,9 +292,10 @@ void main() {
       _DeepLinkCase(
         path: '/settings/traces/raw/missing-trace',
         pageKey: Key('trace-raw-page'),
-        firstParentKey: Key('trace-console-page'),
-        secondParentKey: Key('settings-page'),
-        thirdParentKey: Key('home-page'),
+        firstParentKey: Key('trace-raw-logs-page'),
+        secondParentKey: Key('trace-console-page'),
+        thirdParentKey: Key('settings-page'),
+        fourthParentKey: Key('home-page'),
       ),
     ];
 
@@ -336,6 +344,21 @@ void main() {
         await tester.pumpAndSettle();
         expect(
           find.byKey(thirdParentKey),
+          findsOneWidget,
+          reason: routeCase.path,
+        );
+      }
+
+      final fourthParentKey = routeCase.fourthParentKey;
+      if (fourthParentKey != null) {
+        expect(
+          await tester.binding.handlePopRoute(),
+          isTrue,
+          reason: routeCase.path,
+        );
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(fourthParentKey),
           findsOneWidget,
           reason: routeCase.path,
         );
@@ -476,6 +499,7 @@ class _DeepLinkCase {
     required this.firstParentKey,
     this.secondParentKey,
     this.thirdParentKey,
+    this.fourthParentKey,
   });
 
   final String path;
@@ -483,6 +507,7 @@ class _DeepLinkCase {
   final Key firstParentKey;
   final Key? secondParentKey;
   final Key? thirdParentKey;
+  final Key? fourthParentKey;
 }
 
 class _SelectedTabCase {
