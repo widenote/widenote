@@ -2117,6 +2117,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get traceConsoleEventsTitle => 'Events';
 
   @override
+  String get traceConsoleEventsSubtitle =>
+      'Browse local runtime events and open raw logs from a focused page.';
+
+  @override
+  String get traceConsoleEventsEntryTitle => 'Log events';
+
+  @override
+  String get traceConsoleEventsEntryBody =>
+      'Open the longer event stream on its own page, then inspect raw local evidence only when needed.';
+
+  @override
+  String get traceConsoleOpenEventsButton => 'Open events';
+
+  @override
   String get traceConsoleEmpty =>
       'No runtime logs yet. Capture or pack runs will appear here.';
 

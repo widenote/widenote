@@ -1882,6 +1882,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get traceConsoleEventsTitle => '事件';
 
   @override
+  String get traceConsoleEventsSubtitle => '在独立页面浏览本地运行事件，并在需要时打开原始日志。';
+
+  @override
+  String get traceConsoleEventsEntryTitle => '日志事件';
+
+  @override
+  String get traceConsoleEventsEntryBody => '把较长的事件流放到单独页面；只在需要时查看本机原始证据。';
+
+  @override
+  String get traceConsoleOpenEventsButton => '打开事件';
+
+  @override
   String get traceConsoleEmpty => '还没有运行日志。记录或插件运行后会显示在这里。';
 
   @override

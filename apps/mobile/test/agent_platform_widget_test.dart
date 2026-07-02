@@ -44,6 +44,9 @@ void main() {
 
     expect(find.byKey(const Key('trace-console-page')), findsOneWidget);
     expect(find.text('Local control summary'), findsOneWidget);
+    expect(find.byKey(const Key('trace-console-events-entry')), findsOneWidget);
+    await _tap(tester, const Key('trace-console-events-entry-button'));
+    expect(find.byKey(const Key('trace-events-page')), findsOneWidget);
     await _scrollTo(tester, const Key('trace-console-row-trace-warning'));
     expect(find.text('runtime.permission.denied'), findsOneWidget);
     await _tap(tester, const Key('trace-console-row-trace-warning'));
@@ -64,6 +67,7 @@ void main() {
     await tester.tap(find.byKey(const Key('trace-console-entry')));
     await tester.pumpAndSettle();
 
+    await _tap(tester, const Key('trace-console-events-entry-button'));
     await _tap(tester, const Key('trace-console-row-trace-ok'));
     await _tap(tester, const Key('trace-console-open-source-trace-ok'));
 
@@ -85,6 +89,7 @@ void main() {
     await tester.tap(find.byKey(const Key('trace-console-entry')));
     await tester.pumpAndSettle();
 
+    await _tap(tester, const Key('trace-console-events-entry-button'));
     await _scrollTo(tester, const Key('trace-console-empty'));
     expect(find.byKey(const Key('trace-console-empty')), findsOneWidget);
     expect(find.textContaining('task-queued-capture'), findsNothing);

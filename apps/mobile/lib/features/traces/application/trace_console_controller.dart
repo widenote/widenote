@@ -439,7 +439,7 @@ RawTraceViewModel _rawTraceViewModelFromRecord(TraceEventRecord trace) {
   return RawTraceViewModel(
     id: trace.id,
     title: _traceTitle(trace),
-    message: trace.message,
+    message: _rawDisplayText(trace.message),
     payloadJson: const JsonEncoder.withIndent('  ').convert(payload.value),
     redactedPayloadFieldCount: payload.redactedCount,
     metadata: <RawTraceField>[
@@ -748,6 +748,16 @@ _RawDisplayPayload _rawDisplayValueForPayload(Object? value) {
 
 bool _isHighRiskRawField(String value) {
   return _rawDisplayRedactionPattern.hasMatch(value);
+}
+
+String _rawDisplayText(String value) {
+  if (value.isEmpty) {
+    return '';
+  }
+  if (_isHighRiskRawField(value)) {
+    return '[redacted]';
+  }
+  return value;
 }
 
 String _rawDisplayValue(Object? value) {

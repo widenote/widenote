@@ -3525,6 +3525,30 @@ abstract class AppLocalizations {
   /// **'Events'**
   String get traceConsoleEventsTitle;
 
+  /// No description provided for @traceConsoleEventsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse local runtime events and open raw logs from a focused page.'**
+  String get traceConsoleEventsSubtitle;
+
+  /// No description provided for @traceConsoleEventsEntryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Log events'**
+  String get traceConsoleEventsEntryTitle;
+
+  /// No description provided for @traceConsoleEventsEntryBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the longer event stream on its own page, then inspect raw local evidence only when needed.'**
+  String get traceConsoleEventsEntryBody;
+
+  /// No description provided for @traceConsoleOpenEventsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Open events'**
+  String get traceConsoleOpenEventsButton;
+
   /// No description provided for @traceConsoleEmpty.
   ///
   /// In en, this message translates to:

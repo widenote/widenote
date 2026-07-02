@@ -31,7 +31,7 @@ database code live under `packages/`.
 - `features/backup/BackupPage`
 - `features/model_providers/ModelProviderSettingsPage`
 - `features/transcription/VoiceTranscriptionSettingsPage`
-- `features/traces/TraceConsolePage`
+- `features/traces/TraceConsolePage` and `TraceEventsPage`
 - localizations under `l10n/`
 
 ## Generated Artifacts
