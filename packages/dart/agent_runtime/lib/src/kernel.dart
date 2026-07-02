@@ -25,7 +25,9 @@ final class RuntimeKernel {
     this.approvalBroker,
     RuntimeStore? runtimeStore,
     PackRegistry? packRegistry,
-    this.runLeaseDuration = const Duration(minutes: 5),
+    this.runLeaseDuration = const Duration(minutes: 30),
+    this.retryBackoffBase = const Duration(seconds: 30),
+    this.maxConcurrentTasks = 1,
     this.autoDrain = true,
   }) : runtimeStore = runtimeStore ?? InMemoryRuntimeStore(),
        packRegistry = packRegistry ?? InMemoryPackRegistry();
@@ -43,6 +45,8 @@ final class RuntimeKernel {
   final RuntimeStore runtimeStore;
   final PackRegistry packRegistry;
   final Duration runLeaseDuration;
+  final Duration retryBackoffBase;
+  final int maxConcurrentTasks;
   final bool autoDrain;
 
   final Map<String, AgentPack> _packs = <String, AgentPack>{};
@@ -125,6 +129,7 @@ final class RuntimeKernel {
     await _restoreRevokedPermissionBlocks();
     if (terminateStaleRuns) {
       await _terminateStaleRuns();
+      await _recoverExpiredTaskLeases();
     }
     await syncPackStatuses();
   }
@@ -182,10 +187,33 @@ final class RuntimeKernel {
     var executed = 0;
 
     while (true) {
-      final task = _nextRunnableTask();
-      if (task != null) {
-        await _executeTask(task);
-        executed += 1;
+      final claimed = <RuntimeTask>[];
+      final reservedTaskIds = <String>{};
+      final reservedConcurrencyKeys = <String>{};
+      while (claimed.length < _effectiveMaxConcurrentTasks) {
+        final task = _nextRunnableTask(
+          excludedTaskIds: reservedTaskIds,
+          reservedConcurrencyKeys: reservedConcurrencyKeys,
+        );
+        if (task == null) {
+          break;
+        }
+        reservedTaskIds.add(task.id);
+        final next = await _claimTaskForExecution(task);
+        if (next == null) {
+          await _refreshTask(task.id);
+          continue;
+        }
+        claimed.add(next);
+        final concurrencyKey = next.concurrencyKey;
+        if (concurrencyKey != null) {
+          reservedConcurrencyKeys.add(concurrencyKey);
+        }
+      }
+
+      if (claimed.isNotEmpty) {
+        await Future.wait(claimed.map(_executeTask));
+        executed += claimed.length;
         continue;
       }
 
@@ -243,6 +271,8 @@ final class RuntimeKernel {
       status,
       attempts: 0,
       clearError: true,
+      clearLease: true,
+      clearScheduledAt: true,
     );
     await _traceTaskRetryRequested(next);
     if (drain) {
@@ -318,10 +348,15 @@ final class RuntimeKernel {
       final missingDependencyIds = <String>[];
       for (final dependency in queued.request.subscription.dependsOn) {
         final taskId =
-            taskIdsBySubscription[_dependencyKey(
+            taskIdsBySubscription[_dependencyLookupKey(
               queued.request.pack.id,
               dependency,
-            )];
+            )] ??
+            _taskIdForDependency(
+              event: queued.request.event,
+              currentPackId: queued.request.pack.id,
+              dependency: dependency,
+            );
         if (taskId == null) {
           missingDependencyIds.add(dependency);
           continue;
@@ -375,12 +410,17 @@ final class RuntimeKernel {
     }
 
     final definition = pack.definitionFor(queuedTask.agentId);
-    final task = await _replaceTask(
-      queuedTask,
-      RuntimeTaskStatus.running,
-      attempts: queuedTask.attempts + 1,
-      clearError: true,
-    );
+    final task = queuedTask.status == RuntimeTaskStatus.running
+        ? queuedTask
+        : await _replaceTask(
+            queuedTask,
+            RuntimeTaskStatus.running,
+            attempts: queuedTask.attempts + 1,
+            leaseOwner: _leaseOwner,
+            leasedUntil: clock.now().add(runLeaseDuration),
+            clearError: true,
+            clearScheduledAt: true,
+          );
     final run = _createRun(task);
     _runs.add(run);
     await runtimeStore.upsertRun(run);
@@ -435,18 +475,35 @@ final class RuntimeKernel {
 
     await _traceRunStarted(task, run);
 
+    final handler = pack.handlerFor(task.agentId);
+    if (handler == null) {
+      final error = StateError('Agent handler missing: ${task.agentId}');
+      final failedRun = await _replaceRun(
+        run,
+        RuntimeRunStatus.failed,
+        error: error.message,
+      );
+      final failedTask = await _replaceTask(
+        task,
+        RuntimeTaskStatus.failed,
+        error: error.message,
+      );
+      await _traceRunFailed(failedTask, failedRun, error);
+      return;
+    }
+
     try {
       final context = _contextFor(task, run, definition);
-      final handler = pack.handlerFor(task.agentId);
-      if (handler == null) {
-        throw StateError('Agent handler missing: ${task.agentId}');
-      }
       final triggerEvent = await eventStore.readById(task.triggerEventId);
       if (triggerEvent == null) {
         throw StateError('Trigger event missing: ${task.triggerEventId}');
       }
       final result = await handler.handle(context, triggerEvent);
       _validateOutputEvents(definition, result.events);
+      final ownedTask = await _refreshOwnedRunningTask(task, run);
+      if (ownedTask == null) {
+        return;
+      }
       final outputEvents = _materializeOutputs(
         definition,
         result.events,
@@ -462,9 +519,12 @@ final class RuntimeKernel {
         outputEventIds: outputEvents.map((event) => event.id).toList(),
       );
       final succeededTask = await _replaceTask(
-        task,
+        ownedTask,
         RuntimeTaskStatus.succeeded,
       );
+      for (final output in outputEvents) {
+        await _enqueueMatching(output);
+      }
       await _traceRunCompleted(succeededTask, succeededRun);
     } on RuntimePermissionDeniedException catch (error) {
       final deniedRun = await _replaceRun(
@@ -523,10 +583,14 @@ final class RuntimeKernel {
         error: safeError,
       );
       if (task.canRetry) {
+        final retryStatus = task.dependencyTaskIds.isEmpty
+            ? RuntimeTaskStatus.queued
+            : RuntimeTaskStatus.waiting;
         final retryTask = await _replaceTask(
           task,
-          RuntimeTaskStatus.queued,
+          retryStatus,
           error: safeError,
+          scheduledAt: _retryScheduledAt(task),
         );
         await _traceRunFailed(retryTask, failedRun, error);
         await _traceTaskRetryQueued(retryTask);
@@ -542,10 +606,61 @@ final class RuntimeKernel {
     }
   }
 
-  RuntimeTask? _nextRunnableTask() {
+  Future<RuntimeTask?> _claimTaskForExecution(RuntimeTask task) async {
+    final now = clock.now();
+    final claimed = await runtimeStore.claimTaskForExecution(
+      task.id,
+      leaseOwner: _leaseOwner,
+      leasedUntil: now.add(runLeaseDuration),
+      now: now,
+      maxRunningTasks: _effectiveMaxConcurrentTasks,
+    );
+    if (claimed == null) {
+      return null;
+    }
+    final index = _tasks.indexWhere((candidate) => candidate.id == claimed.id);
+    if (index >= 0) {
+      _tasks[index] = claimed;
+    } else {
+      _tasks.add(claimed);
+    }
+    await _persistPackStatus(claimed.packId);
+    return claimed;
+  }
+
+  Future<void> _refreshTask(String taskId) async {
+    final latest = await runtimeStore.readTaskById(taskId);
+    if (latest == null) {
+      _tasks.removeWhere((candidate) => candidate.id == taskId);
+      return;
+    }
+    final index = _tasks.indexWhere((candidate) => candidate.id == taskId);
+    if (index >= 0) {
+      _tasks[index] = latest;
+    } else {
+      _tasks.add(latest);
+    }
+  }
+
+  RuntimeTask? _nextRunnableTask({
+    Set<String> excludedTaskIds = const <String>{},
+    Set<String> reservedConcurrencyKeys = const <String>{},
+  }) {
     for (final task in _tasks) {
+      if (excludedTaskIds.contains(task.id)) {
+        continue;
+      }
       if (task.status != RuntimeTaskStatus.queued &&
           task.status != RuntimeTaskStatus.waiting) {
+        continue;
+      }
+      if (_isScheduledForLater(task)) {
+        continue;
+      }
+      final concurrencyKey = task.concurrencyKey;
+      if (concurrencyKey != null &&
+          (reservedConcurrencyKeys.contains(concurrencyKey) ||
+              _hasRunningConcurrencyKey(concurrencyKey))) {
         continue;
       }
       if (_dependenciesSucceeded(task)) {
@@ -554,6 +669,25 @@ final class RuntimeKernel {
     }
     return null;
   }
+
+  bool _isScheduledForLater(RuntimeTask task) {
+    final scheduledAt = task.scheduledAt;
+    return scheduledAt != null && scheduledAt.isAfter(clock.now());
+  }
+
+  bool _hasRunningConcurrencyKey(String concurrencyKey) {
+    return _tasks.any(
+      (task) =>
+          task.status == RuntimeTaskStatus.running &&
+          task.concurrencyKey == concurrencyKey,
+    );
+  }
+
+  int get _effectiveMaxConcurrentTasks {
+    return maxConcurrentTasks < 1 ? 1 : maxConcurrentTasks;
+  }
+
+  String get _leaseOwner => '$deviceId:runtime';
 
   RuntimeTask? _nextBlockedTask() {
     for (final task in _tasks) {
@@ -701,16 +835,60 @@ final class RuntimeKernel {
         RuntimeRunStatus.failed,
         error: error,
       );
-      RuntimeTask? failedTask;
+      RuntimeTask? recoveredTask;
       if (task != null && task.status == RuntimeTaskStatus.running) {
-        failedTask = await _replaceTask(
-          task,
-          RuntimeTaskStatus.failed,
-          error: error,
-        );
+        recoveredTask = await _recoverInterruptedTask(task, error);
       }
-      await _traceStaleRunTerminated(failedTask, failedRun, error);
+      await _traceStaleRunTerminated(recoveredTask, failedRun, error);
+      if (recoveredTask != null) {
+        await _traceStaleTaskRecovered(recoveredTask, error);
+        if (!recoveredTask.status.isTerminal) {
+          await _traceTaskRetryQueued(recoveredTask);
+        }
+      }
     }
+  }
+
+  Future<void> _recoverExpiredTaskLeases() async {
+    final now = clock.now();
+    for (final task in List<RuntimeTask>.of(_tasks)) {
+      final leasedUntil = task.leasedUntil;
+      if (task.status != RuntimeTaskStatus.running ||
+          leasedUntil == null ||
+          leasedUntil.isAfter(now)) {
+        continue;
+      }
+      final hasActiveRun = _runs.any(
+        (run) =>
+            run.taskId == task.id && run.status == RuntimeRunStatus.running,
+      );
+      if (hasActiveRun) {
+        continue;
+      }
+      final error =
+          'Recovered stale running task ${task.id}; lease expired at '
+          '${leasedUntil.toIso8601String()}.';
+      final recovered = await _recoverInterruptedTask(task, error);
+      await _traceStaleTaskRecovered(recovered, error);
+      if (!recovered.status.isTerminal) {
+        await _traceTaskRetryQueued(recovered);
+      }
+    }
+  }
+
+  Future<RuntimeTask> _recoverInterruptedTask(RuntimeTask task, String error) {
+    final status = task.canRetry
+        ? task.dependencyTaskIds.isEmpty
+              ? RuntimeTaskStatus.queued
+              : RuntimeTaskStatus.waiting
+        : RuntimeTaskStatus.failed;
+    return _replaceTask(
+      task,
+      status,
+      error: error,
+      scheduledAt: task.canRetry ? _retryScheduledAt(task) : null,
+      clearLease: true,
+    );
   }
 
   String _dependencyBlockReason(RuntimeTask task) {
@@ -742,6 +920,48 @@ final class RuntimeKernel {
 
   String _dependencyKey(String packId, String subscriptionId) {
     return '$packId::$subscriptionId';
+  }
+
+  String _dependencyLookupKey(String packId, String dependency) {
+    return dependency.contains('::')
+        ? dependency
+        : _dependencyKey(packId, dependency);
+  }
+
+  String? _taskIdForDependency({
+    required WnEvent event,
+    required String currentPackId,
+    required String dependency,
+  }) {
+    final key = _dependencyLookupKey(currentPackId, dependency);
+    final separator = key.indexOf('::');
+    if (separator <= 0 || separator >= key.length - 2) {
+      return null;
+    }
+    final packId = key.substring(0, separator);
+    final subscriptionId = key.substring(separator + 2);
+    final pack = _packs[packId];
+    if (pack == null) {
+      return null;
+    }
+    Subscription? subscription;
+    for (final candidate in pack.subscriptions) {
+      if (candidate.id == subscriptionId) {
+        subscription = candidate;
+        break;
+      }
+    }
+    if (subscription == null) {
+      return null;
+    }
+    final identityKey = _taskIdentityKey(
+      eventId: event.id,
+      packId: pack.id,
+      packVersion: pack.version,
+      subscriptionId: subscription.id,
+      handlerRole: subscription.agentId,
+    );
+    return _taskByIdentity(identityKey)?.id;
   }
 
   RuntimePackStatusKind _statusForPackTasks(List<RuntimeTask> tasks) {
@@ -812,6 +1032,7 @@ final class RuntimeKernel {
       createdAt: now,
       updatedAt: now,
       maxAttempts: request.definition.retryPolicy.normalizedMaxAttempts,
+      concurrencyKey: request.definition.concurrencyKey,
     );
   }
 
@@ -876,7 +1097,14 @@ final class RuntimeKernel {
     List<String>? missingDependencyIds,
     int? attempts,
     int? maxAttempts,
+    DateTime? scheduledAt,
+    String? leaseOwner,
+    DateTime? leasedUntil,
+    String? concurrencyKey,
     String? error,
+    bool clearScheduledAt = false,
+    bool clearLease = false,
+    bool clearConcurrencyKey = false,
     bool clearError = false,
   }) async {
     final next = task.copyWith(
@@ -886,16 +1114,83 @@ final class RuntimeKernel {
       missingDependencyIds: missingDependencyIds,
       attempts: attempts,
       maxAttempts: maxAttempts,
+      scheduledAt: scheduledAt,
+      leaseOwner: leaseOwner,
+      leasedUntil: leasedUntil,
+      concurrencyKey: concurrencyKey,
       error: error,
+      clearScheduledAt: clearScheduledAt,
+      clearLease: clearLease || status != RuntimeTaskStatus.running,
+      clearConcurrencyKey: clearConcurrencyKey,
       clearError: clearError,
     );
-    final index = _tasks.indexWhere((candidate) => candidate.id == task.id);
-    if (index >= 0) {
-      _tasks[index] = next;
+    final saved = await _persistTaskTransition(task, next);
+    await _persistPackStatus(saved.packId);
+    return saved;
+  }
+
+  Future<RuntimeTask> _persistTaskTransition(
+    RuntimeTask previous,
+    RuntimeTask next,
+  ) async {
+    RuntimeTask saved = next;
+    if (previous.status == RuntimeTaskStatus.running &&
+        previous.leaseOwner == _leaseOwner &&
+        previous.leaseOwner != null) {
+      saved =
+          await runtimeStore.upsertTaskIfLeaseOwner(
+            next,
+            leaseOwner: _leaseOwner,
+          ) ??
+          await runtimeStore.readTaskById(previous.id) ??
+          next;
+    } else {
+      await runtimeStore.upsertTask(next);
     }
-    await runtimeStore.upsertTask(next);
-    await _persistPackStatus(next.packId);
-    return next;
+    final index = _tasks.indexWhere((candidate) => candidate.id == previous.id);
+    if (index >= 0) {
+      _tasks[index] = saved;
+    } else {
+      _tasks.add(saved);
+    }
+    return saved;
+  }
+
+  Future<RuntimeTask?> _refreshOwnedRunningTask(
+    RuntimeTask task,
+    RuntimeRun run,
+  ) async {
+    final latest = await runtimeStore.readTaskById(task.id);
+    if (latest == null) {
+      const reason = 'Task disappeared before output.';
+      await _replaceRun(run, RuntimeRunStatus.failed, error: reason);
+      await _traceTaskLeaseLost(task, run, reason);
+      return null;
+    }
+    final index = _tasks.indexWhere((candidate) => candidate.id == latest.id);
+    if (index >= 0) {
+      _tasks[index] = latest;
+    }
+    final leasedUntil = latest.leasedUntil;
+    final leaseExpired =
+        leasedUntil != null && !leasedUntil.isAfter(clock.now());
+    if (latest.status != RuntimeTaskStatus.running ||
+        latest.leaseOwner != _leaseOwner ||
+        leaseExpired) {
+      final reason = leaseExpired
+          ? 'Task lease expired before output.'
+          : 'Task lease owner changed before output.';
+      await _replaceRun(run, RuntimeRunStatus.failed, error: reason);
+      await _traceTaskLeaseLost(latest, run, reason);
+      return null;
+    }
+    return latest;
+  }
+
+  DateTime _retryScheduledAt(RuntimeTask task) {
+    final exponent = (task.attempts - 1).clamp(0, 6).toInt();
+    final multiplier = 1 << exponent;
+    return clock.now().add(retryBackoffBase * multiplier);
   }
 
   Future<RuntimeRun> _replaceRun(
@@ -1406,6 +1701,28 @@ final class RuntimeKernel {
     );
   }
 
+  Future<void> _traceTaskLeaseLost(
+    RuntimeTask task,
+    RuntimeRun run,
+    String reason,
+  ) {
+    return _trace(
+      name: 'runtime.task.lease_lost',
+      message: 'Task output was skipped because the execution lease is gone.',
+      level: TraceLevel.warning,
+      taskId: task.id,
+      runId: run.id,
+      packId: task.packId,
+      agentId: task.agentId,
+      details: <String, Object?>{
+        'trace_type': 'lease_lost',
+        'reason': reason,
+        'lease_owner': task.leaseOwner,
+        'leased_until': task.leasedUntil?.toIso8601String(),
+      },
+    );
+  }
+
   Future<void> _traceRunFailed(RuntimeTask task, RuntimeRun run, Object error) {
     return _trace(
       name: 'runtime.run.failed',
@@ -1530,6 +1847,24 @@ final class RuntimeKernel {
       packId: run.packId,
       agentId: run.agentId,
       details: <String, Object?>{'trace_type': 'failed', 'error': error},
+    );
+  }
+
+  Future<void> _traceStaleTaskRecovered(RuntimeTask task, String error) {
+    return _trace(
+      name: 'runtime.task.stale_recovered',
+      message: 'Recovered stale running task after its lease expired.',
+      level: TraceLevel.warning,
+      taskId: task.id,
+      packId: task.packId,
+      agentId: task.agentId,
+      details: <String, Object?>{
+        'trace_type': task.status == RuntimeTaskStatus.failed
+            ? 'failed'
+            : 'task_created',
+        'status': task.status.name,
+        'error': error,
+      },
     );
   }
 

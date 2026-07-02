@@ -7,12 +7,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
 import 'package:widenote_mobile/features/capture/application/capture_agent_prompts.dart';
 import 'package:widenote_local_db/widenote_local_db.dart';
+import 'package:widenote_local_db/widenote_local_db.dart' as localdb;
 import 'package:widenote_mobile/app/local_database.dart';
 import 'package:widenote_mobile/app/model_client.dart';
 import 'package:widenote_mobile/app/widenote_app.dart';
 import 'package:widenote_mobile/features/capture/application/capture_controller.dart';
 import 'package:widenote_mobile/features/capture/application/capture_input_controller.dart';
 import 'package:widenote_mobile/features/capture/application/capture_orchestrator.dart';
+import 'package:widenote_mobile/features/capture/application/capture_orchestrator_provider.dart';
 import 'package:widenote_mobile/features/capture/domain/capture_models.dart';
 import 'package:widenote_mobile/features/capture/media/capture_media.dart';
 import 'package:widenote_mobile/features/location/application/location_settings_controller.dart';
@@ -123,6 +125,40 @@ void main() {
     await _openTab(tester, const Key('tab-todos'));
     expect(find.byKey(Key('todo-row-${todo.id}')), findsOneWidget);
     expect(find.text(captureText), findsOneWidget);
+  });
+
+  testWidgets('pending capture resumes processing after relaunch', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    final createdAt = DateTime.utc(2026, 7, 2, 8);
+    database.captures.insert(
+      localdb.CaptureRecord(
+        id: 'capture-resume-processing',
+        sourceType: 'manual',
+        status: 'Saved locally, processing',
+        payload: const <String, Object?>{
+          'text': 'Resume this pending capture after relaunch.',
+          'raw_text': 'Resume this pending capture after relaunch.',
+        },
+        createdAt: createdAt,
+        updatedAt: createdAt,
+      ),
+    );
+
+    await _pumpApp(tester, database: database, closeDatabase: false);
+
+    final state = _readCaptureState(tester);
+    expect(state.records.single.id, 'capture-resume-processing');
+    expect(state.records.single.status, 'Processed locally');
+    expect(state.memories, hasLength(1));
+    expect(
+      database.captures
+          .readById('capture-resume-processing')!
+          .payload['memory_generated'],
+      isTrue,
+    );
   });
 
   testWidgets('backup export counts persisted captures and todos', (
@@ -400,7 +436,7 @@ void main() {
     expect(state.todos, isEmpty);
   });
 
-  testWidgets('quick capture input is locked while processing', (tester) async {
+  testWidgets('quick capture stays available while processing', (tester) async {
     await _pumpApp(
       tester,
       overrides: [
@@ -417,12 +453,86 @@ void main() {
     );
     await tester.tap(find.byKey(const Key('record-capture-button')));
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
+    var state = _readCaptureState(tester);
+    expect(state.isProcessing, isTrue);
+    expect(state.records, hasLength(1));
+    expect(state.records.single.status, 'Saved locally, processing');
+
+    await tester.tap(find.byKey(const Key('tab-record-action')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
     final input = tester.widget<TextField>(
       find.byKey(const Key('quick-capture-field')),
     );
-    expect(input.enabled, isFalse);
-    expect(find.text('Processing'), findsWidgets);
+    expect(input.enabled, isTrue);
+
+    await tester.enterText(
+      find.byKey(const Key('quick-capture-field')),
+      'Queue a second capture while the first is still running.',
+    );
+    unawaited(
+      ProviderScope.containerOf(tester.element(find.byType(WideNoteApp)))
+          .read(captureControllerProvider.notifier)
+          .submitCapture(
+            'Queue a second capture while the first is still running.',
+          ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    state = _readCaptureState(tester);
+    expect(state.isProcessing, isTrue);
+    expect(state.records, hasLength(2));
+    expect(
+      state.records.map((record) => record.body),
+      containsAll(<String>[
+        'Keep one capture in flight.',
+        'Queue a second capture while the first is still running.',
+      ]),
+    );
+  });
+
+  testWidgets('failed capture exposes per-record retry', (tester) async {
+    final model = _SwitchingCaptureModel();
+    await _pumpApp(tester, modelClient: model);
+
+    const captureText = 'Retry this temporary model outage.';
+    await _submitQuickCapture(tester, captureText);
+
+    var state = _readCaptureState(tester);
+    final failedRecord = state.records.single;
+    expect(failedRecord.status, 'Saved locally, agent failed');
+    final retryButton = find.byKey(Key('record-retry-${failedRecord.id}'));
+    await tester.scrollUntilVisible(
+      retryButton,
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
+    model.failCaptureMemory = false;
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(WideNoteApp)),
+    );
+    final controller = container.read(captureControllerProvider.notifier);
+    await Future.wait(<Future<void>>[
+      controller.retryCapture(failedRecord.id),
+      controller.retryCapture(failedRecord.id),
+    ]);
+    await tester.pumpAndSettle();
+
+    state = _readCaptureState(tester);
+    expect(state.records.single.status, 'Processed locally');
+    expect(state.memories, hasLength(1));
+    expect(find.byKey(Key('record-retry-${failedRecord.id}')), findsNothing);
+    expect(
+      container
+          .read(localDatabaseProvider)
+          .captures
+          .readById(failedRecord.id)!
+          .payload['memory_generated'],
+      isTrue,
+    );
   });
 
   testWidgets('multiple captures update counters and linked todos', (
@@ -774,6 +884,29 @@ final class _ReviewCaptureModel extends _CaptureTestModel {
           'durability': 'durable',
         },
       );
+}
+
+final class _SwitchingCaptureModel implements runtime.ModelClient {
+  _SwitchingCaptureModel();
+
+  bool failCaptureMemory = true;
+
+  @override
+  Future<runtime.ModelResponse> complete(runtime.ModelRequest request) async {
+    if (failCaptureMemory &&
+        request.prompt.contains(captureMemoryPromptCaptureTextMarker)) {
+      throw StateError('temporary model outage');
+    }
+    return runtime.ModelResponse(
+      text: _captureText(request.prompt),
+      raw: const <String, Object?>{
+        'memory_type': 'task_context',
+        'confidence': 'high',
+        'sensitivity': 'low',
+        'durability': 'durable',
+      },
+    );
+  }
 }
 
 String _captureText(String prompt) {

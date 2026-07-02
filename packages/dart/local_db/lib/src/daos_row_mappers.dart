@@ -231,6 +231,8 @@ RuntimeTaskRecord _runtimeTaskFromRow(Row row) {
     maxAttempts: _integer(row, 'max_attempts'),
     leaseOwner: _nullableText(row, 'lease_owner'),
     leasedUntil: _nullableDateTime(row, 'leased_until'),
+    scheduledAt: _nullableDateTime(row, 'scheduled_at'),
+    concurrencyKey: _nullableText(row, 'concurrency_key'),
     error: _nullableText(row, 'error'),
     payload: decodeJsonMap(_text(row, 'payload_json')),
     createdAt: _dateTime(row, 'created_at'),

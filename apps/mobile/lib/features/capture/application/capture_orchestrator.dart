@@ -11,6 +11,8 @@ import 'capture_agent_prompts.dart';
 import '../domain/capture_models.dart';
 import '../media/capture_media.dart';
 
+const captureAlreadyQueuedMessage = 'Capture is already queued for processing.';
+
 final class CapturePipelineResult {
   const CapturePipelineResult({
     required this.record,
@@ -23,6 +25,7 @@ final class CapturePipelineResult {
     required this.insights,
     required this.acceptedMemoryCount,
     required this.reviewMemoryCount,
+    required this.memoryGenerated,
     this.reviewCandidate,
   });
 
@@ -36,6 +39,7 @@ final class CapturePipelineResult {
   final List<SourceInsight> insights;
   final int acceptedMemoryCount;
   final int reviewMemoryCount;
+  final bool memoryGenerated;
   final MemoryReviewCandidate? reviewCandidate;
 }
 
@@ -126,6 +130,7 @@ final class CaptureOrchestrator {
     CaptureKnowledgeSink? knowledgeSink,
     bool autoGrantOfficialPermissions = true,
     Iterable<String>? enabledPackIds,
+    int maxConcurrentTasks = 4,
   }) {
     final localClock = clock ?? const SystemWnClock();
     final runtimeEventStore = eventStore ?? runtime.InMemoryEventStore();
@@ -153,6 +158,7 @@ final class CaptureOrchestrator {
       model: model ?? const _ModelRequiredCaptureModel(),
       deviceId: 'local-device',
       runtimeStore: runtimeStore,
+      maxConcurrentTasks: maxConcurrentTasks,
     );
     registerOfficialNativePacks(
       kernel,
@@ -214,6 +220,42 @@ final class CaptureOrchestrator {
     return _kernel.packRegistry.list();
   }
 
+  Future<int> restoreAndDrainRuntimeQueue() async {
+    await _kernel.restoreRuntimeState();
+    return _kernel.drainQueue();
+  }
+
+  Future<bool> hasPublishedCapture(String captureId) async {
+    return _latestCaptureEventFor(await _eventStore.readAll(), captureId) !=
+        null;
+  }
+
+  Future<CapturePipelineResult?> materializePublishedCapture(
+    String captureId,
+  ) async {
+    await _kernel.restoreRuntimeState();
+    final allEvents = await _eventStore.readAll();
+    final capture = _latestCaptureEventFor(allEvents, captureId);
+    if (capture == null) {
+      return null;
+    }
+    final relatedEvents = _captureRelatedEvents(
+      allEvents,
+      capture: capture,
+      captureSubjectId: captureId,
+    );
+    if (_coreCaptureTaskIsActive(relatedEvents)) {
+      return null;
+    }
+    final traces = await _relatedTraceViews(capture, relatedEvents);
+    return _buildResultForCapture(
+      captureSubjectId: captureId,
+      capture: capture,
+      relatedEvents: relatedEvents,
+      traces: traces,
+    );
+  }
+
   Future<CapturePipelineResult> processCapture(
     String body, {
     List<CaptureAttachment> attachments = const <CaptureAttachment>[],
@@ -228,29 +270,105 @@ final class CaptureOrchestrator {
     final captureBody = rawText.isEmpty
         ? _attachmentOnlyText(attachments)
         : rawText;
-    final priorEventCount = (await _eventStore.readAll()).length;
-    final priorTraceCount = (await _traceSink.readAll()).length;
     final captureSubjectId = captureId ?? _kernel.idGenerator.nextId('capture');
+    if (await hasPublishedCapture(captureSubjectId)) {
+      final materialized = await materializePublishedCapture(captureSubjectId);
+      if (materialized != null) {
+        return materialized;
+      }
+      throw const CapturePipelineException(captureAlreadyQueuedMessage);
+    }
 
-    final capture = await _kernel.publish(
-      runtime.WnEventDraft(
-        type: runtime.WnEventTypes.captureCreated,
-        actor: runtime.WnActor.user,
-        subjectRef: runtime.SubjectRef(kind: 'capture', id: captureSubjectId),
-        payload: _capturePayload(
-          text: captureBody,
-          rawText: rawText,
-          attachments: attachments,
+    late final runtime.WnEvent capture;
+    try {
+      capture = await _kernel.publish(
+        runtime.WnEventDraft(
+          type: runtime.WnEventTypes.captureCreated,
+          actor: runtime.WnActor.user,
+          subjectRef: runtime.SubjectRef(kind: 'capture', id: captureSubjectId),
+          payload: _capturePayload(
+            text: captureBody,
+            rawText: rawText,
+            attachments: attachments,
+          ),
         ),
-      ),
-    );
+      );
+    } on StateError catch (error) {
+      if (!_isDuplicateCaptureCreatedError(error)) {
+        rethrow;
+      }
+      final materialized = await materializePublishedCapture(captureSubjectId);
+      if (materialized != null) {
+        return materialized;
+      }
+      throw const CapturePipelineException(captureAlreadyQueuedMessage);
+    }
 
     final allEvents = await _eventStore.readAll();
-    final newEvents = allEvents.skip(priorEventCount).toList(growable: false);
+    final newEvents = _captureRelatedEvents(
+      allEvents,
+      capture: capture,
+      captureSubjectId: captureSubjectId,
+    );
     await _knowledgeSink?.saveArtifacts(_derivedArtifactsFromEvents(newEvents));
-    final memoryResult = await _writeFirstMemoryProposal(newEvents);
-    final todo = _todoFromEvents(newEvents, capture);
-    final traces = await _newTraceViews(priorTraceCount, capture);
+    final traces = await _relatedTraceViews(capture, newEvents);
+    return _buildResultForCapture(
+      captureSubjectId: captureSubjectId,
+      capture: capture,
+      relatedEvents: newEvents,
+      traces: traces,
+    );
+  }
+
+  Future<CapturePipelineResult?> retryCaptureTasks(String captureId) async {
+    await _kernel.restoreRuntimeState();
+    final allEvents = await _eventStore.readAll();
+    final capture = _latestCaptureEventFor(allEvents, captureId);
+    if (capture == null) {
+      return null;
+    }
+    final relatedEvents = _captureRelatedEvents(
+      allEvents,
+      capture: capture,
+      captureSubjectId: captureId,
+    );
+    final retryTask = _retryableCoreTask(relatedEvents);
+    if (retryTask == null) {
+      return null;
+    }
+    final retried = await _kernel.retryTask(retryTask.id);
+    if (!retried) {
+      return null;
+    }
+
+    final refreshedEvents = _captureRelatedEvents(
+      await _eventStore.readAll(),
+      capture: capture,
+      captureSubjectId: captureId,
+    );
+    final traces = await _relatedTraceViews(capture, refreshedEvents);
+    return _buildResultForCapture(
+      captureSubjectId: captureId,
+      capture: capture,
+      relatedEvents: refreshedEvents,
+      traces: traces,
+    );
+  }
+
+  Future<CapturePipelineResult> _buildResultForCapture({
+    required String captureSubjectId,
+    required runtime.WnEvent capture,
+    required List<runtime.WnEvent> relatedEvents,
+    required List<TraceEvent> traces,
+  }) async {
+    await _knowledgeSink?.saveArtifacts(
+      _derivedArtifactsFromEvents(relatedEvents),
+    );
+    final memoryResult = await _writeFirstMemoryProposal(relatedEvents);
+    if (memoryResult == null && _defaultCaptureRunFailed(traces)) {
+      throw const CapturePipelineException('Capture Memory generation failed.');
+    }
+    final todo = _todoFromEvents(relatedEvents, capture);
     final activeMemories = await _memoryRepository.listItems(
       status: memory.MemoryItemStatus.active,
     );
@@ -258,6 +376,7 @@ final class CaptureOrchestrator {
       status: memory.MemoryProposalStatus.needsReview,
     );
     final knowledgeLayer = await buildKnowledgeLayer();
+    final captureBody = _string(capture.payload['text'], fallback: '');
 
     return CapturePipelineResult(
       record: CaptureRecord(
@@ -267,11 +386,15 @@ final class CaptureOrchestrator {
         status: 'Processed locally',
         sourceEventId: capture.id,
       ),
-      memoryItem: _memoryView(memoryResult, capture),
+      memoryItem: memoryResult == null
+          ? _memorySkippedView(capture)
+          : _memoryView(memoryResult, capture),
       todo: todo,
       traces: traces,
-      eventTypes: newEvents.map((event) => event.type).toList(growable: false),
-      events: newEvents
+      eventTypes: relatedEvents
+          .map((event) => event.type)
+          .toList(growable: false),
+      events: relatedEvents
           .map(
             (event) => CapturePipelineEvent(
               type: event.type,
@@ -285,7 +408,8 @@ final class CaptureOrchestrator {
       insights: knowledgeLayer.insights,
       acceptedMemoryCount: activeMemories.length,
       reviewMemoryCount: reviewProposals.length,
-      reviewCandidate: memoryResult.needsReview
+      memoryGenerated: memoryResult != null,
+      reviewCandidate: memoryResult != null && memoryResult.needsReview
           ? _reviewCandidateView(memoryResult.proposal, capture.id)
           : null,
     );
@@ -348,7 +472,7 @@ final class CaptureOrchestrator {
     return _acceptedMemoryView(item);
   }
 
-  Future<memory.MemoryWriteResult> _writeFirstMemoryProposal(
+  Future<memory.MemoryWriteResult?> _writeFirstMemoryProposal(
     List<runtime.WnEvent> events,
   ) async {
     final event = _firstEventOfType(
@@ -356,11 +480,58 @@ final class CaptureOrchestrator {
       runtime.WnEventTypes.memoryProposed,
     );
     if (event == null) {
-      throw const CapturePipelineException(
-        'Capture pack did not emit a Memory proposal.',
-      );
+      return null;
     }
-    return _memoryService.submitProposal(_proposalFromEvent(event));
+    final proposal = _proposalFromEvent(event);
+    final existing = await _existingMemoryResult(proposal);
+    if (existing != null) {
+      return existing;
+    }
+    return _memoryService.submitProposal(proposal);
+  }
+
+  Future<memory.MemoryWriteResult?> _existingMemoryResult(
+    memory.MemoryProposal proposal,
+  ) async {
+    final activeItems = await _memoryRepository.listItems(
+      status: memory.MemoryItemStatus.active,
+    );
+    for (final item in activeItems) {
+      if (item.key == proposal.key &&
+          item.body.trim() == proposal.body.trim() &&
+          _sharesMemorySource(item.evidence, proposal.evidence)) {
+        return memory.MemoryWriteResult(
+          proposal: proposal.copyWith(
+            status: memory.MemoryProposalStatus.autoAccepted,
+          ),
+          decision: const memory.MemoryPolicyDecision(
+            action: memory.MemoryPolicyAction.autoAccept,
+            reasons: <String>['existing_source_memory'],
+          ),
+          conflicts: const <memory.MemoryItem>[],
+          item: item,
+        );
+      }
+    }
+
+    final proposals = await _memoryRepository.listProposals();
+    for (final existing in proposals) {
+      if (existing.key == proposal.key &&
+          existing.body.trim() == proposal.body.trim() &&
+          _sharesMemorySource(existing.evidence, proposal.evidence)) {
+        return memory.MemoryWriteResult(
+          proposal: existing,
+          decision: memory.MemoryPolicyDecision(
+            action: existing.status == memory.MemoryProposalStatus.needsReview
+                ? memory.MemoryPolicyAction.review
+                : memory.MemoryPolicyAction.autoAccept,
+            reasons: const <String>['existing_source_proposal'],
+          ),
+          conflicts: const <memory.MemoryItem>[],
+        );
+      }
+    }
+    return null;
   }
 
   memory.MemoryProposal _proposalFromEvent(runtime.WnEvent event) {
@@ -427,6 +598,18 @@ final class CaptureOrchestrator {
       sourceRecordId: capture.id,
       confidenceLabel: result.decision.reasons.join(', '),
       statusLabel: 'needs review',
+      needsReview: true,
+    );
+  }
+
+  CaptureMemoryItem _memorySkippedView(runtime.WnEvent capture) {
+    return CaptureMemoryItem(
+      id: 'memory.skipped.${capture.subjectRef?.id ?? capture.id}',
+      title: 'memory.not_generated',
+      summary: 'No Memory generated for this capture.',
+      sourceRecordId: capture.id,
+      confidenceLabel: 'not generated',
+      statusLabel: 'not generated',
       needsReview: true,
     );
   }
@@ -498,13 +681,27 @@ final class CaptureOrchestrator {
     );
   }
 
-  Future<List<TraceEvent>> _newTraceViews(
-    int priorTraceCount,
+  Future<List<TraceEvent>> _relatedTraceViews(
     runtime.WnEvent capture,
+    List<runtime.WnEvent> relatedEvents,
   ) async {
+    final eventIds = relatedEvents.map((event) => event.id).toSet();
+    final taskIds = _kernel.tasks
+        .where((task) => eventIds.contains(task.triggerEventId))
+        .map((task) => task.id)
+        .toSet();
+    final runIds = _kernel.runs
+        .where((run) => taskIds.contains(run.taskId))
+        .map((run) => run.id)
+        .toSet();
     final traces = await _traceSink.readAll();
     return traces
-        .skip(priorTraceCount)
+        .where(
+          (trace) =>
+              (trace.eventId != null && eventIds.contains(trace.eventId)) ||
+              (trace.taskId != null && taskIds.contains(trace.taskId)) ||
+              (trace.runId != null && runIds.contains(trace.runId)),
+        )
         .map(
           (trace) => TraceEvent(
             id: trace.id,
@@ -519,6 +716,38 @@ final class CaptureOrchestrator {
         )
         .toList(growable: false);
   }
+
+  runtime.RuntimeTask? _retryableCoreTask(List<runtime.WnEvent> events) {
+    final eventIds = events.map((event) => event.id).toSet();
+    for (final task in _kernel.tasks.reversed) {
+      if (!eventIds.contains(task.triggerEventId) ||
+          task.packId != _defaultPackId ||
+          task.agentId != _defaultAgentId ||
+          task.status == runtime.RuntimeTaskStatus.running ||
+          task.status == runtime.RuntimeTaskStatus.succeeded) {
+        continue;
+      }
+      return task;
+    }
+    return null;
+  }
+
+  bool _coreCaptureTaskIsActive(List<runtime.WnEvent> events) {
+    final eventIds = events.map((event) => event.id).toSet();
+    return _kernel.tasks.any(
+      (task) =>
+          eventIds.contains(task.triggerEventId) &&
+          task.packId == _defaultPackId &&
+          task.agentId == _defaultAgentId &&
+          (task.status == runtime.RuntimeTaskStatus.queued ||
+              task.status == runtime.RuntimeTaskStatus.waiting ||
+              task.status == runtime.RuntimeTaskStatus.running),
+    );
+  }
+}
+
+bool _isDuplicateCaptureCreatedError(StateError error) {
+  return error.message.contains('Capture event already exists for subject:');
 }
 
 List<runtime.AgentPackManifestSnapshot> _enabledOfficialManifests(
@@ -548,6 +777,105 @@ runtime.WnEvent? _firstEventOfType(List<runtime.WnEvent> events, String type) {
     }
   }
   return null;
+}
+
+runtime.WnEvent? _latestCaptureEventFor(
+  List<runtime.WnEvent> events,
+  String captureId,
+) {
+  for (final event in events.reversed) {
+    if (event.type == runtime.WnEventTypes.captureCreated &&
+        event.subjectRef?.kind == 'capture' &&
+        event.subjectRef?.id == captureId) {
+      return event;
+    }
+  }
+  return null;
+}
+
+List<runtime.WnEvent> _captureRelatedEvents(
+  List<runtime.WnEvent> events, {
+  required runtime.WnEvent capture,
+  required String captureSubjectId,
+}) {
+  final relatedIds = <String>{capture.id};
+  var changed = true;
+  while (changed) {
+    changed = false;
+    for (final event in events) {
+      if (relatedIds.contains(event.id)) {
+        continue;
+      }
+      if (_isCaptureRelatedEvent(event, captureSubjectId, relatedIds)) {
+        relatedIds.add(event.id);
+        changed = true;
+      }
+    }
+  }
+  return events
+      .where((event) => relatedIds.contains(event.id))
+      .toList(growable: false);
+}
+
+bool _isCaptureRelatedEvent(
+  runtime.WnEvent event,
+  String captureSubjectId,
+  Set<String> relatedEventIds,
+) {
+  final subject = event.subjectRef;
+  if (subject?.kind == 'capture' && subject?.id == captureSubjectId) {
+    return true;
+  }
+  final causationId = event.causationId;
+  if (causationId != null && relatedEventIds.contains(causationId)) {
+    return true;
+  }
+  if (_string(event.payload['source_capture_id'], fallback: '') ==
+      captureSubjectId) {
+    return true;
+  }
+  final sourceEventId = _string(event.payload['source_event_id'], fallback: '');
+  if (sourceEventId.isNotEmpty && relatedEventIds.contains(sourceEventId)) {
+    return true;
+  }
+  final refs = event.payload['source_refs'];
+  if (refs is List) {
+    for (final ref in refs) {
+      if (ref is! Map) {
+        continue;
+      }
+      final kind = ref['kind'] ?? ref['source_type'];
+      final id = ref['id'] ?? ref['source_id'];
+      if (kind == 'capture' && id == captureSubjectId) {
+        return true;
+      }
+      if (kind == 'event' && id is String && relatedEventIds.contains(id)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool _defaultCaptureRunFailed(List<TraceEvent> traces) {
+  return traces.any(
+    (trace) =>
+        trace.label == 'runtime.run.failed' &&
+        trace.packId == CaptureOrchestrator._defaultPackId &&
+        trace.agentId == CaptureOrchestrator._defaultAgentId,
+  );
+}
+
+bool _sharesMemorySource(
+  List<memory.MemorySourceRef> left,
+  List<memory.MemorySourceRef> right,
+) {
+  final rightKeys = right
+      .map((ref) => '${ref.sourceType}:${ref.sourceId}')
+      .toSet();
+  return left.any(
+    (ref) => rightKeys.contains('${ref.sourceType}:${ref.sourceId}'),
+  );
 }
 
 List<CaptureDerivedArtifact> _derivedArtifactsFromEvents(

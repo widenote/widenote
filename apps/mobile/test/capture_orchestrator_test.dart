@@ -227,6 +227,29 @@ void main() {
     );
   });
 
+  test('capture can complete without generating Memory', () async {
+    final orchestrator = CaptureOrchestrator.local(
+      clock: TickingWnClock(DateTime.utc(2026, 7, 2, 1)),
+      idGenerator: SequenceWnIdGenerator(seed: 'no-memory'),
+      enabledPackIds: const <String>['pack.todo'],
+    );
+
+    final result = await orchestrator.processCapture(
+      'This source record should remain without a Memory proposal.',
+      captureId: 'capture-no-memory',
+    );
+
+    expect(result.record.status, 'Processed locally');
+    expect(result.memoryGenerated, isFalse);
+    expect(result.memoryItem.title, 'memory.not_generated');
+    expect(result.acceptedMemoryCount, 0);
+    expect(result.reviewMemoryCount, 0);
+    expect(
+      result.eventTypes,
+      isNot(contains(runtime.WnEventTypes.memoryProposed)),
+    );
+  });
+
   test('disabled PKM pack skips artifact output', () async {
     final model = _SequenceMetadataModel(
       responses: <String>['Core capture memory only.', _todoQuietJson],
@@ -426,6 +449,62 @@ void main() {
   });
 
   test(
+    'reprocessing a published capture materializes without duplicates',
+    () async {
+      final eventStore = runtime.InMemoryEventStore();
+      final repository = memory.InMemoryMemoryRepository();
+      final model = _SequenceMetadataModel(
+        responses: <String>[
+          'One durable result.',
+          '{"kind":"quiet","confidence":"high","reason":"dedupe"}',
+        ],
+      );
+      final orchestrator = CaptureOrchestrator.local(
+        eventStore: eventStore,
+        memoryRepository: repository,
+        clock: TickingWnClock(DateTime.utc(2026, 7, 2, 2)),
+        idGenerator: SequenceWnIdGenerator(seed: 'dedupe'),
+        model: model,
+        enabledPackIds: _corePackIds,
+      );
+
+      final first = await orchestrator.processCapture(
+        'Do not duplicate this capture.',
+        captureId: 'capture-dedupe',
+      );
+      final second = await orchestrator.processCapture(
+        'Do not duplicate this capture.',
+        captureId: 'capture-dedupe',
+      );
+
+      final events = await eventStore.readAll();
+      expect(first.record.sourceEventId, second.record.sourceEventId);
+      expect(
+        model.requests.where(
+          (request) => request.context['prompt_ref'] == captureMemoryPromptRef,
+        ),
+        hasLength(1),
+      );
+      expect(
+        events.where(
+          (event) => event.type == runtime.WnEventTypes.captureCreated,
+        ),
+        hasLength(1),
+      );
+      expect(
+        events.where(
+          (event) => event.type == runtime.WnEventTypes.memoryProposed,
+        ),
+        hasLength(1),
+      );
+      expect(
+        await repository.listItems(status: memory.MemoryItemStatus.active),
+        hasLength(1),
+      );
+    },
+  );
+
+  test(
     'runtime fails closed when handler emits undeclared output event',
     () async {
       final defaultManifestJson = _mutableManifest('pack.default');
@@ -523,6 +602,10 @@ void main() {
       );
       final traces = await traceSink.readAll();
       expect(traces.map((trace) => trace.name), contains('runtime.run.failed'));
+      expect(
+        traces.map((trace) => trace.name),
+        contains('runtime.task.retry_queued'),
+      );
       expect(
         traces
             .where((trace) => trace.name == 'runtime.run.failed')

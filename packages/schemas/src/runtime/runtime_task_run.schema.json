@@ -94,6 +94,20 @@
         "lease": {
           "$ref": "#/$defs/task_lease"
         },
+        "scheduled_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "concurrency_key": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
         "error": {
           "type": [
             "string",

@@ -326,7 +326,7 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^sub\\.[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$"
+            "pattern": "^(?:sub\\.[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*|pack\\.[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*::sub\\.[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*)$"
           },
           "uniqueItems": true
         }
@@ -394,6 +394,13 @@
           },
           "uniqueItems": true
         },
+        "concurrency_key": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
         "retry_policy": {
           "$ref": "#/$defs/retry_policy"
         }
@@ -408,6 +415,7 @@
       "properties": {
         "max_attempts": {
           "type": "integer",
+          "default": 2,
           "minimum": 1,
           "maximum": 5
         }

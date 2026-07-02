@@ -55,6 +55,7 @@ agents:
   - id: agent.capture_loop
     runtime: native
     prompt_ref: null
+    concurrency_key: null
     retry_policy:
       max_attempts: 2
     output_events:
@@ -106,7 +107,7 @@ Phase-one official manifests are checked with the lightweight validator:
 node tools/pack_validator/validate.mjs packs/official/default/manifest.json packs/official/todo/manifest.json packs/official/pkm_library/manifest.json packs/official/transcript_correction/manifest.json packs/marketplace/index.json
 ```
 
-This is a lightweight validator, not a complete JSON Schema validator. It currently checks JSON parse, required manifest shape, intra-manifest references, subscription dependency references and cycles, agent permission subsets, non-empty output events, retry policy bounds, script-execution rejection, and the `pack.default` / `pack.todo` phase-one guardrails.
+This is a lightweight validator, not a complete JSON Schema validator. It currently checks JSON parse, required manifest shape, intra-manifest references, subscription dependency references and cycles, agent permission subsets, non-empty output events, retry policy bounds, script-execution rejection, and the `pack.default` / `pack.todo` phase-one guardrails. `depends_on[]` may reference a same-pack subscription id such as `sub.prepare` or a fully-qualified external subscription such as `pack.default::sub.capture_created`; only same-pack dependencies participate in local cycle detection.
 
 Run validator self-tests after schema or guardrail changes:
 
@@ -160,7 +161,9 @@ Subscriptions are declarative:
 
 - `event_types[]` match append-only runtime event names.
 - `agent_id` must point to an agent declared in the same pack.
-- `depends_on[]` points to prerequisite subscription ids in the same pack.
+- `depends_on[]` points to prerequisite subscription ids in the same pack or
+  fully-qualified external subscription ids such as
+  `pack.default::sub.capture_created`.
 - One event may trigger multiple packs.
 - Runtime traces must include pack id, agent id, task id, and run id.
 
@@ -171,7 +174,14 @@ Phase-one local execution is task-queue based:
 - Matching subscriptions create queued tasks.
 - Tasks run only after every `depends_on[]` prerequisite task succeeds.
 - Failed, denied, canceled, or missing prerequisite tasks block dependent tasks.
-- `retry_policy.max_attempts` controls deterministic fake/native executor retries.
+- `retry_policy.max_attempts` controls deterministic fake/native executor
+  retries. Omitting the policy defaults to two attempts; explicit pack values
+  may choose 1 through 5 attempts.
+- Stale running runs or tasks recovered after an expired lease consume the same
+  retry budget as handler failures, so native-crash-like loops eventually
+  become failed tasks and block downstream work.
+- Agent `concurrency_key` serializes tasks that share a constrained local
+  resource while still allowing unrelated captures to use global queue slots.
 - Permission denied, unsupported script runtime, and user cancellation are terminal states and are not auto-retried.
 - Pack status surfaces derive from queued task/run state, not from private app tables.
 

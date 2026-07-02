@@ -23,8 +23,22 @@ final class LocalDbCaptureKnowledgeSink implements CaptureKnowledgeSink {
   Future<void> saveArtifacts(List<CaptureDerivedArtifact> artifacts) async {
     final savedAt = DateTime.now().toUtc();
     for (final artifact in artifacts) {
+      if (_hasDuplicateArtifact(artifact)) {
+        continue;
+      }
       _database.derivedArtifacts.save(_artifactRecord(artifact, savedAt));
     }
+  }
+
+  bool _hasDuplicateArtifact(CaptureDerivedArtifact artifact) {
+    return _database.derivedArtifacts
+        .readByCapture(artifact.sourceCaptureId, status: 'active')
+        .any(
+          (record) =>
+              record.artifactKind == artifact.artifactKind &&
+              record.sourceEventId == artifact.sourceEventId &&
+              record.title.trim() == artifact.title.trim(),
+        );
   }
 }
 

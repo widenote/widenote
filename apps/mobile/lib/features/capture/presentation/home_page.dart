@@ -148,12 +148,12 @@ class _HomePageState extends ConsumerState<HomePage> {
           onOpen: () => context.push('/recap'),
         ),
         const SizedBox(height: 16),
-        _RecordsSection(records: captureState.records),
+        _RecordsSection(records: captureState.records, onRetry: _retryCapture),
         const SizedBox(height: 16),
         _InsightTeaser(insights: captureState.insights),
         const SizedBox(height: 16),
         _HomeCaptureActions(
-          inputBusy: inputState.isBusy || captureState.isProcessing,
+          inputBusy: inputState.isBusy,
           isRecordingVoice: inputState.isRecordingVoice,
           onNewRecord: _openCaptureSheet,
           onStartVoice: _startVoice,
@@ -372,6 +372,10 @@ class _HomePageState extends ConsumerState<HomePage> {
     ref
         .read(captureInputControllerProvider.notifier)
         .acceptAttachmentReview(id);
+  }
+
+  void _retryCapture(String id) {
+    unawaited(ref.read(captureControllerProvider.notifier).retryCapture(id));
   }
 }
 
@@ -709,9 +713,10 @@ class _BackgroundVoiceCard extends StatelessWidget {
 }
 
 class _RecordsSection extends StatelessWidget {
-  const _RecordsSection({required this.records});
+  const _RecordsSection({required this.records, required this.onRetry});
 
   final List<CaptureRecord> records;
+  final ValueChanged<String> onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -733,13 +738,44 @@ class _RecordsSection extends StatelessWidget {
                     key: Key('record-row-${record.id}'),
                     title: record.body,
                     subtitle: _recordSubtitle(l10n, record),
-                    icon: Icons.notes_outlined,
+                    icon: record.isProcessing
+                        ? Icons.hourglass_top_outlined
+                        : Icons.notes_outlined,
+                    trailing: record.canRetry || record.isProcessing
+                        ? _RecordTrailingAction(
+                            record: record,
+                            onRetry: () => onRetry(record.id),
+                          )
+                        : null,
                     onTap: () => context.push(
                       '/timeline/items/${Uri.encodeComponent(record.id)}',
                     ),
                   ),
               ],
             ),
+    );
+  }
+}
+
+class _RecordTrailingAction extends StatelessWidget {
+  const _RecordTrailingAction({required this.record, required this.onRetry});
+
+  final CaptureRecord record;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    if (record.canRetry) {
+      return IconButton(
+        key: Key('record-retry-${record.id}'),
+        tooltip: context.l10n.retryButton,
+        onPressed: onRetry,
+        icon: const Icon(Icons.refresh),
+      );
+    }
+    return const SizedBox.square(
+      dimension: 20,
+      child: CircularProgressIndicator(strokeWidth: 2),
     );
   }
 }
@@ -765,9 +801,10 @@ String _recordSubtitle(AppLocalizations l10n, CaptureRecord record) {
 
 String _localizedRecordStatus(AppLocalizations l10n, String status) {
   return switch (status) {
-    'Saved locally, processing' => l10n.recordStatusSavedProcessing,
-    'Processed locally' => l10n.recordStatusProcessed,
-    'Saved locally, agent failed' => l10n.recordStatusAgentFailed,
+    captureStatusSavedProcessing ||
+    captureStatusTranscriptReady => l10n.recordStatusSavedProcessing,
+    captureStatusProcessed => l10n.recordStatusProcessed,
+    captureStatusAgentFailed => l10n.recordStatusAgentFailed,
     _ => status,
   };
 }

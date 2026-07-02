@@ -75,6 +75,7 @@ class HomeRecordRow extends StatelessWidget {
     required this.subtitle,
     required this.icon,
     this.onTap,
+    this.trailing,
     super.key,
   });
 
@@ -82,6 +83,7 @@ class HomeRecordRow extends StatelessWidget {
   final String subtitle;
   final IconData icon;
   final VoidCallback? onTap;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -114,6 +116,7 @@ class HomeRecordRow extends StatelessWidget {
             ],
           ),
         ),
+        if (trailing != null) ...[const SizedBox(width: 8), trailing!],
         if (onTap != null) ...[
           const SizedBox(width: 8),
           const Icon(Icons.chevron_right, size: 20),

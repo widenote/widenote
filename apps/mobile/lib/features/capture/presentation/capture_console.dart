@@ -32,7 +32,7 @@ class CaptureConsole extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final inputBusy = inputState.isBusy || isProcessing;
+    final inputBusy = inputState.isBusy;
     return DecoratedBox(
       key: const Key('capture-sheet'),
       decoration: BoxDecoration(
@@ -77,7 +77,6 @@ class CaptureConsole extends StatelessWidget {
             const SizedBox(height: 12),
             _ConsoleActions(
               inputBusy: inputBusy,
-              isProcessing: isProcessing,
               onAddCamera: onAddCamera,
               onAddGallery: onAddGallery,
               onSubmit: onSubmit,
@@ -162,14 +161,12 @@ class _ConsoleHeader extends StatelessWidget {
 class _ConsoleActions extends StatelessWidget {
   const _ConsoleActions({
     required this.inputBusy,
-    required this.isProcessing,
     required this.onAddCamera,
     required this.onAddGallery,
     required this.onSubmit,
   });
 
   final bool inputBusy;
-  final bool isProcessing;
   final VoidCallback onAddCamera;
   final VoidCallback onAddGallery;
   final VoidCallback onSubmit;
@@ -196,11 +193,9 @@ class _ConsoleActions extends StatelessWidget {
         ),
         FilledButton.icon(
           key: const Key('record-capture-button'),
-          onPressed: isProcessing ? null : onSubmit,
+          onPressed: inputBusy ? null : onSubmit,
           icon: const Icon(Icons.check),
-          label: Text(
-            isProcessing ? l10n.recordButtonProcessing : l10n.saveRecordButton,
-          ),
+          label: Text(l10n.saveRecordButton),
         ),
       ],
     );

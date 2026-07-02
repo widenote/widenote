@@ -13,6 +13,67 @@ final class RuntimeTasksDao {
     _write(task, allowUpdate: true);
   }
 
+  RuntimeTaskRecord? claimForExecution(
+    String id, {
+    required String leaseOwner,
+    required DateTime leasedUntil,
+    required DateTime updatedAt,
+    required int maxRunningTasks,
+  }) {
+    return _runTransaction(_database, () {
+      if (_activeRunningCount(updatedAt) >= maxRunningTasks) {
+        return null;
+      }
+      final existing = readById(id);
+      if (existing == null ||
+          (existing.status != 'queued' && existing.status != 'waiting')) {
+        return null;
+      }
+      final scheduledAt = existing.scheduledAt;
+      if (scheduledAt != null && scheduledAt.isAfter(updatedAt)) {
+        return null;
+      }
+      if (!_dependenciesSucceeded(existing)) {
+        return null;
+      }
+      final concurrencyKey = existing.concurrencyKey;
+      if (concurrencyKey != null &&
+          _hasActiveRunningConcurrencyKey(
+            concurrencyKey,
+            excludingTaskId: existing.id,
+            now: updatedAt,
+          )) {
+        return null;
+      }
+      final claimed = existing.copyWith(
+        status: 'running',
+        attempts: existing.attempts + 1,
+        leaseOwner: leaseOwner,
+        leasedUntil: leasedUntil,
+        clearScheduledAt: true,
+        error: null,
+        updatedAt: updatedAt,
+        clearError: true,
+      );
+      save(claimed);
+      return claimed;
+    });
+  }
+
+  RuntimeTaskRecord? saveIfLeaseOwner(
+    RuntimeTaskRecord task, {
+    required String leaseOwner,
+  }) {
+    return _runTransaction(_database, () {
+      final existing = readById(task.id);
+      if (existing == null || existing.leaseOwner != leaseOwner) {
+        return null;
+      }
+      save(task);
+      return task;
+    });
+  }
+
   RuntimeTaskRecord updateStatus(
     String id,
     String status, {
@@ -115,6 +176,52 @@ final class RuntimeTasksDao {
     return rows.map(_runtimeTaskFromRow).toList(growable: false);
   }
 
+  int _activeRunningCount(DateTime now) {
+    final rows = _database.select(
+      '''
+SELECT COUNT(*) AS count
+FROM runtime_tasks
+WHERE status = 'running'
+  AND (leased_until IS NULL OR leased_until > ?);
+''',
+      <Object?>[_encodeDateTime(now)],
+    );
+    return rows.first['count'] as int;
+  }
+
+  bool _hasActiveRunningConcurrencyKey(
+    String concurrencyKey, {
+    required String excludingTaskId,
+    required DateTime now,
+  }) {
+    final rows = _database.select(
+      '''
+SELECT id
+FROM runtime_tasks
+WHERE status = 'running'
+  AND concurrency_key = ?
+  AND id != ?
+  AND (leased_until IS NULL OR leased_until > ?)
+LIMIT 1;
+''',
+      <Object?>[concurrencyKey, excludingTaskId, _encodeDateTime(now)],
+    );
+    return rows.isNotEmpty;
+  }
+
+  bool _dependenciesSucceeded(RuntimeTaskRecord task) {
+    for (final value in task.dependencyTaskIds) {
+      if (value is! String) {
+        return false;
+      }
+      final dependency = readById(value);
+      if (dependency == null || dependency.status != 'succeeded') {
+        return false;
+      }
+    }
+    return true;
+  }
+
   void _write(RuntimeTaskRecord task, {required bool allowUpdate}) {
     if (task.maxAttempts < 1) {
       throw ArgumentError.value(
@@ -146,11 +253,13 @@ INSERT INTO runtime_tasks (
   max_attempts,
   lease_owner,
   leased_until,
+  scheduled_at,
+  concurrency_key,
   error,
   payload_json,
   created_at,
   updated_at
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ${allowUpdate ? _runtimeTaskUpsertClause : ';'}
 ''',
       <Object?>[
@@ -170,6 +279,8 @@ ${allowUpdate ? _runtimeTaskUpsertClause : ';'}
         task.maxAttempts,
         task.leaseOwner,
         task.leasedUntil == null ? null : _encodeDateTime(task.leasedUntil!),
+        task.scheduledAt == null ? null : _encodeDateTime(task.scheduledAt!),
+        task.concurrencyKey,
         task.error,
         encodeJsonMap(task.payload),
         _encodeDateTime(task.createdAt),
@@ -204,6 +315,8 @@ ON CONFLICT(id) DO UPDATE SET
   max_attempts = excluded.max_attempts,
   lease_owner = excluded.lease_owner,
   leased_until = excluded.leased_until,
+  scheduled_at = excluded.scheduled_at,
+  concurrency_key = excluded.concurrency_key,
   error = excluded.error,
   payload_json = excluded.payload_json,
   updated_at = excluded.updated_at;

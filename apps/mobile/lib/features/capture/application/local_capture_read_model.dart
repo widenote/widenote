@@ -47,8 +47,11 @@ final class LocalCaptureReadModelStore {
   void saveCapture(
     CaptureRecord record, {
     required List<CaptureAttachment> attachments,
+    String? rawText,
   }) {
-    _database.captures.save(_captureRecord(record, attachments));
+    _database.captures.save(
+      _captureRecord(record, attachments, rawText: rawText),
+    );
     for (final attachment in attachments) {
       _database.attachments.save(_attachmentRecord(record, attachment));
       for (final artifact in _attachmentArtifacts(record, attachment)) {
@@ -60,8 +63,41 @@ final class LocalCaptureReadModelStore {
     }
   }
 
+  CaptureProcessingInput? readProcessingInput(String captureId) {
+    final capture = _database.captures.readById(captureId);
+    if (capture == null) {
+      return null;
+    }
+    return _processingInput(capture);
+  }
+
+  List<CaptureProcessingInput> readPendingProcessingInputs() {
+    final captures = <localdb.CaptureRecord>[
+      ..._database.captures.readAll(status: captureStatusSavedProcessing),
+      ..._database.captures.readAll(status: captureStatusTranscriptReady),
+    ]..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    return captures.map(_processingInput).toList(growable: false);
+  }
+
+  CaptureProcessingInput _processingInput(localdb.CaptureRecord capture) {
+    return CaptureProcessingInput(
+      record: _captureView(capture),
+      typedText:
+          _string(capture.payload['raw_text']) ??
+          _string(capture.payload['text']) ??
+          '',
+      attachments: _database.attachments
+          .readByCapture(capture.id)
+          .map(_attachmentView)
+          .toList(growable: false),
+    );
+  }
+
   void saveTodo(SourceTodo todo) {
     if (!todo.isSuggested) {
+      return;
+    }
+    if (_hasDuplicateTodo(todo)) {
       return;
     }
     _database.todos.save(
@@ -86,6 +122,22 @@ final class LocalCaptureReadModelStore {
     );
   }
 
+  bool _hasDuplicateTodo(SourceTodo todo) {
+    return _database.todos.readAll().any((record) {
+      final title = record.payload['title'];
+      if (title is String && title.trim() != todo.title.trim()) {
+        return false;
+      }
+      final sameCapture =
+          todo.sourceCaptureId != null &&
+          record.sourceCaptureId == todo.sourceCaptureId;
+      final sameEvent =
+          todo.sourceEventId != null &&
+          record.sourceEventId == todo.sourceEventId;
+      return sameCapture || sameEvent;
+    });
+  }
+
   bool _shouldPreserveExistingArtifact(localdb.DerivedArtifactRecord artifact) {
     if (artifact.artifactKind != 'audio_transcript') {
       return false;
@@ -98,10 +150,23 @@ final class LocalCaptureReadModelStore {
   }
 }
 
+final class CaptureProcessingInput {
+  const CaptureProcessingInput({
+    required this.record,
+    required this.typedText,
+    required this.attachments,
+  });
+
+  final CaptureRecord record;
+  final String typedText;
+  final List<CaptureAttachment> attachments;
+}
+
 localdb.CaptureRecord _captureRecord(
   CaptureRecord record,
-  List<CaptureAttachment> attachments,
-) {
+  List<CaptureAttachment> attachments, {
+  String? rawText,
+}) {
   return localdb.CaptureRecord(
     id: record.id,
     sourceType: attachments.isEmpty ? 'manual' : 'manual_with_attachments',
@@ -109,7 +174,10 @@ localdb.CaptureRecord _captureRecord(
     status: record.status,
     payload: <String, Object?>{
       'text': record.body,
+      'raw_text': rawText ?? record.body,
       if (record.sourceEventId != null) 'source_event_id': record.sourceEventId,
+      if (record.memoryGenerated != null)
+        'memory_generated': record.memoryGenerated,
       if (record.locationContext != null)
         'location_context': record.locationContext!.toJson(),
       if (record.locationContext != null)
@@ -161,6 +229,75 @@ localdb.AttachmentRecord _attachmentRecord(
     createdAt: attachment.createdAt,
     updatedAt: DateTime.now().toUtc(),
   );
+}
+
+CaptureAttachment _attachmentView(localdb.AttachmentRecord record) {
+  return CaptureAttachment(
+    id: record.id,
+    kind: _assetKind(record.assetKind),
+    displayName: record.originalFileName ?? record.id,
+    mimeType: record.mimeType ?? 'application/octet-stream',
+    sourceUri: record.storagePath,
+    createdAt: record.createdAt,
+    sizeBytes: record.byteLength,
+    state: _attachmentState(record.status),
+    previewText: _attachmentPreview(record.payload),
+    reviewReason: _string(record.payload['review_reason']),
+    derivedArtifacts: _attachmentDerivedArtifacts(record),
+    rawMetadata: _rawMetadata(record.payload),
+  );
+}
+
+List<AttachmentDerivedArtifact> _attachmentDerivedArtifacts(
+  localdb.AttachmentRecord record,
+) {
+  return record.payload['derived_artifacts'] is List
+      ? _payloadDerivedArtifacts(record.payload['derived_artifacts'])
+      : const <AttachmentDerivedArtifact>[];
+}
+
+List<AttachmentDerivedArtifact> _payloadDerivedArtifacts(Object? value) {
+  if (value is! List) {
+    return const <AttachmentDerivedArtifact>[];
+  }
+  return value
+      .whereType<Map>()
+      .map((payload) => AttachmentDerivedArtifact.fromPayload(payload))
+      .toList(growable: false);
+}
+
+CaptureAssetKind _assetKind(String value) {
+  return switch (value) {
+    'voice' => CaptureAssetKind.voice,
+    'share' => CaptureAssetKind.share,
+    _ => CaptureAssetKind.photo,
+  };
+}
+
+CaptureAttachmentState _attachmentState(String value) {
+  return switch (value) {
+    'needs_review' ||
+    'needsReview' ||
+    'review' => CaptureAttachmentState.needsReview,
+    'blocked' || 'denied' => CaptureAttachmentState.blocked,
+    _ => CaptureAttachmentState.ready,
+  };
+}
+
+String _attachmentPreview(Map<String, Object?> payload) {
+  final preview = _string(payload['preview_text']);
+  if (preview == null || preview == 'preview_hidden') {
+    return '';
+  }
+  return preview;
+}
+
+Map<String, Object?> _rawMetadata(Map<String, Object?> payload) {
+  final metadata = payload['raw_metadata'];
+  if (metadata is Map) {
+    return metadata.cast<String, Object?>();
+  }
+  return const <String, Object?>{};
 }
 
 List<localdb.DerivedArtifactRecord> _attachmentArtifacts(
@@ -531,6 +668,7 @@ CaptureRecord _captureView(localdb.CaptureRecord record) {
     status: record.status,
     sourceEventId:
         _string(record.payload['source_event_id']) ?? record.sourceId,
+    memoryGenerated: _bool(record.payload['memory_generated']),
     locationContext: rawLocation is Map
         ? CapturedLocationContext.fromJson(rawLocation.cast<String, Object?>())
         : null,
@@ -565,6 +703,7 @@ MemoryReviewCandidate _reviewCandidateView(
       id: record.id,
       sourceCaptureId: record.sourceCaptureId,
       sourceEventId: record.sourceEventId,
+      preferCapture: true,
     ),
     reasonLabel: _stringList(record.payload['policy_reasons']).isEmpty
         ? 'needs review'
@@ -669,7 +808,11 @@ String _sourceLabel({
   String? sourceCaptureId,
   String? sourceEventId,
   String sourcePrefix = 'event',
+  bool preferCapture = false,
 }) {
+  if (preferCapture && sourceCaptureId != null) {
+    return 'capture: $sourceCaptureId';
+  }
   if (sourcePrefix == 'source' && sourceCaptureId != null) {
     return 'source: $sourceCaptureId';
   }
@@ -740,4 +883,18 @@ List<String> _stringList(Object? value) {
     return const <String>[];
   }
   return value.whereType<String>().toList(growable: false);
+}
+
+bool? _bool(Object? value) {
+  if (value is bool) {
+    return value;
+  }
+  if (value is String) {
+    return switch (value.trim().toLowerCase()) {
+      'true' => true,
+      'false' => false,
+      _ => null,
+    };
+  }
+  return null;
 }

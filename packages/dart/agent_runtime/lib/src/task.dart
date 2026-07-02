@@ -41,7 +41,7 @@ extension RuntimeRunStatusState on RuntimeRunStatus {
 }
 
 final class RetryPolicy {
-  const RetryPolicy({this.maxAttempts = 1});
+  const RetryPolicy({this.maxAttempts = 2});
 
   final int maxAttempts;
 
@@ -64,7 +64,11 @@ final class RuntimeTask {
     this.dependencyTaskIds = const <String>[],
     this.missingDependencyIds = const <String>[],
     this.attempts = 0,
-    this.maxAttempts = 1,
+    this.maxAttempts = 2,
+    this.scheduledAt,
+    this.leaseOwner,
+    this.leasedUntil,
+    this.concurrencyKey,
     this.error,
   });
 
@@ -83,6 +87,10 @@ final class RuntimeTask {
   final List<String> missingDependencyIds;
   final int attempts;
   final int maxAttempts;
+  final DateTime? scheduledAt;
+  final String? leaseOwner;
+  final DateTime? leasedUntil;
+  final String? concurrencyKey;
   final String? error;
 
   bool get canRetry => attempts < maxAttempts;
@@ -94,7 +102,14 @@ final class RuntimeTask {
     List<String>? missingDependencyIds,
     int? attempts,
     int? maxAttempts,
+    DateTime? scheduledAt,
+    String? leaseOwner,
+    DateTime? leasedUntil,
+    String? concurrencyKey,
     String? error,
+    bool clearScheduledAt = false,
+    bool clearLease = false,
+    bool clearConcurrencyKey = false,
     bool clearError = false,
   }) {
     return RuntimeTask(
@@ -113,6 +128,12 @@ final class RuntimeTask {
       missingDependencyIds: missingDependencyIds ?? this.missingDependencyIds,
       attempts: attempts ?? this.attempts,
       maxAttempts: maxAttempts ?? this.maxAttempts,
+      scheduledAt: clearScheduledAt ? null : scheduledAt ?? this.scheduledAt,
+      leaseOwner: clearLease ? null : leaseOwner ?? this.leaseOwner,
+      leasedUntil: clearLease ? null : leasedUntil ?? this.leasedUntil,
+      concurrencyKey: clearConcurrencyKey
+          ? null
+          : concurrencyKey ?? this.concurrencyKey,
       error: clearError ? null : error ?? this.error,
     );
   }

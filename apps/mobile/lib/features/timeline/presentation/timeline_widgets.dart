@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:widenote_cards/widenote_cards.dart';
 
 import '../../../l10n/l10n.dart';
+import '../../capture/domain/capture_models.dart';
 import '../../capture/media/capture_media.dart';
 import '../../capture/presentation/attachment_artifact_widgets.dart';
 
@@ -559,21 +560,23 @@ class TimelineTag extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 14),
-            const SizedBox(width: 4),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 240),
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.labelSmall,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 240),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelSmall,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -630,9 +633,10 @@ String timelineKindSingularLabel(
 String timelineStatusLabel(AppLocalizations l10n, String status) {
   return switch (status) {
     'active' => l10n.timelineStatusActive,
-    'Saved locally, processing' => l10n.recordStatusSavedProcessing,
-    'Processed locally' || 'processed' => l10n.recordStatusProcessed,
-    'Saved locally, agent failed' => l10n.recordStatusAgentFailed,
+    captureStatusSavedProcessing ||
+    captureStatusTranscriptReady => l10n.recordStatusSavedProcessing,
+    captureStatusProcessed || 'processed' => l10n.recordStatusProcessed,
+    captureStatusAgentFailed => l10n.recordStatusAgentFailed,
     'open' => l10n.todoStatusOpen,
     'completed' => l10n.todoStatusCompleted,
     'suggested' => l10n.todoStatusSuggestedByAgent,

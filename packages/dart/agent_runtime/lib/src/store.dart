@@ -58,6 +58,17 @@ abstract interface class RuntimeStore {
   Future<void> upsertTask(RuntimeTask task);
   Future<RuntimeTask?> readTaskById(String id);
   Future<List<RuntimeTask>> readTasks({String? packId});
+  Future<RuntimeTask?> claimTaskForExecution(
+    String id, {
+    required String leaseOwner,
+    required DateTime leasedUntil,
+    required DateTime now,
+    required int maxRunningTasks,
+  });
+  Future<RuntimeTask?> upsertTaskIfLeaseOwner(
+    RuntimeTask task, {
+    required String leaseOwner,
+  });
 
   Future<void> upsertRun(RuntimeRun run);
   Future<RuntimeRun?> readRunById(String id);
@@ -104,6 +115,69 @@ final class InMemoryRuntimeStore
           .whereType<RuntimeTask>()
           .where((task) => packId == null || task.packId == packId),
     );
+  }
+
+  @override
+  Future<RuntimeTask?> claimTaskForExecution(
+    String id, {
+    required String leaseOwner,
+    required DateTime leasedUntil,
+    required DateTime now,
+    required int maxRunningTasks,
+  }) async {
+    final task = _tasksById[id];
+    if (task == null ||
+        (task.status != RuntimeTaskStatus.queued &&
+            task.status != RuntimeTaskStatus.waiting)) {
+      return null;
+    }
+    final scheduledAt = task.scheduledAt;
+    if (scheduledAt != null && scheduledAt.isAfter(now)) {
+      return null;
+    }
+    if (!_dependenciesSucceeded(task)) {
+      return null;
+    }
+    final running = _tasksById.values
+        .where((candidate) => _isActiveRunning(candidate, now))
+        .length;
+    if (running >= maxRunningTasks) {
+      return null;
+    }
+    final concurrencyKey = task.concurrencyKey;
+    if (concurrencyKey != null &&
+        _tasksById.values.any(
+          (candidate) =>
+              candidate.id != task.id &&
+              candidate.concurrencyKey == concurrencyKey &&
+              _isActiveRunning(candidate, now),
+        )) {
+      return null;
+    }
+    final claimed = task.copyWith(
+      status: RuntimeTaskStatus.running,
+      updatedAt: now,
+      attempts: task.attempts + 1,
+      leaseOwner: leaseOwner,
+      leasedUntil: leasedUntil,
+      clearError: true,
+      clearScheduledAt: true,
+    );
+    _tasksById[id] = claimed;
+    return claimed;
+  }
+
+  @override
+  Future<RuntimeTask?> upsertTaskIfLeaseOwner(
+    RuntimeTask task, {
+    required String leaseOwner,
+  }) async {
+    final existing = _tasksById[task.id];
+    if (existing == null || existing.leaseOwner != leaseOwner) {
+      return null;
+    }
+    await upsertTask(task);
+    return task;
   }
 
   @override
@@ -160,5 +234,19 @@ final class InMemoryRuntimeStore
   @override
   Future<RuntimePackInstallation?> readPackInstallation(String packId) async {
     return _packInstallationsById[packId];
+  }
+
+  bool _dependenciesSucceeded(RuntimeTask task) {
+    return task.dependencyTaskIds.every(
+      (id) => _tasksById[id]?.status == RuntimeTaskStatus.succeeded,
+    );
+  }
+
+  bool _isActiveRunning(RuntimeTask task, DateTime now) {
+    if (task.status != RuntimeTaskStatus.running) {
+      return false;
+    }
+    final leasedUntil = task.leasedUntil;
+    return leasedUntil == null || leasedUntil.isAfter(now);
   }
 }

@@ -11,6 +11,10 @@ final class LocalDbEventStore implements runtime.EventStore {
 
   @override
   Future<void> append(runtime.WnEvent event) async {
+    if (_isCaptureCreatedEvent(event)) {
+      _appendCaptureCreatedOnce(event);
+      return;
+    }
     _database.eventLog.append(_eventToRecord(event));
   }
 
@@ -20,6 +24,7 @@ final class LocalDbEventStore implements runtime.EventStore {
     rawDatabase.execute('BEGIN IMMEDIATE;');
     try {
       for (final event in events) {
+        _checkDuplicateCaptureCreated(event);
         _database.eventLog.append(_eventToRecord(event));
       }
       rawDatabase.execute('COMMIT;');
@@ -50,6 +55,36 @@ final class LocalDbEventStore implements runtime.EventStore {
         .map(_eventFromRecord)
         .toList(growable: false);
   }
+
+  void _appendCaptureCreatedOnce(runtime.WnEvent event) {
+    final rawDatabase = _database.rawDatabase;
+    rawDatabase.execute('BEGIN IMMEDIATE;');
+    try {
+      _checkDuplicateCaptureCreated(event);
+      _database.eventLog.append(_eventToRecord(event));
+      rawDatabase.execute('COMMIT;');
+    } catch (_) {
+      rawDatabase.execute('ROLLBACK;');
+      rethrow;
+    }
+  }
+
+  void _checkDuplicateCaptureCreated(runtime.WnEvent event) {
+    if (!_isCaptureCreatedEvent(event)) {
+      return;
+    }
+    final subjectId = event.subjectRef!.id;
+    final existing = _database.eventLog.readCaptureCreatedBySubject(subjectId);
+    if (existing != null) {
+      throw StateError('Capture event already exists for subject: $subjectId');
+    }
+  }
+}
+
+bool _isCaptureCreatedEvent(runtime.WnEvent event) {
+  return event.type == runtime.WnEventTypes.captureCreated &&
+      event.subjectRef?.kind == 'capture' &&
+      event.subjectRef?.id.isNotEmpty == true;
 }
 
 final class LocalDbTraceSink implements runtime.TraceSink {
@@ -109,6 +144,43 @@ final class LocalDbRuntimeStore
         : _database.runtimeTasks.readByPack(packId);
     return Future<List<runtime.RuntimeTask>>.value(
       List<runtime.RuntimeTask>.unmodifiable(records.map(_taskFromRecord)),
+    );
+  }
+
+  @override
+  Future<runtime.RuntimeTask?> claimTaskForExecution(
+    String id, {
+    required String leaseOwner,
+    required DateTime leasedUntil,
+    required DateTime now,
+    required int maxRunningTasks,
+  }) {
+    final record = _database.runtimeTasks.claimForExecution(
+      id,
+      leaseOwner: leaseOwner,
+      leasedUntil: leasedUntil,
+      updatedAt: now,
+      maxRunningTasks: maxRunningTasks,
+    );
+    return Future<runtime.RuntimeTask?>.value(
+      record == null ? null : _taskFromRecord(record),
+    );
+  }
+
+  @override
+  Future<runtime.RuntimeTask?> upsertTaskIfLeaseOwner(
+    runtime.RuntimeTask task, {
+    required String leaseOwner,
+  }) {
+    final existing =
+        _database.runtimeTasks.readById(task.id) ??
+        _database.runtimeTasks.readByIdentityKey(task.identityKey);
+    final record = _database.runtimeTasks.saveIfLeaseOwner(
+      _taskToRecord(task, existing: existing),
+      leaseOwner: leaseOwner,
+    );
+    return Future<runtime.RuntimeTask?>.value(
+      record == null ? null : _taskFromRecord(record),
     );
   }
 
@@ -497,10 +569,12 @@ RuntimeTaskRecord _taskToRecord(
     missingDependencyIds: <Object?>[...task.missingDependencyIds],
     attempts: task.attempts,
     maxAttempts: task.maxAttempts,
-    leaseOwner: existing?.leaseOwner,
-    leasedUntil: existing?.leasedUntil,
+    leaseOwner: task.leaseOwner,
+    leasedUntil: task.leasedUntil,
+    scheduledAt: task.scheduledAt,
+    concurrencyKey: task.concurrencyKey,
     error: task.error,
-    payload: existing?.payload ?? const <String, Object?>{},
+    payload: _taskPayload(existing?.payload ?? const <String, Object?>{}),
     createdAt: existing?.createdAt ?? task.createdAt,
     updatedAt: task.updatedAt,
   );
@@ -527,6 +601,20 @@ runtime.RuntimeTask _taskFromRecord(RuntimeTaskRecord record) {
     ),
     attempts: record.attempts,
     maxAttempts: record.maxAttempts,
+    scheduledAt:
+        record.scheduledAt ??
+        _optionalDateTimeFromPayload(
+          record.payload[_runtimeTaskScheduledAtKey],
+          _runtimeTaskScheduledAtKey,
+        ),
+    leaseOwner: record.leaseOwner,
+    leasedUntil: record.leasedUntil,
+    concurrencyKey:
+        record.concurrencyKey ??
+        _optionalStringFromPayload(
+          record.payload[_runtimeTaskConcurrencyKey],
+          _runtimeTaskConcurrencyKey,
+        ),
     error: record.error,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
@@ -859,6 +947,34 @@ JsonMap _runPayload(
   return next;
 }
 
+JsonMap _taskPayload(JsonMap payload) {
+  final next = <String, Object?>{...payload};
+  next.remove(_runtimeTaskScheduledAtKey);
+  next.remove(_runtimeTaskConcurrencyKey);
+  return next;
+}
+
+DateTime? _optionalDateTimeFromPayload(Object? value, String key) {
+  if (value == null) {
+    return null;
+  }
+  if (value is! String || value.isEmpty) {
+    throw StateError('$key must be a non-empty ISO-8601 string.');
+  }
+  return DateTime.parse(value).toUtc();
+}
+
+String? _optionalStringFromPayload(Object? value, String key) {
+  if (value == null) {
+    return null;
+  }
+  if (value is! String) {
+    throw StateError('$key must be a string.');
+  }
+  final trimmed = value.trim();
+  return trimmed.isEmpty ? null : trimmed;
+}
+
 runtime.RunMode _runtimeRunModeFromPayload(JsonMap payload) {
   final value = payload[_runtimeRunModeKey];
   if (value == null) {
@@ -960,6 +1076,8 @@ String _schemaTraceType(String runtimeName) {
 
 const _runtimeRunLeaseExpiresAtKey = 'runtime_run_lease_expires_at';
 const _runtimeRunModeKey = 'runtime_run_mode';
+const _runtimeTaskScheduledAtKey = 'runtime_task_scheduled_at';
+const _runtimeTaskConcurrencyKey = 'runtime_task_concurrency_key';
 const _runtimePackCountsKey = 'runtime_status_counts';
 const _runtimePackEdition = 'runtime';
 const _runtimePackPublisher = 'runtime';
