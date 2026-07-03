@@ -17,6 +17,8 @@ final class WideNoteLocalDatabase {
       chatSessions = ChatSessionsDao(_database),
       chatMessages = ChatMessagesDao(_database),
       modelProviderConfigs = ModelProviderConfigsDao(_database),
+      embeddingProviderConfigs = EmbeddingProviderConfigsDao(_database),
+      searchIndex = SearchIndexDao(_database),
       todos = TodosDao(_database),
       runtimeTasks = RuntimeTasksDao(_database),
       runtimeRuns = RuntimeRunsDao(_database),
@@ -57,6 +59,8 @@ final class WideNoteLocalDatabase {
   final ChatSessionsDao chatSessions;
   final ChatMessagesDao chatMessages;
   final ModelProviderConfigsDao modelProviderConfigs;
+  final EmbeddingProviderConfigsDao embeddingProviderConfigs;
+  final SearchIndexDao searchIndex;
   final TodosDao todos;
   final RuntimeTasksDao runtimeTasks;
   final RuntimeRunsDao runtimeRuns;

@@ -1385,7 +1385,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get timelineSearchHint => '按类型筛选；文本搜索会在召回器就绪后启用';
+  String get timelineSearchHint => '搜索本地证据，或按类型筛选';
 
   @override
   String get timelineFilterAll => '全部';
@@ -1397,12 +1397,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get timelineSearchEmptyBody => '先创建一条记录，再浏览卡片、记忆和待办。';
 
   @override
-  String get timelineSearchNeedsRetrieverTitle => '文本搜索需要召回器';
-
-  @override
-  String get timelineSearchNeedsRetrieverBody => '清空输入框后可按类型本地浏览。语义搜索会使用模型召回器。';
-
-  @override
   String get timelineSearchNoResultsTitle => '没有匹配的时间线项目';
 
   @override
@@ -1412,6 +1406,27 @@ class AppLocalizationsZh extends AppLocalizations {
   String timelineSearchResultCount(int count) {
     return '$count 个结果';
   }
+
+  @override
+  String get timelineSearchHybridStatus => '正在使用关键词和 Embedding 证据做混合检索。';
+
+  @override
+  String get timelineSearchKeywordStatus => '当前为关键词检索；配置 Embedding 后会启用语义召回。';
+
+  @override
+  String get timelineSearchSensitiveSnippetHidden => '敏感片段已隐藏，可打开来源并按本地策略复核。';
+
+  @override
+  String get timelineSearchSensitiveBadge => '敏感';
+
+  @override
+  String get timelineSearchKindArtifact => '生成物';
+
+  @override
+  String get timelineSearchMatchKeyword => '关键词';
+
+  @override
+  String get timelineSearchMatchSemantic => '语义';
 
   @override
   String get timelineKindCapture => '记录';
@@ -1610,6 +1625,18 @@ class AppLocalizationsZh extends AppLocalizations {
       '为运行时和 Agent Pack 配置本地或自带密钥的模型访问。';
 
   @override
+  String get settingsRetrievalTitle => '检索与 Embedding';
+
+  @override
+  String get settingsRetrievalSubtitle => '为混合检索单独配置在线 Embedding，不影响聊天模型。';
+
+  @override
+  String get settingsRetrievalStatusKeyword => '关键词';
+
+  @override
+  String get settingsRetrievalStatusHybrid => '混合';
+
+  @override
   String get settingsTranscriptionTitle => '语音转写';
 
   @override
@@ -1662,6 +1689,75 @@ class AppLocalizationsZh extends AppLocalizations {
   String settingsTraceConsoleStatusSummary(int eventCount, int warningCount) {
     return '$eventCount 条日志 / $warningCount 个警告';
   }
+
+  @override
+  String get retrievalSettingsTitle => '检索与 Embedding';
+
+  @override
+  String get retrievalSettingsSubtitle =>
+      '混合检索把 FTS 留在本机，只在需要语义召回时使用你的 Embedding Key。';
+
+  @override
+  String retrievalSettingsError(String error) {
+    return '检索设置加载失败：$error';
+  }
+
+  @override
+  String get retrievalSettingsConfiguredTitle => '混合检索已就绪';
+
+  @override
+  String retrievalSettingsConfiguredBody(String model) {
+    return 'Embedding 模型：$model';
+  }
+
+  @override
+  String get retrievalSettingsUnconfiguredTitle => '关键词检索可用';
+
+  @override
+  String get retrievalSettingsUnconfiguredBody =>
+      '添加 OpenRouter Key 后，会启用在线千问 Embedding 做语义召回。';
+
+  @override
+  String get retrievalSettingsProviderTitle => 'Embedding 提供商';
+
+  @override
+  String get retrievalSettingsDisplayNameLabel => '显示名称';
+
+  @override
+  String get retrievalSettingsEndpointLabel => 'Endpoint';
+
+  @override
+  String get retrievalSettingsModelLabel => 'Embedding 模型';
+
+  @override
+  String get retrievalSettingsApiKeyLabel => 'OpenRouter API Key';
+
+  @override
+  String get retrievalSettingsApiKeyKeptHint => '留空会保留已保存的 Key';
+
+  @override
+  String get retrievalSettingsBatchSizeLabel => '批量大小';
+
+  @override
+  String get retrievalSettingsTestAction => '测试';
+
+  @override
+  String get retrievalSettingsRebuildAction => '重建索引';
+
+  @override
+  String get retrievalSettingsDeleteAction => '删除';
+
+  @override
+  String get retrievalSettingsSaved => 'Embedding 提供商已保存。';
+
+  @override
+  String retrievalSettingsRebuildDone(int count) {
+    return '已索引 $count 个片段。';
+  }
+
+  @override
+  String get retrievalSettingsRebuildNeedsProvider =>
+      '请先添加 Embedding 提供商，再重建语义向量。';
 
   @override
   String get settingsDebuggingTitle => 'Debugging';

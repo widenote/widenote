@@ -2640,7 +2640,7 @@ abstract class AppLocalizations {
   /// No description provided for @timelineSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Filter by type, or use text after retriever setup'**
+  /// **'Search local evidence or filter by type'**
   String get timelineSearchHint;
 
   /// No description provided for @timelineFilterAll.
@@ -2661,18 +2661,6 @@ abstract class AppLocalizations {
   /// **'Create a capture first, then browse cards, Memory, and todos.'**
   String get timelineSearchEmptyBody;
 
-  /// No description provided for @timelineSearchNeedsRetrieverTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Text search needs a retriever'**
-  String get timelineSearchNeedsRetrieverTitle;
-
-  /// No description provided for @timelineSearchNeedsRetrieverBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Clear the text field to browse locally by type. Semantic search will use a model-backed retriever.'**
-  String get timelineSearchNeedsRetrieverBody;
-
   /// No description provided for @timelineSearchNoResultsTitle.
   ///
   /// In en, this message translates to:
@@ -2690,6 +2678,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 result} other{{count} results}}'**
   String timelineSearchResultCount(int count);
+
+  /// No description provided for @timelineSearchHybridStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Hybrid retrieval is using keyword and embedding evidence.'**
+  String get timelineSearchHybridStatus;
+
+  /// No description provided for @timelineSearchKeywordStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyword retrieval is active. Configure Embedding for semantic recall.'**
+  String get timelineSearchKeywordStatus;
+
+  /// No description provided for @timelineSearchSensitiveSnippetHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'Sensitive snippet hidden. Open the source to review under local policy.'**
+  String get timelineSearchSensitiveSnippetHidden;
+
+  /// No description provided for @timelineSearchSensitiveBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Sensitive'**
+  String get timelineSearchSensitiveBadge;
+
+  /// No description provided for @timelineSearchKindArtifact.
+  ///
+  /// In en, this message translates to:
+  /// **'Artifact'**
+  String get timelineSearchKindArtifact;
+
+  /// No description provided for @timelineSearchMatchKeyword.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyword'**
+  String get timelineSearchMatchKeyword;
+
+  /// No description provided for @timelineSearchMatchSemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'Semantic'**
+  String get timelineSearchMatchSemantic;
 
   /// No description provided for @timelineKindCapture.
   ///
@@ -3048,6 +3078,30 @@ abstract class AppLocalizations {
   /// **'Configure local or BYOK model access for runtime and Agent Packs.'**
   String get settingsModelProvidersSubtitle;
 
+  /// No description provided for @settingsRetrievalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Retrieval & Embedding'**
+  String get settingsRetrievalTitle;
+
+  /// No description provided for @settingsRetrievalSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure online embedding for hybrid search without changing the chat model.'**
+  String get settingsRetrievalSubtitle;
+
+  /// No description provided for @settingsRetrievalStatusKeyword.
+  ///
+  /// In en, this message translates to:
+  /// **'keyword'**
+  String get settingsRetrievalStatusKeyword;
+
+  /// No description provided for @settingsRetrievalStatusHybrid.
+  ///
+  /// In en, this message translates to:
+  /// **'hybrid'**
+  String get settingsRetrievalStatusHybrid;
+
   /// No description provided for @settingsTranscriptionTitle.
   ///
   /// In en, this message translates to:
@@ -3149,6 +3203,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{eventCount} logs / {warningCount} warnings'**
   String settingsTraceConsoleStatusSummary(int eventCount, int warningCount);
+
+  /// No description provided for @retrievalSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Retrieval & Embedding'**
+  String get retrievalSettingsTitle;
+
+  /// No description provided for @retrievalSettingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hybrid search keeps local FTS on device and uses your embedding key only when semantic recall is needed.'**
+  String get retrievalSettingsSubtitle;
+
+  /// No description provided for @retrievalSettingsError.
+  ///
+  /// In en, this message translates to:
+  /// **'Retrieval settings failed to load: {error}'**
+  String retrievalSettingsError(String error);
+
+  /// No description provided for @retrievalSettingsConfiguredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hybrid search ready'**
+  String get retrievalSettingsConfiguredTitle;
+
+  /// No description provided for @retrievalSettingsConfiguredBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Embedding model: {model}'**
+  String retrievalSettingsConfiguredBody(String model);
+
+  /// No description provided for @retrievalSettingsUnconfiguredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyword search active'**
+  String get retrievalSettingsUnconfiguredTitle;
+
+  /// No description provided for @retrievalSettingsUnconfiguredBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an OpenRouter key to enable online Qwen embeddings for semantic recall.'**
+  String get retrievalSettingsUnconfiguredBody;
+
+  /// No description provided for @retrievalSettingsProviderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Embedding provider'**
+  String get retrievalSettingsProviderTitle;
+
+  /// No description provided for @retrievalSettingsDisplayNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Display name'**
+  String get retrievalSettingsDisplayNameLabel;
+
+  /// No description provided for @retrievalSettingsEndpointLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Endpoint'**
+  String get retrievalSettingsEndpointLabel;
+
+  /// No description provided for @retrievalSettingsModelLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Embedding model'**
+  String get retrievalSettingsModelLabel;
+
+  /// No description provided for @retrievalSettingsApiKeyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenRouter API key'**
+  String get retrievalSettingsApiKeyLabel;
+
+  /// No description provided for @retrievalSettingsApiKeyKeptHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved key kept if this stays blank'**
+  String get retrievalSettingsApiKeyKeptHint;
+
+  /// No description provided for @retrievalSettingsBatchSizeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Batch size'**
+  String get retrievalSettingsBatchSizeLabel;
+
+  /// No description provided for @retrievalSettingsTestAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Test'**
+  String get retrievalSettingsTestAction;
+
+  /// No description provided for @retrievalSettingsRebuildAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Rebuild index'**
+  String get retrievalSettingsRebuildAction;
+
+  /// No description provided for @retrievalSettingsDeleteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get retrievalSettingsDeleteAction;
+
+  /// No description provided for @retrievalSettingsSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Embedding provider saved.'**
+  String get retrievalSettingsSaved;
+
+  /// No description provided for @retrievalSettingsRebuildDone.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Search index is up to date} =1{Indexed 1 chunk} other{Indexed {count} chunks}}.'**
+  String retrievalSettingsRebuildDone(int count);
+
+  /// No description provided for @retrievalSettingsRebuildNeedsProvider.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an embedding provider before rebuilding semantic vectors.'**
+  String get retrievalSettingsRebuildNeedsProvider;
 
   /// No description provided for @settingsDebuggingTitle.
   ///

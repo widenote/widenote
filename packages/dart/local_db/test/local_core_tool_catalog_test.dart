@@ -255,21 +255,21 @@ void main() {
           },
         );
         expect(semantic['success'], isTrue);
-        expect(
-          semantic['selection_strategy'],
-          'local_candidate_retrieval_nonsemantic',
-        );
-        expect(semantic['query_used_for_candidate_selection'], isFalse);
+        expect(semantic['selection_strategy'], 'hybrid_fts_embedding_rrf');
+        expect(semantic['query_used_for_candidate_selection'], isTrue);
         expect(
           jsonEncode(semantic['sources']),
           contains('Whiteboard says ship local read tools.'),
         );
         expect(
           (semantic['candidates']! as List).map(
-            (candidate) => (candidate as Map)['kind'],
+            (candidate) => (candidate as Map)['source_kind'],
           ),
-          containsAll(<String>['capture', 'card', 'derived_artifact']),
+          containsAll(<String>['card', 'derived_artifact']),
         );
+        final handle = ((semantic['evidence_handles']! as List).first as Map);
+        expect(handle['chunk_id'], isA<String>());
+        expect(handle['open_command'], contains('source.open'));
       },
     );
 
@@ -355,56 +355,66 @@ void main() {
       },
     );
 
-    test(
-      'semantic query candidate collection ignores query content heuristics',
-      () async {
-        final now = DateTime.utc(2026, 6, 28, 9);
-        _seedRetrievalFixture(database, now);
-        LocalDbCoreToolCatalog(database).registerInto(registry);
+    test('semantic query uses query text and source-kind filters', () async {
+      final now = DateTime.utc(2026, 6, 28, 9);
+      _seedRetrievalFixture(database, now);
+      LocalDbCoreToolCatalog(database).registerInto(registry);
 
-        Future<List<String>> candidateIds(String query) async {
-          final output = await _invoke(
-            registry,
-            LocalDbCoreToolCatalog.semanticSearchQueryTool,
-            <String, Object?>{'query': query, 'limit': 20},
-          );
-          expect(output['query_used_for_candidate_selection'], isFalse);
-          return _candidateIds(output);
-        }
-
-        final english = await candidateIds('alpha project launch');
-        final chinese = await candidateIds('阿尔法项目发布');
-        final upper = await candidateIds('ALPHA PROJECT LAUNCH');
-
-        expect(chinese, english);
-        expect(upper, english);
-        expect(
-          english.toSet(),
-          containsAll(<String>{
-            'memory/memory-alpha',
-            'capture/capture-alpha',
-            'card/card-alpha',
-            'insight/insight-alpha',
-            'todo/todo-alpha',
-            'derived_artifact/artifact-alpha-ocr',
-          }),
-        );
-
-        final filtered = await _invoke(
+      Future<List<String>> candidateIds(String query) async {
+        final output = await _invoke(
           registry,
           LocalDbCoreToolCatalog.semanticSearchQueryTool,
-          const <String, Object?>{
-            'query': 'alpha project launch',
-            'object_kinds': <Object?>['memory'],
-            'limit': 20,
-          },
+          <String, Object?>{'query': query, 'limit': 20},
         );
-        expect(_candidateIds(filtered), <String>['memory/memory-alpha']);
-      },
-    );
+        expect(output['query_used_for_candidate_selection'], isTrue);
+        return _candidateIds(output);
+      }
+
+      final english = await candidateIds('alpha project launch');
+      final upper = await candidateIds('ALPHA PROJECT LAUNCH');
+
+      expect(upper, english);
+      expect(
+        english.toSet(),
+        containsAll(<String>{
+          'memory/memory-alpha',
+          'capture/capture-alpha',
+          'card/card-alpha',
+          'insight/insight-alpha',
+          'todo/todo-alpha',
+          'derived_artifact/artifact-alpha-ocr',
+        }),
+      );
+
+      final filtered = await _invoke(
+        registry,
+        LocalDbCoreToolCatalog.semanticSearchQueryTool,
+        const <String, Object?>{
+          'query': 'alpha project launch',
+          'object_kinds': <Object?>['memory'],
+          'limit': 20,
+        },
+      );
+      expect(_candidateIds(filtered), <String>['memory/memory-alpha']);
+
+      final statusFiltered = await _invoke(
+        registry,
+        LocalDbCoreToolCatalog.semanticSearchQueryTool,
+        const <String, Object?>{
+          'query': 'Review Alpha candidate',
+          'status': 'open',
+          'limit': 20,
+        },
+      );
+      expect(_candidateIds(statusFiltered), <String>['todo/todo-alpha']);
+      expect(
+        ((statusFiltered['filters']! as Map)['statuses']! as List).single,
+        'open',
+      );
+    });
 
     test(
-      'semantic query excludes tombstone deletion and high sensitivity by default',
+      'semantic query indexes high sensitivity but redacts snippets by default',
       () async {
         final now = DateTime.utc(2026, 6, 28, 10);
         _seedRetrievalFixture(database, now);
@@ -413,32 +423,35 @@ void main() {
         final output = await _invoke(
           registry,
           LocalDbCoreToolCatalog.semanticSearchQueryTool,
-          const <String, Object?>{'query': 'anything', 'limit': 20},
+          const <String, Object?>{
+            'query': 'High sensitivity body',
+            'limit': 20,
+          },
         );
         final ids = _candidateIds(output);
-        expect(ids, isNot(contains('memory/memory-high')));
+        expect(ids, contains('memory/memory-high'));
         expect(ids, isNot(contains('memory/memory-tombstone')));
         expect(ids, isNot(contains('capture/capture-deleted')));
-        expect(ids, isNot(contains('derived_artifact/artifact-high')));
+        final highDefault = (output['candidates']! as List).cast<Map>().where(
+          (candidate) => candidate['source_id'] == 'memory-high',
+        );
+        expect(highDefault, hasLength(1));
+        expect(highDefault.single['snippet'], isNull);
 
         final traceReview = await _invoke(
           registry,
           LocalDbCoreToolCatalog.semanticSearchQueryTool,
           const <String, Object?>{
-            'query': 'anything',
+            'query': 'High sensitivity body',
             'permission_mode': 'trace_review',
             'limit': 20,
           },
         );
         final high = (traceReview['candidates']! as List).cast<Map>().where(
-          (candidate) => candidate['id'] == 'memory-high',
+          (candidate) => candidate['source_id'] == 'memory-high',
         );
         expect(high, hasLength(1));
-        expect(high.single['snippet'], isNull);
-        expect(
-          jsonEncode(traceReview),
-          isNot(contains('High sensitivity body')),
-        );
+        expect(high.single['snippet'], contains('High sensitivity body'));
       },
     );
 
@@ -463,13 +476,13 @@ void main() {
 
         final candidates = (output['candidates']! as List).cast<Map>();
         expect(
-          candidates.map((candidate) => candidate['id']),
+          candidates.map((candidate) => candidate['source_id']),
           contains('artifact-alpha-ocr'),
         );
         final artifact = candidates.singleWhere(
-          (candidate) => candidate['id'] == 'artifact-alpha-ocr',
+          (candidate) => candidate['source_id'] == 'artifact-alpha-ocr',
         );
-        expect(artifact['kind'], 'derived_artifact');
+        expect(artifact['source_kind'], 'derived_artifact');
         expect(
           artifact['snippet'],
           contains('Alpha OCR says derived evidence'),
@@ -1027,7 +1040,9 @@ List<String> _candidateIds(JsonMap output) {
   return (output['candidates']! as List)
       .cast<Map>()
       .map((candidate) {
-        return '${candidate['kind']}/${candidate['id']}';
+        final kind = candidate['kind'] ?? candidate['source_kind'];
+        final id = candidate['id'] ?? candidate['source_id'];
+        return '$kind/$id';
       })
       .toList(growable: false);
 }

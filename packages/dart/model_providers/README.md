@@ -13,7 +13,8 @@ interface without depending on Flutter UI or real LLM services.
 Owns provider-agnostic request and response models, provider configuration
 models, capability metadata, compatible request/response adapters, official
 model-list request helpers, fake HTTP, provider interface,
-offline/adapter connection-test behavior, and fake provider behavior.
+offline/adapter connection-test behavior, embedding provider HTTP contracts,
+and fake provider behavior.
 
 It must not own credential storage, network clients for real providers, model
 setup UI, routing policy, or Agent Pack prompts.
@@ -43,8 +44,16 @@ setup UI, routing policy, or Agent Pack prompts.
 - `ModelProviderModelListService`
 - `AdapterModelProviderModelListService`
 - `ModelProviderModelListResult`
+- `EmbeddingProvider`
+- `EmbeddingProviderKind`
+- `EmbeddingProviderConfig`
+- `EmbeddingRequest`
+- `EmbeddingResponse`
+- `EmbeddingUsage`
+- `OpenAiCompatibleEmbeddingProvider`
 - `FakeModelProvider`
 - `modelProviderFromConfig`
+- `embeddingProviderFromConfig`
 - `RuntimeModelClientAdapter`
 - `RuntimeModelProviderException`
 - `UnsupportedModelCapabilityException`
@@ -88,6 +97,12 @@ OpenAI-compatible and Anthropic-compatible requests, DeepSeek and MiniMax use
 Bearer authorization for Anthropic-compatible message calls, and MiniMax model
 listing keeps its documented `X-Api-Key` header.
 
+Embedding provider contracts are separate from chat/completion provider
+contracts. The default preset is OpenRouter with Qwen embedding model
+`qwen/qwen3-embedding-0.6b`, but the API key, endpoint, batch size, and model id
+are managed by the retrieval feature rather than the model-provider Settings
+surface.
+
 ## Dependencies
 
 Runtime dependencies:
@@ -117,7 +132,8 @@ provider queued responses, fake HTTP recording, OpenAI-compatible, OpenAI
 Responses, and Anthropic-compatible request construction, endpoint
 normalization, response parsing, official model-list endpoint derivation and
 parsing, connection-test success/failure classification, missing capability
-errors, and the runtime adapter.
+errors, embedding request/response parsing, embedding config validation, and the
+runtime adapter.
 
 ## Related Context
 

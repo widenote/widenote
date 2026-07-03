@@ -198,6 +198,67 @@ ModelProviderConfigRecord _modelProviderConfigFromRow(Row row) {
   );
 }
 
+EmbeddingProviderConfigRecord _embeddingProviderConfigFromRow(Row row) {
+  return EmbeddingProviderConfigRecord(
+    id: _text(row, 'id'),
+    schemaVersion: _integer(row, 'schema_version'),
+    providerKind: _text(row, 'provider_kind'),
+    displayName: _text(row, 'display_name'),
+    endpoint: _text(row, 'endpoint'),
+    model: _text(row, 'model'),
+    status: _text(row, 'status'),
+    isDefault: _bool(row, 'is_default'),
+    hasApiKey: _bool(row, 'has_api_key'),
+    apiKey: _text(row, 'api_key'),
+    dimensions: _nullableInt(row, 'dimensions'),
+    batchSize: _integer(row, 'batch_size'),
+    payload: decodeJsonMap(_text(row, 'payload_json')),
+    createdAt: _dateTime(row, 'created_at'),
+    updatedAt: _dateTime(row, 'updated_at'),
+  );
+}
+
+SearchDocumentRecord _searchDocumentFromRow(Row row) {
+  return SearchDocumentRecord(
+    id: _text(row, 'id'),
+    schemaVersion: _integer(row, 'schema_version'),
+    sourceKind: _text(row, 'source_kind'),
+    sourceId: _text(row, 'source_id'),
+    sourceType: _text(row, 'source_type'),
+    title: _text(row, 'title'),
+    status: _text(row, 'status'),
+    sensitivity: _text(row, 'sensitivity'),
+    sourceRefs: decodeJsonList(_text(row, 'source_refs_json')),
+    metadata: decodeJsonMap(_text(row, 'metadata_json')),
+    contentHash: _text(row, 'content_hash'),
+    createdAt: _dateTime(row, 'created_at'),
+    updatedAt: _dateTime(row, 'updated_at'),
+  );
+}
+
+SearchChunkRecord _searchChunkFromRow(Row row) {
+  return SearchChunkRecord(
+    id: _text(row, 'id'),
+    schemaVersion: _integer(row, 'schema_version'),
+    docId: _text(row, 'doc_id'),
+    sourceKind: _text(row, 'source_kind'),
+    sourceId: _text(row, 'source_id'),
+    sourceType: _text(row, 'source_type'),
+    title: _text(row, 'title'),
+    body: _text(row, 'body'),
+    snippet: _text(row, 'snippet'),
+    tokenText: _text(row, 'token_text'),
+    status: _text(row, 'status'),
+    sensitivity: _text(row, 'sensitivity'),
+    sourceRefs: decodeJsonList(_text(row, 'source_refs_json')),
+    metadata: decodeJsonMap(_text(row, 'metadata_json')),
+    contentHash: _text(row, 'content_hash'),
+    chunkIndex: _integer(row, 'chunk_index'),
+    createdAt: _dateTime(row, 'created_at'),
+    updatedAt: _dateTime(row, 'updated_at'),
+  );
+}
+
 TodoRecord _todoFromRow(Row row) {
   return TodoRecord(
     id: _text(row, 'id'),

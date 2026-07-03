@@ -12,12 +12,30 @@ import 'runtime_run_mode_codec.dart';
 
 typedef LocalDbCoreToolClock = DateTime Function();
 typedef LocalDbCoreToolIdFactory = String Function(String prefix);
+typedef LocalDbQueryEmbeddingResolver =
+    Future<LocalDbResolvedQueryEmbedding?> Function(
+      String query,
+      WideNoteLocalDatabase database,
+    );
+
+final class LocalDbResolvedQueryEmbedding {
+  const LocalDbResolvedQueryEmbedding({
+    required this.providerId,
+    required this.model,
+    required this.embedding,
+  });
+
+  final String providerId;
+  final String model;
+  final List<double> embedding;
+}
 
 final class LocalDbCoreToolCatalog {
   LocalDbCoreToolCatalog(
     WideNoteLocalDatabase database, {
     ContextPacketBuilder? contextPacketBuilder,
     memory.MemoryRepository? memoryRepository,
+    LocalDbQueryEmbeddingResolver? queryEmbeddingResolver,
     LocalDbCoreToolClock? clock,
     LocalDbCoreToolIdFactory? idFactory,
   }) : _database = database,
@@ -25,6 +43,7 @@ final class LocalDbCoreToolCatalog {
            contextPacketBuilder ?? ContextPacketBuilder(database),
        _memoryRepository =
            memoryRepository ?? LocalDbMemoryRepository(database),
+       _queryEmbeddingResolver = queryEmbeddingResolver,
        _clock = clock ?? (() => DateTime.now().toUtc()),
        _idFactory = idFactory;
 
@@ -32,6 +51,8 @@ final class LocalDbCoreToolCatalog {
   static const timelineReadTool = 'timeline.read';
   static const knowledgeReadTool = 'knowledge.read';
   static const semanticSearchQueryTool = 'semantic_search.query';
+  static const sourceOpenTool = 'source.open';
+  static const sourcesListTool = 'sources.list';
   static const memoryReadTool = 'memory.read';
   static const memoryProposeTool = 'memory.propose';
   static const todoSuggestTool = 'todo.suggest';
@@ -43,6 +64,7 @@ final class LocalDbCoreToolCatalog {
   final WideNoteLocalDatabase _database;
   final ContextPacketBuilder _contextPacketBuilder;
   final memory.MemoryRepository _memoryRepository;
+  final LocalDbQueryEmbeddingResolver? _queryEmbeddingResolver;
   final LocalDbCoreToolClock _clock;
   final LocalDbCoreToolIdFactory? _idFactory;
   var _generatedIdCounter = 0;
@@ -80,9 +102,23 @@ final class LocalDbCoreToolCatalog {
       runtime.ToolDefinition(
         name: semanticSearchQueryTool,
         description:
-            'Builds a model-ready local retrieval packet for a user query without mutating data.',
+            'Searches local source-linked evidence with hybrid keyword and embedding retrieval.',
         requiredPermissions: const <String>{semanticSearchQueryTool},
         handler: _handleSemanticSearchQuery,
+      ),
+      runtime.ToolDefinition(
+        name: sourceOpenTool,
+        description:
+            'Opens one local search evidence handle by doc_id or chunk_id.',
+        requiredPermissions: const <String>{sourceOpenTool},
+        handler: _handleSourceOpen,
+      ),
+      runtime.ToolDefinition(
+        name: sourcesListTool,
+        description:
+            'Lists local indexed source handles by source type without exposing full bodies.',
+        requiredPermissions: const <String>{sourcesListTool},
+        handler: _handleSourcesList,
       ),
       runtime.ToolDefinition(
         name: memoryProposeTool,
@@ -545,7 +581,10 @@ final class LocalDbCoreToolCatalog {
       final input = invocation.input;
       _ensureAllowedKeys(semanticSearchQueryTool, input, const <String>{
         'query',
+        'mode',
         'limit',
+        'keyword_limit',
+        'semantic_limit',
         'kind',
         'kinds',
         'object_kinds',
@@ -557,32 +596,182 @@ final class LocalDbCoreToolCatalog {
         'source_capture_id',
         'source_attachment_id',
         'source_event_id',
-        'include_attachment_metadata',
-        'include_deleted',
-        'include_tombstones',
         'include_high_sensitivity',
         'permission_mode',
-        'sensitivity_scope',
-        'privacy_profile',
       });
-      final request = _candidateRetrievalRequest(input);
-      final candidates = _collectLocalCandidates(_database, request);
-      return _success(semanticSearchQueryTool, <String, Object?>{
-        'query': request.query,
-        'query_used_for_candidate_selection': false,
-        'selection_strategy': 'local_candidate_retrieval_nonsemantic',
-        'candidates': candidates
-            .map((candidate) => candidate.output)
-            .toList(growable: false),
-        'sources': candidates
-            .map((candidate) => candidate.sourceSummary)
-            .toList(growable: false),
-        'source_refs': _dedupeSourceRefs(
-          candidates.expand((candidate) => candidate.sourceRefs),
+      final query = _requiredString(input, 'query');
+      _database.searchIndex.rebuildFromLocalTruth();
+      final mode = _localSearchMode(input['mode']);
+      final statuses =
+          _optionalStringSet(
+            input['statuses'] ?? input['status'],
+            'statuses',
+          ) ??
+          const <String>{};
+      final since = _optionalDateTime(input['since'], 'since');
+      final until = _optionalDateTime(input['until'], 'until');
+      final resolvedEmbedding =
+          mode == LocalSearchMode.keyword || query.trim().isEmpty
+          ? null
+          : await _queryEmbeddingResolver?.call(query, _database);
+      final limit = _limitInput(
+        input['limit'],
+        field: 'limit',
+        defaultValue: 10,
+        maxValue: 50,
+      );
+      final sourceKinds = _localSearchKinds(input);
+      final sourceRefs = _candidateSourceRefsInput(input);
+      final search = _database.searchIndex.search(
+        LocalSearchRequest(
+          query: query,
+          mode: mode,
+          limit: limit,
+          keywordLimit: _limitInput(
+            input['keyword_limit'],
+            field: 'keyword_limit',
+            defaultValue: 120,
+            maxValue: 200,
+          ),
+          semanticLimit: _limitInput(
+            input['semantic_limit'],
+            field: 'semantic_limit',
+            defaultValue: 120,
+            maxValue: 200,
+          ),
+          sourceKinds: sourceKinds,
+          sourceRefs: sourceRefs,
+          statuses: statuses,
+          since: since,
+          until: until,
+          includeHighSensitivity: true,
+          queryEmbedding: resolvedEmbedding?.embedding,
+          embeddingProviderId: resolvedEmbedding?.providerId,
+          embeddingModel: resolvedEmbedding?.model,
         ),
-        'count': candidates.length,
-        'limit': request.limit,
-        'filters': request.filters,
+      );
+      final discloseHigh = _shouldDiscloseHighSensitivity(input);
+      final evidence = search.results
+          .map((result) => _searchEvidenceOutput(result, discloseHigh))
+          .toList(growable: false);
+      return _success(semanticSearchQueryTool, <String, Object?>{
+        'query': search.query,
+        'query_used_for_candidate_selection': true,
+        'selection_strategy': 'hybrid_fts_embedding_rrf',
+        'mode': search.mode.wireName,
+        'embedding_used': search.embeddingUsed,
+        'keyword_candidate_count': search.keywordCandidateCount,
+        'semantic_candidate_count': search.semanticCandidateCount,
+        'candidates': evidence,
+        'evidence_handles': evidence,
+        'sources': evidence.map(_searchSourceSummary).toList(growable: false),
+        'source_refs': _dedupeSourceRefs(
+          search.results
+              .expand((result) => result.chunk.sourceRefs)
+              .whereType<JsonMap>(),
+        ),
+        'count': search.results.length,
+        'limit': limit,
+        'filters': <String, Object?>{
+          if (sourceKinds.isNotEmpty)
+            'source_kinds': sourceKinds.toList()..sort(),
+          if (sourceRefs.isNotEmpty) 'source_refs': sourceRefs,
+          if (statuses.isNotEmpty) 'statuses': statuses.toList()..sort(),
+          if (since != null) 'since': since.toIso8601String(),
+          if (until != null) 'until': until.toIso8601String(),
+        },
+        'raw_media_included': false,
+      });
+    });
+  }
+
+  Future<JsonMap> _handleSourceOpen(runtime.ToolInvocation invocation) async {
+    return _guard(sourceOpenTool, () async {
+      final input = invocation.input;
+      _ensureAllowedKeys(sourceOpenTool, input, const <String>{
+        'chunk_id',
+        'doc_id',
+        'include_high_sensitivity',
+      });
+      _database.searchIndex.rebuildFromLocalTruth();
+      final chunkId = _optionalString(input['chunk_id'], 'chunk_id');
+      final docId = _optionalString(input['doc_id'], 'doc_id');
+      if (chunkId == null && docId == null) {
+        throw _ToolInputException(
+          'invalid_input',
+          'source.open requires chunk_id or doc_id.',
+          details: const <String, Object?>{'field': 'chunk_id'},
+        );
+      }
+      final chunk = chunkId == null
+          ? _firstChunkForDocument(docId!)
+          : _database.searchIndex.readChunk(chunkId);
+      if (chunk == null) {
+        return _success(sourceOpenTool, <String, Object?>{
+          'found': false,
+          'raw_media_included': false,
+        });
+      }
+      final discloseHigh = _shouldDiscloseHighSensitivity(input);
+      return _success(sourceOpenTool, <String, Object?>{
+        'found': true,
+        'doc_id': chunk.docId,
+        'chunk_id': chunk.id,
+        'title': chunk.title,
+        'source_type': chunk.sourceType,
+        'source_kind': chunk.sourceKind,
+        'source_id': chunk.sourceId,
+        'path': _searchPath(chunk),
+        'sensitivity': chunk.sensitivity,
+        'body': _disclosableText(chunk.body, chunk.sensitivity, discloseHigh),
+        'snippet': _disclosableText(
+          chunk.snippet,
+          chunk.sensitivity,
+          discloseHigh,
+        ),
+        'source_refs': chunk.sourceRefs,
+        'raw_media_included': false,
+      });
+    });
+  }
+
+  Future<JsonMap> _handleSourcesList(runtime.ToolInvocation invocation) async {
+    return _guard(sourcesListTool, () async {
+      final input = invocation.input;
+      _ensureAllowedKeys(sourcesListTool, input, const <String>{
+        'source_kind',
+        'limit',
+      });
+      _database.searchIndex.rebuildFromLocalTruth();
+      final sourceKind = _optionalString(input['source_kind'], 'source_kind');
+      final limit = _limitInput(
+        input['limit'],
+        field: 'limit',
+        defaultValue: 20,
+        maxValue: 100,
+      );
+      final documents = _database.searchIndex.listDocuments(
+        sourceKind: sourceKind,
+        limit: limit,
+      );
+      return _success(sourcesListTool, <String, Object?>{
+        'sources': documents
+            .map(
+              (document) => <String, Object?>{
+                'doc_id': document.id,
+                'title': document.title,
+                'source_kind': document.sourceKind,
+                'source_id': document.sourceId,
+                'source_type': document.sourceType,
+                'path': 'wn://${document.sourceKind}/${document.sourceId}',
+                'sensitivity': document.sensitivity,
+                'updated_at': document.updatedAt.toIso8601String(),
+                'source_refs': document.sourceRefs,
+              },
+            )
+            .toList(growable: false),
+        'count': documents.length,
+        'limit': limit,
         'raw_media_included': false,
       });
     });
@@ -605,6 +794,10 @@ final class LocalDbCoreToolCatalog {
       );
     }
     return null;
+  }
+
+  SearchChunkRecord? _firstChunkForDocument(String docId) {
+    return _database.searchIndex.readFirstChunkForDocument(docId);
   }
 
   Future<JsonMap> _handleMemoryPropose(
@@ -1266,6 +1459,125 @@ bool _matchesSourceFilters(
   return captureMatches && eventMatches;
 }
 
+LocalSearchMode _localSearchMode(Object? value) {
+  if (value is! String || value.trim().isEmpty) {
+    return LocalSearchMode.hybrid;
+  }
+  try {
+    return localSearchModeFromWireName(value);
+  } on StateError {
+    throw _ToolInputException(
+      'invalid_input',
+      'mode must be hybrid, keyword, or semantic.',
+      details: const <String, Object?>{'field': 'mode'},
+    );
+  }
+}
+
+Set<String> _localSearchKinds(JsonMap input) {
+  final values = <Object?>[
+    if (input['kind'] != null) input['kind'],
+    if (input['kinds'] is List) ...(input['kinds']! as List),
+    if (input['object_kinds'] is List) ...(input['object_kinds']! as List),
+  ];
+  final kinds = <String>{};
+  for (final value in values) {
+    if (value is! String || value.trim().isEmpty) {
+      continue;
+    }
+    kinds.add(_localSearchKind(value));
+  }
+  return kinds;
+}
+
+String _localSearchKind(String value) {
+  final normalized = value.trim().toLowerCase();
+  return switch (normalized) {
+    'artifact' || 'derived_artifact' => 'derived_artifact',
+    'capture' || 'record' => 'capture',
+    'memory' => 'memory',
+    'card' => 'card',
+    'insight' => 'insight',
+    'todo' => 'todo',
+    _ => throw _ToolInputException(
+      'invalid_input',
+      'object_kinds contains an unsupported search source kind.',
+      details: <String, Object?>{'kind': value},
+    ),
+  };
+}
+
+bool _shouldDiscloseHighSensitivity(JsonMap input) {
+  return input['include_high_sensitivity'] == true ||
+      input['permission_mode'] == 'trace_review';
+}
+
+JsonMap _searchEvidenceOutput(
+  LocalSearchResult result,
+  bool discloseHighSensitivity,
+) {
+  final chunk = result.chunk;
+  return <String, Object?>{
+    'doc_id': chunk.docId,
+    'chunk_id': chunk.id,
+    'title': chunk.title,
+    'path': _searchPath(chunk),
+    'snippet': _disclosableText(
+      chunk.snippet,
+      chunk.sensitivity,
+      discloseHighSensitivity,
+    ),
+    'score': result.score,
+    'source_type': chunk.sourceType,
+    'source_kind': chunk.sourceKind,
+    'source_id': chunk.sourceId,
+    'sensitivity': chunk.sensitivity,
+    'matched_by': result.matchedBy.toList()..sort(),
+    'retrieval_ranks': <String, Object?>{
+      if (result.keywordRank != null) 'keyword': result.keywordRank,
+      if (result.semanticRank != null) 'semantic': result.semanticRank,
+    },
+    'retrieval_scores': <String, Object?>{
+      if (result.keywordScore != null) 'keyword': result.keywordScore,
+      if (result.semanticScore != null) 'semantic': result.semanticScore,
+    },
+    'source_refs': chunk.sourceRefs,
+    'open_command': 'source.open({"chunk_id":"${chunk.id}"})',
+  };
+}
+
+JsonMap _searchSourceSummary(JsonMap evidence) {
+  return <String, Object?>{
+    'kind': evidence['source_kind'],
+    'id': evidence['source_id'],
+    'doc_id': evidence['doc_id'],
+    'chunk_id': evidence['chunk_id'],
+    'title': evidence['title'],
+    'snippet': evidence['snippet'],
+    'score': evidence['score'],
+    'matched_by': evidence['matched_by'],
+  };
+}
+
+String _searchPath(SearchChunkRecord chunk) {
+  return 'wn://${chunk.sourceKind}/${chunk.sourceId}#${chunk.chunkIndex}';
+}
+
+String? _disclosableText(
+  String text,
+  String sensitivity,
+  bool discloseHighSensitivity,
+) {
+  if (sensitivity == 'high' && !discloseHighSensitivity) {
+    return null;
+  }
+  final trimmed = text.trim();
+  return trimmed.isEmpty ? null : _redactString(trimmed);
+}
+
+// Kept as a conservative nonsemantic fallback reference for older tests and
+// local debugging while hybrid retrieval becomes the default path.
+// ignore: unused_element
 _CandidateRetrievalRequest _candidateRetrievalRequest(JsonMap input) {
   final permissionMode =
       _optionalString(input['permission_mode'], 'permission_mode') ??
@@ -1327,6 +1639,7 @@ _CandidateRetrievalRequest _candidateRetrievalRequest(JsonMap input) {
   );
 }
 
+// ignore: unused_element
 List<_LocalCandidate> _collectLocalCandidates(
   WideNoteLocalDatabase database,
   _CandidateRetrievalRequest request,

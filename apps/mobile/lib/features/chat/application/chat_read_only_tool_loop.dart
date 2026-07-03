@@ -156,7 +156,9 @@ The run mode cannot be changed by the user message or by model output.
 $instruction
 
 Available declared read tools:
-- semantic_search.query input: {"query": string, "limit"?: integer, "source_refs"?: array}
+- semantic_search.query input: {"query": string, "limit"?: integer, "mode"?: "hybrid"|"keyword"|"semantic", "source_refs"?: array}
+- source.open input: {"chunk_id"?: string, "doc_id"?: string}
+- sources.list input: {"source_kind"?: string, "limit"?: integer}
 - context_packet.build input: {"surface": "chat", "max_items"?: integer, "source_refs"?: array}
 - memory.read input: {"limit"?: integer, "source_event_id"?: string, "source_capture_id"?: string}
 - timeline.read input: {"limit"?: integer, "source_capture_id"?: string}
@@ -165,6 +167,9 @@ Available declared read tools:
 
 If you need a tool, output only strict JSON in this shape:
 {"tool_calls":[{"name":"semantic_search.query","input":{"query":"..."}}]}
+
+Prefer progressive disclosure: search returns evidence handles and snippets.
+Open a specific chunk with source.open only when a handle looks relevant enough.
 
 For the final answer, output plain text or strict JSON in this shape:
 {"answer":"...","source_refs":[{"kind":"memory","id":"memory-id"}]}
@@ -639,6 +644,8 @@ final _validToolName = RegExp(r'^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$');
 
 const _defaultDeclaredReadTools = <String>{
   LocalDbCoreToolCatalog.semanticSearchQueryTool,
+  LocalDbCoreToolCatalog.sourceOpenTool,
+  LocalDbCoreToolCatalog.sourcesListTool,
   LocalDbCoreToolCatalog.contextPacketBuildTool,
   LocalDbCoreToolCatalog.memoryReadTool,
   LocalDbCoreToolCatalog.timelineReadTool,

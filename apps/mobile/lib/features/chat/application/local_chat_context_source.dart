@@ -29,6 +29,8 @@ final class LocalChatContextSource implements ChatContextSource {
         permissionMode: 'local_only',
         permissions: const <String>[
           'semantic_search.query',
+          'source.open',
+          'sources.list',
           'timeline.read',
           'knowledge.read',
           'memory.read',

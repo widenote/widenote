@@ -348,68 +348,67 @@ void main() {
     expect(find.byKey(Key('open-source-ref-capture-$captureId')), findsNothing);
   });
 
-  testWidgets(
-    'timeline browse filters by type and disables local text search',
-    (tester) async {
-      final database = WideNoteLocalDatabase.inMemory();
-      _seedTimeline(database);
+  testWidgets('timeline browse filters by type and runs local keyword search', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    _seedTimeline(database);
 
-      await _pumpApp(tester, database: database);
+    await _pumpApp(tester, database: database);
 
-      await tester.tap(find.byKey(const Key('open-timeline-search-button')));
-      await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('open-timeline-search-button')));
+    await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('timeline-search-page')), findsOneWidget);
-      await tester.enterText(
-        find.byKey(const Key('timeline-search-field')),
-        'Follow up',
-      );
-      await tester.pumpAndSettle();
+    expect(find.byKey(const Key('timeline-search-page')), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const Key('timeline-search-field')),
+      'Follow up',
+    );
+    await tester.pumpAndSettle();
 
-      expect(
-        find.byKey(const Key('timeline-search-requires-retriever')),
-        findsOneWidget,
-      );
-      expect(find.byKey(const Key('timeline-item-todo-1')), findsNothing);
+    expect(
+      find.text(
+        'Keyword retrieval is active. Configure Embedding for semantic recall.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Follow up Project Alpha with Chen.'), findsWidgets);
+    expect(
+      find.byKey(const Key('timeline-search-result-todo/todo-1#0')),
+      findsOneWidget,
+    );
 
-      await tester.enterText(
-        find.byKey(const Key('timeline-search-field')),
-        '',
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('timeline-filter-todo')));
-      await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('timeline-search-field')), '');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('timeline-filter-todo')));
+    await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('timeline-item-todo-1')), findsOneWidget);
-      expect(find.byKey(const Key('timeline-item-card-1')), findsNothing);
+    expect(find.byKey(const Key('timeline-item-todo-1')), findsOneWidget);
+    expect(find.byKey(const Key('timeline-item-card-1')), findsNothing);
 
-      await tester.tap(find.byKey(const Key('timeline-filter-insight')));
-      await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('timeline-filter-insight')));
+    await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('timeline-item-insight-1')), findsOneWidget);
+    expect(find.byKey(const Key('timeline-item-insight-1')), findsOneWidget);
 
-      await tester.enterText(
-        find.byKey(const Key('timeline-search-field')),
-        'No matching local item',
-      );
-      await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('timeline-search-field')),
+      'No matching local item',
+    );
+    await tester.pumpAndSettle();
 
-      expect(
-        find.byKey(const Key('timeline-search-requires-retriever')),
-        findsOneWidget,
-      );
+    expect(
+      find.byKey(const Key('timeline-search-empty-results')),
+      findsOneWidget,
+    );
 
-      await tester.enterText(
-        find.byKey(const Key('timeline-search-field')),
-        '',
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('timeline-filter-memory')));
-      await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('timeline-search-field')), '');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('timeline-filter-memory')));
+    await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('timeline-item-memory-1')), findsOneWidget);
-    },
-  );
+    expect(find.byKey(const Key('timeline-item-memory-1')), findsOneWidget);
+  });
 
   testWidgets('timeline chrome and search filters render in Chinese', (
     tester,

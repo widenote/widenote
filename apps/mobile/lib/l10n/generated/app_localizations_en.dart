@@ -1572,8 +1572,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get timelineSearchHint =>
-      'Filter by type, or use text after retriever setup';
+  String get timelineSearchHint => 'Search local evidence or filter by type';
 
   @override
   String get timelineFilterAll => 'All';
@@ -1584,14 +1583,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get timelineSearchEmptyBody =>
       'Create a capture first, then browse cards, Memory, and todos.';
-
-  @override
-  String get timelineSearchNeedsRetrieverTitle =>
-      'Text search needs a retriever';
-
-  @override
-  String get timelineSearchNeedsRetrieverBody =>
-      'Clear the text field to browse locally by type. Semantic search will use a model-backed retriever.';
 
   @override
   String get timelineSearchNoResultsTitle => 'No matching timeline items';
@@ -1610,6 +1601,30 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get timelineSearchHybridStatus =>
+      'Hybrid retrieval is using keyword and embedding evidence.';
+
+  @override
+  String get timelineSearchKeywordStatus =>
+      'Keyword retrieval is active. Configure Embedding for semantic recall.';
+
+  @override
+  String get timelineSearchSensitiveSnippetHidden =>
+      'Sensitive snippet hidden. Open the source to review under local policy.';
+
+  @override
+  String get timelineSearchSensitiveBadge => 'Sensitive';
+
+  @override
+  String get timelineSearchKindArtifact => 'Artifact';
+
+  @override
+  String get timelineSearchMatchKeyword => 'Keyword';
+
+  @override
+  String get timelineSearchMatchSemantic => 'Semantic';
 
   @override
   String get timelineKindCapture => 'Capture';
@@ -1827,6 +1842,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'Configure local or BYOK model access for runtime and Agent Packs.';
 
   @override
+  String get settingsRetrievalTitle => 'Retrieval & Embedding';
+
+  @override
+  String get settingsRetrievalSubtitle =>
+      'Configure online embedding for hybrid search without changing the chat model.';
+
+  @override
+  String get settingsRetrievalStatusKeyword => 'keyword';
+
+  @override
+  String get settingsRetrievalStatusHybrid => 'hybrid';
+
+  @override
   String get settingsTranscriptionTitle => 'Voice Transcription';
 
   @override
@@ -1881,6 +1909,83 @@ class AppLocalizationsEn extends AppLocalizations {
   String settingsTraceConsoleStatusSummary(int eventCount, int warningCount) {
     return '$eventCount logs / $warningCount warnings';
   }
+
+  @override
+  String get retrievalSettingsTitle => 'Retrieval & Embedding';
+
+  @override
+  String get retrievalSettingsSubtitle =>
+      'Hybrid search keeps local FTS on device and uses your embedding key only when semantic recall is needed.';
+
+  @override
+  String retrievalSettingsError(String error) {
+    return 'Retrieval settings failed to load: $error';
+  }
+
+  @override
+  String get retrievalSettingsConfiguredTitle => 'Hybrid search ready';
+
+  @override
+  String retrievalSettingsConfiguredBody(String model) {
+    return 'Embedding model: $model';
+  }
+
+  @override
+  String get retrievalSettingsUnconfiguredTitle => 'Keyword search active';
+
+  @override
+  String get retrievalSettingsUnconfiguredBody =>
+      'Add an OpenRouter key to enable online Qwen embeddings for semantic recall.';
+
+  @override
+  String get retrievalSettingsProviderTitle => 'Embedding provider';
+
+  @override
+  String get retrievalSettingsDisplayNameLabel => 'Display name';
+
+  @override
+  String get retrievalSettingsEndpointLabel => 'Endpoint';
+
+  @override
+  String get retrievalSettingsModelLabel => 'Embedding model';
+
+  @override
+  String get retrievalSettingsApiKeyLabel => 'OpenRouter API key';
+
+  @override
+  String get retrievalSettingsApiKeyKeptHint =>
+      'Saved key kept if this stays blank';
+
+  @override
+  String get retrievalSettingsBatchSizeLabel => 'Batch size';
+
+  @override
+  String get retrievalSettingsTestAction => 'Test';
+
+  @override
+  String get retrievalSettingsRebuildAction => 'Rebuild index';
+
+  @override
+  String get retrievalSettingsDeleteAction => 'Delete';
+
+  @override
+  String get retrievalSettingsSaved => 'Embedding provider saved.';
+
+  @override
+  String retrievalSettingsRebuildDone(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Indexed $count chunks',
+      one: 'Indexed 1 chunk',
+      zero: 'Search index is up to date',
+    );
+    return '$_temp0.';
+  }
+
+  @override
+  String get retrievalSettingsRebuildNeedsProvider =>
+      'Add an embedding provider before rebuilding semantic vectors.';
 
   @override
   String get settingsDebuggingTitle => 'Debugging';
