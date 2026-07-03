@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:widenote_local_db/widenote_local_db.dart';
 import 'package:widenote_mobile/app/app_router.dart';
 import 'package:widenote_mobile/app/app_theme.dart';
@@ -591,6 +592,203 @@ void main() {
     expect(find.byKey(const Key('chat-page')), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
   });
+
+  testWidgets('orphaned child locations fall back to declared parents', (
+    tester,
+  ) async {
+    const cases = <_FlatRouteCase>[
+      _FlatRouteCase(
+        location: '/timeline',
+        routePattern: '/timeline',
+        pageKey: Key('timeline-page'),
+        parentPath: '/',
+        parentKey: Key('home-page'),
+      ),
+      _FlatRouteCase(
+        location: '/timeline/search',
+        routePattern: '/timeline/search',
+        pageKey: Key('timeline-search-page'),
+        parentPath: '/timeline',
+        parentKey: Key('timeline-page'),
+      ),
+      _FlatRouteCase(
+        location: '/timeline/cards/missing-card',
+        routePattern: '/timeline/cards/:cardId',
+        pageKey: Key('card-detail-page'),
+        parentPath: '/timeline',
+        parentKey: Key('timeline-page'),
+      ),
+      _FlatRouteCase(
+        location: '/timeline/items/missing-item',
+        routePattern: '/timeline/items/:itemId',
+        pageKey: Key('timeline-item-detail-page'),
+        parentPath: '/timeline',
+        parentKey: Key('timeline-page'),
+      ),
+      _FlatRouteCase(
+        location: '/memory',
+        routePattern: '/memory',
+        pageKey: Key('memory-page'),
+        parentPath: '/',
+        parentKey: Key('home-page'),
+      ),
+      _FlatRouteCase(
+        location: '/recap',
+        routePattern: '/recap',
+        pageKey: Key('recap-page'),
+        parentPath: '/',
+        parentKey: Key('home-page'),
+      ),
+      _FlatRouteCase(
+        location: '/insights',
+        routePattern: '/insights',
+        pageKey: Key('insights-page'),
+        parentPath: '/',
+        parentKey: Key('home-page'),
+      ),
+      _FlatRouteCase(
+        location: '/insights/missing-insight',
+        routePattern: '/insights/:insightId',
+        pageKey: Key('insight-detail-missing'),
+        parentPath: '/insights',
+        parentKey: Key('insights-page'),
+      ),
+      _FlatRouteCase(
+        location: '/settings',
+        routePattern: '/settings',
+        pageKey: Key('settings-page'),
+        parentPath: '/',
+        parentKey: Key('home-page'),
+      ),
+      _FlatRouteCase(
+        location: '/settings/permissions',
+        routePattern: '/settings/permissions',
+        pageKey: Key('permission-gate-page'),
+        parentPath: '/settings',
+        parentKey: Key('settings-page'),
+      ),
+      _FlatRouteCase(
+        location: '/settings/system-permissions',
+        routePattern: '/settings/system-permissions',
+        pageKey: Key('system-permissions-page'),
+        parentPath: '/settings',
+        parentKey: Key('settings-page'),
+      ),
+      _FlatRouteCase(
+        location: '/settings/model-providers',
+        routePattern: '/settings/model-providers',
+        pageKey: Key('model-provider-settings-page'),
+        parentPath: '/settings',
+        parentKey: Key('settings-page'),
+      ),
+      _FlatRouteCase(
+        location: '/settings/transcription',
+        routePattern: '/settings/transcription',
+        pageKey: Key('voice-transcription-settings-page'),
+        parentPath: '/settings',
+        parentKey: Key('settings-page'),
+      ),
+      _FlatRouteCase(
+        location: '/settings/location',
+        routePattern: '/settings/location',
+        pageKey: Key('location-settings-page'),
+        parentPath: '/settings',
+        parentKey: Key('settings-page'),
+      ),
+      _FlatRouteCase(
+        location: '/settings/backup',
+        routePattern: '/settings/backup',
+        pageKey: Key('backup-page'),
+        parentPath: '/settings',
+        parentKey: Key('settings-page'),
+      ),
+      _FlatRouteCase(
+        location: '/settings/traces',
+        routePattern: '/settings/traces',
+        pageKey: Key('trace-console-page'),
+        parentPath: '/settings',
+        parentKey: Key('settings-page'),
+      ),
+      _FlatRouteCase(
+        location: '/settings/traces/agents',
+        routePattern: '/settings/traces/agents',
+        pageKey: Key('trace-agents-page'),
+        parentPath: '/settings/traces',
+        parentKey: Key('trace-console-page'),
+      ),
+      _FlatRouteCase(
+        location: '/settings/traces/events',
+        routePattern: '/settings/traces/events',
+        pageKey: Key('trace-raw-logs-page'),
+        parentPath: '/settings/traces',
+        parentKey: Key('trace-console-page'),
+      ),
+      _FlatRouteCase(
+        location: '/settings/traces/raw',
+        routePattern: '/settings/traces/raw',
+        pageKey: Key('trace-raw-logs-page'),
+        parentPath: '/settings/traces',
+        parentKey: Key('trace-console-page'),
+      ),
+      _FlatRouteCase(
+        location: '/settings/traces/raw/missing-trace',
+        routePattern: '/settings/traces/raw/:traceId',
+        pageKey: Key('trace-raw-page'),
+        parentPath: '/settings/traces/raw',
+        parentKey: Key('trace-raw-logs-page'),
+      ),
+      _FlatRouteCase(
+        location: '/chat/session/missing-session',
+        routePattern: '/chat/session/:sessionId',
+        pageKey: Key('chat-session-page'),
+        parentPath: '/chat',
+        parentKey: Key('chat-page'),
+      ),
+      _FlatRouteCase(
+        location: '/todos/missing-todo',
+        routePattern: '/todos/:todoId',
+        pageKey: Key('todo-detail-page'),
+        parentPath: '/todos',
+        parentKey: Key('todos-page'),
+      ),
+      _FlatRouteCase(
+        location: '/plugins/packs',
+        routePattern: '/plugins/packs',
+        pageKey: Key('pack-library-page'),
+        parentPath: '/plugins',
+        parentKey: Key('plugins-page'),
+      ),
+    ];
+
+    for (final routeCase in cases) {
+      expect(
+        mobileParentPathFor(routeCase.location),
+        routeCase.parentPath,
+        reason: routeCase.location,
+      );
+      await _pumpFlatShellRoute(tester, routeCase);
+      expect(
+        find.byKey(routeCase.pageKey),
+        findsOneWidget,
+        reason: routeCase.location,
+      );
+
+      expect(
+        await tester.binding.handlePopRoute(),
+        isTrue,
+        reason: routeCase.location,
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(routeCase.parentKey),
+        findsOneWidget,
+        reason: routeCase.location,
+      );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    }
+  });
 }
 
 class _DeepLinkCase {
@@ -623,6 +821,22 @@ class _ShortcutCase {
 
   final Key entryKey;
   final Key pageKey;
+}
+
+class _FlatRouteCase {
+  const _FlatRouteCase({
+    required this.location,
+    required this.routePattern,
+    required this.pageKey,
+    required this.parentPath,
+    required this.parentKey,
+  });
+
+  final String location;
+  final String routePattern;
+  final Key pageKey;
+  final String parentPath;
+  final Key parentKey;
 }
 
 Future<void> _pumpWideNoteApp(WidgetTester tester) async {
@@ -679,6 +893,67 @@ Future<void> _pumpRoute(
         ),
         agentExecutionStatusNowProvider.overrideWithValue(
           () => effectiveAgentStatusNow,
+        ),
+      ],
+      child: MaterialApp.router(
+        title: 'WideNote',
+        debugShowCheckedModeBanner: false,
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: WideNoteAppTheme.light(),
+        routerConfig: router,
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
+Future<void> _pumpFlatShellRoute(
+  WidgetTester tester,
+  _FlatRouteCase routeCase,
+) async {
+  final database = WideNoteLocalDatabase.inMemory();
+  final routeKeys = <String, Key>{
+    '/': const Key('home-page'),
+    '/chat': const Key('chat-page'),
+    '/todos': const Key('todos-page'),
+    '/plugins': const Key('plugins-page'),
+    routeCase.parentPath: routeCase.parentKey,
+    routeCase.routePattern: routeCase.pageKey,
+  };
+  final router = GoRouter(
+    initialLocation: routeCase.location,
+    routes: [
+      ShellRoute(
+        builder: (context, state, child) {
+          return WideNoteShell(location: state.uri.path, child: child);
+        },
+        routes: [
+          for (final entry in routeKeys.entries)
+            GoRoute(
+              path: entry.key,
+              pageBuilder: (context, state) => NoTransitionPage<void>(
+                key: state.pageKey,
+                child: SizedBox(key: entry.value),
+              ),
+            ),
+        ],
+      ),
+    ],
+  );
+  addTearDown(database.close);
+  addTearDown(router.dispose);
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        localDatabaseProvider.overrideWithValue(database),
+        agentStatusPlatformClientProvider.overrideWithValue(
+          const _NoopAgentStatusPlatformClient(),
+        ),
+        agentExecutionStatusNowProvider.overrideWithValue(
+          () => DateTime.utc(2026, 7, 3, 12),
         ),
       ],
       child: MaterialApp.router(
