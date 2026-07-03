@@ -6,6 +6,8 @@ import 'package:widenote_mobile/app/app_router.dart';
 import 'package:widenote_mobile/app/app_theme.dart';
 import 'package:widenote_mobile/app/local_database.dart';
 import 'package:widenote_mobile/app/widenote_app.dart';
+import 'package:widenote_mobile/features/insights/application/insights_controller.dart';
+import 'package:widenote_mobile/features/insights/presentation/insights_page.dart';
 import 'package:widenote_mobile/features/location/application/location_settings_controller.dart';
 import 'package:widenote_mobile/features/system_permissions/application/system_permissions_controller.dart';
 import 'package:widenote_mobile/l10n/l10n.dart';
@@ -146,6 +148,48 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets(
+    'insight detail reads local DB when controller snapshot is stale',
+    (tester) async {
+      final database = WideNoteLocalDatabase.inMemory();
+      final container = ProviderContainer(
+        overrides: [localDatabaseProvider.overrideWithValue(database)],
+      );
+      addTearDown(() {
+        container.dispose();
+        database.close();
+      });
+      expect(
+        container.read(insightsControllerProvider).itemById('insight-depth-1'),
+        isNull,
+      );
+
+      _seedInsight(database);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            locale: Locale('en'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: InsightDetailPage(insightId: 'insight-depth-1'),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('insight-detail-page')), findsOneWidget);
+      expect(
+        find.text('Capture and Memory agree on review rhythm.'),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('insight-detail-missing')), findsNothing);
+    },
+  );
 }
 
 Future<void> _scrollUntilFinder(WidgetTester tester, Finder finder) async {

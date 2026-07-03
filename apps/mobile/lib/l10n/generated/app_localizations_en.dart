@@ -1082,6 +1082,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get attachmentArtifactKindSharedText => 'shared text';
 
   @override
+  String get attachmentArtifactAudioTranscriptPending =>
+      'Waiting for voice transcription.';
+
+  @override
+  String get attachmentArtifactAudioTranscriptFailed =>
+      'Voice transcription failed. Check ASR settings and retry.';
+
+  @override
+  String get attachmentArtifactAudioTranscriptNoSpeech =>
+      'No speech was detected in this recording.';
+
+  @override
   String get timelineAttachmentArtifactsTitle => 'Attachment artifacts';
 
   @override
@@ -1698,6 +1710,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get timelineMetadataTitle => 'Metadata';
+
+  @override
+  String timelineMetadataShowMore(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Show $count more fields',
+      one: 'Show 1 more field',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get timelineMetadataShowLess => 'Show less';
 
   @override
   String get timelineOpenSourceTooltip => 'Open source';

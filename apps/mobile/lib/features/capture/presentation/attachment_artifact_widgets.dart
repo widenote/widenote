@@ -125,7 +125,7 @@ class _ArtifactRow extends StatelessWidget {
               if (artifact.excerpt.trim().isNotEmpty && !compact) ...[
                 const SizedBox(height: 2),
                 Text(
-                  artifact.excerpt,
+                  localizedAttachmentArtifactExcerpt(l10n, artifact),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -220,21 +220,15 @@ String localizedAttachmentArtifactStatus(
   AttachmentDerivedArtifactStatus status,
 ) {
   return switch (status) {
-    AttachmentDerivedArtifactStatus.pending => l10n.agentConsoleStatus(
-      'pending',
-    ),
-    AttachmentDerivedArtifactStatus.ready => l10n.agentConsoleStatus(
-      l10n.stageMemoryReady,
-    ),
-    AttachmentDerivedArtifactStatus.failed => l10n.agentConsoleStatus(
-      l10n.agentConsoleFilterFailed,
-    ),
-    AttachmentDerivedArtifactStatus.blocked => l10n.agentConsoleStatus(
-      l10n.agentConsoleFilterBlocked,
-    ),
-    AttachmentDerivedArtifactStatus.needsReview => l10n.agentConsoleStatus(
-      l10n.statusNeedsReview,
-    ),
+    AttachmentDerivedArtifactStatus.pending =>
+      l10n.attachmentArtifactStatusPending,
+    AttachmentDerivedArtifactStatus.ready => l10n.attachmentArtifactStatusReady,
+    AttachmentDerivedArtifactStatus.failed =>
+      l10n.attachmentArtifactStatusFailed,
+    AttachmentDerivedArtifactStatus.blocked =>
+      l10n.attachmentArtifactStatusBlocked,
+    AttachmentDerivedArtifactStatus.needsReview =>
+      l10n.attachmentArtifactStatusNeedsReview,
   };
 }
 
@@ -243,13 +237,33 @@ String localizedAttachmentArtifactKind(
   String artifactKind,
 ) {
   return switch (artifactKind) {
-    'audio_transcript' => localizedAttachmentKind(l10n, 'voice'),
-    'image_derivatives' ||
-    'ocr_text' ||
-    'vision_summary' => localizedAttachmentKind(l10n, 'photo'),
-    'shared_text' => localizedAttachmentKind(l10n, 'share'),
+    'audio_transcript' => l10n.attachmentArtifactKindAudioTranscript,
+    'image_derivatives' => l10n.attachmentArtifactKindImageDerivatives,
+    'ocr_text' => l10n.attachmentArtifactKindOcrText,
+    'vision_summary' => l10n.attachmentArtifactKindVisionSummary,
+    'shared_text' => l10n.attachmentArtifactKindSharedText,
     _ => artifactKind,
   };
+}
+
+String localizedAttachmentArtifactExcerpt(
+  AppLocalizations l10n,
+  AttachmentDerivedArtifact artifact,
+) {
+  if (artifact.artifactKind != 'audio_transcript') {
+    return artifact.excerpt;
+  }
+  if (artifact.status == AttachmentDerivedArtifactStatus.pending) {
+    return l10n.attachmentArtifactAudioTranscriptPending;
+  }
+  if (artifact.status == AttachmentDerivedArtifactStatus.failed) {
+    final normalized = artifact.excerpt.trim().toLowerCase();
+    if (normalized.contains('no speech')) {
+      return l10n.attachmentArtifactAudioTranscriptNoSpeech;
+    }
+    return l10n.attachmentArtifactAudioTranscriptFailed;
+  }
+  return artifact.excerpt;
 }
 
 IconData _artifactIcon(AttachmentDerivedArtifactStatus status) {

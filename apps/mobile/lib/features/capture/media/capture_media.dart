@@ -65,7 +65,9 @@ enum AttachmentDerivedArtifactStatus {
       'ready' ||
       'succeeded' => AttachmentDerivedArtifactStatus.ready,
       'blocked' || 'denied' => AttachmentDerivedArtifactStatus.blocked,
-      'failed' || 'error' => AttachmentDerivedArtifactStatus.failed,
+      'failed' ||
+      'error' ||
+      'no_speech' => AttachmentDerivedArtifactStatus.failed,
       'needs_review' ||
       'needsReview' ||
       'review' => AttachmentDerivedArtifactStatus.needsReview,

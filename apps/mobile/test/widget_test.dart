@@ -296,7 +296,7 @@ void main() {
         of: find.byKey(Key('record-row-${record.id}')),
         matching: find.textContaining('Processed'),
       ),
-      findsOneWidget,
+      findsNothing,
     );
     expect(state.cards, hasLength(2));
     expect(state.insights, hasLength(greaterThanOrEqualTo(4)));

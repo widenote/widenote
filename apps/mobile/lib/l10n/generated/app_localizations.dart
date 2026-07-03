@@ -1791,6 +1791,24 @@ abstract class AppLocalizations {
   /// **'shared text'**
   String get attachmentArtifactKindSharedText;
 
+  /// No description provided for @attachmentArtifactAudioTranscriptPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for voice transcription.'**
+  String get attachmentArtifactAudioTranscriptPending;
+
+  /// No description provided for @attachmentArtifactAudioTranscriptFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice transcription failed. Check ASR settings and retry.'**
+  String get attachmentArtifactAudioTranscriptFailed;
+
+  /// No description provided for @attachmentArtifactAudioTranscriptNoSpeech.
+  ///
+  /// In en, this message translates to:
+  /// **'No speech was detected in this recording.'**
+  String get attachmentArtifactAudioTranscriptNoSpeech;
+
   /// No description provided for @timelineAttachmentArtifactsTitle.
   ///
   /// In en, this message translates to:
@@ -2852,6 +2870,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Metadata'**
   String get timelineMetadataTitle;
+
+  /// No description provided for @timelineMetadataShowMore.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Show 1 more field} other{Show {count} more fields}}'**
+  String timelineMetadataShowMore(int count);
+
+  /// No description provided for @timelineMetadataShowLess.
+  ///
+  /// In en, this message translates to:
+  /// **'Show less'**
+  String get timelineMetadataShowLess;
 
   /// No description provided for @timelineOpenSourceTooltip.
   ///

@@ -925,6 +925,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get attachmentArtifactKindSharedText => '分享文本';
 
   @override
+  String get attachmentArtifactAudioTranscriptPending => '正在等待语音转写。';
+
+  @override
+  String get attachmentArtifactAudioTranscriptFailed => '语音转写失败，请检查 ASR 设置后重试。';
+
+  @override
+  String get attachmentArtifactAudioTranscriptNoSpeech => '这段录音没有检测到可转写语音。';
+
+  @override
   String get timelineAttachmentArtifactsTitle => '附件产物';
 
   @override
@@ -1499,6 +1508,14 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get timelineMetadataTitle => '元数据';
+
+  @override
+  String timelineMetadataShowMore(int count) {
+    return '再显示 $count 项';
+  }
+
+  @override
+  String get timelineMetadataShowLess => '收起';
 
   @override
   String get timelineOpenSourceTooltip => '打开来源';

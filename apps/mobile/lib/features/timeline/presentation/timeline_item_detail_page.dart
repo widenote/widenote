@@ -154,7 +154,7 @@ class _TimelineItemDetailContent extends StatelessWidget {
             TimelineSurface(
               icon: Icons.data_object_outlined,
               title: l10n.timelineMetadataTitle,
-              child: _MetadataRows(metadata: visibleMetadata),
+              child: _ExpandableMetadataRows(metadata: visibleMetadata),
             ),
           ],
         ],
@@ -163,28 +163,44 @@ class _TimelineItemDetailContent extends StatelessWidget {
   }
 }
 
-class _MetadataRows extends StatelessWidget {
-  const _MetadataRows({required this.metadata});
+class _ExpandableMetadataRows extends StatefulWidget {
+  const _ExpandableMetadataRows({required this.metadata});
 
   final Map<String, Object?> metadata;
 
   @override
+  State<_ExpandableMetadataRows> createState() =>
+      _ExpandableMetadataRowsState();
+}
+
+class _ExpandableMetadataRowsState extends State<_ExpandableMetadataRows> {
+  static const _collapsedRowCount = 4;
+
+  bool _expanded = false;
+
+  @override
   Widget build(BuildContext context) {
-    final entries = metadata.entries.toList()
+    final l10n = context.l10n;
+    final entries = widget.metadata.entries.toList()
       ..sort((a, b) => a.key.compareTo(b.key));
+    final isCollapsible = entries.length > _collapsedRowCount;
+    final visibleEntries = _expanded || !isCollapsible
+        ? entries
+        : entries.take(_collapsedRowCount).toList(growable: false);
+    final hiddenCount = entries.length - visibleEntries.length;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (var index = 0; index < entries.length; index++) ...[
+        for (var index = 0; index < visibleEntries.length; index++) ...[
           if (index > 0) const Divider(height: 16),
           Row(
-            key: Key('timeline-item-metadata-${entries[index].key}'),
+            key: Key('timeline-item-metadata-${visibleEntries[index].key}'),
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(
                 width: 120,
                 child: Text(
-                  entries[index].key,
+                  visibleEntries[index].key,
                   style: Theme.of(
                     context,
                   ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
@@ -193,11 +209,29 @@ class _MetadataRows extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  '${entries[index].value}',
+                  '${visibleEntries[index].value}',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
             ],
+          ),
+        ],
+        if (isCollapsible) ...[
+          const SizedBox(height: 12),
+          TextButton.icon(
+            key: const Key('timeline-metadata-toggle'),
+            onPressed: () => setState(() {
+              _expanded = !_expanded;
+            }),
+            icon: Icon(
+              _expanded ? Icons.expand_less : Icons.expand_more,
+              size: 18,
+            ),
+            label: Text(
+              _expanded
+                  ? l10n.timelineMetadataShowLess
+                  : l10n.timelineMetadataShowMore(hiddenCount),
+            ),
           ),
         ],
       ],

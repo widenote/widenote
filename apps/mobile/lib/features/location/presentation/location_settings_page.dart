@@ -375,7 +375,7 @@ class _LocationStatusBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final summary = contextSnapshot.displaySummary(coarseOnly: true);
+    final summary = contextSnapshot.displaySummary();
     final reverse = contextSnapshot.reverseGeocode;
     final labels = <String>[
       _locationContextStatusLabel(l10n, contextSnapshot),

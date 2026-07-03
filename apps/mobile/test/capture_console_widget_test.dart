@@ -89,8 +89,8 @@ void main() {
       find.byKey(Key('attachment-${attachment.id}-artifact-ocr_text')),
       findsOneWidget,
     );
-    expect(find.textContaining('status: ready'), findsOneWidget);
-    expect(find.textContaining('status: pending'), findsOneWidget);
+    expect(find.text('ready'), findsOneWidget);
+    expect(find.text('pending'), findsOneWidget);
     expect(find.textContaining(attachment.id), findsWidgets);
 
     final semantics = tester.ensureSemantics();
@@ -217,6 +217,42 @@ void main() {
     expect(_readCaptureInputState(tester).attachments, isEmpty);
   });
 
+  testWidgets('voice-only capture uses transcript text as the record summary', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    await _pumpApp(
+      tester,
+      database: database,
+      voiceAdapter: const _NoPreviewVoiceAdapter(),
+    );
+
+    await _startBackgroundRecording(tester);
+    await _scrollHomeActionIntoView(
+      tester,
+      find.byKey(const Key('background-voice-stop-button')),
+      scrollAmount: -120,
+    );
+    await tester.tap(find.byKey(const Key('background-voice-stop-button')));
+    await tester.pumpAndSettle();
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(WideNoteApp)),
+    );
+    final inputState = _readCaptureInputState(tester);
+    await container
+        .read(captureControllerProvider.notifier)
+        .submitCapture('', attachments: inputState.attachments);
+    await tester.pump(const Duration(milliseconds: 500));
+
+    final state = _readCaptureState(tester);
+    expect(state.records.single.body, 'Live preview text');
+    expect(
+      database.captures.readAll().single.payload['text'],
+      'Live preview text',
+    );
+  });
+
   testWidgets('background voice renders live transcript preview', (
     tester,
   ) async {
@@ -309,7 +345,7 @@ void main() {
       find.byKey(Key('attachment-${attachment.id}-artifact-vision_summary')),
       findsOneWidget,
     );
-    expect(find.textContaining('status: Failed'), findsWidgets);
+    expect(find.text('failed'), findsWidgets);
     expect(find.textContaining('/Users/guangmo/private'), findsNothing);
   });
 
@@ -332,7 +368,7 @@ void main() {
       find.byKey(Key('attachment-${attachment.id}-artifact-image_derivatives')),
       findsOneWidget,
     );
-    expect(find.textContaining('status: Blocked'), findsWidgets);
+    expect(find.text('blocked'), findsWidgets);
     expect(find.textContaining('DANGEROUS RAW PREVIEW'), findsNothing);
   });
 
@@ -376,7 +412,7 @@ void main() {
       find.byKey(Key('attachment-${attachment.id}-artifact-audio_transcript')),
       findsOneWidget,
     );
-    expect(find.textContaining('status: needs review'), findsOneWidget);
+    expect(find.text('needs review'), findsOneWidget);
 
     final recordButton = find.byKey(const Key('record-capture-button'));
     await _scrollHomeActionIntoView(tester, recordButton);
@@ -389,7 +425,7 @@ void main() {
     await tester.pumpAndSettle();
     inputState = _readCaptureInputState(tester);
     expect(inputState.attachments.single.state, CaptureAttachmentState.ready);
-    expect(find.textContaining('status: ready'), findsOneWidget);
+    expect(find.text('ready'), findsOneWidget);
 
     await _scrollHomeActionIntoView(tester, recordButton);
     await tester.tap(recordButton);

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 import 'package:widenote_local_db/widenote_local_db.dart';
 import 'package:widenote_mobile/app/local_database.dart';
 import 'package:widenote_mobile/features/backup/application/backup_controller.dart';
@@ -234,6 +235,56 @@ void main() {
         ),
       ),
     );
+  });
+
+  test('backup support settings bundle preserves direct-use keys', () async {
+    final temp = await Directory.systemTemp.createTemp(
+      'widenote-support-settings-',
+    );
+    addTearDown(() async {
+      if (await temp.exists()) {
+        await temp.delete(recursive: true);
+      }
+    });
+
+    const bundle = BackupSupportSettingsBundle(
+      locationSettings: LocationCaptureSettings(
+        saveGps: true,
+        useAmapReverseGeocode: true,
+        amapApiKey: 'amap-secret',
+        displayGranularity: LocationDisplayGranularity.full,
+      ),
+      hasVoiceTranscriptionSettings: true,
+      voiceTranscriptionSettings: VoiceTranscriptionSettings(
+        engine: VoiceTranscriptionEngine.xiaomiMimo,
+        remoteConsentGranted: true,
+        localModelState: LocalTranscriptionModelState.notDownloaded,
+      ),
+      hasMimoAsrApiKey: true,
+      mimoAsrApiKey: 'mimo-secret',
+    );
+
+    for (final entry in bundle.toSupportFiles().entries) {
+      final file = File(p.join(temp.path, entry.key));
+      await file.parent.create(recursive: true);
+      await file.writeAsString(entry.value);
+    }
+
+    final restored = await BackupSupportSettingsBundle.readFromDirectory(
+      temp.path,
+    );
+    expect(restored.locationSettings!.useAmapReverseGeocode, isTrue);
+    expect(restored.locationSettings!.amapApiKey, 'amap-secret');
+    expect(
+      restored.locationSettings!.displayGranularity,
+      LocationDisplayGranularity.full,
+    );
+    expect(
+      restored.voiceTranscriptionSettings!.engine,
+      VoiceTranscriptionEngine.xiaomiMimo,
+    );
+    expect(restored.hasMimoAsrApiKey, isTrue);
+    expect(restored.mimoAsrApiKey, 'mimo-secret');
   });
 
   test('file import ignores diagnostic support files', () async {

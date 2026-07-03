@@ -5,6 +5,10 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
 import 'package:widenote_local_db/widenote_local_db.dart' as localdb;
+import 'package:widenote_mobile/features/capture/application/local_capture_read_model.dart';
+import 'package:widenote_mobile/features/capture/domain/capture_models.dart'
+    as capture;
+import 'package:widenote_mobile/features/capture/media/capture_media.dart';
 import 'package:widenote_mobile/features/transcription/mimo_asr_provider.dart';
 import 'package:widenote_mobile/features/transcription/transcription_service.dart';
 import 'package:widenote_mobile/features/transcription/transcription_settings.dart';
@@ -161,6 +165,47 @@ void main() {
       expect(result.providerKind, TranscriptionProviderKind.localSenseVoice);
       expect(result.errorCode, TranscriptionFailureCode.modelMissing);
     });
+
+    test(
+      'later capture saves do not regress failed transcripts to pending',
+      () async {
+        final database = localdb.WideNoteLocalDatabase.inMemory();
+        addTearDown(database.close);
+        _seedVoiceAttachment(database);
+        final service = _service(
+          database,
+          settings: const VoiceTranscriptionSettings(
+            engine: VoiceTranscriptionEngine.localSenseVoice,
+          ),
+          localProvider: const _FailingTranscriptionProvider(
+            TranscriptionFailureCode.modelMissing,
+          ),
+        );
+
+        await service.transcribeAttachment('voice-1');
+        final failed = database.derivedArtifacts.readById(
+          'artifact.capture-1.voice-1.audio_transcript',
+        )!;
+        expect(failed.status, 'failed');
+
+        LocalCaptureReadModelStore(database).saveCapture(
+          capture.CaptureRecord(
+            id: 'capture-1',
+            body: 'voice capture',
+            createdAt: DateTime.utc(2026, 7, 1, 9),
+            status: capture.captureStatusProcessed,
+          ),
+          attachments: [_voiceCaptureAttachment()],
+          rawText: '',
+        );
+
+        final afterSave = database.derivedArtifacts.readById(
+          'artifact.capture-1.voice-1.audio_transcript',
+        )!;
+        expect(afterSave.status, 'failed');
+        expect(afterSave.payload['error_code'], 'model_missing');
+      },
+    );
 
     test('correction auto-applies safe high-confidence patches', () async {
       final database = localdb.WideNoteLocalDatabase.inMemory();
@@ -359,6 +404,25 @@ TranscriptionService _service(
         modelClient ?? const runtime.ModelResponse(text: '').asClient(),
     localProvider: localProvider,
     remoteProvider: remoteProvider,
+  );
+}
+
+CaptureAttachment _voiceCaptureAttachment() {
+  return CaptureAttachment(
+    id: 'voice-1',
+    kind: CaptureAssetKind.voice,
+    displayName: 'voice-1.wav',
+    mimeType: 'audio/wav',
+    sourceUri: '/tmp/voice-1.wav',
+    createdAt: DateTime.utc(2026, 7, 1, 9),
+    state: CaptureAttachmentState.ready,
+    rawMetadata: const <String, Object?>{
+      'adapter_metadata': <String, Object?>{
+        'local_path': '/tmp/voice-1.wav',
+        'duration_ms': 1000,
+        'sha256': 'voice-sha',
+      },
+    },
   );
 }
 
