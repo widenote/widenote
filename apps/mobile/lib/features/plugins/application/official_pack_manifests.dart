@@ -7,6 +7,7 @@ const officialPackManifestIds = <String>[
   'pack.todo',
   'pack.pkm_library',
   'pack.transcript_correction',
+  'pack.usage_stats',
 ];
 
 const officialPackManifestMaps = <String, Map<String, Object?>>{
@@ -197,12 +198,7 @@ const officialPackManifestMaps = <String, Map<String, Object?>>{
         'slot': 'insight.detail.body',
         'placement': 'section',
         'events': <String>['wn.insight.created'],
-        'blocks': <String>[
-          'claim_list',
-          'metric_row',
-          'source_refs',
-          'note',
-        ],
+        'blocks': <String>['claim_list', 'metric_row', 'source_refs', 'note'],
         'required_permissions': <String>['insight.write'],
       },
       <String, Object?>{
@@ -606,6 +602,66 @@ const officialPackManifestMaps = <String, Map<String, Object?>>{
       'source_truth': 'raw_audio_and_original_transcript_remain_source_linked',
       'auto_apply_policy':
           'high_confidence_exact_term_or_name_corrections_only',
+    },
+  },
+  'pack.usage_stats': <String, Object?>{
+    r'$schema':
+        '../../../packages/schemas/src/agent_pack/agent_pack_manifest.schema.json',
+    'id': 'pack.usage_stats',
+    'name': 'Usage Statistics Dashboard',
+    'version': '0.1.0',
+    'schema_version': 1,
+    'publisher': 'widenote',
+    'edition': 'official',
+    'description':
+        'Official read-only pack that exposes local runtime usage, token, tool, Memory, and context cache statistics through a host-rendered Settings dashboard.',
+    'compatibility': <String, Object?>{
+      'widenote_min': '0.1.0',
+      'widenote_max': null,
+      'schema_version': 1,
+    },
+    'marketplace': <String, Object?>{
+      'source': 'bundled',
+      'trust_level': 'official',
+      'install_mode': 'bundled',
+      'repository_url': 'https://github.com/widenote/widenote',
+      'docs_path': 'packs/official/usage_stats/README.md',
+      'icon_path': null,
+      'categories': <String>['analytics', 'runtime'],
+      'capabilities': <String>[
+        'usage.stats',
+        'trace.read',
+        'context_packet.observe',
+      ],
+      'status': 'available',
+    },
+    'entrypoint_kind': 'native',
+    'permissions': <String>[],
+    'subscriptions': <Map<String, Object?>>[],
+    'agents': <Map<String, Object?>>[],
+    'model_profiles': <Map<String, Object?>>[],
+    'tools': <Map<String, Object?>>[],
+    'ui_blocks': <Map<String, Object?>>[],
+    'ui_contributions': <Map<String, Object?>>[
+      <String, Object?>{
+        'id': 'settings.usage_stats.dashboard',
+        'surface': 'settings.pack_detail',
+        'kind': 'panel',
+        'title': 'Usage statistics',
+        'description':
+            'Open the local usage dashboard for runtime tokens, tool calls, Memory production, and context cache reuse.',
+        'slot': 'settings.pack_detail.analytics',
+        'placement': 'section',
+        'required_permissions': <String>[],
+      },
+    ],
+    'storage_quota': <String, Object?>{'local_bytes': 0},
+    'integrity': <String, Object?>{'checksum_sha256': null, 'signature': null},
+    'metadata': <String, Object?>{
+      'status': 'available',
+      'source': 'packs/official/usage_stats/manifest.json',
+      'read_only': true,
+      'source_truth': 'local_runtime_traces_and_object_tables_remain_canonical',
     },
   },
 };

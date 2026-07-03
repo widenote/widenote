@@ -25,6 +25,7 @@ import '../features/todos/presentation/todo_detail_page.dart';
 import '../features/todos/presentation/todos_page.dart';
 import '../features/traces/presentation/trace_console_page.dart';
 import '../features/transcription/presentation/voice_transcription_settings_page.dart';
+import '../features/usage_stats/presentation/usage_stats_page.dart';
 import '../l10n/l10n.dart';
 
 GoRouter createAppRouter({String initialLocation = '/'}) {
@@ -151,6 +152,12 @@ GoRouter createAppRouter({String initialLocation = '/'}) {
                     name: 'settings-backup',
                     pageBuilder: (context, state) =>
                         _noTransitionPage(state, const BackupPage()),
+                  ),
+                  GoRoute(
+                    path: 'usage-stats',
+                    name: 'settings-usage-stats',
+                    pageBuilder: (context, state) =>
+                        _noTransitionPage(state, const UsageStatsPage()),
                   ),
                   GoRoute(
                     path: 'traces',

@@ -14,6 +14,7 @@ Responsibilities:
 - Local search
 - Local Agent Runtime Kernel
 - Permissions and trace review
+- Local usage statistics dashboard
 - BYOK model provider configuration
 - Voice transcription and ASR settings
 - Settings and Privacy hub

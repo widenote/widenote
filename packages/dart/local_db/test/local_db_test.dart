@@ -1591,6 +1591,9 @@ INSERT INTO trace_events (
           'pack_installations_status_idx',
           'permission_grants_pack_status_idx',
           'context_packet_cache_key_idx',
+          'memory_items_created_at_idx',
+          'memory_candidates_created_at_idx',
+          'context_packet_cache_created_at_idx',
         ]),
       );
       expect(

@@ -13,6 +13,7 @@ void main() {
     final todoManifest = bridge.loadFile(_officialTodoPath);
     final pkmManifest = bridge.loadFile(_officialPkmPath);
     final transcriptManifest = bridge.loadFile(_officialTranscriptPath);
+    final usageStatsManifest = bridge.loadFile(_officialUsageStatsPath);
 
     expect(defaultManifest.id, 'pack.default');
     expect(defaultManifest.name, 'Default Capture Loop');
@@ -148,6 +149,15 @@ void main() {
           .settingsSchemaRef,
       '#/settings_schema',
     );
+    expect(usageStatsManifest.id, 'pack.usage_stats');
+    expect(usageStatsManifest.requiredPermissions, isEmpty);
+    expect(usageStatsManifest.subscriptions, isEmpty);
+    expect(usageStatsManifest.agentDefinitions, isEmpty);
+    final usageStatsContribution = usageStatsManifest.uiContributions.single;
+    expect(usageStatsContribution.id, 'settings.usage_stats.dashboard');
+    expect(usageStatsContribution.surface, 'settings.pack_detail');
+    expect(usageStatsContribution.kind, 'panel');
+    expect(usageStatsContribution.requiredPermissions, isEmpty);
 
     final registry = InMemoryPackRegistry()
       ..register(
@@ -997,6 +1007,8 @@ const _officialTodoPath = '../../../packs/official/todo/manifest.json';
 const _officialPkmPath = '../../../packs/official/pkm_library/manifest.json';
 const _officialTranscriptPath =
     '../../../packs/official/transcript_correction/manifest.json';
+const _officialUsageStatsPath =
+    '../../../packs/official/usage_stats/manifest.json';
 
 RuntimeKernel _kernel({
   required EventStore store,

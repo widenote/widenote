@@ -131,6 +131,30 @@ ON CONFLICT(id) DO UPDATE SET
     return rows.map(_memoryItemFromRow).toList(growable: false);
   }
 
+  List<MemoryItemRecord> readByCreatedAtRange({
+    required DateTime startInclusive,
+    required DateTime endExclusive,
+    String? status,
+    int? limit,
+    int? offset,
+  }) {
+    final rows = _selectOrdered(
+      _database,
+      'memory_items',
+      whereSql: status == null
+          ? 'created_at >= ? AND created_at < ?'
+          : 'created_at >= ? AND created_at < ? AND status = ?',
+      parameters: <Object?>[
+        _encodeDateTime(startInclusive),
+        _encodeDateTime(endExclusive),
+        if (status != null) status,
+      ],
+      limit: limit,
+      offset: offset,
+    );
+    return rows.map(_memoryItemFromRow).toList(growable: false);
+  }
+
   List<MemoryItemRecord> readActiveByKey(String key) {
     final rows = _selectOrdered(
       _database,

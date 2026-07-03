@@ -91,6 +91,29 @@ assert.deepEqual(validateManifest(clone(baseManifest)), []);
 assert.deepEqual(
   validateManifest({
     ...clone(baseManifest),
+    permissions: [],
+    subscriptions: [],
+    agents: [],
+    tools: [],
+    ui_contributions: [
+      {
+        id: "settings.usage",
+        surface: "settings.pack_detail",
+        kind: "panel",
+        title: "Usage",
+        description: "Host-rendered usage dashboard.",
+        slot: "settings.pack_detail.analytics",
+        placement: "section",
+        required_permissions: [],
+      },
+    ],
+  }),
+  [],
+);
+
+assert.deepEqual(
+  validateManifest({
+    ...clone(baseManifest),
     ui_blocks: [
       { type: "claim_list", events: ["wn.insight.created"] },
       { type: "metric_row", events: ["wn.insight.created"] },
@@ -661,6 +684,7 @@ const officialManifestPaths = [
   "../../packs/official/todo/manifest.json",
   "../../packs/official/pkm_library/manifest.json",
   "../../packs/official/transcript_correction/manifest.json",
+  "../../packs/official/usage_stats/manifest.json",
 ].map((path) => fileURLToPath(new URL(path, import.meta.url)));
 
 for (const manifestPath of officialManifestPaths) {

@@ -83,4 +83,28 @@ INSERT INTO trace_events (
       offset: offset,
     ).map(_traceFromRow).toList(growable: false);
   }
+
+  List<TraceEventRecord> readByCreatedAtRange({
+    required DateTime startInclusive,
+    required DateTime endExclusive,
+    String? namePrefix,
+    int? limit,
+    int? offset,
+  }) {
+    final rows = _selectOrdered(
+      _database,
+      'trace_events',
+      whereSql: namePrefix == null
+          ? 'created_at >= ? AND created_at < ?'
+          : 'created_at >= ? AND created_at < ? AND name LIKE ?',
+      parameters: <Object?>[
+        _encodeDateTime(startInclusive),
+        _encodeDateTime(endExclusive),
+        if (namePrefix != null) '$namePrefix%',
+      ],
+      limit: limit,
+      offset: offset,
+    );
+    return rows.map(_traceFromRow).toList(growable: false);
+  }
 }

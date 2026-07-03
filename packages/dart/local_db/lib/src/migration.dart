@@ -1,7 +1,7 @@
 import 'package:sqlite3/sqlite3.dart';
 
 abstract final class LocalDbSchema {
-  static const currentVersion = 11;
+  static const currentVersion = 12;
 }
 
 final class LocalDbMigrator {
@@ -76,6 +76,10 @@ final class LocalDbMigrator {
       if (currentVersion < 11 && targetVersion >= 11) {
         _migrateToV11(database);
         database.execute('PRAGMA user_version = 11;');
+      }
+      if (currentVersion < 12 && targetVersion >= 12) {
+        _migrateToV12(database);
+        database.execute('PRAGMA user_version = 12;');
       }
       database.execute('COMMIT;');
     } catch (_) {
@@ -161,6 +165,10 @@ CREATE INDEX IF NOT EXISTS memory_items_status_idx
 ON memory_items(status);
 ''')
       ..execute('''
+CREATE INDEX IF NOT EXISTS memory_items_created_at_idx
+ON memory_items(created_at);
+''')
+      ..execute('''
 CREATE TABLE IF NOT EXISTS memory_candidates (
   id TEXT PRIMARY KEY,
   candidate_key TEXT NOT NULL,
@@ -176,6 +184,10 @@ CREATE TABLE IF NOT EXISTS memory_candidates (
       ..execute('''
 CREATE INDEX IF NOT EXISTS memory_candidates_status_idx
 ON memory_candidates(status);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS memory_candidates_created_at_idx
+ON memory_candidates(created_at);
 ''')
       ..execute('''
 CREATE TABLE IF NOT EXISTS todos (
@@ -659,6 +671,10 @@ ON context_packet_cache(surface, status, updated_at);
       ..execute('''
 CREATE INDEX IF NOT EXISTS context_packet_cache_pack_idx
 ON context_packet_cache(pack_id, agent_id, status);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS context_packet_cache_created_at_idx
+ON context_packet_cache(created_at);
 ''');
   }
 
@@ -785,6 +801,22 @@ ON runtime_tasks(status, scheduled_at, updated_at);
       ..execute('''
 CREATE INDEX IF NOT EXISTS runtime_tasks_concurrency_idx
 ON runtime_tasks(concurrency_key, status, leased_until);
+''');
+  }
+
+  static void _migrateToV12(Database database) {
+    database
+      ..execute('''
+CREATE INDEX IF NOT EXISTS memory_items_created_at_idx
+ON memory_items(created_at);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS memory_candidates_created_at_idx
+ON memory_candidates(created_at);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS context_packet_cache_created_at_idx
+ON context_packet_cache(created_at);
 ''');
   }
 }
