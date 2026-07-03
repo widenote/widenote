@@ -6,11 +6,22 @@ import 'package:go_router/go_router.dart';
 import '../../../l10n/l10n.dart';
 import '../application/trace_console_controller.dart';
 
-class TraceConsolePage extends ConsumerWidget {
+class TraceConsolePage extends ConsumerStatefulWidget {
   const TraceConsolePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TraceConsolePage> createState() => _TraceConsolePageState();
+}
+
+class _TraceConsolePageState extends ConsumerState<TraceConsolePage> {
+  @override
+  void initState() {
+    super.initState();
+    _refreshAfterFirstFrame(ref, () => mounted);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = context.l10n;
     final snapshot = ref.watch(traceConsoleControllerProvider);
     final controller = ref.read(traceConsoleControllerProvider.notifier);
@@ -54,6 +65,7 @@ class _TraceRawLogsPageState extends ConsumerState<TraceRawLogsPage> {
   void initState() {
     super.initState();
     _searchController = TextEditingController();
+    _refreshAfterFirstFrame(ref, () => mounted);
   }
 
   @override
@@ -135,6 +147,15 @@ class _TraceRawLogsPageState extends ConsumerState<TraceRawLogsPage> {
       SnackBar(content: Text(context.l10n.traceRawCopiedSnackbar)),
     );
   }
+}
+
+void _refreshAfterFirstFrame(WidgetRef ref, bool Function() isMounted) {
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (!isMounted()) {
+      return;
+    }
+    ref.read(traceConsoleControllerProvider.notifier).refresh();
+  });
 }
 
 @Deprecated('Use TraceRawLogsPage.')

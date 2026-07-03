@@ -62,6 +62,9 @@ class _TimelineItemDetailContent extends StatelessWidget {
     final l10n = context.l10n;
     final artifacts = timelineAttachmentArtifacts(item);
     final insightPayload = timelineInsightPayload(item);
+    final visibleSourceLinks = item.sourceLinks
+        .where((link) => !_isSelfSourceLink(item, link))
+        .toList(growable: false);
     final visibleMetadata = <String, Object?>{...item.metadata}
       ..remove('attachment_artifacts')
       ..remove('insight_payload');
@@ -90,7 +93,8 @@ class _TimelineItemDetailContent extends StatelessWidget {
               child: TimelineInsightPayloadView(
                 payload: insightPayload,
                 keyPrefix: 'timeline-detail-${item.id}',
-                onOpenLink: (link) => _openSourceLink(context, link),
+                sourceLinkFilter: (link) => !_isSelfSourceLink(item, link),
+                onOpenLink: (link) => _openSourceLink(context, item, link),
               ),
             ),
           ],
@@ -134,15 +138,17 @@ class _TimelineItemDetailContent extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          TimelineSurface(
-            icon: Icons.link,
-            title: l10n.timelineSourceRefsTitle,
-            child: TimelineSourceRefList(
-              links: item.sourceLinks,
-              onOpenLink: (link) => _openSourceLink(context, link),
+          if (visibleSourceLinks.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            TimelineSurface(
+              icon: Icons.link,
+              title: l10n.timelineSourceRefsTitle,
+              child: TimelineSourceRefList(
+                links: visibleSourceLinks,
+                onOpenLink: (link) => _openSourceLink(context, item, link),
+              ),
             ),
-          ),
+          ],
           if (visibleMetadata.isNotEmpty) ...[
             const SizedBox(height: 12),
             TimelineSurface(
@@ -239,8 +245,29 @@ String _kindTitle(AppLocalizations l10n, MemoryFirstTimelineItemKind kind) {
   };
 }
 
-void _openSourceLink(BuildContext context, SourceLink link) {
+void _openSourceLink(
+  BuildContext context,
+  MemoryFirstTimelineItem item,
+  SourceLink link,
+) {
+  if (_isSelfSourceLink(item, link)) {
+    return;
+  }
   context.push('/timeline/items/${Uri.encodeComponent(link.id)}');
+}
+
+bool _isSelfSourceLink(MemoryFirstTimelineItem item, SourceLink link) {
+  return link.kind == _sourceKind(item.kind) && link.id == item.id;
+}
+
+String _sourceKind(MemoryFirstTimelineItemKind kind) {
+  return switch (kind) {
+    MemoryFirstTimelineItemKind.capture => 'capture',
+    MemoryFirstTimelineItemKind.card => 'card',
+    MemoryFirstTimelineItemKind.insight => 'insight',
+    MemoryFirstTimelineItemKind.memory => 'memory',
+    MemoryFirstTimelineItemKind.todo => 'todo',
+  };
 }
 
 void _goBack(BuildContext context) {

@@ -114,6 +114,71 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String homeTodayRecapSummary(
+    int recordCount,
+    int memoryCount,
+    int todoOpenCount,
+    int todoCompletedCount,
+    int cardCount,
+    int insightCount,
+  ) {
+    String _temp0 = intl.Intl.pluralLogic(
+      recordCount,
+      locale: localeName,
+      other: '$recordCount records',
+      one: '1 record',
+      zero: 'No records',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      memoryCount,
+      locale: localeName,
+      other: '$memoryCount Memory',
+      one: '1 Memory',
+      zero: '0 Memory',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
+      todoOpenCount,
+      locale: localeName,
+      other: '$todoOpenCount open todos',
+      one: '1 open todo',
+      zero: '0 open todos',
+    );
+    String _temp3 = intl.Intl.pluralLogic(
+      todoCompletedCount,
+      locale: localeName,
+      other: '$todoCompletedCount completed',
+      one: '1 completed',
+      zero: '0 completed',
+    );
+    String _temp4 = intl.Intl.pluralLogic(
+      cardCount,
+      locale: localeName,
+      other: '$cardCount cards',
+      one: '1 card',
+      zero: '0 cards',
+    );
+    String _temp5 = intl.Intl.pluralLogic(
+      insightCount,
+      locale: localeName,
+      other: '$insightCount insights',
+      one: '1 insight',
+      zero: '0 insights',
+    );
+    return '$_temp0 · $_temp1 · $_temp2 · $_temp3 · $_temp4 · $_temp5';
+  }
+
+  @override
+  String homeRecapMetricChip(int count, String label) {
+    return '$label: $count';
+  }
+
+  @override
+  String get homeTodayRecapLoading => 'Refreshing local recap...';
+
+  @override
+  String get homeTodayRecapUnavailable => 'Local recap unavailable.';
+
+  @override
   String get homeRecentRecordsTitle => 'Recent records';
 
   @override
@@ -830,6 +895,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get recordStatusAgentFailed => 'Saved locally, agent failed';
 
   @override
+  String get recordStatusProcessingShort => 'Processing';
+
+  @override
+  String get recordStatusProcessedShort => 'Processed';
+
+  @override
+  String get recordStatusFailedShort => 'Failed';
+
+  @override
   String get memoryAutoSavedTitle => 'Memory saved automatically';
 
   @override
@@ -897,6 +971,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sourceUnknownLabel => 'unknown source';
+
+  @override
+  String sourceLocalRecordLabel(String time) {
+    return 'Local record · $time';
+  }
 
   @override
   String get sourceKindRawText => 'raw text';

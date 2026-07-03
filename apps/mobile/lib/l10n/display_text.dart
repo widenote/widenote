@@ -380,11 +380,43 @@ String _sourceKindIdLabel(
   String id, {
   int? extraCount,
 }) {
+  final localRecordLabel = _localCaptureLabel(l10n, kind, id);
+  if (localRecordLabel != null) {
+    return extraCount == null
+        ? localRecordLabel
+        : '$localRecordLabel +$extraCount';
+  }
   final kindLabel = localizedSourceKind(l10n, kind);
   if (extraCount != null) {
     return l10n.sourceKindIdExtraLabel(kindLabel, id, extraCount);
   }
   return l10n.sourceKindIdLabel(kindLabel, id);
+}
+
+String? _localCaptureLabel(AppLocalizations l10n, String kind, String id) {
+  final normalizedKind = kind.trim();
+  if (normalizedKind != 'capture' && normalizedKind != 'record') {
+    return null;
+  }
+  final match = RegExp(r'^local-(\d{16,})$').firstMatch(id.trim());
+  if (match == null) {
+    return null;
+  }
+  final micros = int.tryParse(match.group(1)!);
+  if (micros == null) {
+    return null;
+  }
+  final localTime = DateTime.fromMicrosecondsSinceEpoch(
+    micros,
+    isUtc: true,
+  ).toLocal();
+  return l10n.sourceLocalRecordLabel(_timeLabel(localTime));
+}
+
+String _timeLabel(DateTime localTime) {
+  final hour = localTime.hour.toString().padLeft(2, '0');
+  final minute = localTime.minute.toString().padLeft(2, '0');
+  return '$hour:$minute';
 }
 
 String _stripTrailingPeriod(String value) {

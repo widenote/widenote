@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../l10n/l10n.dart';
+import '../../recap/application/daily_recap_repository.dart';
+import '../../recap/domain/daily_recap_models.dart';
 import '../application/capture_controller.dart';
 import '../application/capture_draft_repository.dart';
 import '../application/capture_input_controller.dart';
@@ -104,6 +106,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     final captureState = ref.watch(captureControllerProvider);
     final inputState = ref.watch(captureInputControllerProvider);
     final sheetRequest = ref.watch(captureSheetRequestProvider);
+    final todayRecap = ref.watch(dailyRecapProvider);
 
     _handlePendingSheetRequest(sheetRequest);
 
@@ -147,7 +150,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           ],
           const SizedBox(height: 12),
           _TodayRecapCard(
-            state: captureState,
+            recap: todayRecap,
             onOpen: () => context.push('/recap'),
           ),
           const SizedBox(height: 16),
@@ -263,11 +266,17 @@ class _HomePageState extends ConsumerState<HomePage> {
     final future = ref
         .read(captureControllerProvider.notifier)
         .submitCapture(_captureTextController.text, attachments: attachments);
+    unawaited(
+      future.whenComplete(() {
+        if (mounted) {
+          ref.invalidate(dailyRecapProvider);
+        }
+      }),
+    );
     if (hasText || attachments.isNotEmpty) {
       _clearSubmittedDraft();
       ref.read(captureInputControllerProvider.notifier).clear();
     }
-    unawaited(future);
     _showFeedback(
       context.l10n.captureSavedMessage,
       actionLabel: context.l10n.captureOpenTimelineAction,
@@ -385,8 +394,12 @@ class _HomePageState extends ConsumerState<HomePage> {
     unawaited(ref.read(captureControllerProvider.notifier).retryCapture(id));
   }
 
-  Future<void> _refreshHome() {
-    return ref.read(captureControllerProvider.notifier).refresh();
+  Future<void> _refreshHome() async {
+    ref.invalidate(dailyRecapProvider);
+    await Future.wait(<Future<void>>[
+      ref.read(captureControllerProvider.notifier).refresh(),
+      ref.read(dailyRecapProvider.future),
+    ]);
   }
 }
 
@@ -448,25 +461,14 @@ class _HomeCaptureActions extends StatelessWidget {
 }
 
 class _TodayRecapCard extends StatelessWidget {
-  const _TodayRecapCard({required this.state, required this.onOpen});
+  const _TodayRecapCard({required this.recap, required this.onOpen});
 
-  final CaptureState state;
+  final AsyncValue<DailyRecapSnapshot> recap;
   final VoidCallback onOpen;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final recordDetail = state.isProcessing
-        ? l10n.stageProcessingRunning
-        : state.records.isEmpty
-        ? l10n.stageProcessingIdle
-        : l10n.stageProcessingProcessed(state.records.length);
-    final memoryDetail = state.memories.isEmpty
-        ? l10n.stageMemoryReady
-        : l10n.stageMemoryAccepted(state.memories.length);
-    final insightDetail = state.insights.isEmpty
-        ? l10n.stageInsightWaiting
-        : l10n.stageInsightSourceLinked(state.insights.length);
     return Semantics(
       button: true,
       child: InkWell(
@@ -512,32 +514,82 @@ class _TodayRecapCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 10),
-                Text(
-                  l10n.homeTodayRecapBody(
-                    state.records.length,
-                    state.memories.length,
-                    state.todos.length,
+                recap.when(
+                  loading: () => Text(
+                    l10n.homeTodayRecapLoading,
+                    style: Theme.of(context).textTheme.bodyMedium,
                   ),
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 6,
-                  children: [
-                    _HomeStatusChip(
-                      icon: Icons.notes_outlined,
-                      label: recordDetail,
+                  error: (error, _) => Text(
+                    l10n.homeTodayRecapUnavailable,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.error,
                     ),
-                    _HomeStatusChip(
-                      icon: Icons.psychology_alt_outlined,
-                      label: memoryDetail,
-                    ),
-                    _HomeStatusChip(
-                      icon: Icons.lightbulb_outline,
-                      label: insightDetail,
-                    ),
-                  ],
+                  ),
+                  data: (snapshot) => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.homeTodayRecapSummary(
+                          snapshot.captureCount,
+                          snapshot.memoryCount,
+                          snapshot.todoOpenCount,
+                          snapshot.todoCompletedCount,
+                          snapshot.cardCount,
+                          snapshot.insightCount,
+                        ),
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: [
+                          _HomeStatusChip(
+                            icon: Icons.notes_outlined,
+                            label: l10n.homeRecapMetricChip(
+                              snapshot.captureCount,
+                              l10n.recapCapturesMetric,
+                            ),
+                          ),
+                          _HomeStatusChip(
+                            icon: Icons.psychology_alt_outlined,
+                            label: l10n.homeRecapMetricChip(
+                              snapshot.memoryCount,
+                              l10n.recapMemoryMetric,
+                            ),
+                          ),
+                          _HomeStatusChip(
+                            icon: Icons.radio_button_unchecked,
+                            label: l10n.homeRecapMetricChip(
+                              snapshot.todoOpenCount,
+                              l10n.recapTodoOpenMetric,
+                            ),
+                          ),
+                          _HomeStatusChip(
+                            icon: Icons.check_circle_outline,
+                            label: l10n.homeRecapMetricChip(
+                              snapshot.todoCompletedCount,
+                              l10n.recapTodoCompletedMetric,
+                            ),
+                          ),
+                          _HomeStatusChip(
+                            icon: Icons.dashboard_customize_outlined,
+                            label: l10n.homeRecapMetricChip(
+                              snapshot.cardCount,
+                              l10n.recapCardsMetric,
+                            ),
+                          ),
+                          _HomeStatusChip(
+                            icon: Icons.lightbulb_outline,
+                            label: l10n.homeRecapMetricChip(
+                              snapshot.insightCount,
+                              l10n.recapInsightsMetric,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -793,8 +845,8 @@ class _RecordTrailingAction extends StatelessWidget {
 
 String _recordSubtitle(AppLocalizations l10n, CaptureRecord record) {
   final parts = <String>[
-    record.id,
-    _localizedRecordStatus(l10n, record.status),
+    _timeLabel(record.createdAt),
+    _localizedRecordStatusShort(l10n, record.status),
   ];
   final location = record.locationContext;
   if (location != null) {
@@ -810,12 +862,19 @@ String _recordSubtitle(AppLocalizations l10n, CaptureRecord record) {
   return parts.join(' · ');
 }
 
-String _localizedRecordStatus(AppLocalizations l10n, String status) {
+String _localizedRecordStatusShort(AppLocalizations l10n, String status) {
   return switch (status) {
     captureStatusSavedProcessing ||
-    captureStatusTranscriptReady => l10n.recordStatusSavedProcessing,
-    captureStatusProcessed => l10n.recordStatusProcessed,
-    captureStatusAgentFailed => l10n.recordStatusAgentFailed,
+    captureStatusTranscriptReady => l10n.recordStatusProcessingShort,
+    captureStatusProcessed => l10n.recordStatusProcessedShort,
+    captureStatusAgentFailed => l10n.recordStatusFailedShort,
     _ => status,
   };
+}
+
+String _timeLabel(DateTime value) {
+  final local = value.toLocal();
+  final hour = local.hour.toString().padLeft(2, '0');
+  final minute = local.minute.toString().padLeft(2, '0');
+  return '$hour:$minute';
 }

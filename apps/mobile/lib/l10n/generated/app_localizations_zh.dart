@@ -91,6 +91,29 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String homeTodayRecapSummary(
+    int recordCount,
+    int memoryCount,
+    int todoOpenCount,
+    int todoCompletedCount,
+    int cardCount,
+    int insightCount,
+  ) {
+    return '$recordCount 条记录 · $memoryCount 条记忆 · $todoOpenCount 个未完成待办 · $todoCompletedCount 个已完成 · $cardCount 张卡片 · $insightCount 条洞察';
+  }
+
+  @override
+  String homeRecapMetricChip(int count, String label) {
+    return '$label：$count';
+  }
+
+  @override
+  String get homeTodayRecapLoading => '正在刷新本地回顾...';
+
+  @override
+  String get homeTodayRecapUnavailable => '本地回顾暂不可用。';
+
+  @override
   String get homeRecentRecordsTitle => '最近记录';
 
   @override
@@ -718,6 +741,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get recordStatusAgentFailed => '已本地保存，智能体处理失败';
 
   @override
+  String get recordStatusProcessingShort => '处理中';
+
+  @override
+  String get recordStatusProcessedShort => '已处理';
+
+  @override
+  String get recordStatusFailedShort => '失败';
+
+  @override
   String get memoryAutoSavedTitle => '记忆自动入库';
 
   @override
@@ -785,6 +817,11 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get sourceUnknownLabel => '未知来源';
+
+  @override
+  String sourceLocalRecordLabel(String time) {
+    return '本地记录 · $time';
+  }
 
   @override
   String get sourceKindRawText => '原始文本';

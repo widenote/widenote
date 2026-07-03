@@ -254,6 +254,37 @@ abstract class AppLocalizations {
   /// **'{recordCount, plural, =0{No records yet} =1{1 record} other{{recordCount} records}} · {memoryCount, plural, =0{Memory ready} =1{1 Memory item} other{{memoryCount} Memory items}} · {todoCount, plural, =0{no open todos} =1{1 todo} other{{todoCount} todos}}'**
   String homeTodayRecapBody(int recordCount, int memoryCount, int todoCount);
 
+  /// No description provided for @homeTodayRecapSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{recordCount, plural, =0{No records} =1{1 record} other{{recordCount} records}} · {memoryCount, plural, =0{0 Memory} =1{1 Memory} other{{memoryCount} Memory}} · {todoOpenCount, plural, =0{0 open todos} =1{1 open todo} other{{todoOpenCount} open todos}} · {todoCompletedCount, plural, =0{0 completed} =1{1 completed} other{{todoCompletedCount} completed}} · {cardCount, plural, =0{0 cards} =1{1 card} other{{cardCount} cards}} · {insightCount, plural, =0{0 insights} =1{1 insight} other{{insightCount} insights}}'**
+  String homeTodayRecapSummary(
+    int recordCount,
+    int memoryCount,
+    int todoOpenCount,
+    int todoCompletedCount,
+    int cardCount,
+    int insightCount,
+  );
+
+  /// No description provided for @homeRecapMetricChip.
+  ///
+  /// In en, this message translates to:
+  /// **'{label}: {count}'**
+  String homeRecapMetricChip(int count, String label);
+
+  /// No description provided for @homeTodayRecapLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Refreshing local recap...'**
+  String get homeTodayRecapLoading;
+
+  /// No description provided for @homeTodayRecapUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Local recap unavailable.'**
+  String get homeTodayRecapUnavailable;
+
   /// No description provided for @homeRecentRecordsTitle.
   ///
   /// In en, this message translates to:
@@ -1424,6 +1455,24 @@ abstract class AppLocalizations {
   /// **'Saved locally, agent failed'**
   String get recordStatusAgentFailed;
 
+  /// No description provided for @recordStatusProcessingShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing'**
+  String get recordStatusProcessingShort;
+
+  /// No description provided for @recordStatusProcessedShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Processed'**
+  String get recordStatusProcessedShort;
+
+  /// No description provided for @recordStatusFailedShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get recordStatusFailedShort;
+
   /// No description provided for @memoryAutoSavedTitle.
   ///
   /// In en, this message translates to:
@@ -1537,6 +1586,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'unknown source'**
   String get sourceUnknownLabel;
+
+  /// No description provided for @sourceLocalRecordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Local record · {time}'**
+  String sourceLocalRecordLabel(String time);
 
   /// No description provided for @sourceKindRawText.
   ///

@@ -235,7 +235,7 @@ class _SourceRefRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final sourceId = safeSourceIdOrNull(link.id) ?? l10n.sourceUnknownLabel;
+    final label = _sourceRefLabel(l10n, link);
     return Row(
       key: Key('source-ref-${link.kind}-${link.id}'),
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -247,7 +247,7 @@ class _SourceRefRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '${sourceKindLabel(l10n, link.kind)}: $sourceId',
+                label,
                 style: Theme.of(
                   context,
                 ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
@@ -286,6 +286,7 @@ class TimelineInsightPayloadView extends StatelessWidget {
     required this.keyPrefix,
     this.compact = false,
     this.showSourceRefs = true,
+    this.sourceLinkFilter,
     this.onOpenLink,
     super.key,
   });
@@ -294,6 +295,7 @@ class TimelineInsightPayloadView extends StatelessWidget {
   final String keyPrefix;
   final bool compact;
   final bool showSourceRefs;
+  final bool Function(SourceLink link)? sourceLinkFilter;
   final ValueChanged<SourceLink>? onOpenLink;
 
   @override
@@ -304,9 +306,12 @@ class TimelineInsightPayloadView extends StatelessWidget {
     final metrics = compact
         ? payload.metrics.take(2).toList(growable: false)
         : payload.metrics;
-    final sourceLinks = compact
-        ? insightPayloadSourceLinks(payload).take(2).toList(growable: false)
-        : insightPayloadSourceLinks(payload);
+    final sourceLinks = _filterSourceLinks(
+      compact
+          ? insightPayloadSourceLinks(payload).take(2)
+          : insightPayloadSourceLinks(payload),
+      sourceLinkFilter,
+    );
 
     return Column(
       key: Key('$keyPrefix-insight-payload'),
@@ -319,6 +324,7 @@ class TimelineInsightPayloadView extends StatelessWidget {
             index: index,
             claim: claims[index],
             compact: compact,
+            sourceLinkFilter: sourceLinkFilter,
           ),
         ],
         if (metrics.isNotEmpty) ...[
@@ -369,16 +375,19 @@ class _InsightClaimRow extends StatelessWidget {
     required this.index,
     required this.claim,
     required this.compact,
+    required this.sourceLinkFilter,
   });
 
   final String keyPrefix;
   final int index;
   final MemoryFirstInsightClaim claim;
   final bool compact;
+  final bool Function(SourceLink link)? sourceLinkFilter;
 
   @override
   Widget build(BuildContext context) {
     final claimId = claim.id ?? '$index';
+    final sourceLinks = _filterSourceLinks(claim.sourceLinks, sourceLinkFilter);
     return Row(
       key: Key('$keyPrefix-insight-claim-$claimId'),
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -397,13 +406,13 @@ class _InsightClaimRow extends StatelessWidget {
                   context,
                 ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
-              if (!compact && claim.sourceLinks.isNotEmpty) ...[
+              if (!compact && sourceLinks.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 Wrap(
                   spacing: 8,
                   runSpacing: 4,
                   children: [
-                    for (final link in claim.sourceLinks)
+                    for (final link in sourceLinks)
                       TimelineTag(
                         key: Key(
                           '$keyPrefix-insight-claim-source-${link.kind}-${link.id}',
@@ -446,6 +455,16 @@ List<SourceLink> insightPayloadSourceLinks(MemoryFirstInsightPayload payload) {
   ]);
 }
 
+List<SourceLink> _filterSourceLinks(
+  Iterable<SourceLink> links,
+  bool Function(SourceLink link)? filter,
+) {
+  if (filter == null) {
+    return links.toList(growable: false);
+  }
+  return links.where(filter).toList(growable: false);
+}
+
 String safeSourceId(String value) {
   final trimmed = value.trim();
   if (trimmed.isEmpty ||
@@ -463,8 +482,27 @@ String? safeSourceIdOrNull(String value) {
 }
 
 String _sourceRefLabel(AppLocalizations l10n, SourceLink link) {
+  final localTime = _localCaptureTimeLabel(link);
+  if (localTime != null) {
+    return l10n.sourceLocalRecordLabel(localTime);
+  }
   final sourceId = safeSourceIdOrNull(link.id) ?? l10n.sourceUnknownLabel;
   return '${sourceKindLabel(l10n, link.kind)}: $sourceId';
+}
+
+String? _localCaptureTimeLabel(SourceLink link) {
+  if (link.kind != 'capture') {
+    return null;
+  }
+  final match = RegExp(r'^local-(\d{16,})$').firstMatch(link.id);
+  if (match == null) {
+    return null;
+  }
+  final micros = int.tryParse(match.group(1)!);
+  if (micros == null) {
+    return null;
+  }
+  return timeLabel(DateTime.fromMicrosecondsSinceEpoch(micros, isUtc: true));
 }
 
 String _metricLabel(AppLocalizations l10n, MemoryFirstInsightMetric metric) {

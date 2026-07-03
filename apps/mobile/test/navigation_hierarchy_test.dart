@@ -111,9 +111,25 @@ void main() {
     expect(find.byType(NavigationBar), findsNothing);
 
     await _pumpRoute(tester, '/todos', seed: _seedTodo);
-    await tester.tap(find.byKey(const Key('todo-source-todo-nav-1')));
+    await tester.tap(find.byKey(const Key('todo-row-todo-nav-1')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('todo-detail-page')), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
+
+    final sourceButton = find.byKey(const Key('todo-detail-source-todo-nav-1'));
+    await tester.drag(
+      find.byKey(const Key('todo-detail-scroll')),
+      const Offset(0, -520),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(sourceButton);
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('timeline-item-detail-page')), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
+
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('todo-detail-page')), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
 
     expect(await tester.binding.handlePopRoute(), isTrue);

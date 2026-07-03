@@ -122,6 +122,15 @@ void main() {
     expect(find.byKey(const Key('timeline-item-detail-page')), findsOneWidget);
     expect(find.text('Capture Detail'), findsOneWidget);
     expect(find.text('Project Alpha kickoff notes.'), findsWidgets);
+    expect(find.byKey(const Key('source-ref-capture-capture-1')), findsNothing);
+    expect(
+      find.byKey(const Key('open-source-ref-capture-capture-1')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const Key('source-ref-event-evt-capture-1')),
+      findsOneWidget,
+    );
 
     await tester.tap(find.byKey(const Key('timeline-item-detail-back')));
     await tester.pumpAndSettle();
@@ -272,6 +281,71 @@ void main() {
     expect(find.text('1 source-linked'), findsOneWidget);
     expect(find.text('Capture: capture-1'), findsWidgets);
     expect(find.textContaining('/Users/guangmo/private'), findsNothing);
+  });
+
+  testWidgets('timeline detail hides self refs and formats local capture ids', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    final createdAt = DateTime.utc(2026, 7, 2, 10, 30);
+    final captureId = 'local-${createdAt.microsecondsSinceEpoch}';
+    database.captures.insert(
+      CaptureRecord(
+        id: captureId,
+        sourceType: 'manual',
+        status: 'processed',
+        payload: const <String, Object?>{
+          'text': 'Local timestamp capture should read naturally.',
+        },
+        createdAt: createdAt,
+        updatedAt: createdAt,
+      ),
+    );
+    database.memoryItems.insert(
+      MemoryItemRecord(
+        id: 'memory-local-source',
+        key: 'memory.local.source',
+        sourceCaptureId: captureId,
+        body: 'Memory keeps a local timestamp source.',
+        sourceRefs: <Object?>[
+          <String, Object?>{
+            'kind': 'capture',
+            'id': captureId,
+            'excerpt': 'Local timestamp capture should read naturally.',
+          },
+        ],
+        createdAt: createdAt.add(const Duration(minutes: 5)),
+        updatedAt: createdAt.add(const Duration(minutes: 5)),
+      ),
+    );
+
+    await _pumpApp(tester, database: database);
+
+    await tester.tap(find.byKey(const Key('open-timeline-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const Key('timeline-item-memory-local-source')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('timeline-item-detail-page')), findsOneWidget);
+    expect(find.text('Memory Detail'), findsOneWidget);
+    expect(
+      find.text('Local record · ${_timeLabel(createdAt)}'),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('source-ref-memory-memory-local-source')),
+      findsNothing,
+    );
+    expect(find.textContaining(captureId), findsNothing);
+
+    await tester.tap(find.byKey(Key('open-source-ref-capture-$captureId')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Capture Detail'), findsOneWidget);
+    expect(find.byKey(Key('source-ref-capture-$captureId')), findsNothing);
+    expect(find.byKey(Key('open-source-ref-capture-$captureId')), findsNothing);
   });
 
   testWidgets(
@@ -493,6 +567,13 @@ Finder _semanticsForKey(Key key) {
     return descendant.first;
   }
   return find.ancestor(of: keyed, matching: find.byType(Semantics)).first;
+}
+
+String _timeLabel(DateTime value) {
+  final local = value.toLocal();
+  final hour = local.hour.toString().padLeft(2, '0');
+  final minute = local.minute.toString().padLeft(2, '0');
+  return '$hour:$minute';
 }
 
 void _seedTimeline(WideNoteLocalDatabase database) {

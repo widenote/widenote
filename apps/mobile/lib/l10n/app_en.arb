@@ -46,6 +46,42 @@
       }
     }
   },
+  "homeTodayRecapSummary": "{recordCount, plural, =0{No records} =1{1 record} other{{recordCount} records}} · {memoryCount, plural, =0{0 Memory} =1{1 Memory} other{{memoryCount} Memory}} · {todoOpenCount, plural, =0{0 open todos} =1{1 open todo} other{{todoOpenCount} open todos}} · {todoCompletedCount, plural, =0{0 completed} =1{1 completed} other{{todoCompletedCount} completed}} · {cardCount, plural, =0{0 cards} =1{1 card} other{{cardCount} cards}} · {insightCount, plural, =0{0 insights} =1{1 insight} other{{insightCount} insights}}",
+  "@homeTodayRecapSummary": {
+    "placeholders": {
+      "recordCount": {
+        "type": "int"
+      },
+      "memoryCount": {
+        "type": "int"
+      },
+      "todoOpenCount": {
+        "type": "int"
+      },
+      "todoCompletedCount": {
+        "type": "int"
+      },
+      "cardCount": {
+        "type": "int"
+      },
+      "insightCount": {
+        "type": "int"
+      }
+    }
+  },
+  "homeRecapMetricChip": "{label}: {count}",
+  "@homeRecapMetricChip": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "homeTodayRecapLoading": "Refreshing local recap...",
+  "homeTodayRecapUnavailable": "Local recap unavailable.",
   "homeRecentRecordsTitle": "Recent records",
   "homeOpenAllRecordsAction": "All",
   "homeInsightTeaserTitle": "Insight teaser",
@@ -390,6 +426,9 @@
   "recordStatusSavedProcessing": "Saved locally, processing",
   "recordStatusProcessed": "Processed locally",
   "recordStatusAgentFailed": "Saved locally, agent failed",
+  "recordStatusProcessingShort": "Processing",
+  "recordStatusProcessedShort": "Processed",
+  "recordStatusFailedShort": "Failed",
   "memoryAutoSavedTitle": "Memory saved automatically",
   "memoryNeedsReviewTitle": "Memory needs review",
   "memorySavedTitle": "Memory saved",
@@ -460,6 +499,14 @@
     }
   },
   "sourceUnknownLabel": "unknown source",
+  "sourceLocalRecordLabel": "Local record · {time}",
+  "@sourceLocalRecordLabel": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "sourceKindRawText": "raw text",
   "sourceKindAttachment": "attachment",
   "sourceKindFile": "file",

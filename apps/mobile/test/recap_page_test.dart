@@ -123,6 +123,24 @@ void main() {
     expect(find.text('记忆'), findsWidgets);
     await _scrollUntilText(tester, '记录：capture-today');
     expect(find.text('记录：capture-today'), findsWidgets);
+    expect(
+      localizedSourceLabel(
+        AppLocalizations.of(
+          tester.element(find.byKey(const Key('recap-page'))),
+        ),
+        'capture: $_localCaptureId',
+      ),
+      '本地记录 · ${_timeLabel(_localCaptureTime)}',
+    );
+    expect(
+      localizedSourceLabel(
+        AppLocalizations.of(
+          tester.element(find.byKey(const Key('recap-page'))),
+        ),
+        'source: capture:$_localCaptureId +1',
+      ),
+      '本地记录 · ${_timeLabel(_localCaptureTime)} +1',
+    );
     await _scrollUntilText(tester, '1 可溯源');
     expect(find.text('1 可溯源'), findsOneWidget);
     expect(find.text('source: capture:capture-today'), findsNothing);
@@ -152,11 +170,14 @@ Future<void> _pumpRecapPage(
 }
 
 Future<void> _scrollUntilText(WidgetTester tester, String text) async {
-  await tester.scrollUntilVisible(
-    find.text(text),
-    160,
-    scrollable: find.byType(Scrollable).first,
-  );
+  final finder = find.text(text);
+  final scrollable = find.byType(Scrollable).first;
+  for (var attempt = 0; attempt < 10 && finder.evaluate().isEmpty; attempt++) {
+    await tester.drag(scrollable, const Offset(0, -220));
+    await tester.pumpAndSettle();
+  }
+  expect(finder, findsWidgets);
+  await tester.ensureVisible(finder.first);
   await tester.pumpAndSettle();
 }
 
@@ -350,3 +371,11 @@ void _seedRecapData(WideNoteLocalDatabase database) {
 }
 
 final _today = DateTime(2026, 6, 26, 18);
+final _localCaptureTime = DateTime(2026, 6, 26, 7, 30);
+final _localCaptureId = 'local-${_localCaptureTime.microsecondsSinceEpoch}';
+
+String _timeLabel(DateTime localTime) {
+  final hour = localTime.hour.toString().padLeft(2, '0');
+  final minute = localTime.minute.toString().padLeft(2, '0');
+  return '$hour:$minute';
+}
