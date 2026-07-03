@@ -155,7 +155,70 @@
       ]
     }
   ],
-  "ui_blocks": [],
+  "ui_blocks": [
+    {
+      "type": "note",
+      "events": [
+        "wn.transcript.corrected"
+      ]
+    },
+    {
+      "type": "source_refs",
+      "events": [
+        "wn.transcript.corrected"
+      ]
+    }
+  ],
+  "ui_contributions": [
+    {
+      "id": "settings.transcript_correction.glossary",
+      "surface": "settings.pack_detail",
+      "kind": "settings_form",
+      "title": "Transcript glossary",
+      "description": "Configure correction terms and auto-apply policy with host-rendered controls.",
+      "slot": "settings.pack_detail.transcription",
+      "placement": "section",
+      "settings_schema_ref": "#/settings_schema",
+      "required_permissions": [
+        "source.write.transcript_correction"
+      ]
+    },
+    {
+      "id": "timeline.item.transcript_correction",
+      "surface": "timeline.item.detail",
+      "kind": "event_blocks",
+      "title": "Transcript correction review",
+      "description": "Render source-linked transcript correction revisions on capture detail surfaces.",
+      "slot": "timeline.item.detail.derived_output",
+      "placement": "section",
+      "events": [
+        "wn.transcript.corrected"
+      ],
+      "blocks": [
+        "note",
+        "source_refs"
+      ],
+      "required_permissions": [
+        "source.read.transcript"
+      ]
+    }
+  ],
+  "settings_schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "glossary_terms": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "auto_apply_high_confidence": {
+        "type": "boolean",
+        "default": true
+      }
+    }
+  },
   "storage_quota": {
     "local_bytes": 0
   },

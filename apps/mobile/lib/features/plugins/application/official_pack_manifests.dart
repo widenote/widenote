@@ -186,6 +186,36 @@ const officialPackManifestMaps = <String, Map<String, Object?>>{
         'events': <String>['wn.insight.created'],
       },
     ],
+    'ui_contributions': <Map<String, Object?>>[
+      <String, Object?>{
+        'id': 'insight.detail.blocks',
+        'surface': 'insight.detail',
+        'kind': 'event_blocks',
+        'title': 'Insight detail blocks',
+        'description':
+            'Render capture insights with claims, metrics, notes, and source references.',
+        'slot': 'insight.detail.body',
+        'placement': 'section',
+        'events': <String>['wn.insight.created'],
+        'blocks': <String>[
+          'claim_list',
+          'metric_row',
+          'source_refs',
+          'note',
+        ],
+        'required_permissions': <String>['insight.write'],
+      },
+      <String, Object?>{
+        'id': 'plugins.pack_home.capture_status',
+        'surface': 'plugins.pack_home',
+        'kind': 'panel',
+        'title': 'Capture loop panel',
+        'description':
+            'Show runtime state and output events for the default capture loop.',
+        'slot': 'plugins.pack_home.summary',
+        'placement': 'section',
+      },
+    ],
     'storage_quota': <String, Object?>{'local_bytes': 0},
     'integrity': <String, Object?>{'checksum_sha256': null, 'signature': null},
     'metadata': <String, Object?>{
@@ -349,7 +379,41 @@ const officialPackManifestMaps = <String, Map<String, Object?>>{
       },
     ],
     'tools': <Map<String, Object?>>[],
-    'ui_blocks': <Map<String, Object?>>[],
+    'ui_blocks': <Map<String, Object?>>[
+      <String, Object?>{
+        'type': 'note',
+        'events': <String>['wn.artifact.created'],
+      },
+      <String, Object?>{
+        'type': 'source_refs',
+        'events': <String>['wn.artifact.created'],
+      },
+    ],
+    'ui_contributions': <Map<String, Object?>>[
+      <String, Object?>{
+        'id': 'artifact.detail.pkm_profile',
+        'surface': 'artifact.detail',
+        'kind': 'event_blocks',
+        'title': 'PKM profile artifact',
+        'description':
+            'Render source-linked PKM profile artifacts with notes and source references.',
+        'slot': 'artifact.detail.body',
+        'placement': 'section',
+        'events': <String>['wn.artifact.created'],
+        'blocks': <String>['note', 'source_refs'],
+        'required_permissions': <String>['artifact.write'],
+      },
+      <String, Object?>{
+        'id': 'plugins.pack_home.pkm_status',
+        'surface': 'plugins.pack_home',
+        'kind': 'panel',
+        'title': 'PKM pack panel',
+        'description':
+            'Show derived artifact output status for the PKM example pack.',
+        'slot': 'plugins.pack_home.summary',
+        'placement': 'section',
+      },
+    ],
     'storage_quota': <String, Object?>{'local_bytes': 0},
     'integrity': <String, Object?>{'checksum_sha256': null, 'signature': null},
     'metadata': <String, Object?>{
@@ -482,7 +546,57 @@ const officialPackManifestMaps = <String, Map<String, Object?>>{
         'compatible_run_modes': <String>['confirm', 'auto'],
       },
     ],
-    'ui_blocks': <Map<String, Object?>>[],
+    'ui_blocks': <Map<String, Object?>>[
+      <String, Object?>{
+        'type': 'note',
+        'events': <String>['wn.transcript.corrected'],
+      },
+      <String, Object?>{
+        'type': 'source_refs',
+        'events': <String>['wn.transcript.corrected'],
+      },
+    ],
+    'ui_contributions': <Map<String, Object?>>[
+      <String, Object?>{
+        'id': 'settings.transcript_correction.glossary',
+        'surface': 'settings.pack_detail',
+        'kind': 'settings_form',
+        'title': 'Transcript glossary',
+        'description':
+            'Configure correction terms and auto-apply policy with host-rendered controls.',
+        'slot': 'settings.pack_detail.transcription',
+        'placement': 'section',
+        'settings_schema_ref': '#/settings_schema',
+        'required_permissions': <String>['source.write.transcript_correction'],
+      },
+      <String, Object?>{
+        'id': 'timeline.item.transcript_correction',
+        'surface': 'timeline.item.detail',
+        'kind': 'event_blocks',
+        'title': 'Transcript correction review',
+        'description':
+            'Render source-linked transcript correction revisions on capture detail surfaces.',
+        'slot': 'timeline.item.detail.derived_output',
+        'placement': 'section',
+        'events': <String>['wn.transcript.corrected'],
+        'blocks': <String>['note', 'source_refs'],
+        'required_permissions': <String>['source.read.transcript'],
+      },
+    ],
+    'settings_schema': <String, Object?>{
+      'type': 'object',
+      'additionalProperties': false,
+      'properties': <String, Object?>{
+        'glossary_terms': <String, Object?>{
+          'type': 'array',
+          'items': <String, Object?>{'type': 'string'},
+        },
+        'auto_apply_high_confidence': <String, Object?>{
+          'type': 'boolean',
+          'default': true,
+        },
+      },
+    },
     'storage_quota': <String, Object?>{'local_bytes': 0},
     'integrity': <String, Object?>{'checksum_sha256': null, 'signature': null},
     'metadata': <String, Object?>{

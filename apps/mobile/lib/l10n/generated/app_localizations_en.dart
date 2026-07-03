@@ -2195,6 +2195,62 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String packLibraryUiContributionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count UI surfaces',
+      one: '1 UI surface',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get packLibraryUiContributionsTitle => 'UI contributions';
+
+  @override
+  String packLibraryUiSurface(String surface) {
+    return 'surface: $surface';
+  }
+
+  @override
+  String packLibraryUiKind(String kind) {
+    return 'kind: $kind';
+  }
+
+  @override
+  String packLibraryUiSlot(String slot) {
+    return 'slot: $slot';
+  }
+
+  @override
+  String packLibraryUiEvents(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count events',
+      one: '1 event',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String packLibraryUiBlocks(String blocks) {
+    return 'blocks: $blocks';
+  }
+
+  @override
+  String packLibraryUiPermissions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count UI permissions',
+      one: '1 UI permission',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String packLibraryLastFailure(String message) {
     return 'Last failure: $message';
   }
@@ -2343,6 +2399,22 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get permissionGateDeferredPrivacy =>
       'Deferred until privacy decision coverage exists.';
+
+  @override
+  String settingsPackUiContributionSubtitle(String pack, String description) {
+    return '$pack: $description';
+  }
+
+  @override
+  String settingsPackUiContributionPermissionRequired(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count permissions required',
+      one: 'permission required',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get agentPlatformTitle => 'Log Center';

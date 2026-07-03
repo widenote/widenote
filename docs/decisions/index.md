@@ -23,6 +23,7 @@
 | [ADR-0018](./0018-accept-durable-agent-work-queue.md) | Accept durable agent work queue | accepted | 2026-07-02 |
 | [ADR-0019](./0019-hide-bottom-tabs-on-mobile-child-pages.md) | Hide Bottom Tabs On Mobile Child Pages | accepted | 2026-07-03 |
 | [ADR-0020](./0020-accept-insight-depth-foundation.md) | Accept Insight Depth Foundation | accepted | 2026-07-03 |
+| [ADR-0021](./0021-use-host-rendered-pack-ui-contributions.md) | Use Host-Rendered Pack UI Contributions | accepted | 2026-07-03 |
 
 ## RFC Status
 

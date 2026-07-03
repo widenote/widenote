@@ -12,12 +12,12 @@ Permissions, model providers, backup/restore, and traces are Settings-owned
 pages; Plugins may show visual shortcuts to them, but those shortcuts route to
 the declared `/settings/...` parent stack. Pack Library displays installed and
 bundled marketplace metadata, including source, trust level, categories,
-capabilities, and additive/replacement slot declarations. It can enable or
-disable built-in official Packs for future local runtime registration, but does
-not dynamically download remote Packs or grant high-risk permissions. Built-in
-official pack metadata comes from the mobile embedded manifest bridge and is
-checked against `packs/official/*` manifest JSON in focused tests. Agent
-Platform status reads local trace events.
+capabilities, additive/replacement slot declarations, and host-rendered UI
+contributions. It can enable or disable built-in official Packs for future local
+runtime registration, but does not dynamically download remote Packs or grant
+high-risk permissions. Built-in official pack metadata comes from the mobile
+embedded manifest bridge and is checked against `packs/official/*` manifest JSON
+in focused tests. Agent Platform status reads local trace events.
 
 ## Dependencies
 

@@ -68,6 +68,7 @@ final class PackLibraryPack {
     required this.capabilities,
     required this.replacementSlots,
     required this.additiveSlots,
+    required this.uiContributions,
     required this.enabledSubscriptionCount,
     required this.failureCount,
     required this.permissionDecisionCounts,
@@ -91,12 +92,46 @@ final class PackLibraryPack {
   final List<String> capabilities;
   final List<String> replacementSlots;
   final List<String> additiveSlots;
+  final List<PackUiContribution> uiContributions;
   final int enabledSubscriptionCount;
   final int failureCount;
   final PackPermissionDecisionCounts permissionDecisionCounts;
   final PackLibraryFailure? lastFailure;
 
   bool get isEnabled => status == 'enabled';
+}
+
+@immutable
+final class PackUiContribution {
+  const PackUiContribution({
+    required this.id,
+    required this.surface,
+    required this.kind,
+    required this.title,
+    required this.description,
+    required this.slot,
+    required this.placement,
+    required this.events,
+    required this.blocks,
+    required this.settingsSchemaRef,
+    required this.requiredPermissions,
+  });
+
+  final String id;
+  final String surface;
+  final String kind;
+  final String title;
+  final String description;
+  final String? slot;
+  final String? placement;
+  final List<String> events;
+  final List<String> blocks;
+  final String? settingsSchemaRef;
+  final List<String> requiredPermissions;
+
+  bool get isSettingsContribution {
+    return surface == 'settings.pack_detail' && kind == 'settings_form';
+  }
 }
 
 @immutable
@@ -222,6 +257,15 @@ final class PermissionGateState {
   }
 
   int get deferredCount => deferredPermissions.length;
+
+  bool isGranted(String packId, String permission) {
+    return builtInPermissions.any(
+      (candidate) =>
+          candidate.packId == packId &&
+          candidate.permission == permission &&
+          candidate.decisionState == PermissionGateDecisionState.granted,
+    );
+  }
 }
 
 final class PackLibraryController extends Notifier<PackLibraryState> {
@@ -323,6 +367,7 @@ final class PackLibraryController extends Notifier<PackLibraryState> {
       capabilities: _stringListValue(marketplace['capabilities']),
       replacementSlots: _slotIds(rawManifest['replacement_slots']),
       additiveSlots: _slotIds(rawManifest['additive_slots']),
+      uiContributions: _uiContributions(rawManifest['ui_contributions']),
       enabledSubscriptionCount: installation.enabledSubscriptionIds.length,
       failureCount: taskFailureCount == 0 ? runFailureCount : taskFailureCount,
       permissionDecisionCounts: permissionCounts,
@@ -543,6 +588,40 @@ List<String> _slotIds(Object? value) {
       .whereType<Map>()
       .map((slot) => slot['id'])
       .whereType<String>()
+      .toList(growable: false);
+}
+
+List<PackUiContribution> _uiContributions(Object? value) {
+  if (value is! List) {
+    return const <PackUiContribution>[];
+  }
+  return value
+      .whereType<Map>()
+      .map((contribution) {
+        final id = _stringValue(contribution['id']);
+        final surface = _stringValue(contribution['surface']);
+        final kind = _stringValue(contribution['kind']);
+        final title = _stringValue(contribution['title']);
+        if (id == null || surface == null || kind == null || title == null) {
+          return null;
+        }
+        return PackUiContribution(
+          id: id,
+          surface: surface,
+          kind: kind,
+          title: title,
+          description: _stringValue(contribution['description']) ?? '',
+          slot: _stringValue(contribution['slot']),
+          placement: _stringValue(contribution['placement']),
+          events: _stringListValue(contribution['events']),
+          blocks: _stringListValue(contribution['blocks']),
+          settingsSchemaRef: _stringValue(contribution['settings_schema_ref']),
+          requiredPermissions: _stringListValue(
+            contribution['required_permissions'],
+          ),
+        );
+      })
+      .whereType<PackUiContribution>()
       .toList(growable: false);
 }
 

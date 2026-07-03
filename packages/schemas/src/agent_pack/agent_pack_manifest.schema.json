@@ -120,6 +120,12 @@
         "$ref": "#/$defs/ui_block"
       }
     },
+    "ui_contributions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ui_contribution"
+      }
+    },
     "settings_schema": {
       "type": "object",
       "additionalProperties": true
@@ -496,7 +502,8 @@
         "risk",
         "locality",
         "approval_requirement",
-        "execution"
+        "execution",
+        "compatible_run_modes"
       ],
       "properties": {
         "id": {
@@ -547,6 +554,14 @@
             "script_execution"
           ]
         },
+        "compatible_run_modes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/run_mode"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
         "input_schema": {
           "description": "JSON-schema-like input shape. Do not include raw fixture input values.",
           "type": "object",
@@ -566,19 +581,7 @@
       ],
       "properties": {
         "type": {
-          "type": "string",
-          "enum": [
-            "claim_list",
-            "metric_row",
-            "source_refs",
-            "note",
-            "evidence_list",
-            "counter_evidence",
-            "confidence_band",
-            "contrast",
-            "trend_chart",
-            "timeline"
-          ]
+          "$ref": "#/$defs/ui_block_type"
         },
         "events": {
           "type": "array",
@@ -588,6 +591,126 @@
           "uniqueItems": true
         }
       }
+    },
+    "ui_contribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "surface",
+        "kind",
+        "title"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/ui_contribution_id"
+        },
+        "surface": {
+          "$ref": "#/$defs/ui_surface"
+        },
+        "kind": {
+          "$ref": "#/$defs/ui_contribution_kind"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string"
+        },
+        "slot": {
+          "$ref": "#/$defs/ui_slot_id"
+        },
+        "placement": {
+          "$ref": "#/$defs/ui_placement"
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/event_type"
+          },
+          "uniqueItems": true
+        },
+        "blocks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ui_block_type"
+          },
+          "uniqueItems": true
+        },
+        "settings_schema_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "required_permissions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/permission_id"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "ui_contribution_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+    },
+    "ui_slot_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+    },
+    "ui_block_type": {
+      "type": "string",
+      "enum": [
+        "claim_list",
+        "metric_row",
+        "source_refs",
+        "note",
+        "evidence_list",
+        "counter_evidence",
+        "confidence_band",
+        "contrast",
+        "trend_chart",
+        "timeline"
+      ]
+    },
+    "ui_surface": {
+      "type": "string",
+      "enum": [
+        "home.summary",
+        "capture.sheet.accessory",
+        "timeline.card.accessory",
+        "timeline.item.detail",
+        "memory.item.detail",
+        "insight.detail",
+        "artifact.detail",
+        "chat.tool_result",
+        "todo.detail",
+        "plugins.pack_home",
+        "settings.pack_detail",
+        "bottom_tab"
+      ]
+    },
+    "ui_contribution_kind": {
+      "type": "string",
+      "enum": [
+        "settings_form",
+        "panel",
+        "event_blocks",
+        "action",
+        "inline_status",
+        "bottom_tab"
+      ]
+    },
+    "ui_placement": {
+      "type": "string",
+      "enum": [
+        "section",
+        "inline",
+        "primary_action",
+        "secondary_action",
+        "tab"
+      ]
     },
     "storage_quota": {
       "type": "object",

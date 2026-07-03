@@ -5,6 +5,7 @@ import 'model.dart';
 import 'run_mode.dart';
 import 'task.dart';
 import 'tools.dart';
+import 'ui_contributions.dart';
 
 enum AgentRuntimeKind { native, declarative, remote, script }
 
@@ -184,6 +185,7 @@ final class AgentPackManifestSnapshot {
     required this.subscriptions,
     required this.agentDefinitions,
     required this.toolDefinitions,
+    required this.uiContributions,
   });
 
   factory AgentPackManifestSnapshot.fromJson(JsonMap json) {
@@ -235,7 +237,14 @@ final class AgentPackManifestSnapshot {
       json['tools'],
       packPermissions: requiredPermissions,
     );
-    _validateUiBlocks(json['ui_blocks']);
+    final declaredUiBlocks = validateAgentPackUiBlocks(json['ui_blocks']);
+    final uiContributions = parseAgentPackUiContributions(
+      json['ui_contributions'],
+      edition: edition,
+      packPermissions: requiredPermissions,
+      declaredUiBlocks: declaredUiBlocks,
+      hasSettingsSchema: json['settings_schema'] != null,
+    );
     _validateOpenObject(json['settings_schema'], 'settings_schema');
     _validateOpenObject(json['secrets_schema'], 'secrets_schema');
     _validateStorageQuota(json['storage_quota']);
@@ -260,6 +269,7 @@ final class AgentPackManifestSnapshot {
       subscriptions: subscriptions,
       agentDefinitions: agentDefinitions,
       toolDefinitions: toolDefinitions,
+      uiContributions: uiContributions,
     );
   }
 
@@ -274,6 +284,7 @@ final class AgentPackManifestSnapshot {
   final List<Subscription> subscriptions;
   final Map<String, AgentDefinition> agentDefinitions;
   final Map<String, AgentPackToolDefinition> toolDefinitions;
+  final List<AgentPackUiContributionDefinition> uiContributions;
 }
 
 final class AgentPackAlignmentIssue {
@@ -577,6 +588,7 @@ const Set<String> _manifestKeys = <String>{
   'model_profiles',
   'tools',
   'ui_blocks',
+  'ui_contributions',
   'settings_schema',
   'secrets_schema',
   'storage_quota',
@@ -1239,33 +1251,6 @@ void _validateSlotDeclarations(
     'Manifest field replacement_slots is reserved for official or local_dev '
     'packs in this slice.',
   );
-}
-
-void _validateUiBlocks(Object? value) {
-  if (value == null) {
-    return;
-  }
-  if (value is! List<Object?>) {
-    throw const FormatException(
-      'Manifest field ui_blocks must be an object array.',
-    );
-  }
-  for (var index = 0; index < value.length; index += 1) {
-    final json = _requiredJsonMap(
-      value[index],
-      'Manifest field ui_blocks[$index] must be an object.',
-    );
-    _rejectUnknownFields(json, 'ui_blocks[$index]', const <String>{
-      'type',
-      'events',
-    });
-    _requiredString(json, 'type');
-    _optionalStringSet(
-      json['events'],
-      'ui_blocks[$index].events',
-      pattern: _eventTypePattern,
-    );
-  }
 }
 
 void _validateStorageQuota(Object? value) {

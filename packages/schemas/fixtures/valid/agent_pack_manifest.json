@@ -110,6 +110,11 @@
       "approval_requirement": "none",
       "execution": "local",
       "side_effect": "none",
+      "compatible_run_modes": [
+        "read_only",
+        "confirm",
+        "auto"
+      ],
       "input_schema": {
         "type": "object",
         "additionalProperties": false
@@ -143,6 +148,28 @@
       "type": "note",
       "events": [
         "wn.insight.created"
+      ]
+    }
+  ],
+  "ui_contributions": [
+    {
+      "id": "insight.detail.synthetic",
+      "surface": "insight.detail",
+      "kind": "event_blocks",
+      "title": "Synthetic insight detail",
+      "description": "Synthetic host-rendered event blocks for contract validation.",
+      "placement": "section",
+      "events": [
+        "wn.insight.created"
+      ],
+      "blocks": [
+        "claim_list",
+        "metric_row",
+        "source_refs",
+        "note"
+      ],
+      "required_permissions": [
+        "memory.read"
       ]
     }
   ],

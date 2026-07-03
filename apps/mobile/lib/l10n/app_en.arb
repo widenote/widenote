@@ -1124,6 +1124,63 @@
       }
     }
   },
+  "packLibraryUiContributionCount": "{count, plural, =1{1 UI surface} other{{count} UI surfaces}}",
+  "@packLibraryUiContributionCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "packLibraryUiContributionsTitle": "UI contributions",
+  "packLibraryUiSurface": "surface: {surface}",
+  "@packLibraryUiSurface": {
+    "placeholders": {
+      "surface": {
+        "type": "String"
+      }
+    }
+  },
+  "packLibraryUiKind": "kind: {kind}",
+  "@packLibraryUiKind": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "packLibraryUiSlot": "slot: {slot}",
+  "@packLibraryUiSlot": {
+    "placeholders": {
+      "slot": {
+        "type": "String"
+      }
+    }
+  },
+  "packLibraryUiEvents": "{count, plural, =1{1 event} other{{count} events}}",
+  "@packLibraryUiEvents": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "packLibraryUiBlocks": "blocks: {blocks}",
+  "@packLibraryUiBlocks": {
+    "placeholders": {
+      "blocks": {
+        "type": "String"
+      }
+    }
+  },
+  "packLibraryUiPermissions": "{count, plural, =1{1 UI permission} other{{count} UI permissions}}",
+  "@packLibraryUiPermissions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "packLibraryLastFailure": "Last failure: {message}",
   "@packLibraryLastFailure": {
     "placeholders": {
@@ -1189,6 +1246,25 @@
   "permissionGateDeferredExternalTools": "Deferred until external-tool permission design exists.",
   "permissionGateDeferredPlatform": "Deferred until platform permission review exists.",
   "permissionGateDeferredPrivacy": "Deferred until privacy decision coverage exists.",
+  "settingsPackUiContributionSubtitle": "{pack}: {description}",
+  "@settingsPackUiContributionSubtitle": {
+    "placeholders": {
+      "pack": {
+        "type": "String"
+      },
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsPackUiContributionPermissionRequired": "{count, plural, =1{permission required} other{{count} permissions required}}",
+  "@settingsPackUiContributionPermissionRequired": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "agentPlatformTitle": "Log Center",
   "agentPlatformSubtitle": "Local runtime evidence from raw logs, runs, tasks, approvals, and traces.",
   "agentConsoleTitle": "Log Center",

@@ -87,6 +87,14 @@ class _ControlSurface extends ConsumerWidget {
         ?.settings;
     final backupState = ref.watch(backupControllerProvider);
     final traceSnapshot = ref.watch(traceConsoleControllerProvider);
+    final packState = ref.watch(packLibraryControllerProvider);
+    final permissionState = ref.watch(permissionGateControllerProvider);
+    final packSettingsRows = _packSettingsRows(
+      context,
+      l10n,
+      packState.packs,
+      permissionState,
+    );
     return _Surface(
       icon: Icons.tune_outlined,
       title: l10n.settingsControlsTitle,
@@ -160,9 +168,104 @@ class _ControlSurface extends ConsumerWidget {
             ),
             onTap: () => context.push('/settings/traces'),
           ),
+          if (packSettingsRows.isNotEmpty) ...[
+            const Divider(height: 20),
+            ...packSettingsRows,
+          ],
         ],
       ),
     );
+  }
+
+  List<Widget> _packSettingsRows(
+    BuildContext context,
+    AppLocalizations l10n,
+    List<PackLibraryPack> packs,
+    PermissionGateState permissionState,
+  ) {
+    final rows = <Widget>[];
+    for (final pack in packs) {
+      for (final contribution in pack.uiContributions) {
+        if (!contribution.isSettingsContribution) {
+          continue;
+        }
+        final missingPermissions = _missingContributionPermissions(
+          pack,
+          contribution,
+          permissionState,
+        );
+        if (rows.isNotEmpty) {
+          rows.add(const Divider(height: 20));
+        }
+        rows.add(
+          _ControlRow(
+            key: Key('settings-ui-contribution-${pack.id}-${contribution.id}'),
+            icon: Icons.extension_outlined,
+            title: contribution.title,
+            subtitle: l10n.settingsPackUiContributionSubtitle(
+              pack.name,
+              contribution.description.isEmpty
+                  ? contribution.surface
+                  : contribution.description,
+            ),
+            status: _packSettingsContributionStatus(
+              l10n,
+              pack,
+              missingPermissions,
+            ),
+            onTap: _packSettingsContributionTap(
+              context,
+              pack,
+              missingPermissions,
+            ),
+          ),
+        );
+      }
+    }
+    return rows;
+  }
+
+  List<String> _missingContributionPermissions(
+    PackLibraryPack pack,
+    PackUiContribution contribution,
+    PermissionGateState permissionState,
+  ) {
+    if (!pack.isEnabled) {
+      return contribution.requiredPermissions;
+    }
+    return contribution.requiredPermissions
+        .where((permission) => !permissionState.isGranted(pack.id, permission))
+        .toList(growable: false);
+  }
+
+  String _packSettingsContributionStatus(
+    AppLocalizations l10n,
+    PackLibraryPack pack,
+    List<String> missingPermissions,
+  ) {
+    if (!pack.isEnabled) {
+      return l10n.packLibraryStatusDisabled;
+    }
+    if (missingPermissions.isNotEmpty) {
+      return l10n.settingsPackUiContributionPermissionRequired(
+        missingPermissions.length,
+      );
+    }
+    return l10n.packLibraryStatusEnabled;
+  }
+
+  VoidCallback? _packSettingsContributionTap(
+    BuildContext context,
+    PackLibraryPack pack,
+    List<String> missingPermissions,
+  ) {
+    if (!pack.isEnabled) {
+      return null;
+    }
+    if (missingPermissions.isNotEmpty) {
+      return () => context.push('/settings/permissions');
+    }
+    return () => context.push('/plugins/packs');
   }
 
   String _backupStatus(AppLocalizations l10n, BackupState state) {

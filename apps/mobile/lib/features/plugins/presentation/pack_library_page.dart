@@ -152,6 +152,13 @@ class _PackRow extends StatelessWidget {
                         pack.additiveSlots.join(', '),
                       ),
                     ),
+                  if (pack.uiContributions.isNotEmpty)
+                    _Tag(
+                      key: Key('pack-ui-contribution-count-${pack.id}'),
+                      label: l10n.packLibraryUiContributionCount(
+                        pack.uiContributions.length,
+                      ),
+                    ),
                   _Tag(label: l10n.packLibraryEntrypoint(pack.entrypointKind)),
                   _Tag(
                     label: l10n.packLibraryPermissionCount(
@@ -178,6 +185,10 @@ class _PackRow extends StatelessWidget {
                   ),
                 ],
               ),
+              if (pack.uiContributions.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                _ContributionList(pack: pack),
+              ],
               if (failure != null) ...[
                 const SizedBox(height: 8),
                 Text(
@@ -196,6 +207,100 @@ class _PackRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ContributionList extends StatelessWidget {
+  const _ContributionList({required this.pack});
+
+  final PackLibraryPack pack;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Column(
+      key: Key('pack-ui-contributions-${pack.id}'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.packLibraryUiContributionsTitle,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 6),
+        for (final contribution in pack.uiContributions) ...[
+          _ContributionRow(packId: pack.id, contribution: contribution),
+          if (contribution != pack.uiContributions.last)
+            const SizedBox(height: 8),
+        ],
+      ],
+    );
+  }
+}
+
+class _ContributionRow extends StatelessWidget {
+  const _ContributionRow({required this.packId, required this.contribution});
+
+  final String packId;
+  final PackUiContribution contribution;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border(
+          left: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.only(left: 10),
+        child: Column(
+          key: Key('pack-ui-contribution-$packId-${contribution.id}'),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              contribution.title,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            if (contribution.description.isNotEmpty) ...[
+              const SizedBox(height: 2),
+              Text(contribution.description, style: _mutedStyle(context)),
+            ],
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                _Tag(label: l10n.packLibraryUiSurface(contribution.surface)),
+                _Tag(label: l10n.packLibraryUiKind(contribution.kind)),
+                if (contribution.slot != null)
+                  _Tag(label: l10n.packLibraryUiSlot(contribution.slot!)),
+                if (contribution.events.isNotEmpty)
+                  _Tag(
+                    label: l10n.packLibraryUiEvents(contribution.events.length),
+                  ),
+                if (contribution.blocks.isNotEmpty)
+                  _Tag(
+                    label: l10n.packLibraryUiBlocks(
+                      contribution.blocks.join(', '),
+                    ),
+                  ),
+                if (contribution.requiredPermissions.isNotEmpty)
+                  _Tag(
+                    label: l10n.packLibraryUiPermissions(
+                      contribution.requiredPermissions.length,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

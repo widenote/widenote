@@ -3598,6 +3598,54 @@ abstract class AppLocalizations {
     int revoked,
   );
 
+  /// No description provided for @packLibraryUiContributionCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 UI surface} other{{count} UI surfaces}}'**
+  String packLibraryUiContributionCount(int count);
+
+  /// No description provided for @packLibraryUiContributionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'UI contributions'**
+  String get packLibraryUiContributionsTitle;
+
+  /// No description provided for @packLibraryUiSurface.
+  ///
+  /// In en, this message translates to:
+  /// **'surface: {surface}'**
+  String packLibraryUiSurface(String surface);
+
+  /// No description provided for @packLibraryUiKind.
+  ///
+  /// In en, this message translates to:
+  /// **'kind: {kind}'**
+  String packLibraryUiKind(String kind);
+
+  /// No description provided for @packLibraryUiSlot.
+  ///
+  /// In en, this message translates to:
+  /// **'slot: {slot}'**
+  String packLibraryUiSlot(String slot);
+
+  /// No description provided for @packLibraryUiEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 event} other{{count} events}}'**
+  String packLibraryUiEvents(int count);
+
+  /// No description provided for @packLibraryUiBlocks.
+  ///
+  /// In en, this message translates to:
+  /// **'blocks: {blocks}'**
+  String packLibraryUiBlocks(String blocks);
+
+  /// No description provided for @packLibraryUiPermissions.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 UI permission} other{{count} UI permissions}}'**
+  String packLibraryUiPermissions(int count);
+
   /// No description provided for @packLibraryLastFailure.
   ///
   /// In en, this message translates to:
@@ -3861,6 +3909,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Deferred until privacy decision coverage exists.'**
   String get permissionGateDeferredPrivacy;
+
+  /// No description provided for @settingsPackUiContributionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{pack}: {description}'**
+  String settingsPackUiContributionSubtitle(String pack, String description);
+
+  /// No description provided for @settingsPackUiContributionPermissionRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{permission required} other{{count} permissions required}}'**
+  String settingsPackUiContributionPermissionRequired(int count);
 
   /// No description provided for @agentPlatformTitle.
   ///

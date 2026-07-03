@@ -663,6 +663,14 @@
   "packLibrarySubscriptionCount": "{count} 个订阅",
   "packLibraryFailureCount": "{count} 次失败",
   "packLibraryPermissionDecisionSummary": "权限：{granted} 已授权 / {denied} 已拒绝 / {revoked} 已撤销",
+  "packLibraryUiContributionCount": "{count} 个 UI 挂载点",
+  "packLibraryUiContributionsTitle": "UI 拓展",
+  "packLibraryUiSurface": "位置：{surface}",
+  "packLibraryUiKind": "类型：{kind}",
+  "packLibraryUiSlot": "槽位：{slot}",
+  "packLibraryUiEvents": "{count} 个事件",
+  "packLibraryUiBlocks": "区块：{blocks}",
+  "packLibraryUiPermissions": "{count} 个 UI 权限",
   "packLibraryLastFailure": "最近失败：{message}",
   "packLibraryStatusEnabled": "已启用",
   "packLibraryStatusDisabled": "已停用",
@@ -707,6 +715,15 @@
   "permissionGateDeferredExternalTools": "外部工具权限设计就绪前延期。",
   "permissionGateDeferredPlatform": "平台权限复核就绪前延期。",
   "permissionGateDeferredPrivacy": "隐私决策覆盖前延期。",
+  "settingsPackUiContributionSubtitle": "{pack}：{description}",
+  "settingsPackUiContributionPermissionRequired": "{count} 项权限待授权",
+  "@settingsPackUiContributionPermissionRequired": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "agentPlatformTitle": "日志中心",
   "agentPlatformSubtitle": "来自原始日志、运行、任务、审批和追踪的本地运行证据。",
   "agentConsoleTitle": "日志中心",

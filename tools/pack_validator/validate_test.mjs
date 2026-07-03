@@ -80,6 +80,10 @@ const baseManifest = Object.freeze({
       mode: "additive",
     },
   ],
+  settings_schema: {
+    type: "object",
+    additionalProperties: true,
+  },
 });
 
 assert.deepEqual(validateManifest(clone(baseManifest)), []);
@@ -97,12 +101,165 @@ assert.deepEqual(
   [],
 );
 
+assert.deepEqual(
+  validateManifest({
+    ...clone(baseManifest),
+    ui_blocks: [
+      { type: "note", events: ["wn.insight.created"] },
+      { type: "source_refs", events: ["wn.insight.created"] },
+    ],
+    ui_contributions: [
+      {
+        id: "settings.review",
+        surface: "settings.pack_detail",
+        kind: "settings_form",
+        title: "Review settings",
+        description: "Host-rendered settings.",
+        slot: "settings.pack_detail.review",
+        placement: "section",
+        settings_schema_ref: "#/settings_schema",
+        required_permissions: ["memory.read"],
+      },
+      {
+        id: "insight.detail.review",
+        surface: "insight.detail",
+        kind: "event_blocks",
+        title: "Insight review",
+        events: ["wn.insight.created"],
+        blocks: ["note", "source_refs"],
+      },
+    ],
+  }),
+  [],
+);
+
 expectError(
   {
     ...clone(baseManifest),
     ui_blocks: [{ type: "webview", events: ["wn.insight.created"] }],
   },
   "ui_blocks[0].type must be one of",
+);
+
+expectError(
+  {
+    ...clone(baseManifest),
+    ui_contributions: [
+      {
+        id: "settings.review",
+        surface: "settings.pack_detail",
+        kind: "settings_form",
+        title: "Review settings",
+        settings_schema_ref: "#/settings_schema",
+        required_permissions: ["trace.read"],
+      },
+    ],
+  },
+  "ui_contributions[0].required_permissions contains permission not declared by pack: trace.read",
+);
+
+expectError(
+  {
+    ...clone(baseManifest),
+    ui_contributions: ["settings.review"],
+  },
+  "ui_contributions[0] must be an object",
+);
+
+expectError(
+  {
+    ...clone(baseManifest),
+    ui_contributions: [
+      {
+        id: "insight.detail.review",
+        surface: "insight.detail",
+        kind: "event_blocks",
+        title: "Insight review",
+      },
+    ],
+  },
+  "ui_contributions[0] must declare events and blocks for event_blocks",
+);
+
+expectError(
+  {
+    ...clone(baseManifest),
+    ui_contributions: [
+      {
+        id: "insight.detail.review",
+        surface: "insight.detail",
+        kind: "event_blocks",
+        title: "Insight review",
+        events: ["wn.insight.created"],
+        blocks: ["note"],
+      },
+    ],
+  },
+  "ui_contributions[0].blocks contains UI block not declared by pack: note",
+);
+
+expectError(
+  {
+    ...clone(baseManifest),
+    ui_contributions: [
+      {
+        id: "settings.review",
+        surface: "settings.pack_detail",
+        kind: "settings_form",
+        title: "Review settings",
+      },
+    ],
+  },
+  "ui_contributions[0].settings_schema_ref is required for settings_form",
+);
+
+const missingSettingsSchemaManifest = clone(baseManifest);
+delete missingSettingsSchemaManifest.settings_schema;
+missingSettingsSchemaManifest.ui_contributions = [
+  {
+    id: "settings.review",
+    surface: "settings.pack_detail",
+    kind: "settings_form",
+    title: "Review settings",
+    settings_schema_ref: "#/settings_schema",
+  },
+];
+expectError(
+  missingSettingsSchemaManifest,
+  "ui_contributions[0].settings_schema_ref references missing settings_schema",
+);
+
+expectError(
+  {
+    ...clone(baseManifest),
+    edition: "community",
+    ui_contributions: [
+      {
+        id: "navigation.bottom",
+        surface: "bottom_tab",
+        kind: "bottom_tab",
+        title: "Community tab",
+      },
+    ],
+  },
+  "ui_contributions[0] bottom_tab is reserved for official or local_dev packs",
+);
+
+expectError(
+  {
+    ...clone(baseManifest),
+    ui_contributions: [
+      {
+        id: "settings.review",
+        surface: "settings.pack_detail",
+        kind: "settings_form",
+        title: "Review settings",
+        settings_schema_ref: "#/settings_schema",
+        flutter_widget: "UnsafeWidget",
+      },
+    ],
+  },
+  "ui_contributions[0] contains unsupported keys: flutter_widget",
 );
 
 expectError(
