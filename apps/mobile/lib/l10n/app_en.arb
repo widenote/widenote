@@ -1977,5 +1977,128 @@
     }
   },
   "locationRecordCoordinatesSaved": "GPS saved",
-  "locationRecordUnavailable": "Location unavailable"
+  "locationRecordUnavailable": "Location unavailable",
+  "agentStatusActiveTitle": "Agents are working",
+  "agentStatusAttentionTitle": "Agent work needs attention",
+  "agentStatusCompletedTitle": "Agent work completed",
+  "agentStatusIdleTitle": "Agents idle",
+  "agentStatusOverlaySummary": "{running} running / {queued} queued / {retrying} retrying / {attention} need attention",
+  "@agentStatusOverlaySummary": {
+    "placeholders": {
+      "running": {
+        "type": "int"
+      },
+      "queued": {
+        "type": "int"
+      },
+      "retrying": {
+        "type": "int"
+      },
+      "attention": {
+        "type": "int"
+      }
+    }
+  },
+  "agentStatusSheetTitle": "Current Agent status",
+  "agentStatusRefreshTooltip": "Refresh Agent status",
+  "agentStatusRunning": "Running: {count}",
+  "@agentStatusRunning": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentStatusQueued": "Queued: {count}",
+  "@agentStatusQueued": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentStatusRetrying": "Retrying: {count}",
+  "@agentStatusRetrying": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentStatusRecovering": "Recovering: {count}",
+  "@agentStatusRecovering": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentStatusAttention": "Attention: {count}",
+  "@agentStatusAttention": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentStatusSucceeded": "Done: {count}",
+  "@agentStatusSucceeded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentStatusIdleBody": "No current local Agent work.",
+  "agentStatusOpenLogCenter": "Open Log Center",
+  "agentStatusPack": "pack: {packId}",
+  "@agentStatusPack": {
+    "placeholders": {
+      "packId": {
+        "type": "String"
+      }
+    }
+  },
+  "agentStatusAttempt": "attempts: {count}",
+  "@agentStatusAttempt": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentStatusMissingDependencies": "missing deps: {count}",
+  "@agentStatusMissingDependencies": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentStatusNextRetry": "next retry: {time}",
+  "@agentStatusNextRetry": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "agentStatusOutputs": "outputs: {count}",
+  "@agentStatusOutputs": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentStatusErrorRedacted": "Error details are kept in the local Log Center.",
+  "agentStatusKindRunning": "running",
+  "agentStatusKindQueued": "queued",
+  "agentStatusKindRetrying": "retrying",
+  "agentStatusKindRecovering": "recovering",
+  "agentStatusKindSucceeded": "succeeded",
+  "agentStatusKindFailed": "failed",
+  "agentStatusKindDenied": "denied",
+  "agentStatusKindCanceled": "canceled",
+  "agentStatusKindBlocked": "blocked"
 }

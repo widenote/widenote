@@ -3730,4 +3730,124 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get locationRecordUnavailable => 'Location unavailable';
+
+  @override
+  String get agentStatusActiveTitle => 'Agents are working';
+
+  @override
+  String get agentStatusAttentionTitle => 'Agent work needs attention';
+
+  @override
+  String get agentStatusCompletedTitle => 'Agent work completed';
+
+  @override
+  String get agentStatusIdleTitle => 'Agents idle';
+
+  @override
+  String agentStatusOverlaySummary(
+    int running,
+    int queued,
+    int retrying,
+    int attention,
+  ) {
+    return '$running running / $queued queued / $retrying retrying / $attention need attention';
+  }
+
+  @override
+  String get agentStatusSheetTitle => 'Current Agent status';
+
+  @override
+  String get agentStatusRefreshTooltip => 'Refresh Agent status';
+
+  @override
+  String agentStatusRunning(int count) {
+    return 'Running: $count';
+  }
+
+  @override
+  String agentStatusQueued(int count) {
+    return 'Queued: $count';
+  }
+
+  @override
+  String agentStatusRetrying(int count) {
+    return 'Retrying: $count';
+  }
+
+  @override
+  String agentStatusRecovering(int count) {
+    return 'Recovering: $count';
+  }
+
+  @override
+  String agentStatusAttention(int count) {
+    return 'Attention: $count';
+  }
+
+  @override
+  String agentStatusSucceeded(int count) {
+    return 'Done: $count';
+  }
+
+  @override
+  String get agentStatusIdleBody => 'No current local Agent work.';
+
+  @override
+  String get agentStatusOpenLogCenter => 'Open Log Center';
+
+  @override
+  String agentStatusPack(String packId) {
+    return 'pack: $packId';
+  }
+
+  @override
+  String agentStatusAttempt(int count) {
+    return 'attempts: $count';
+  }
+
+  @override
+  String agentStatusMissingDependencies(int count) {
+    return 'missing deps: $count';
+  }
+
+  @override
+  String agentStatusNextRetry(String time) {
+    return 'next retry: $time';
+  }
+
+  @override
+  String agentStatusOutputs(int count) {
+    return 'outputs: $count';
+  }
+
+  @override
+  String get agentStatusErrorRedacted =>
+      'Error details are kept in the local Log Center.';
+
+  @override
+  String get agentStatusKindRunning => 'running';
+
+  @override
+  String get agentStatusKindQueued => 'queued';
+
+  @override
+  String get agentStatusKindRetrying => 'retrying';
+
+  @override
+  String get agentStatusKindRecovering => 'recovering';
+
+  @override
+  String get agentStatusKindSucceeded => 'succeeded';
+
+  @override
+  String get agentStatusKindFailed => 'failed';
+
+  @override
+  String get agentStatusKindDenied => 'denied';
+
+  @override
+  String get agentStatusKindCanceled => 'canceled';
+
+  @override
+  String get agentStatusKindBlocked => 'blocked';
 }

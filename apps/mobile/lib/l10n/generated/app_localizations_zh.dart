@@ -3358,4 +3358,123 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get locationRecordUnavailable => '位置不可用';
+
+  @override
+  String get agentStatusActiveTitle => 'Agent 正在执行';
+
+  @override
+  String get agentStatusAttentionTitle => 'Agent 执行需要关注';
+
+  @override
+  String get agentStatusCompletedTitle => 'Agent 执行已完成';
+
+  @override
+  String get agentStatusIdleTitle => 'Agent 空闲';
+
+  @override
+  String agentStatusOverlaySummary(
+    int running,
+    int queued,
+    int retrying,
+    int attention,
+  ) {
+    return '$running 个运行中 / $queued 个排队 / $retrying 个重试中 / $attention 个需关注';
+  }
+
+  @override
+  String get agentStatusSheetTitle => '当前 Agent 状态';
+
+  @override
+  String get agentStatusRefreshTooltip => '刷新 Agent 状态';
+
+  @override
+  String agentStatusRunning(int count) {
+    return '运行中：$count';
+  }
+
+  @override
+  String agentStatusQueued(int count) {
+    return '排队：$count';
+  }
+
+  @override
+  String agentStatusRetrying(int count) {
+    return '重试中：$count';
+  }
+
+  @override
+  String agentStatusRecovering(int count) {
+    return '恢复中：$count';
+  }
+
+  @override
+  String agentStatusAttention(int count) {
+    return '需关注：$count';
+  }
+
+  @override
+  String agentStatusSucceeded(int count) {
+    return '完成：$count';
+  }
+
+  @override
+  String get agentStatusIdleBody => '当前没有本地 Agent 执行。';
+
+  @override
+  String get agentStatusOpenLogCenter => '打开日志中心';
+
+  @override
+  String agentStatusPack(String packId) {
+    return 'Pack：$packId';
+  }
+
+  @override
+  String agentStatusAttempt(int count) {
+    return '尝试：$count';
+  }
+
+  @override
+  String agentStatusMissingDependencies(int count) {
+    return '缺失依赖：$count';
+  }
+
+  @override
+  String agentStatusNextRetry(String time) {
+    return '下次重试：$time';
+  }
+
+  @override
+  String agentStatusOutputs(int count) {
+    return '输出：$count';
+  }
+
+  @override
+  String get agentStatusErrorRedacted => '错误详情保留在本地日志中心。';
+
+  @override
+  String get agentStatusKindRunning => '运行中';
+
+  @override
+  String get agentStatusKindQueued => '排队';
+
+  @override
+  String get agentStatusKindRetrying => '重试中';
+
+  @override
+  String get agentStatusKindRecovering => '恢复中';
+
+  @override
+  String get agentStatusKindSucceeded => '已成功';
+
+  @override
+  String get agentStatusKindFailed => '失败';
+
+  @override
+  String get agentStatusKindDenied => '已拒绝';
+
+  @override
+  String get agentStatusKindCanceled => '已取消';
+
+  @override
+  String get agentStatusKindBlocked => '已阻塞';
 }

@@ -40,6 +40,8 @@
 	<string>WideNote uses your location only when you save a record and have enabled local GPS capture in Settings.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>WideNote reads selected photos so they can be stored as local capture attachments with source metadata.</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>

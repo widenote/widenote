@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/backup/presentation/backup_page.dart';
+import '../features/agent_status/presentation/agent_execution_status_overlay.dart';
 import '../features/capture/application/capture_sheet_request.dart';
 import '../features/capture/presentation/home_page.dart';
 import '../features/chat/presentation/chat_page.dart';
@@ -276,7 +277,12 @@ class WideNoteShell extends ConsumerWidget {
     final l10n = context.l10n;
     final showBottomNavigationBar = _bottomNavigationPaths.contains(location);
     return Scaffold(
-      body: SafeArea(child: child),
+      body: SafeArea(
+        child: AgentExecutionStatusLayer(
+          showBottomNavigationBar: showBottomNavigationBar,
+          child: child,
+        ),
+      ),
       bottomNavigationBar: showBottomNavigationBar
           ? NavigationBar(
               selectedIndex: _selectedIndex,

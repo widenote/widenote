@@ -128,6 +128,7 @@ It should stay short. It points to the right local context instead of duplicatin
 | Module | Context | Purpose |
 | --- | --- | --- |
 | Mobile app | `apps/mobile/README.md` | Flutter client and local runtime host |
+| Mobile agent status | `apps/mobile/lib/features/agent_status/README.md` | Current local Agent execution status overlay and privacy-safe platform status sync |
 | Mobile backup | `apps/mobile/lib/features/backup/README.md` | Local `.widenote` archive backup export/import UI |
 | Mobile capture | `apps/mobile/lib/features/capture/README.md` | Home capture console, persistent text draft, read-model feedback, and Memory review |
 | Mobile capture media | `apps/mobile/lib/features/capture/media/README.md` | Camera, gallery, voice, share, fake adapters, and attachment safety boundary |

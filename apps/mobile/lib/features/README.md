@@ -39,6 +39,9 @@ Features may own presentation and temporary app-local controllers. Durable runti
   clearing.
 - `backup`: full `.widenote` directory archive export/import UI; legacy safe
   JSON and Markdown projections remain local DB compatibility/export surfaces.
+- `agent_status`: global read-only current Agent execution status overlay,
+  detail sheet, and privacy-safe platform notification/Live Activity status
+  sync.
 - `plugins`: pack, permission, model, backup, and log control entries.
 - `model_providers`: provider setup, fake connection tests, and default-provider
   local state.
