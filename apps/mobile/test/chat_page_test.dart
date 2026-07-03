@@ -76,12 +76,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('trace-raw-logs-page')), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.text('Chat model request failed.'),
-      400,
-      scrollable: find.byType(Scrollable).last,
-    );
-    expect(find.text('Chat model request failed.'), findsOneWidget);
+    await _expectRawLogPageText(tester, 'Chat model request failed.');
   });
 
   testWidgets('sending without a configured model localizes Chinese failure', (
@@ -596,6 +591,27 @@ Future<void> _ensureChatVisible(
     await tester.ensureVisible(finder);
   }
   await tester.pumpAndSettle();
+}
+
+Future<void> _expectRawLogPageText(WidgetTester tester, String text) async {
+  final target = find.textContaining(text);
+  while (true) {
+    if (target.evaluate().isNotEmpty) {
+      expect(target, findsOneWidget);
+      return;
+    }
+    final nextPageButton = find.byKey(const Key('trace-raw-next-page'));
+    if (nextPageButton.evaluate().isEmpty) {
+      break;
+    }
+    final button = tester.widget<IconButton>(nextPageButton);
+    if (button.onPressed == null) {
+      break;
+    }
+    await tester.tap(nextPageButton);
+    await tester.pumpAndSettle();
+  }
+  expect(target, findsOneWidget);
 }
 
 Future<void> _submitQuickCapture(WidgetTester tester, String text) async {

@@ -43,7 +43,7 @@ class TraceRawLogsPage extends ConsumerStatefulWidget {
 }
 
 class _TraceRawLogsPageState extends ConsumerState<TraceRawLogsPage> {
-  static const _pageSize = 25;
+  static const _pageSize = 10;
 
   AgentConsoleFilter _filter = AgentConsoleFilter.all;
   late final TextEditingController _searchController;
@@ -814,16 +814,24 @@ class _RawLogTextViewer extends StatelessWidget {
             ),
             child: SizedBox(
               width: double.infinity,
+              height: _rawLogBoxHeight(context),
               child: Padding(
                 padding: const EdgeInsets.all(12),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: SelectableText(
-                    displayText,
-                    key: const Key('trace-raw-text'),
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
+                child: Semantics(
+                  label: l10n.traceRawStreamTitle,
+                  container: true,
+                  child: SingleChildScrollView(
+                    key: const Key('trace-raw-text-viewport'),
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: SelectableText(
+                        displayText,
+                        key: const Key('trace-raw-text'),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -840,6 +848,17 @@ class _RawLogTextViewer extends StatelessWidget {
       ),
     );
   }
+}
+
+double _rawLogBoxHeight(BuildContext context) {
+  final viewportHeight = MediaQuery.sizeOf(context).height;
+  if (viewportHeight < 680) {
+    return 260;
+  }
+  if (viewportHeight < 820) {
+    return 320;
+  }
+  return 380;
 }
 
 class _RawLogPager extends StatelessWidget {
