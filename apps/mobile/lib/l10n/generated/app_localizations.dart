@@ -1137,6 +1137,126 @@ abstract class AppLocalizations {
   /// **'No source-linked insights yet.'**
   String get insightsEmpty;
 
+  /// No description provided for @insightsPageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Insights'**
+  String get insightsPageTitle;
+
+  /// No description provided for @insightsPageSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review source-linked patterns, claims, and evidence.'**
+  String get insightsPageSubtitle;
+
+  /// No description provided for @insightsBackTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Close Insights'**
+  String get insightsBackTooltip;
+
+  /// No description provided for @insightsRefreshTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh Insights'**
+  String get insightsRefreshTooltip;
+
+  /// No description provided for @insightsActiveSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Active insights'**
+  String get insightsActiveSectionTitle;
+
+  /// No description provided for @insightsActiveEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No active source-linked insights yet.'**
+  String get insightsActiveEmpty;
+
+  /// No description provided for @insightsArchivedSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived insights'**
+  String get insightsArchivedSectionTitle;
+
+  /// No description provided for @insightsArchivedEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No archived insights yet.'**
+  String get insightsArchivedEmpty;
+
+  /// No description provided for @insightDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Insight detail'**
+  String get insightDetailTitle;
+
+  /// No description provided for @insightDetailSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspect claims, metrics, evidence, and source refs.'**
+  String get insightDetailSubtitle;
+
+  /// No description provided for @insightMissingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Insight unavailable'**
+  String get insightMissingTitle;
+
+  /// No description provided for @insightMissingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This insight is not in the current local store.'**
+  String get insightMissingBody;
+
+  /// No description provided for @insightPayloadSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Claims and metrics'**
+  String get insightPayloadSectionTitle;
+
+  /// No description provided for @insightEvidenceSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Evidence'**
+  String get insightEvidenceSectionTitle;
+
+  /// No description provided for @insightCounterEvidenceSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Counter-evidence'**
+  String get insightCounterEvidenceSectionTitle;
+
+  /// No description provided for @insightOpenTimelineAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline'**
+  String get insightOpenTimelineAction;
+
+  /// No description provided for @insightActionArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get insightActionArchive;
+
+  /// No description provided for @insightActionRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get insightActionRestore;
+
+  /// No description provided for @insightConfidenceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{value} confidence'**
+  String insightConfidenceLabel(String value);
+
+  /// No description provided for @insightUpdateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Insight update failed.'**
+  String get insightUpdateFailed;
+
   /// No description provided for @recordsTitle.
   ///
   /// In en, this message translates to:

@@ -8,6 +8,7 @@ Responsibilities:
 
 - Quick capture
 - Timeline and cards
+- Source-linked insights
 - Local event store
 - Local memory
 - Local search

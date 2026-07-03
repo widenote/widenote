@@ -212,6 +212,8 @@ void main() {
       '/timeline/items/missing-item',
       '/memory',
       '/recap',
+      '/insights',
+      '/insights/missing-insight',
       '/settings',
       '/settings/permissions',
       '/settings/system-permissions',
@@ -273,6 +275,17 @@ void main() {
         path: '/recap',
         pageKey: Key('recap-page'),
         firstParentKey: Key('home-page'),
+      ),
+      _DeepLinkCase(
+        path: '/insights',
+        pageKey: Key('insights-page'),
+        firstParentKey: Key('home-page'),
+      ),
+      _DeepLinkCase(
+        path: '/insights/missing-insight',
+        pageKey: Key('insight-detail-missing'),
+        firstParentKey: Key('insights-page'),
+        secondParentKey: Key('home-page'),
       ),
       _DeepLinkCase(
         path: '/settings',

@@ -1,0 +1,125 @@
+{
+  "schema_version": 2,
+  "insight_kind": "behavior_loop",
+  "title": "Review rhythm is strongest after source-linked capture",
+  "summary": "Synthetic evidence shows review actions cluster after a capture and a Memory item point to the same project.",
+  "confidence": 0.78,
+  "sensitivity": "low",
+  "evidence_density": "medium",
+  "pattern_window": {
+    "starts_at": "2026-07-01T00:00:00Z",
+    "ends_at": "2026-07-03T00:00:00Z",
+    "source_count": 3
+  },
+  "claims": [
+    {
+      "id": "claim.review.after.capture",
+      "text": "Review actions are more likely when the same project appears in both capture and Memory evidence.",
+      "confidence": 0.78,
+      "sensitivity": "low",
+      "source_refs": [
+        {
+          "kind": "capture",
+          "id": "capture-synthetic-review",
+          "excerpt": "Synthetic project review note"
+        },
+        {
+          "kind": "memory",
+          "id": "memory-synthetic-review"
+        }
+      ]
+    }
+  ],
+  "metrics": [
+    {
+      "label": "source-linked",
+      "value": 3,
+      "source_refs": [
+        {
+          "kind": "capture",
+          "id": "capture-synthetic-review"
+        }
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "evidence.capture.memory.same.project",
+      "kind": "supporting",
+      "label": "Repeated project context",
+      "text": "A capture and a Memory item both mention the same synthetic project review context.",
+      "confidence": 0.8,
+      "source_refs": [
+        {
+          "kind": "capture",
+          "id": "capture-synthetic-review"
+        },
+        {
+          "kind": "memory",
+          "id": "memory-synthetic-review"
+        }
+      ]
+    }
+  ],
+  "counter_evidence": [
+    {
+      "id": "counter.single.day.only",
+      "kind": "counter",
+      "label": "Short window",
+      "text": "The synthetic fixture covers only a short window, so the claim stays medium confidence.",
+      "confidence": 0.7,
+      "source_refs": [
+        {
+          "kind": "capture",
+          "id": "capture-synthetic-review"
+        }
+      ]
+    }
+  ],
+  "source_refs": [
+    {
+      "kind": "capture",
+      "id": "capture-synthetic-review",
+      "excerpt": "Synthetic project review note"
+    },
+    {
+      "kind": "memory",
+      "id": "memory-synthetic-review"
+    },
+    {
+      "kind": "todo",
+      "id": "todo-synthetic-review"
+    }
+  ],
+  "ui_blocks": [
+    {
+      "kind": "claim_list"
+    },
+    {
+      "kind": "metric_row"
+    },
+    {
+      "kind": "evidence_list"
+    },
+    {
+      "kind": "counter_evidence"
+    },
+    {
+      "kind": "source_refs"
+    }
+  ],
+  "review": {
+    "state": "auto_write",
+    "risk_flags": [],
+    "review_reasons": []
+  },
+  "generator": {
+    "pack_id": "pack.insight_depth",
+    "agent_id": "agent.insight_synthesizer",
+    "run_id": "run-synthetic-insight-depth",
+    "trace_id": "trace-synthetic-insight-depth",
+    "model_ref": "model.synthetic"
+  },
+  "created_at": "2026-07-03T00:00:00Z",
+  "note": "Synthetic fixture only; no private user records."
+}

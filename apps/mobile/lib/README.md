@@ -29,6 +29,7 @@ database code live under `packages/`.
 - `app/WideNoteApp`
 - feature pages under `features/*/presentation`
 - `features/backup/BackupPage`
+- `features/insights/InsightsPage` and `InsightDetailPage`
 - `features/model_providers/ModelProviderSettingsPage`
 - `features/transcription/VoiceTranscriptionSettingsPage`
 - `features/traces/TraceConsolePage` and `TraceRawLogsPage`

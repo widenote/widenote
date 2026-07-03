@@ -44,6 +44,9 @@ repository adapters, model providers, or backend services.
 
 None. Future generated card or insight contracts should point back to
 `packages/schemas`.
+The package accepts renderer-safe Insight UI block declarations reserved by the
+public Insight Payload schema, but it still emits only conservative first-pass
+insights unless a governed model-backed Pack supplies richer derived output.
 
 ## Tests
 

@@ -366,6 +366,33 @@
   "cardsEmpty": "No source-linked cards yet.",
   "insightsTitle": "Insights",
   "insightsEmpty": "No source-linked insights yet.",
+  "insightsPageTitle": "Insights",
+  "insightsPageSubtitle": "Review source-linked patterns, claims, and evidence.",
+  "insightsBackTooltip": "Close Insights",
+  "insightsRefreshTooltip": "Refresh Insights",
+  "insightsActiveSectionTitle": "Active insights",
+  "insightsActiveEmpty": "No active source-linked insights yet.",
+  "insightsArchivedSectionTitle": "Archived insights",
+  "insightsArchivedEmpty": "No archived insights yet.",
+  "insightDetailTitle": "Insight detail",
+  "insightDetailSubtitle": "Inspect claims, metrics, evidence, and source refs.",
+  "insightMissingTitle": "Insight unavailable",
+  "insightMissingBody": "This insight is not in the current local store.",
+  "insightPayloadSectionTitle": "Claims and metrics",
+  "insightEvidenceSectionTitle": "Evidence",
+  "insightCounterEvidenceSectionTitle": "Counter-evidence",
+  "insightOpenTimelineAction": "Timeline",
+  "insightActionArchive": "Archive",
+  "insightActionRestore": "Restore",
+  "insightConfidenceLabel": "{value} confidence",
+  "@insightConfidenceLabel": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "insightUpdateFailed": "Insight update failed.",
   "recordsTitle": "Records",
   "recordsEmpty": "No local records yet.",
   "memoryReviewTitle": "Memory Review",

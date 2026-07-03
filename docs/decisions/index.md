@@ -22,6 +22,7 @@
 | [ADR-0017](./0017-accept-continuous-capture-background-processing.md) | Accept continuous capture background processing | accepted | 2026-07-02 |
 | [ADR-0018](./0018-accept-durable-agent-work-queue.md) | Accept durable agent work queue | accepted | 2026-07-02 |
 | [ADR-0019](./0019-hide-bottom-tabs-on-mobile-child-pages.md) | Hide Bottom Tabs On Mobile Child Pages | accepted | 2026-07-03 |
+| [ADR-0020](./0020-accept-insight-depth-foundation.md) | Accept Insight Depth Foundation | accepted | 2026-07-03 |
 
 ## RFC Status
 

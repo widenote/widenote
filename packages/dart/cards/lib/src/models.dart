@@ -5,6 +5,12 @@ abstract final class InsightUiBlockKinds {
   static const String metricRow = 'metric_row';
   static const String sourceRefs = 'source_refs';
   static const String note = 'note';
+  static const String evidenceList = 'evidence_list';
+  static const String counterEvidence = 'counter_evidence';
+  static const String confidenceBand = 'confidence_band';
+  static const String contrast = 'contrast';
+  static const String trendChart = 'trend_chart';
+  static const String timeline = 'timeline';
 }
 
 const Set<String> allowedInsightUiBlockKinds = <String>{
@@ -12,6 +18,12 @@ const Set<String> allowedInsightUiBlockKinds = <String>{
   InsightUiBlockKinds.metricRow,
   InsightUiBlockKinds.sourceRefs,
   InsightUiBlockKinds.note,
+  InsightUiBlockKinds.evidenceList,
+  InsightUiBlockKinds.counterEvidence,
+  InsightUiBlockKinds.confidenceBand,
+  InsightUiBlockKinds.contrast,
+  InsightUiBlockKinds.trendChart,
+  InsightUiBlockKinds.timeline,
 };
 
 enum MemoryFirstCardKind { captureSummary, memorySummary }

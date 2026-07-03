@@ -730,6 +730,71 @@ class AppLocalizationsEn extends AppLocalizations {
   String get insightsEmpty => 'No source-linked insights yet.';
 
   @override
+  String get insightsPageTitle => 'Insights';
+
+  @override
+  String get insightsPageSubtitle =>
+      'Review source-linked patterns, claims, and evidence.';
+
+  @override
+  String get insightsBackTooltip => 'Close Insights';
+
+  @override
+  String get insightsRefreshTooltip => 'Refresh Insights';
+
+  @override
+  String get insightsActiveSectionTitle => 'Active insights';
+
+  @override
+  String get insightsActiveEmpty => 'No active source-linked insights yet.';
+
+  @override
+  String get insightsArchivedSectionTitle => 'Archived insights';
+
+  @override
+  String get insightsArchivedEmpty => 'No archived insights yet.';
+
+  @override
+  String get insightDetailTitle => 'Insight detail';
+
+  @override
+  String get insightDetailSubtitle =>
+      'Inspect claims, metrics, evidence, and source refs.';
+
+  @override
+  String get insightMissingTitle => 'Insight unavailable';
+
+  @override
+  String get insightMissingBody =>
+      'This insight is not in the current local store.';
+
+  @override
+  String get insightPayloadSectionTitle => 'Claims and metrics';
+
+  @override
+  String get insightEvidenceSectionTitle => 'Evidence';
+
+  @override
+  String get insightCounterEvidenceSectionTitle => 'Counter-evidence';
+
+  @override
+  String get insightOpenTimelineAction => 'Timeline';
+
+  @override
+  String get insightActionArchive => 'Archive';
+
+  @override
+  String get insightActionRestore => 'Restore';
+
+  @override
+  String insightConfidenceLabel(String value) {
+    return '$value confidence';
+  }
+
+  @override
+  String get insightUpdateFailed => 'Insight update failed.';
+
+  @override
   String get recordsTitle => 'Records';
 
   @override

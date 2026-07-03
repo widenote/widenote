@@ -571,7 +571,13 @@
             "claim_list",
             "metric_row",
             "source_refs",
-            "note"
+            "note",
+            "evidence_list",
+            "counter_evidence",
+            "confidence_band",
+            "contrast",
+            "trend_chart",
+            "timeline"
           ]
         },
         "events": {

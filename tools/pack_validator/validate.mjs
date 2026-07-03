@@ -105,6 +105,12 @@ const INSIGHT_UI_BLOCK_KINDS = new Set([
   "metric_row",
   "source_refs",
   "note",
+  "evidence_list",
+  "counter_evidence",
+  "confidence_band",
+  "contrast",
+  "trend_chart",
+  "timeline",
 ]);
 
 const requiredManifestFields = [

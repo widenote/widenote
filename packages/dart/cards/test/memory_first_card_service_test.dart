@@ -209,6 +209,40 @@ void main() {
       },
     );
 
+    test('structured insight payload accepts reserved deep insight blocks', () {
+      const source = SourceLink(kind: 'capture', id: 'capture-1');
+      final payload = MemoryFirstInsightPayload(
+        claims: <MemoryFirstInsightClaim>[
+          MemoryFirstInsightClaim(
+            text: 'Deep insight blocks remain source-linked.',
+            sourceLinks: const <SourceLink>[source],
+          ),
+        ],
+        sourceLinks: const <SourceLink>[source],
+        uiBlocks: <MemoryFirstInsightUiBlock>[
+          MemoryFirstInsightUiBlock(kind: InsightUiBlockKinds.evidenceList),
+          MemoryFirstInsightUiBlock(kind: InsightUiBlockKinds.counterEvidence),
+          MemoryFirstInsightUiBlock(kind: InsightUiBlockKinds.confidenceBand),
+          MemoryFirstInsightUiBlock(kind: InsightUiBlockKinds.contrast),
+          MemoryFirstInsightUiBlock(kind: InsightUiBlockKinds.trendChart),
+          MemoryFirstInsightUiBlock(kind: InsightUiBlockKinds.timeline),
+        ],
+      );
+
+      final roundTripped = MemoryFirstInsightPayload.fromJson(
+        Map<Object?, Object?>.from(payload.toJson()),
+      );
+
+      expect(roundTripped.uiBlocks.map((block) => block.kind), [
+        InsightUiBlockKinds.evidenceList,
+        InsightUiBlockKinds.counterEvidence,
+        InsightUiBlockKinds.confidenceBand,
+        InsightUiBlockKinds.contrast,
+        InsightUiBlockKinds.trendChart,
+        InsightUiBlockKinds.timeline,
+      ]);
+    });
+
     test('dedupes duplicate cards before ranking insight source refs', () {
       final bundle = service.generate(
         MemoryFirstCardInput(
