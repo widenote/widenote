@@ -86,7 +86,11 @@ class InsightDetailPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final state = ref.watch(insightsControllerProvider);
-    final insight = state.itemById(insightId);
+    final insight =
+        state.itemById(insightId) ??
+        ref
+            .read(insightsControllerProvider.notifier)
+            .readInsightById(insightId);
     if (insight == null) {
       return ListView(
         key: const Key('insight-detail-missing'),

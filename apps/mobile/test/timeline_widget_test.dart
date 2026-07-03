@@ -467,11 +467,11 @@ void main() {
         find.byKey(const Key('timeline-item-capture-artifacts')),
         findsOneWidget,
       );
-      expect(find.textContaining('status: ready'), findsOneWidget);
-      expect(find.textContaining('status: pending'), findsOneWidget);
-      expect(find.textContaining('status: Failed'), findsOneWidget);
-      expect(find.textContaining('status: Blocked'), findsOneWidget);
-      expect(find.textContaining('status: needs review'), findsOneWidget);
+      expect(find.textContaining('ready'), findsOneWidget);
+      expect(find.textContaining('pending'), findsOneWidget);
+      expect(find.textContaining('failed'), findsOneWidget);
+      expect(find.textContaining('blocked'), findsOneWidget);
+      expect(find.textContaining('needs review'), findsOneWidget);
       expect(find.textContaining('/Users/guangmo/private'), findsNothing);
       expect(find.textContaining('DANGEROUS RAW PREVIEW'), findsNothing);
 

@@ -162,10 +162,7 @@ final class LocalCaptureReadModelStore {
       return false;
     }
     final existing = _database.derivedArtifacts.readById(artifact.id);
-    if (existing == null || existing.status != 'active') {
-      return false;
-    }
-    if (existing.payload['provider_id'] is! String) {
+    if (existing == null || existing.status == 'pending') {
       return false;
     }
     final mergedSourceRefs = _mergeSourceRefs(

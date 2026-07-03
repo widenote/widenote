@@ -168,18 +168,29 @@ void main() {
     expect(find.text('GPS capture on'), findsOneWidget);
     expect(find.text('AMap lookup on'), findsOneWidget);
 
+    await tester.ensureVisible(
+      find.byKey(const Key('location-granularity-dropdown')),
+    );
+    await tester.tap(find.byKey(const Key('location-granularity-dropdown')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Full address').last);
+    await tester.pumpAndSettle();
+
+    final fullSaved = await repository.load();
+    expect(fullSaved.displayGranularity, LocationDisplayGranularity.full);
+
     await tester.ensureVisible(find.byKey(const Key('location-test-button')));
     await tester.tap(find.byKey(const Key('location-test-button')));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('location-test-result')), findsOneWidget);
     expect(find.text('Location captured.'), findsOneWidget);
-    expect(find.text('Area: 上海市 · 黄浦区'), findsOneWidget);
+    expect(find.text('Area: 上海市黄浦区人民大道'), findsOneWidget);
     expect(
       find.text('GPS coordinates saved on the local record.'),
       findsOneWidget,
     );
-    expect(find.textContaining('人民大道'), findsNothing);
+    expect(find.textContaining('人民大道'), findsWidgets);
 
     await tester.ensureVisible(
       find.byKey(const Key('location-clear-saved-button')),

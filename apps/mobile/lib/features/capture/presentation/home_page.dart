@@ -811,7 +811,7 @@ class _RecordsSection extends StatelessWidget {
                   HomeRecordRow(
                     key: Key('record-row-${record.id}'),
                     title: record.body,
-                    subtitle: _recordSubtitle(l10n, record),
+                    subtitle: _recordSubtitle(context, record),
                     icon: record.isProcessing
                         ? Icons.hourglass_top_outlined
                         : Icons.notes_outlined,
@@ -854,10 +854,12 @@ class _RecordTrailingAction extends StatelessWidget {
   }
 }
 
-String _recordSubtitle(AppLocalizations l10n, CaptureRecord record) {
+String _recordSubtitle(BuildContext context, CaptureRecord record) {
+  final l10n = context.l10n;
   final parts = <String>[
-    _timeLabel(record.createdAt),
-    _localizedRecordStatusShort(l10n, record.status),
+    _recentRecordTimeLabel(context, record.createdAt),
+    if (_shouldShowRecordStatus(record.status))
+      _localizedRecordStatusShort(l10n, record.status),
   ];
   final location = record.locationContext;
   if (location != null) {
@@ -871,6 +873,12 @@ String _recordSubtitle(AppLocalizations l10n, CaptureRecord record) {
     }
   }
   return parts.join(' · ');
+}
+
+bool _shouldShowRecordStatus(String status) {
+  return status == captureStatusSavedProcessing ||
+      status == captureStatusTranscriptReady ||
+      status == captureStatusAgentFailed;
 }
 
 String _localizedRecordStatusShort(AppLocalizations l10n, String status) {
@@ -888,4 +896,19 @@ String _timeLabel(DateTime value) {
   final hour = local.hour.toString().padLeft(2, '0');
   final minute = local.minute.toString().padLeft(2, '0');
   return '$hour:$minute';
+}
+
+String _recentRecordTimeLabel(BuildContext context, DateTime value) {
+  final local = value.toLocal();
+  final now = DateTime.now().toLocal();
+  final time = _timeLabel(value);
+  final isToday =
+      local.year == now.year &&
+      local.month == now.month &&
+      local.day == now.day;
+  if (isToday) {
+    return time;
+  }
+  final date = MaterialLocalizations.of(context).formatShortDate(local);
+  return '$date $time';
 }

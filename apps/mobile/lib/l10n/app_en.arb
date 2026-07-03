@@ -547,6 +547,9 @@
   "attachmentArtifactKindOcrText": "OCR text",
   "attachmentArtifactKindVisionSummary": "image summary",
   "attachmentArtifactKindSharedText": "shared text",
+  "attachmentArtifactAudioTranscriptPending": "Waiting for voice transcription.",
+  "attachmentArtifactAudioTranscriptFailed": "Voice transcription failed. Check ASR settings and retry.",
+  "attachmentArtifactAudioTranscriptNoSpeech": "No speech was detected in this recording.",
   "timelineAttachmentArtifactsTitle": "Attachment artifacts",
   "sourceLinkCount": "{count, plural, =1{1 source link} other{{count} source links}}",
   "@sourceLinkCount": {
@@ -832,6 +835,15 @@
   "timelineSourceNotFoundBody": "This source reference is not available in the current local index yet.",
   "timelineStatusTitle": "Status",
   "timelineMetadataTitle": "Metadata",
+  "timelineMetadataShowMore": "{count, plural, =1{Show 1 more field} other{Show {count} more fields}}",
+  "@timelineMetadataShowMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timelineMetadataShowLess": "Show less",
   "timelineOpenSourceTooltip": "Open source",
   "timelineSourceRefCount": "{count, plural, =1{1 source ref} other{{count} source refs}}",
   "@timelineSourceRefCount": {

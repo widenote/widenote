@@ -128,6 +128,11 @@ final class InsightsController extends Notifier<InsightsState> {
     _updateStatus(id, 'active', action: 'restored');
   }
 
+  InsightListItem? readInsightById(String id) {
+    final record = _database.insights.readById(id);
+    return record == null ? null : _insightView(record);
+  }
+
   void _updateStatus(String id, String status, {required String action}) {
     try {
       final existing = _database.insights.readById(id);

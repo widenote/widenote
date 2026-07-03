@@ -281,6 +281,9 @@
   "attachmentArtifactKindOcrText": "OCR 文本",
   "attachmentArtifactKindVisionSummary": "图片摘要",
   "attachmentArtifactKindSharedText": "分享文本",
+  "attachmentArtifactAudioTranscriptPending": "正在等待语音转写。",
+  "attachmentArtifactAudioTranscriptFailed": "语音转写失败，请检查 ASR 设置后重试。",
+  "attachmentArtifactAudioTranscriptNoSpeech": "这段录音没有检测到可转写语音。",
   "timelineAttachmentArtifactsTitle": "附件产物",
   "sourceLinkCount": "{count} 个来源链接",
   "localTimeLabel": "{time} 本地",
@@ -510,6 +513,15 @@
   "timelineSourceNotFoundBody": "当前本地索引里还没有这个来源引用。",
   "timelineStatusTitle": "状态",
   "timelineMetadataTitle": "元数据",
+  "timelineMetadataShowMore": "再显示 {count} 项",
+  "@timelineMetadataShowMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timelineMetadataShowLess": "收起",
   "timelineOpenSourceTooltip": "打开来源",
   "timelineSourceRefCount": "{count} 个来源引用",
   "timelineStatusActive": "活跃",

@@ -285,7 +285,13 @@ class CaptureController extends Notifier<CaptureState> {
         processingAttachments,
       );
       if (_hasActiveVoiceTranscript(processingAttachments)) {
+        recordBody = _recordBodyAfterTranscription(
+          typedText: input.typedText,
+          currentBody: recordBody,
+          attachments: processingAttachments,
+        );
         final transcriptReadyRecord = currentRecord.copyWith(
+          body: recordBody,
           status: captureStatusTranscriptReady,
         );
         _readModelStore().saveCapture(
@@ -527,6 +533,25 @@ class CaptureController extends Notifier<CaptureState> {
       (attachment) =>
           attachment.kind == CaptureAssetKind.photo && attachment.isReady,
     );
+  }
+
+  String _recordBodyAfterTranscription({
+    required String typedText,
+    required String currentBody,
+    required List<CaptureAttachment> attachments,
+  }) {
+    if (typedText.trim().isNotEmpty) {
+      return currentBody;
+    }
+    final transcripts = attachments
+        .where((attachment) => attachment.kind == CaptureAssetKind.voice)
+        .map((attachment) => attachment.previewText.trim())
+        .where((text) => text.isNotEmpty)
+        .toList(growable: false);
+    if (transcripts.isEmpty) {
+      return currentBody;
+    }
+    return transcripts.join('\n');
   }
 }
 

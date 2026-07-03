@@ -55,6 +55,12 @@ secure-storage settings and credentials needed for direct-use restore:
 - voice transcription settings, excluding local model files;
 - MiMo ASR API key.
 
+A full backup that restores metadata but drops an enabled feature's saved key is
+not restore-ready. After import, key-backed local features such as AMap reverse
+geocoding and MiMo ASR should run from the restored configuration without a
+hidden re-entry step. Local ASR model binaries remain excluded and may require a
+redownload before local transcription is usable.
+
 The archive must continue to use `manifest.properties`, entry hashes, and
 `includes_secrets=true`. Legacy JSON/Markdown projections remain secret-free.
 Non-formal mobile builds append diagnostic log copies under
