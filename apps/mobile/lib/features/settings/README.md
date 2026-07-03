@@ -10,15 +10,16 @@ backup/restore, log inspection, and display status.
 
 - Owns the Settings hub presentation and navigation entries.
 - Owns the `/settings/...` route parent for permission review, model providers,
-  voice transcription, location, backup/restore, and trace inspection pages.
+  voice transcription, location, backup/restore, debugging repair, and trace
+  inspection pages.
 - Summarizes privacy state from accepted product rules: local-first core,
   revocable/deferred permissions, and safe-export secret boundaries.
 - Shows lightweight local status from existing read models: built-in/deferred
   permission counts, provider configuration state, backup state, log counts,
   and current locale.
 - Links to existing feature pages for permission review, provider setup,
-  system permission review, voice transcription settings, backup/restore, and
-  log center instead of duplicating their behavior.
+  system permission review, voice transcription settings, backup/restore, log
+  center, and capture replay repair instead of duplicating their behavior.
 - Does not own backup codecs, model-provider persistence, permission schemas,
   trace storage, or locale persistence.
 
@@ -31,10 +32,13 @@ backup/restore, log inspection, and display status.
 - `features/model_providers` for provider status chips
 - `features/transcription` for voice transcription status and settings
 - Existing `plugins`, `backup`, and `traces` read models and presentation pages
+- Existing `capture` replay maintenance service
 
 ## Public Surface
 
 - `presentation/settings_page.dart`
+- `presentation/debugging_page.dart`
+- `application/debugging_controller.dart`
 
 ## Generated Artifacts
 

@@ -69,6 +69,7 @@ location, or voice ASR.
 - `application/captureDraftRepositoryProvider`
 - `application/captureInputControllerProvider`
 - `application/captureOrchestratorProvider`
+- `application/captureReplayServiceProvider`
 - `application/LocalDbCaptureKnowledgeSink`
 - `media/CaptureAttachment`
 - `media/AssetSafetyGuard`

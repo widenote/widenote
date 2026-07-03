@@ -57,6 +57,22 @@ final class CapturePipelineEvent {
   final Map<String, Object?> payload;
 }
 
+final class CaptureAgentTaskRetryResult {
+  const CaptureAgentTaskRetryResult({
+    required this.retryableTaskCount,
+    required this.retriedTaskCount,
+    required this.drainedTaskCount,
+    required this.affectedCaptureIds,
+    required this.limited,
+  });
+
+  final int retryableTaskCount;
+  final int retriedTaskCount;
+  final int drainedTaskCount;
+  final List<String> affectedCaptureIds;
+  final bool limited;
+}
+
 final class CapturePipelineException implements Exception {
   const CapturePipelineException(this.message);
 
@@ -355,6 +371,68 @@ final class CaptureOrchestrator {
       capture: capture,
       relatedEvents: refreshedEvents,
       traces: traces,
+    );
+  }
+
+  Future<CaptureAgentTaskRetryResult> retryFailedAgentTasks({
+    int limit = 100,
+  }) async {
+    await _kernel.restoreRuntimeState();
+    final allEvents = await _eventStore.readAll();
+    final selected = _selectRetryableAgentTasks(_kernel.tasks, limit: limit);
+    return _retrySelectedAgentTasks(selected, allEvents, limit: limit);
+  }
+
+  Future<CaptureAgentTaskRetryResult> retryCaptureAgentTasks(
+    String captureId, {
+    int limit = 100,
+  }) async {
+    await _kernel.restoreRuntimeState();
+    final allEvents = await _eventStore.readAll();
+    final capture = _latestCaptureEventFor(allEvents, captureId);
+    if (capture == null) {
+      return const CaptureAgentTaskRetryResult(
+        retryableTaskCount: 0,
+        retriedTaskCount: 0,
+        drainedTaskCount: 0,
+        affectedCaptureIds: <String>[],
+        limited: false,
+      );
+    }
+    final relatedEventIds = _captureRelatedEvents(
+      allEvents,
+      capture: capture,
+      captureSubjectId: captureId,
+    ).map((event) => event.id).toSet();
+    final selected = _selectRetryableAgentTasks(
+      _kernel.tasks.where(
+        (task) => relatedEventIds.contains(task.triggerEventId),
+      ),
+      limit: limit,
+    );
+    return _retrySelectedAgentTasks(selected, allEvents, limit: limit);
+  }
+
+  Future<CaptureAgentTaskRetryResult> _retrySelectedAgentTasks(
+    List<runtime.RuntimeTask> selected,
+    List<runtime.WnEvent> allEvents, {
+    required int limit,
+  }) async {
+    var retried = 0;
+    var drained = 0;
+    for (final task in selected) {
+      if (await _kernel.retryTask(task.id, drain: false)) {
+        retried += 1;
+      }
+      await _kernel.restoreRuntimeState();
+      drained += await _kernel.drainQueue();
+    }
+    return CaptureAgentTaskRetryResult(
+      retryableTaskCount: selected.length,
+      retriedTaskCount: retried,
+      drainedTaskCount: drained,
+      affectedCaptureIds: _captureIdsForTasks(selected, allEvents),
+      limited: selected.length >= limit,
     );
   }
 
@@ -781,6 +859,151 @@ final class CaptureOrchestrator {
               task.status == runtime.RuntimeTaskStatus.waiting ||
               task.status == runtime.RuntimeTaskStatus.running),
     );
+  }
+
+  List<runtime.RuntimeTask> _selectRetryableAgentTasks(
+    Iterable<runtime.RuntimeTask> candidates, {
+    required int limit,
+  }) {
+    if (limit < 1) {
+      return const <runtime.RuntimeTask>[];
+    }
+    final candidateList = candidates.toList(growable: false);
+    final allTasksById = <String, runtime.RuntimeTask>{
+      for (final task in _kernel.tasks) task.id: task,
+    };
+    final selectedIds = <String>{};
+    final selected = <runtime.RuntimeTask>[];
+
+    var changed = true;
+    while (changed && selected.length < limit) {
+      changed = false;
+      for (final task in candidateList) {
+        if (selectedIds.contains(task.id) ||
+            (!_failedTaskCanRetry(task, selectedIds, allTasksById) &&
+                !_blockedTaskCanRetry(task, selectedIds, allTasksById))) {
+          continue;
+        }
+        selectedIds.add(task.id);
+        selected.add(task);
+        changed = true;
+        if (selected.length >= limit) {
+          return selected;
+        }
+      }
+    }
+
+    return selected;
+  }
+
+  bool _failedTaskCanRetry(
+    runtime.RuntimeTask task,
+    Set<String> selectedIds,
+    Map<String, runtime.RuntimeTask> tasksById,
+  ) {
+    if (task.status != runtime.RuntimeTaskStatus.failed ||
+        task.missingDependencyIds.isNotEmpty) {
+      return false;
+    }
+    return _dependenciesCanRetry(
+      task.dependencyTaskIds,
+      selectedIds,
+      tasksById,
+    );
+  }
+
+  bool _blockedTaskCanRetry(
+    runtime.RuntimeTask task,
+    Set<String> selectedIds,
+    Map<String, runtime.RuntimeTask> tasksById,
+  ) {
+    if (task.status != runtime.RuntimeTaskStatus.blocked ||
+        task.missingDependencyIds.isNotEmpty ||
+        task.dependencyTaskIds.isEmpty) {
+      return false;
+    }
+    return _dependenciesCanRetry(
+      task.dependencyTaskIds,
+      selectedIds,
+      tasksById,
+    );
+  }
+
+  bool _dependenciesCanRetry(
+    List<String> dependencyTaskIds,
+    Set<String> selectedIds,
+    Map<String, runtime.RuntimeTask> tasksById,
+  ) {
+    return dependencyTaskIds.every((dependencyId) {
+      final dependency = tasksById[dependencyId];
+      if (dependency == null) {
+        return false;
+      }
+      return dependency.status == runtime.RuntimeTaskStatus.succeeded ||
+          selectedIds.contains(dependency.id);
+    });
+  }
+
+  List<String> _captureIdsForTasks(
+    List<runtime.RuntimeTask> tasks,
+    List<runtime.WnEvent> allEvents,
+  ) {
+    final eventsById = <String, runtime.WnEvent>{
+      for (final event in allEvents) event.id: event,
+    };
+    final captureIds = <String>[];
+    final seen = <String>{};
+    for (final task in tasks) {
+      final captureId = _captureIdForEvent(
+        eventsById[task.triggerEventId],
+        eventsById,
+      );
+      if (captureId != null && seen.add(captureId)) {
+        captureIds.add(captureId);
+      }
+    }
+    return List<String>.unmodifiable(captureIds);
+  }
+
+  String? _captureIdForEvent(
+    runtime.WnEvent? event,
+    Map<String, runtime.WnEvent> eventsById, [
+    Set<String> visitedEventIds = const <String>{},
+  ]) {
+    if (event == null || visitedEventIds.contains(event.id)) {
+      return null;
+    }
+    if (event.subjectRef?.kind == 'capture' &&
+        event.subjectRef?.id.isNotEmpty == true) {
+      return event.subjectRef!.id;
+    }
+    final payloadCaptureId = _nullableString(
+      event.payload['source_capture_id'],
+    );
+    if (payloadCaptureId != null) {
+      return payloadCaptureId;
+    }
+    final nextVisited = <String>{...visitedEventIds, event.id};
+    final sourceEventId = _nullableString(event.payload['source_event_id']);
+    if (sourceEventId != null) {
+      final sourceCaptureId = _captureIdForEvent(
+        eventsById[sourceEventId],
+        eventsById,
+        nextVisited,
+      );
+      if (sourceCaptureId != null) {
+        return sourceCaptureId;
+      }
+    }
+    final causationId = event.causationId;
+    if (causationId != null) {
+      return _captureIdForEvent(
+        eventsById[causationId],
+        eventsById,
+        nextVisited,
+      );
+    }
+    return null;
   }
 
   Set<String> _trustedBuiltInOutputEventIds(List<runtime.WnEvent> events) {

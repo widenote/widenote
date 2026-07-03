@@ -3150,6 +3150,225 @@ abstract class AppLocalizations {
   /// **'{eventCount} logs / {warningCount} warnings'**
   String settingsTraceConsoleStatusSummary(int eventCount, int warningCount);
 
+  /// No description provided for @settingsDebuggingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Debugging'**
+  String get settingsDebuggingTitle;
+
+  /// No description provided for @settingsDebuggingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Repair local Agent work and replay historical input processing.'**
+  String get settingsDebuggingSubtitle;
+
+  /// No description provided for @settingsDebuggingStatusSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{agentCount} agents / {captureCount} inputs'**
+  String settingsDebuggingStatusSummary(int agentCount, int captureCount);
+
+  /// No description provided for @debuggingStatusLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'checking'**
+  String get debuggingStatusLoading;
+
+  /// No description provided for @debuggingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Debugging'**
+  String get debuggingTitle;
+
+  /// No description provided for @debuggingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Repair local Agent tasks and replay downstream processing without changing raw input.'**
+  String get debuggingSubtitle;
+
+  /// No description provided for @debuggingBackTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Back from Debugging'**
+  String get debuggingBackTooltip;
+
+  /// No description provided for @debuggingAgentRetryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry failed Agents'**
+  String get debuggingAgentRetryTitle;
+
+  /// No description provided for @debuggingAgentRetryBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Retries failed Agent tasks and dependency-blocked downstream tasks that can safely run again.'**
+  String get debuggingAgentRetryBody;
+
+  /// No description provided for @debuggingAgentRetryStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} retryable / {limit} per run'**
+  String debuggingAgentRetryStatus(int count, int limit);
+
+  /// No description provided for @debuggingNoRetryableAgents.
+  ///
+  /// In en, this message translates to:
+  /// **'No failed Agent tasks are ready to retry.'**
+  String get debuggingNoRetryableAgents;
+
+  /// No description provided for @debuggingRetryFailedAgentsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry failed Agents'**
+  String get debuggingRetryFailedAgentsButton;
+
+  /// No description provided for @debuggingDateReplayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Process inputs by date'**
+  String get debuggingDateReplayTitle;
+
+  /// No description provided for @debuggingDateReplayBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs historical captures through the same local processing path, preserving original records and attachments.'**
+  String get debuggingDateReplayBody;
+
+  /// No description provided for @debuggingStartDateValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Start: {date}'**
+  String debuggingStartDateValue(String date);
+
+  /// No description provided for @debuggingEndDateValue.
+  ///
+  /// In en, this message translates to:
+  /// **'End: {date}'**
+  String debuggingEndDateValue(String date);
+
+  /// No description provided for @debuggingDateReplayStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} inputs / {limit} per run'**
+  String debuggingDateReplayStatus(int count, int limit);
+
+  /// No description provided for @debuggingDateRangeInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'End date must be on or after start date.'**
+  String get debuggingDateRangeInvalid;
+
+  /// No description provided for @debuggingNoMatchingCaptures.
+  ///
+  /// In en, this message translates to:
+  /// **'No captures match this date range.'**
+  String get debuggingNoMatchingCaptures;
+
+  /// No description provided for @debuggingReplayDateRangeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Process date range'**
+  String get debuggingReplayDateRangeButton;
+
+  /// No description provided for @debuggingRunningLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Running...'**
+  String get debuggingRunningLabel;
+
+  /// No description provided for @debuggingRetryConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry failed Agents?'**
+  String get debuggingRetryConfirmTitle;
+
+  /// No description provided for @debuggingRetryConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This will retry up to {limit} of {count} failed or dependency-blocked Agent tasks. It may call model providers and use battery.'**
+  String debuggingRetryConfirmBody(int count, int limit);
+
+  /// No description provided for @debuggingRetryConfirmAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get debuggingRetryConfirmAction;
+
+  /// No description provided for @debuggingReplayConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Process historical inputs?'**
+  String get debuggingReplayConfirmTitle;
+
+  /// No description provided for @debuggingReplayConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This will process up to {limit} of {count} captures in the selected date range. Raw input stays unchanged; downstream Agent outputs may be created or refreshed.'**
+  String debuggingReplayConfirmBody(int count, int limit);
+
+  /// No description provided for @debuggingReplayConfirmAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Process'**
+  String get debuggingReplayConfirmAction;
+
+  /// No description provided for @debuggingConfirmCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get debuggingConfirmCancel;
+
+  /// No description provided for @debuggingResultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Last result'**
+  String get debuggingResultTitle;
+
+  /// No description provided for @debuggingOperationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Debugging action failed: {message}'**
+  String debuggingOperationFailed(String message);
+
+  /// No description provided for @debuggingAgentRetrySummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Retried {retried} of {selected} tasks, drained {drained}, refreshed {refreshed} captures, failed refreshes {failed}, skipped {skipped}.'**
+  String debuggingAgentRetrySummary(
+    int retried,
+    int selected,
+    int drained,
+    int refreshed,
+    int failed,
+    int skipped,
+  );
+
+  /// No description provided for @debuggingAgentRetryLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Limited to the first {count} Agent tasks this run.'**
+  String debuggingAgentRetryLimited(int count);
+
+  /// No description provided for @debuggingDateReplaySummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Processed {processed}, retried {retried}, refreshed {refreshed}, failed {failed}, skipped {skipped}, deferred {deferred} of {selected} selected inputs.'**
+  String debuggingDateReplaySummary(
+    int processed,
+    int retried,
+    int refreshed,
+    int failed,
+    int skipped,
+    int deferred,
+    int selected,
+  );
+
+  /// No description provided for @debuggingDateReplayLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Limited to the first {count} captures this run.'**
+  String debuggingDateReplayLimited(int count);
+
   /// No description provided for @systemPermissionsTitle.
   ///
   /// In en, this message translates to:

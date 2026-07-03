@@ -15,6 +15,7 @@ import '../features/plugins/presentation/pack_library_page.dart';
 import '../features/plugins/presentation/permission_gate_page.dart';
 import '../features/plugins/presentation/plugins_page.dart';
 import '../features/recap/presentation/daily_recap_page.dart';
+import '../features/settings/presentation/debugging_page.dart';
 import '../features/settings/presentation/settings_page.dart';
 import '../features/system_permissions/presentation/system_permissions_page.dart';
 import '../features/timeline/presentation/card_detail_page.dart';
@@ -151,6 +152,12 @@ GoRouter createAppRouter({String initialLocation = '/'}) {
                     name: 'settings-backup',
                     pageBuilder: (context, state) =>
                         _noTransitionPage(state, const BackupPage()),
+                  ),
+                  GoRoute(
+                    path: 'debugging',
+                    name: 'settings-debugging',
+                    pageBuilder: (context, state) =>
+                        _noTransitionPage(state, const DebuggingPage()),
                   ),
                   GoRoute(
                     path: 'traces',

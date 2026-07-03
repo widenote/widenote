@@ -1664,6 +1664,147 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get settingsDebuggingTitle => 'Debugging';
+
+  @override
+  String get settingsDebuggingSubtitle => '修复本地 Agent 执行，并按日期回放历史输入处理。';
+
+  @override
+  String settingsDebuggingStatusSummary(int agentCount, int captureCount) {
+    return '$agentCount 个 Agent / $captureCount 条输入';
+  }
+
+  @override
+  String get debuggingStatusLoading => '检查中';
+
+  @override
+  String get debuggingTitle => 'Debugging';
+
+  @override
+  String get debuggingSubtitle => '修复本地 Agent 任务，并在不改动原始输入的前提下回放下游处理。';
+
+  @override
+  String get debuggingBackTooltip => '从 Debugging 返回';
+
+  @override
+  String get debuggingAgentRetryTitle => '重试失败 Agent';
+
+  @override
+  String get debuggingAgentRetryBody => '重试失败的 Agent 任务，以及可安全重新运行的依赖阻塞下游任务。';
+
+  @override
+  String debuggingAgentRetryStatus(int count, int limit) {
+    return '$count 个可重试 / 每次最多 $limit 个';
+  }
+
+  @override
+  String get debuggingNoRetryableAgents => '没有可重试的失败 Agent 任务。';
+
+  @override
+  String get debuggingRetryFailedAgentsButton => '重试失败 Agent';
+
+  @override
+  String get debuggingDateReplayTitle => '按日期处理输入';
+
+  @override
+  String get debuggingDateReplayBody => '让历史记录重新走一遍本地处理路径，同时保留原始记录和附件。';
+
+  @override
+  String debuggingStartDateValue(String date) {
+    return '开始：$date';
+  }
+
+  @override
+  String debuggingEndDateValue(String date) {
+    return '结束：$date';
+  }
+
+  @override
+  String debuggingDateReplayStatus(int count, int limit) {
+    return '$count 条输入 / 每次最多 $limit 条';
+  }
+
+  @override
+  String get debuggingDateRangeInvalid => '结束日期必须晚于或等于开始日期。';
+
+  @override
+  String get debuggingNoMatchingCaptures => '这个日期范围内没有匹配的记录。';
+
+  @override
+  String get debuggingReplayDateRangeButton => '处理日期范围';
+
+  @override
+  String get debuggingRunningLabel => '运行中...';
+
+  @override
+  String get debuggingRetryConfirmTitle => '重试失败 Agent？';
+
+  @override
+  String debuggingRetryConfirmBody(int count, int limit) {
+    return '将重试 $count 个失败或依赖阻塞 Agent 任务中的最多 $limit 个。这个操作可能调用模型提供商并消耗电量。';
+  }
+
+  @override
+  String get debuggingRetryConfirmAction => '重试';
+
+  @override
+  String get debuggingReplayConfirmTitle => '处理历史输入？';
+
+  @override
+  String debuggingReplayConfirmBody(int count, int limit) {
+    return '将处理所选日期范围内 $count 条记录中的最多 $limit 条。原始输入不会改变；下游 Agent 输出可能会被创建或刷新。';
+  }
+
+  @override
+  String get debuggingReplayConfirmAction => '处理';
+
+  @override
+  String get debuggingConfirmCancel => '取消';
+
+  @override
+  String get debuggingResultTitle => '上次结果';
+
+  @override
+  String debuggingOperationFailed(String message) {
+    return 'Debugging 操作失败：$message';
+  }
+
+  @override
+  String debuggingAgentRetrySummary(
+    int retried,
+    int selected,
+    int drained,
+    int refreshed,
+    int failed,
+    int skipped,
+  ) {
+    return '已重试 $selected 个任务中的 $retried 个，执行队列 $drained 个，刷新 $refreshed 条记录，刷新失败 $failed 条，跳过 $skipped 条。';
+  }
+
+  @override
+  String debuggingAgentRetryLimited(int count) {
+    return '本次只处理前 $count 个 Agent 任务。';
+  }
+
+  @override
+  String debuggingDateReplaySummary(
+    int processed,
+    int retried,
+    int refreshed,
+    int failed,
+    int skipped,
+    int deferred,
+    int selected,
+  ) {
+    return '已处理 $selected 条输入中的：首次处理 $processed 条，重试 $retried 条，刷新 $refreshed 条，失败 $failed 条，跳过 $skipped 条，延期 $deferred 条。';
+  }
+
+  @override
+  String debuggingDateReplayLimited(int count) {
+    return '本次只处理前 $count 条记录。';
+  }
+
+  @override
   String get systemPermissionsTitle => '系统权限';
 
   @override

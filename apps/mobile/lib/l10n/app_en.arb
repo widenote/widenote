@@ -915,6 +915,172 @@
       }
     }
   },
+  "settingsDebuggingTitle": "Debugging",
+  "settingsDebuggingSubtitle": "Repair local Agent work and replay historical input processing.",
+  "settingsDebuggingStatusSummary": "{agentCount} agents / {captureCount} inputs",
+  "@settingsDebuggingStatusSummary": {
+    "placeholders": {
+      "agentCount": {
+        "type": "int"
+      },
+      "captureCount": {
+        "type": "int"
+      }
+    }
+  },
+  "debuggingStatusLoading": "checking",
+  "debuggingTitle": "Debugging",
+  "debuggingSubtitle": "Repair local Agent tasks and replay downstream processing without changing raw input.",
+  "debuggingBackTooltip": "Back from Debugging",
+  "debuggingAgentRetryTitle": "Retry failed Agents",
+  "debuggingAgentRetryBody": "Retries failed Agent tasks and dependency-blocked downstream tasks that can safely run again.",
+  "debuggingAgentRetryStatus": "{count} retryable / {limit} per run",
+  "@debuggingAgentRetryStatus": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "debuggingNoRetryableAgents": "No failed Agent tasks are ready to retry.",
+  "debuggingRetryFailedAgentsButton": "Retry failed Agents",
+  "debuggingDateReplayTitle": "Process inputs by date",
+  "debuggingDateReplayBody": "Runs historical captures through the same local processing path, preserving original records and attachments.",
+  "debuggingStartDateValue": "Start: {date}",
+  "@debuggingStartDateValue": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "debuggingEndDateValue": "End: {date}",
+  "@debuggingEndDateValue": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "debuggingDateReplayStatus": "{count} inputs / {limit} per run",
+  "@debuggingDateReplayStatus": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "debuggingDateRangeInvalid": "End date must be on or after start date.",
+  "debuggingNoMatchingCaptures": "No captures match this date range.",
+  "debuggingReplayDateRangeButton": "Process date range",
+  "debuggingRunningLabel": "Running...",
+  "debuggingRetryConfirmTitle": "Retry failed Agents?",
+  "debuggingRetryConfirmBody": "This will retry up to {limit} of {count} failed or dependency-blocked Agent tasks. It may call model providers and use battery.",
+  "@debuggingRetryConfirmBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "debuggingRetryConfirmAction": "Retry",
+  "debuggingReplayConfirmTitle": "Process historical inputs?",
+  "debuggingReplayConfirmBody": "This will process up to {limit} of {count} captures in the selected date range. Raw input stays unchanged; downstream Agent outputs may be created or refreshed.",
+  "@debuggingReplayConfirmBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "debuggingReplayConfirmAction": "Process",
+  "debuggingConfirmCancel": "Cancel",
+  "debuggingResultTitle": "Last result",
+  "debuggingOperationFailed": "Debugging action failed: {message}",
+  "@debuggingOperationFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "debuggingAgentRetrySummary": "Retried {retried} of {selected} tasks, drained {drained}, refreshed {refreshed} captures, failed refreshes {failed}, skipped {skipped}.",
+  "@debuggingAgentRetrySummary": {
+    "placeholders": {
+      "retried": {
+        "type": "int"
+      },
+      "selected": {
+        "type": "int"
+      },
+      "drained": {
+        "type": "int"
+      },
+      "refreshed": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      },
+      "skipped": {
+        "type": "int"
+      }
+    }
+  },
+  "debuggingAgentRetryLimited": "Limited to the first {count} Agent tasks this run.",
+  "@debuggingAgentRetryLimited": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "debuggingDateReplaySummary": "Processed {processed}, retried {retried}, refreshed {refreshed}, failed {failed}, skipped {skipped}, deferred {deferred} of {selected} selected inputs.",
+  "@debuggingDateReplaySummary": {
+    "placeholders": {
+      "processed": {
+        "type": "int"
+      },
+      "retried": {
+        "type": "int"
+      },
+      "refreshed": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      },
+      "skipped": {
+        "type": "int"
+      },
+      "deferred": {
+        "type": "int"
+      },
+      "selected": {
+        "type": "int"
+      }
+    }
+  },
+  "debuggingDateReplayLimited": "Limited to the first {count} captures this run.",
+  "@debuggingDateReplayLimited": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "systemPermissionsTitle": "System Permissions",
   "systemPermissionsSubtitle": "Review app-level device permissions and jump to the right system setting when needed.",
   "systemPermissionsBackTooltip": "Back from System Permissions",

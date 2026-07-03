@@ -32,6 +32,7 @@ void main() {
     expect(find.text('Model Providers'), findsOneWidget);
     expect(find.text('Backup & Restore'), findsOneWidget);
     expect(find.text('Log Center'), findsOneWidget);
+    expect(find.text('Debugging'), findsOneWidget);
 
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
@@ -96,7 +97,12 @@ void main() {
       entryKey: const Key(
         'settings-ui-contribution-pack.transcript_correction-settings.transcript_correction.glossary',
       ),
-      pageKey: const Key('permission-gate-page'),
+      pageKey: const Key('pack-library-page'),
+    );
+    await _openChildAndReturn(
+      tester,
+      entryKey: const Key('settings-debugging-entry'),
+      pageKey: const Key('debugging-page'),
     );
   });
 
@@ -198,6 +204,11 @@ void main() {
         tester,
         const Key('settings-trace-console-entry'),
         'Log Center',
+      );
+      _expectButtonSemantics(
+        tester,
+        const Key('settings-debugging-entry'),
+        'Debugging',
       );
     } finally {
       semantics.dispose();
@@ -340,7 +351,7 @@ Future<void> _openChildAndReturn(
 }) async {
   await _ensureVisible(tester, entryKey);
   await tester.pumpAndSettle();
-  await tester.tap(find.byKey(entryKey));
+  await tester.tap(find.byKey(entryKey).hitTestable());
   await tester.pumpAndSettle();
   expect(find.byKey(pageKey), findsOneWidget);
 
@@ -353,12 +364,21 @@ Future<void> _openChildAndReturn(
 Future<void> _ensureVisible(WidgetTester tester, Key key) async {
   final finder = find.byKey(key);
   if (finder.evaluate().isNotEmpty) {
-    await tester.ensureVisible(finder);
+    Scrollable.ensureVisible(
+      tester.element(finder),
+      alignment: 0.35,
+      duration: Duration.zero,
+    );
   } else {
     await tester.scrollUntilVisible(
       finder,
       180,
       scrollable: find.byType(Scrollable).first,
+    );
+    Scrollable.ensureVisible(
+      tester.element(finder),
+      alignment: 0.35,
+      duration: Duration.zero,
     );
   }
   await tester.pumpAndSettle();

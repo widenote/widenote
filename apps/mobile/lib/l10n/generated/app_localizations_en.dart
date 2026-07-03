@@ -1883,6 +1883,154 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get settingsDebuggingTitle => 'Debugging';
+
+  @override
+  String get settingsDebuggingSubtitle =>
+      'Repair local Agent work and replay historical input processing.';
+
+  @override
+  String settingsDebuggingStatusSummary(int agentCount, int captureCount) {
+    return '$agentCount agents / $captureCount inputs';
+  }
+
+  @override
+  String get debuggingStatusLoading => 'checking';
+
+  @override
+  String get debuggingTitle => 'Debugging';
+
+  @override
+  String get debuggingSubtitle =>
+      'Repair local Agent tasks and replay downstream processing without changing raw input.';
+
+  @override
+  String get debuggingBackTooltip => 'Back from Debugging';
+
+  @override
+  String get debuggingAgentRetryTitle => 'Retry failed Agents';
+
+  @override
+  String get debuggingAgentRetryBody =>
+      'Retries failed Agent tasks and dependency-blocked downstream tasks that can safely run again.';
+
+  @override
+  String debuggingAgentRetryStatus(int count, int limit) {
+    return '$count retryable / $limit per run';
+  }
+
+  @override
+  String get debuggingNoRetryableAgents =>
+      'No failed Agent tasks are ready to retry.';
+
+  @override
+  String get debuggingRetryFailedAgentsButton => 'Retry failed Agents';
+
+  @override
+  String get debuggingDateReplayTitle => 'Process inputs by date';
+
+  @override
+  String get debuggingDateReplayBody =>
+      'Runs historical captures through the same local processing path, preserving original records and attachments.';
+
+  @override
+  String debuggingStartDateValue(String date) {
+    return 'Start: $date';
+  }
+
+  @override
+  String debuggingEndDateValue(String date) {
+    return 'End: $date';
+  }
+
+  @override
+  String debuggingDateReplayStatus(int count, int limit) {
+    return '$count inputs / $limit per run';
+  }
+
+  @override
+  String get debuggingDateRangeInvalid =>
+      'End date must be on or after start date.';
+
+  @override
+  String get debuggingNoMatchingCaptures =>
+      'No captures match this date range.';
+
+  @override
+  String get debuggingReplayDateRangeButton => 'Process date range';
+
+  @override
+  String get debuggingRunningLabel => 'Running...';
+
+  @override
+  String get debuggingRetryConfirmTitle => 'Retry failed Agents?';
+
+  @override
+  String debuggingRetryConfirmBody(int count, int limit) {
+    return 'This will retry up to $limit of $count failed or dependency-blocked Agent tasks. It may call model providers and use battery.';
+  }
+
+  @override
+  String get debuggingRetryConfirmAction => 'Retry';
+
+  @override
+  String get debuggingReplayConfirmTitle => 'Process historical inputs?';
+
+  @override
+  String debuggingReplayConfirmBody(int count, int limit) {
+    return 'This will process up to $limit of $count captures in the selected date range. Raw input stays unchanged; downstream Agent outputs may be created or refreshed.';
+  }
+
+  @override
+  String get debuggingReplayConfirmAction => 'Process';
+
+  @override
+  String get debuggingConfirmCancel => 'Cancel';
+
+  @override
+  String get debuggingResultTitle => 'Last result';
+
+  @override
+  String debuggingOperationFailed(String message) {
+    return 'Debugging action failed: $message';
+  }
+
+  @override
+  String debuggingAgentRetrySummary(
+    int retried,
+    int selected,
+    int drained,
+    int refreshed,
+    int failed,
+    int skipped,
+  ) {
+    return 'Retried $retried of $selected tasks, drained $drained, refreshed $refreshed captures, failed refreshes $failed, skipped $skipped.';
+  }
+
+  @override
+  String debuggingAgentRetryLimited(int count) {
+    return 'Limited to the first $count Agent tasks this run.';
+  }
+
+  @override
+  String debuggingDateReplaySummary(
+    int processed,
+    int retried,
+    int refreshed,
+    int failed,
+    int skipped,
+    int deferred,
+    int selected,
+  ) {
+    return 'Processed $processed, retried $retried, refreshed $refreshed, failed $failed, skipped $skipped, deferred $deferred of $selected selected inputs.';
+  }
+
+  @override
+  String debuggingDateReplayLimited(int count) {
+    return 'Limited to the first $count captures this run.';
+  }
+
+  @override
   String get systemPermissionsTitle => 'System Permissions';
 
   @override
