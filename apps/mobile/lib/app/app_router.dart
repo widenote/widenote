@@ -6,6 +6,7 @@ import '../features/backup/presentation/backup_page.dart';
 import '../features/capture/application/capture_sheet_request.dart';
 import '../features/capture/presentation/home_page.dart';
 import '../features/chat/presentation/chat_page.dart';
+import '../features/insights/presentation/insights_page.dart';
 import '../features/memory/presentation/memory_page.dart';
 import '../features/model_providers/presentation/model_provider_settings_page.dart';
 import '../features/location/presentation/location_settings_page.dart';
@@ -85,6 +86,24 @@ GoRouter createAppRouter({String initialLocation = '/'}) {
                 name: 'daily-recap',
                 pageBuilder: (context, state) =>
                     _noTransitionPage(state, const DailyRecapPage()),
+              ),
+              GoRoute(
+                path: 'insights',
+                name: 'insights',
+                pageBuilder: (context, state) =>
+                    _noTransitionPage(state, const InsightsPage()),
+                routes: [
+                  GoRoute(
+                    path: ':insightId',
+                    name: 'insight-detail',
+                    pageBuilder: (context, state) => _noTransitionPage(
+                      state,
+                      InsightDetailPage(
+                        insightId: state.pathParameters['insightId'] ?? '',
+                      ),
+                    ),
+                  ),
+                ],
               ),
               GoRoute(
                 path: 'settings',

@@ -29,6 +29,7 @@ It should stay short. It points to the right local context instead of duplicatin
 
 ## Research
 
+- `docs/research/2026-07-03-insight-depth-design.md`
 - `docs/research/2026-07-03-mobile-child-page-tabs-kimi-review.md`
 - `docs/research/2026-07-03-model-provider-token-plan-parity.md`
 - `docs/research/2026-07-01-chat-session-management-plan.md`
@@ -102,6 +103,7 @@ It should stay short. It points to the right local context instead of duplicatin
 
 - `docs/architecture/current-contracts.md`
 - `packages/schemas/src/`
+- `packages/schemas/src/insight/insight_payload.schema.json`
 - `packages/schemas/src/transcript/transcript.schema.json`
 - `packs/official/default/manifest.json`
 - `packs/official/todo/manifest.json`
@@ -132,6 +134,7 @@ It should stay short. It points to the right local context instead of duplicatin
 | Mobile chat | `apps/mobile/lib/features/chat/README.md` | Model-required local chat sessions with source-linked Context Packet citations |
 | Mobile timeline | `apps/mobile/lib/features/timeline/README.md` | Local timeline browse, search, details, and source-ref inspection |
 | Mobile recap | `apps/mobile/lib/features/recap/README.md` | Daily Recap page built from local object truth |
+| Mobile insights | `apps/mobile/lib/features/insights/README.md` | Source-linked insight list, detail, evidence inspection, and archive/restore review controls |
 | Mobile settings | `apps/mobile/lib/features/settings/README.md` | Settings and Privacy hub for controls, permissions, providers, backup, logs, and display status |
 | Mobile transcription | `apps/mobile/lib/features/transcription/README.md` | Voice transcription settings, explicit ASR engine selection, local SenseVoice model state, MiMo ASR, retry, and correction orchestration |
 | Mobile location | `apps/mobile/lib/features/location/README.md` | Opt-in foreground GPS capture, AMap reverse geocoding, fact-backed place metadata, and redacted location display |

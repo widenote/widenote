@@ -44,8 +44,14 @@ class HomeHeader extends StatelessWidget {
           children: [
             IconButton.filledTonal(
               key: const Key('open-daily-recap-button'),
-              tooltip: l10n.homeOpenInsightsTooltip,
+              tooltip: l10n.homeOpenDailyRecapTooltip,
               onPressed: () => context.push('/recap'),
+              icon: const Icon(Icons.today_outlined),
+            ),
+            IconButton.filledTonal(
+              key: const Key('open-insights-button'),
+              tooltip: l10n.homeOpenInsightsTooltip,
+              onPressed: () => context.push('/insights'),
               icon: const Icon(Icons.lightbulb_outline),
             ),
             IconButton.outlined(

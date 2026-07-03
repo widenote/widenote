@@ -33,6 +33,10 @@
       "fixture": "valid/memory_item_superseded.json"
     },
     {
+      "schema": "../src/insight/insight_payload.schema.json",
+      "fixture": "valid/insight_payload_v2.json"
+    },
+    {
       "schema": "../src/agent_pack/agent_pack_manifest.schema.json",
       "fixture": "valid/agent_pack_manifest.json"
     },

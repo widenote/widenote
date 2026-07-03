@@ -9,6 +9,7 @@ Initial schema families:
 - Event
 - Transcript events and corrections
 - Memory
+- Insight payload
 - Agent Pack manifest
 - Permission
 - Task
@@ -33,6 +34,7 @@ Current source schemas:
 | Event envelope | `src/event/event.schema.json` |
 | Transcript events and corrections | `src/transcript/transcript.schema.json` |
 | Memory candidate/item | `src/memory/memory.schema.json` |
+| Insight payload | `src/insight/insight_payload.schema.json` |
 | Agent Pack manifest | `src/agent_pack/agent_pack_manifest.schema.json` |
 | Agent Pack marketplace index | `src/agent_pack/agent_pack_marketplace.schema.json` |
 | Permission declaration | `src/permission/permission.schema.json` |
@@ -103,7 +105,10 @@ script side effects are described only as deferred contract values; phase-one
 validation rejects them until a sandbox RFC is accepted.
 
 Agent Pack `ui_blocks[]` is currently a store-safe whitelist for structured
-insight rendering: `claim_list`, `metric_row`, `source_refs`, and `note`.
+insight rendering. The default pack uses `claim_list`, `metric_row`,
+`source_refs`, and `note`; the public Insight Payload schema also reserves
+`evidence_list`, `counter_evidence`, `confidence_band`, `contrast`,
+`trend_chart`, and `timeline` for richer source-linked insight rendering.
 Unknown block kinds are rejected by both the schema and the lightweight pack
 validator.
 

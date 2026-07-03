@@ -579,6 +579,68 @@ class AppLocalizationsZh extends AppLocalizations {
   String get insightsEmpty => '还没有可溯源洞察。';
 
   @override
+  String get insightsPageTitle => '洞察';
+
+  @override
+  String get insightsPageSubtitle => '查看可溯源的模式、判断和证据。';
+
+  @override
+  String get insightsBackTooltip => '关闭洞察';
+
+  @override
+  String get insightsRefreshTooltip => '刷新洞察';
+
+  @override
+  String get insightsActiveSectionTitle => '活跃洞察';
+
+  @override
+  String get insightsActiveEmpty => '还没有活跃的可溯源洞察。';
+
+  @override
+  String get insightsArchivedSectionTitle => '已归档洞察';
+
+  @override
+  String get insightsArchivedEmpty => '还没有已归档洞察。';
+
+  @override
+  String get insightDetailTitle => '洞察详情';
+
+  @override
+  String get insightDetailSubtitle => '检查判断、指标、证据和来源引用。';
+
+  @override
+  String get insightMissingTitle => '洞察不可用';
+
+  @override
+  String get insightMissingBody => '当前本地存储里找不到这条洞察。';
+
+  @override
+  String get insightPayloadSectionTitle => '判断与指标';
+
+  @override
+  String get insightEvidenceSectionTitle => '证据';
+
+  @override
+  String get insightCounterEvidenceSectionTitle => '反向证据';
+
+  @override
+  String get insightOpenTimelineAction => '时间线';
+
+  @override
+  String get insightActionArchive => '归档';
+
+  @override
+  String get insightActionRestore => '恢复';
+
+  @override
+  String insightConfidenceLabel(String value) {
+    return '$value 置信度';
+  }
+
+  @override
+  String get insightUpdateFailed => '洞察更新失败。';
+
+  @override
   String get recordsTitle => '记录';
 
   @override

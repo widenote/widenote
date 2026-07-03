@@ -614,7 +614,7 @@ class _InsightTeaser extends StatelessWidget {
       title: l10n.homeInsightTeaserTitle,
       trailing: TextButton(
         key: const Key('home-open-insights-button'),
-        onPressed: () => context.push('/recap'),
+        onPressed: () => context.push('/insights'),
         child: Text(l10n.homeOpenInsightsAction),
       ),
       child: Column(
@@ -622,6 +622,7 @@ class _InsightTeaser extends StatelessWidget {
         children: [
           Text(
             insight == null ? l10n.homeInsightTeaserEmpty : insight.summary,
+            key: const Key('home-insight-teaser-body'),
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -644,6 +645,16 @@ class _InsightTeaser extends StatelessWidget {
                 ),
             ],
           ),
+          if (insight != null) ...[
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              key: Key('home-open-insight-${insight.id}'),
+              onPressed: () =>
+                  context.push('/insights/${Uri.encodeComponent(insight.id)}'),
+              icon: const Icon(Icons.open_in_new),
+              label: Text(l10n.homeOpenInsightsAction),
+            ),
+          ],
         ],
       ),
     );

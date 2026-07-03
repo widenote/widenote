@@ -20,6 +20,8 @@ Features may own presentation and temporary app-local controllers. Durable runti
 - `timeline`: local browse, search, card detail, item detail, and source-ref
   inspection for captures, cards, insights, Memory, and todos.
 - `recap`: Daily Recap second-level page built from local object truth.
+- `insights`: source-linked insight list, detail, evidence inspection, and
+  local archive/restore review controls.
 - `memory`: accepted Memory list, edit, tombstone delete, restore, and source
   metadata.
 - `chat`: local sessions, messages, provider-backed assistant bridge,

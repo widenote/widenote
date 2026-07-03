@@ -101,6 +101,13 @@ String localizedMetricLabel(AppLocalizations l10n, String value) {
   return value;
 }
 
+String localizedInsightError(AppLocalizations l10n, String message) {
+  return switch (message.trim()) {
+    'Insight update failed.' => l10n.insightUpdateFailed,
+    _ => message,
+  };
+}
+
 String localizedSourceLinkCount(AppLocalizations l10n, String value) {
   final match = RegExp(r'^(\d+) source link\(s\)$').firstMatch(value.trim());
   if (match == null) {
