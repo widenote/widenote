@@ -3369,6 +3369,300 @@ abstract class AppLocalizations {
   /// **'Limited to the first {count} captures this run.'**
   String debuggingDateReplayLimited(int count);
 
+  /// No description provided for @usageStatsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Usage Statistics'**
+  String get usageStatsTitle;
+
+  /// No description provided for @usageStatsSettingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open token, tool, Memory, and cache dashboards from local evidence.'**
+  String get usageStatsSettingsSubtitle;
+
+  /// No description provided for @usageStatsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Local input, token, tool, Memory, and cache metrics from the last {days} days.'**
+  String usageStatsSubtitle(int days);
+
+  /// No description provided for @usageStatsBackTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Back from Usage Statistics'**
+  String get usageStatsBackTooltip;
+
+  /// No description provided for @usageStatsRefreshTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh usage statistics'**
+  String get usageStatsRefreshTooltip;
+
+  /// No description provided for @usageStatsScopeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scope'**
+  String get usageStatsScopeTitle;
+
+  /// No description provided for @usageStatsPeriodDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily'**
+  String get usageStatsPeriodDaily;
+
+  /// No description provided for @usageStatsPeriodWeekly.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly'**
+  String get usageStatsPeriodWeekly;
+
+  /// No description provided for @usageStatsAgentFilterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent filter'**
+  String get usageStatsAgentFilterTitle;
+
+  /// No description provided for @usageStatsAllAgents.
+  ///
+  /// In en, this message translates to:
+  /// **'All agents'**
+  String get usageStatsAllAgents;
+
+  /// No description provided for @usageStatsUnknownAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown agent'**
+  String get usageStatsUnknownAgent;
+
+  /// No description provided for @usageStatsSummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Usage overview'**
+  String get usageStatsSummaryTitle;
+
+  /// No description provided for @usageStatsInputCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'raw inputs'**
+  String get usageStatsInputCountLabel;
+
+  /// No description provided for @usageStatsInputCharactersLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'input characters'**
+  String get usageStatsInputCharactersLabel;
+
+  /// No description provided for @usageStatsMemoryProducedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory produced'**
+  String get usageStatsMemoryProducedLabel;
+
+  /// No description provided for @usageStatsModelCallsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'model calls'**
+  String get usageStatsModelCallsLabel;
+
+  /// No description provided for @usageStatsTotalTokensLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'total tokens'**
+  String get usageStatsTotalTokensLabel;
+
+  /// No description provided for @usageStatsEstimatedCostLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'estimated cost'**
+  String get usageStatsEstimatedCostLabel;
+
+  /// No description provided for @usageStatsModelFailures.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 failed} other{{count} failed}}'**
+  String usageStatsModelFailures(int count);
+
+  /// No description provided for @usageStatsTokensTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Token usage'**
+  String get usageStatsTokensTitle;
+
+  /// No description provided for @usageStatsInputTokensLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'input tokens'**
+  String get usageStatsInputTokensLabel;
+
+  /// No description provided for @usageStatsOutputTokensLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'output tokens'**
+  String get usageStatsOutputTokensLabel;
+
+  /// No description provided for @usageStatsCachedTokensLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'provider cached input'**
+  String get usageStatsCachedTokensLabel;
+
+  /// No description provided for @usageStatsThoughtTokensLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'reasoning tokens'**
+  String get usageStatsThoughtTokensLabel;
+
+  /// No description provided for @usageStatsCachedTokensValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{tokens} · {ratio}'**
+  String usageStatsCachedTokensValue(String tokens, String ratio);
+
+  /// No description provided for @usageStatsNotReported.
+  ///
+  /// In en, this message translates to:
+  /// **'not reported'**
+  String get usageStatsNotReported;
+
+  /// No description provided for @usageStatsProviderCacheNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider cached input is reported by model services. Local context packet reuse is tracked separately below.'**
+  String get usageStatsProviderCacheNote;
+
+  /// No description provided for @usageStatsToolsCacheTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tools and local cache'**
+  String get usageStatsToolsCacheTitle;
+
+  /// No description provided for @usageStatsToolCallsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'tool calls'**
+  String get usageStatsToolCallsLabel;
+
+  /// No description provided for @usageStatsToolBreakdown.
+  ///
+  /// In en, this message translates to:
+  /// **'{completed} completed / {failed} failed'**
+  String usageStatsToolBreakdown(int completed, int failed);
+
+  /// No description provided for @usageStatsContextReuseLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'local context reuse'**
+  String get usageStatsContextReuseLabel;
+
+  /// No description provided for @usageStatsContextReuseDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'{hits} reused / {calls} context calls'**
+  String usageStatsContextReuseDetail(int hits, int calls);
+
+  /// No description provided for @usageStatsContextCacheRowsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'context cache rows'**
+  String get usageStatsContextCacheRowsLabel;
+
+  /// No description provided for @usageStatsContextCacheRowsDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'{active} active / {invalidated} invalidated'**
+  String usageStatsContextCacheRowsDetail(int active, int invalidated);
+
+  /// No description provided for @usageStatsDailyTrendTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily trend'**
+  String get usageStatsDailyTrendTitle;
+
+  /// No description provided for @usageStatsWeeklyTrendTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly trend'**
+  String get usageStatsWeeklyTrendTitle;
+
+  /// No description provided for @usageStatsTrendEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No usage in this scope yet.'**
+  String get usageStatsTrendEmpty;
+
+  /// No description provided for @usageStatsTrendTokenValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{tokens} tokens'**
+  String usageStatsTrendTokenValue(String tokens);
+
+  /// No description provided for @usageStatsTrendInputs.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 input} other{{count} inputs}}'**
+  String usageStatsTrendInputs(int count);
+
+  /// No description provided for @usageStatsTrendTools.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 tool} other{{count} tools}}'**
+  String usageStatsTrendTools(int count);
+
+  /// No description provided for @usageStatsTrendMemory.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 Memory} other{{count} Memory}}'**
+  String usageStatsTrendMemory(int count);
+
+  /// No description provided for @usageStatsAgentBreakdownTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent breakdown'**
+  String get usageStatsAgentBreakdownTitle;
+
+  /// No description provided for @usageStatsAgentEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No agent-attributed usage in this window.'**
+  String get usageStatsAgentEmpty;
+
+  /// No description provided for @usageStatsAgentTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'{tokens} tokens'**
+  String usageStatsAgentTokens(String tokens);
+
+  /// No description provided for @usageStatsAgentModelCalls.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 model call} other{{count} model calls}}'**
+  String usageStatsAgentModelCalls(int count);
+
+  /// No description provided for @usageStatsAgentToolCalls.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 tool call} other{{count} tool calls}}'**
+  String usageStatsAgentToolCalls(int count);
+
+  /// No description provided for @usageStatsAgentMemory.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 Memory} other{{count} Memory}}'**
+  String usageStatsAgentMemory(int count);
+
+  /// No description provided for @usageStatsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No usage statistics yet'**
+  String get usageStatsEmptyTitle;
+
+  /// No description provided for @usageStatsEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Save records or run local Agents. Aggregate usage will appear here without exposing raw prompts or records.'**
+  String get usageStatsEmptyBody;
+
   /// No description provided for @systemPermissionsTitle.
   ///
   /// In en, this message translates to:

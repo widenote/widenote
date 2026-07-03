@@ -62,6 +62,30 @@ final class ContextPacketCachesDao {
     return rows.map(_contextPacketCacheFromRow).toList(growable: false);
   }
 
+  List<ContextPacketCacheRecord> readByCreatedAtRange({
+    required DateTime startInclusive,
+    required DateTime endExclusive,
+    String? status,
+    int? limit,
+    int? offset,
+  }) {
+    final rows = _selectOrdered(
+      _database,
+      'context_packet_cache',
+      whereSql: status == null
+          ? 'created_at >= ? AND created_at < ?'
+          : 'created_at >= ? AND created_at < ? AND status = ?',
+      parameters: <Object?>[
+        _encodeDateTime(startInclusive),
+        _encodeDateTime(endExclusive),
+        if (status != null) status,
+      ],
+      limit: limit,
+      offset: offset,
+    );
+    return rows.map(_contextPacketCacheFromRow).toList(growable: false);
+  }
+
   List<ContextPacketCacheRecord> readBySurface(
     String surface, {
     String? status,

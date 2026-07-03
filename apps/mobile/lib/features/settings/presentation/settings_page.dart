@@ -212,12 +212,11 @@ class _ControlSurface extends ConsumerWidget {
           _ControlRow(
             key: Key('settings-ui-contribution-${pack.id}-${contribution.id}'),
             icon: Icons.extension_outlined,
-            title: contribution.title,
-            subtitle: l10n.settingsPackUiContributionSubtitle(
-              pack.name,
-              contribution.description.isEmpty
-                  ? contribution.surface
-                  : contribution.description,
+            title: _packSettingsContributionTitle(l10n, pack, contribution),
+            subtitle: _packSettingsContributionSubtitle(
+              l10n,
+              pack,
+              contribution,
             ),
             status: _packSettingsContributionStatus(
               l10n,
@@ -227,6 +226,7 @@ class _ControlSurface extends ConsumerWidget {
             onTap: _packSettingsContributionTap(
               context,
               pack,
+              contribution,
               missingPermissions,
             ),
           ),
@@ -265,9 +265,37 @@ class _ControlSurface extends ConsumerWidget {
     return l10n.packLibraryStatusEnabled;
   }
 
+  String _packSettingsContributionTitle(
+    AppLocalizations l10n,
+    PackLibraryPack pack,
+    PackUiContribution contribution,
+  ) {
+    if (_isUsageStatsContribution(pack, contribution)) {
+      return l10n.usageStatsTitle;
+    }
+    return contribution.title;
+  }
+
+  String _packSettingsContributionSubtitle(
+    AppLocalizations l10n,
+    PackLibraryPack pack,
+    PackUiContribution contribution,
+  ) {
+    if (_isUsageStatsContribution(pack, contribution)) {
+      return l10n.usageStatsSettingsSubtitle;
+    }
+    return l10n.settingsPackUiContributionSubtitle(
+      pack.name,
+      contribution.description.isEmpty
+          ? contribution.surface
+          : contribution.description,
+    );
+  }
+
   VoidCallback? _packSettingsContributionTap(
     BuildContext context,
     PackLibraryPack pack,
+    PackUiContribution contribution,
     List<String> missingPermissions,
   ) {
     if (!pack.isEnabled) {
@@ -276,7 +304,26 @@ class _ControlSurface extends ConsumerWidget {
     if (missingPermissions.isNotEmpty) {
       return () => context.push('/settings/permissions');
     }
-    return () => context.push('/plugins/packs');
+    final route = _packSettingsContributionRoute(pack, contribution);
+    return () => context.push(route ?? '/plugins/packs');
+  }
+
+  String? _packSettingsContributionRoute(
+    PackLibraryPack pack,
+    PackUiContribution contribution,
+  ) {
+    if (_isUsageStatsContribution(pack, contribution)) {
+      return '/settings/usage-stats';
+    }
+    return null;
+  }
+
+  bool _isUsageStatsContribution(
+    PackLibraryPack pack,
+    PackUiContribution contribution,
+  ) {
+    return pack.id == 'pack.usage_stats' &&
+        contribution.id == 'settings.usage_stats.dashboard';
   }
 
   String _backupStatus(AppLocalizations l10n, BackupState state) {

@@ -1,0 +1,65 @@
+{
+  "$schema": "../../../packages/schemas/src/agent_pack/agent_pack_manifest.schema.json",
+  "id": "pack.usage_stats",
+  "name": "Usage Statistics Dashboard",
+  "version": "0.1.0",
+  "schema_version": 1,
+  "publisher": "widenote",
+  "edition": "official",
+  "description": "Official read-only pack that exposes local runtime usage, token, tool, Memory, and context cache statistics through a host-rendered Settings dashboard.",
+  "compatibility": {
+    "widenote_min": "0.1.0",
+    "widenote_max": null,
+    "schema_version": 1
+  },
+  "marketplace": {
+    "source": "bundled",
+    "trust_level": "official",
+    "install_mode": "bundled",
+    "repository_url": "https://github.com/widenote/widenote",
+    "docs_path": "packs/official/usage_stats/README.md",
+    "icon_path": null,
+    "categories": [
+      "analytics",
+      "runtime"
+    ],
+    "capabilities": [
+      "usage.stats",
+      "trace.read",
+      "context_packet.observe"
+    ],
+    "status": "available"
+  },
+  "entrypoint_kind": "native",
+  "permissions": [],
+  "subscriptions": [],
+  "agents": [],
+  "model_profiles": [],
+  "tools": [],
+  "ui_blocks": [],
+  "ui_contributions": [
+    {
+      "id": "settings.usage_stats.dashboard",
+      "surface": "settings.pack_detail",
+      "kind": "panel",
+      "title": "Usage statistics",
+      "description": "Open the local usage dashboard for runtime tokens, tool calls, Memory production, and context cache reuse.",
+      "slot": "settings.pack_detail.analytics",
+      "placement": "section",
+      "required_permissions": []
+    }
+  ],
+  "storage_quota": {
+    "local_bytes": 0
+  },
+  "integrity": {
+    "checksum_sha256": null,
+    "signature": null
+  },
+  "metadata": {
+    "status": "available",
+    "source": "packs/official/usage_stats/manifest.json",
+    "read_only": true,
+    "source_truth": "local_runtime_traces_and_object_tables_remain_canonical"
+  }
+}

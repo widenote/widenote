@@ -752,6 +752,165 @@
       }
     }
   },
+  "usageStatsTitle": "使用统计",
+  "usageStatsSettingsSubtitle": "从本地证据打开 Token、工具、记忆和缓存看板。",
+  "usageStatsSubtitle": "最近 {days} 天的本地输入、Token、工具、记忆和缓存统计。",
+  "@usageStatsSubtitle": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "usageStatsBackTooltip": "从使用统计返回",
+  "usageStatsRefreshTooltip": "刷新使用统计",
+  "usageStatsScopeTitle": "统计范围",
+  "usageStatsPeriodDaily": "按日",
+  "usageStatsPeriodWeekly": "按周",
+  "usageStatsAgentFilterTitle": "Agent 过滤",
+  "usageStatsAllAgents": "全部 Agent",
+  "usageStatsUnknownAgent": "未知 Agent",
+  "usageStatsSummaryTitle": "使用概览",
+  "usageStatsInputCountLabel": "原始输入",
+  "usageStatsInputCharactersLabel": "输入字符",
+  "usageStatsMemoryProducedLabel": "产生记忆",
+  "usageStatsModelCallsLabel": "模型调用",
+  "usageStatsTotalTokensLabel": "总 Token",
+  "usageStatsEstimatedCostLabel": "预估成本",
+  "usageStatsModelFailures": "{count} 次失败",
+  "@usageStatsModelFailures": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "usageStatsTokensTitle": "Token 消耗",
+  "usageStatsInputTokensLabel": "输入 Token",
+  "usageStatsOutputTokensLabel": "输出 Token",
+  "usageStatsCachedTokensLabel": "服务商缓存输入",
+  "usageStatsThoughtTokensLabel": "推理 Token",
+  "usageStatsCachedTokensValue": "{tokens} · {ratio}",
+  "@usageStatsCachedTokensValue": {
+    "placeholders": {
+      "tokens": {
+        "type": "String"
+      },
+      "ratio": {
+        "type": "String"
+      }
+    }
+  },
+  "usageStatsNotReported": "未报告",
+  "usageStatsProviderCacheNote": "服务商缓存输入来自模型服务返回；本地上下文包复用在下方单独统计。",
+  "usageStatsToolsCacheTitle": "工具与本地缓存",
+  "usageStatsToolCallsLabel": "工具调用",
+  "usageStatsToolBreakdown": "{completed} 次完成 / {failed} 次失败",
+  "@usageStatsToolBreakdown": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
+  "usageStatsContextReuseLabel": "本地上下文复用",
+  "usageStatsContextReuseDetail": "{hits} 次复用 / {calls} 次上下文调用",
+  "@usageStatsContextReuseDetail": {
+    "placeholders": {
+      "hits": {
+        "type": "int"
+      },
+      "calls": {
+        "type": "int"
+      }
+    }
+  },
+  "usageStatsContextCacheRowsLabel": "上下文缓存行",
+  "usageStatsContextCacheRowsDetail": "{active} 个活跃 / {invalidated} 个已失效",
+  "@usageStatsContextCacheRowsDetail": {
+    "placeholders": {
+      "active": {
+        "type": "int"
+      },
+      "invalidated": {
+        "type": "int"
+      }
+    }
+  },
+  "usageStatsDailyTrendTitle": "每日趋势",
+  "usageStatsWeeklyTrendTitle": "每周趋势",
+  "usageStatsTrendEmpty": "这个范围内还没有使用数据。",
+  "usageStatsTrendTokenValue": "{tokens} Token",
+  "@usageStatsTrendTokenValue": {
+    "placeholders": {
+      "tokens": {
+        "type": "String"
+      }
+    }
+  },
+  "usageStatsTrendInputs": "{count} 次输入",
+  "@usageStatsTrendInputs": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "usageStatsTrendTools": "{count} 次工具",
+  "@usageStatsTrendTools": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "usageStatsTrendMemory": "{count} 条记忆",
+  "@usageStatsTrendMemory": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "usageStatsAgentBreakdownTitle": "Agent 细分",
+  "usageStatsAgentEmpty": "这个窗口里还没有可归因到 Agent 的使用数据。",
+  "usageStatsAgentTokens": "{tokens} Token",
+  "@usageStatsAgentTokens": {
+    "placeholders": {
+      "tokens": {
+        "type": "String"
+      }
+    }
+  },
+  "usageStatsAgentModelCalls": "{count} 次模型调用",
+  "@usageStatsAgentModelCalls": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "usageStatsAgentToolCalls": "{count} 次工具调用",
+  "@usageStatsAgentToolCalls": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "usageStatsAgentMemory": "{count} 条记忆",
+  "@usageStatsAgentMemory": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "usageStatsEmptyTitle": "还没有使用统计",
+  "usageStatsEmptyBody": "保存记录或运行本地 Agent 后，聚合统计会出现在这里，不会暴露原始 prompt 或记录内容。",
   "systemPermissionsTitle": "系统权限",
   "systemPermissionsSubtitle": "复核 App 级设备权限，需要时直接跳到对应系统设置。",
   "systemPermissionsBackTooltip": "从系统权限返回",

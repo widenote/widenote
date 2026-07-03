@@ -1081,6 +1081,165 @@
       }
     }
   },
+  "usageStatsTitle": "Usage Statistics",
+  "usageStatsSettingsSubtitle": "Open token, tool, Memory, and cache dashboards from local evidence.",
+  "usageStatsSubtitle": "Local input, token, tool, Memory, and cache metrics from the last {days} days.",
+  "@usageStatsSubtitle": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "usageStatsBackTooltip": "Back from Usage Statistics",
+  "usageStatsRefreshTooltip": "Refresh usage statistics",
+  "usageStatsScopeTitle": "Scope",
+  "usageStatsPeriodDaily": "Daily",
+  "usageStatsPeriodWeekly": "Weekly",
+  "usageStatsAgentFilterTitle": "Agent filter",
+  "usageStatsAllAgents": "All agents",
+  "usageStatsUnknownAgent": "Unknown agent",
+  "usageStatsSummaryTitle": "Usage overview",
+  "usageStatsInputCountLabel": "raw inputs",
+  "usageStatsInputCharactersLabel": "input characters",
+  "usageStatsMemoryProducedLabel": "Memory produced",
+  "usageStatsModelCallsLabel": "model calls",
+  "usageStatsTotalTokensLabel": "total tokens",
+  "usageStatsEstimatedCostLabel": "estimated cost",
+  "usageStatsModelFailures": "{count, plural, =1{1 failed} other{{count} failed}}",
+  "@usageStatsModelFailures": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "usageStatsTokensTitle": "Token usage",
+  "usageStatsInputTokensLabel": "input tokens",
+  "usageStatsOutputTokensLabel": "output tokens",
+  "usageStatsCachedTokensLabel": "provider cached input",
+  "usageStatsThoughtTokensLabel": "reasoning tokens",
+  "usageStatsCachedTokensValue": "{tokens} · {ratio}",
+  "@usageStatsCachedTokensValue": {
+    "placeholders": {
+      "tokens": {
+        "type": "String"
+      },
+      "ratio": {
+        "type": "String"
+      }
+    }
+  },
+  "usageStatsNotReported": "not reported",
+  "usageStatsProviderCacheNote": "Provider cached input is reported by model services. Local context packet reuse is tracked separately below.",
+  "usageStatsToolsCacheTitle": "Tools and local cache",
+  "usageStatsToolCallsLabel": "tool calls",
+  "usageStatsToolBreakdown": "{completed} completed / {failed} failed",
+  "@usageStatsToolBreakdown": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
+  "usageStatsContextReuseLabel": "local context reuse",
+  "usageStatsContextReuseDetail": "{hits} reused / {calls} context calls",
+  "@usageStatsContextReuseDetail": {
+    "placeholders": {
+      "hits": {
+        "type": "int"
+      },
+      "calls": {
+        "type": "int"
+      }
+    }
+  },
+  "usageStatsContextCacheRowsLabel": "context cache rows",
+  "usageStatsContextCacheRowsDetail": "{active} active / {invalidated} invalidated",
+  "@usageStatsContextCacheRowsDetail": {
+    "placeholders": {
+      "active": {
+        "type": "int"
+      },
+      "invalidated": {
+        "type": "int"
+      }
+    }
+  },
+  "usageStatsDailyTrendTitle": "Daily trend",
+  "usageStatsWeeklyTrendTitle": "Weekly trend",
+  "usageStatsTrendEmpty": "No usage in this scope yet.",
+  "usageStatsTrendTokenValue": "{tokens} tokens",
+  "@usageStatsTrendTokenValue": {
+    "placeholders": {
+      "tokens": {
+        "type": "String"
+      }
+    }
+  },
+  "usageStatsTrendInputs": "{count, plural, =1{1 input} other{{count} inputs}}",
+  "@usageStatsTrendInputs": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "usageStatsTrendTools": "{count, plural, =1{1 tool} other{{count} tools}}",
+  "@usageStatsTrendTools": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "usageStatsTrendMemory": "{count, plural, =1{1 Memory} other{{count} Memory}}",
+  "@usageStatsTrendMemory": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "usageStatsAgentBreakdownTitle": "Agent breakdown",
+  "usageStatsAgentEmpty": "No agent-attributed usage in this window.",
+  "usageStatsAgentTokens": "{tokens} tokens",
+  "@usageStatsAgentTokens": {
+    "placeholders": {
+      "tokens": {
+        "type": "String"
+      }
+    }
+  },
+  "usageStatsAgentModelCalls": "{count, plural, =1{1 model call} other{{count} model calls}}",
+  "@usageStatsAgentModelCalls": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "usageStatsAgentToolCalls": "{count, plural, =1{1 tool call} other{{count} tool calls}}",
+  "@usageStatsAgentToolCalls": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "usageStatsAgentMemory": "{count, plural, =1{1 Memory} other{{count} Memory}}",
+  "@usageStatsAgentMemory": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "usageStatsEmptyTitle": "No usage statistics yet",
+  "usageStatsEmptyBody": "Save records or run local Agents. Aggregate usage will appear here without exposing raw prompts or records.",
   "systemPermissionsTitle": "System Permissions",
   "systemPermissionsSubtitle": "Review app-level device permissions and jump to the right system setting when needed.",
   "systemPermissionsBackTooltip": "Back from System Permissions",

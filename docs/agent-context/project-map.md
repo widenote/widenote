@@ -30,6 +30,7 @@ It should stay short. It points to the right local context instead of duplicatin
 ## Research
 
 - `docs/research/2026-07-03-insight-depth-design.md`
+- `docs/research/2026-07-03-usage-stats-plugin-kimi-review.md`
 - `docs/research/2026-07-03-mobile-child-page-tabs-kimi-review.md`
 - `docs/research/2026-07-03-model-provider-token-plan-parity.md`
 - `docs/research/2026-07-01-chat-session-management-plan.md`
@@ -109,6 +110,7 @@ It should stay short. It points to the right local context instead of duplicatin
 - `packs/official/todo/manifest.json`
 - `packs/official/pkm_library/manifest.json`
 - `packs/official/transcript_correction/manifest.json`
+- `packs/official/usage_stats/manifest.json`
 - `packs/marketplace/index.json`
 - `tools/pack_validator/validate.mjs`
 
@@ -142,6 +144,7 @@ It should stay short. It points to the right local context instead of duplicatin
 | Mobile Memory | `apps/mobile/lib/features/memory/README.md` | Accepted Memory list, edit, tombstone delete, and restore UI |
 | Mobile model providers | `apps/mobile/lib/features/model_providers/README.md` | Provider settings UI and local state |
 | Mobile traces | `apps/mobile/lib/features/traces/README.md` | Read-only local Agent Runtime log center |
+| Mobile usage stats | `apps/mobile/lib/features/usage_stats/README.md` | Settings dashboard for local input, token, tool, Memory, and cache statistics |
 | API service | `apps/api/README.md` | Optional backend API |
 | TypeScript runner | `apps/runner-ts/README.md` | Self-hosted or cloud runner |
 | Schemas | `packages/schemas/README.md` | Shared runtime contracts and generated types |
@@ -159,6 +162,7 @@ It should stay short. It points to the right local context instead of duplicatin
 | Todo Agent Pack | `packs/official/todo/README.md` | Source-linked todo suggestion loop |
 | PKM Agent Pack | `packs/official/pkm_library/README.md` | Source-linked PKM profile artifacts |
 | Transcript Correction Agent Pack | `packs/official/transcript_correction/README.md` | Source-linked transcript correction revisions |
+| Usage Statistics Agent Pack | `packs/official/usage_stats/README.md` | Read-only usage statistics Settings dashboard |
 | Marketplace index | `packs/marketplace/index.json` | GitHub-first bundled Agent Pack catalog |
 | Pack validator | `tools/pack_validator/README.md` | Lightweight Agent Pack manifest checks |
 

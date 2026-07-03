@@ -2031,6 +2031,227 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get usageStatsTitle => 'Usage Statistics';
+
+  @override
+  String get usageStatsSettingsSubtitle =>
+      'Open token, tool, Memory, and cache dashboards from local evidence.';
+
+  @override
+  String usageStatsSubtitle(int days) {
+    return 'Local input, token, tool, Memory, and cache metrics from the last $days days.';
+  }
+
+  @override
+  String get usageStatsBackTooltip => 'Back from Usage Statistics';
+
+  @override
+  String get usageStatsRefreshTooltip => 'Refresh usage statistics';
+
+  @override
+  String get usageStatsScopeTitle => 'Scope';
+
+  @override
+  String get usageStatsPeriodDaily => 'Daily';
+
+  @override
+  String get usageStatsPeriodWeekly => 'Weekly';
+
+  @override
+  String get usageStatsAgentFilterTitle => 'Agent filter';
+
+  @override
+  String get usageStatsAllAgents => 'All agents';
+
+  @override
+  String get usageStatsUnknownAgent => 'Unknown agent';
+
+  @override
+  String get usageStatsSummaryTitle => 'Usage overview';
+
+  @override
+  String get usageStatsInputCountLabel => 'raw inputs';
+
+  @override
+  String get usageStatsInputCharactersLabel => 'input characters';
+
+  @override
+  String get usageStatsMemoryProducedLabel => 'Memory produced';
+
+  @override
+  String get usageStatsModelCallsLabel => 'model calls';
+
+  @override
+  String get usageStatsTotalTokensLabel => 'total tokens';
+
+  @override
+  String get usageStatsEstimatedCostLabel => 'estimated cost';
+
+  @override
+  String usageStatsModelFailures(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count failed',
+      one: '1 failed',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get usageStatsTokensTitle => 'Token usage';
+
+  @override
+  String get usageStatsInputTokensLabel => 'input tokens';
+
+  @override
+  String get usageStatsOutputTokensLabel => 'output tokens';
+
+  @override
+  String get usageStatsCachedTokensLabel => 'provider cached input';
+
+  @override
+  String get usageStatsThoughtTokensLabel => 'reasoning tokens';
+
+  @override
+  String usageStatsCachedTokensValue(String tokens, String ratio) {
+    return '$tokens · $ratio';
+  }
+
+  @override
+  String get usageStatsNotReported => 'not reported';
+
+  @override
+  String get usageStatsProviderCacheNote =>
+      'Provider cached input is reported by model services. Local context packet reuse is tracked separately below.';
+
+  @override
+  String get usageStatsToolsCacheTitle => 'Tools and local cache';
+
+  @override
+  String get usageStatsToolCallsLabel => 'tool calls';
+
+  @override
+  String usageStatsToolBreakdown(int completed, int failed) {
+    return '$completed completed / $failed failed';
+  }
+
+  @override
+  String get usageStatsContextReuseLabel => 'local context reuse';
+
+  @override
+  String usageStatsContextReuseDetail(int hits, int calls) {
+    return '$hits reused / $calls context calls';
+  }
+
+  @override
+  String get usageStatsContextCacheRowsLabel => 'context cache rows';
+
+  @override
+  String usageStatsContextCacheRowsDetail(int active, int invalidated) {
+    return '$active active / $invalidated invalidated';
+  }
+
+  @override
+  String get usageStatsDailyTrendTitle => 'Daily trend';
+
+  @override
+  String get usageStatsWeeklyTrendTitle => 'Weekly trend';
+
+  @override
+  String get usageStatsTrendEmpty => 'No usage in this scope yet.';
+
+  @override
+  String usageStatsTrendTokenValue(String tokens) {
+    return '$tokens tokens';
+  }
+
+  @override
+  String usageStatsTrendInputs(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count inputs',
+      one: '1 input',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String usageStatsTrendTools(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tools',
+      one: '1 tool',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String usageStatsTrendMemory(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Memory',
+      one: '1 Memory',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get usageStatsAgentBreakdownTitle => 'Agent breakdown';
+
+  @override
+  String get usageStatsAgentEmpty =>
+      'No agent-attributed usage in this window.';
+
+  @override
+  String usageStatsAgentTokens(String tokens) {
+    return '$tokens tokens';
+  }
+
+  @override
+  String usageStatsAgentModelCalls(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count model calls',
+      one: '1 model call',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String usageStatsAgentToolCalls(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tool calls',
+      one: '1 tool call',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String usageStatsAgentMemory(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Memory',
+      one: '1 Memory',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get usageStatsEmptyTitle => 'No usage statistics yet';
+
+  @override
+  String get usageStatsEmptyBody =>
+      'Save records or run local Agents. Aggregate usage will appear here without exposing raw prompts or records.';
+
+  @override
   String get systemPermissionsTitle => 'System Permissions';
 
   @override
