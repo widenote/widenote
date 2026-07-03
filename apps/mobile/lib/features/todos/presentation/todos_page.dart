@@ -342,14 +342,6 @@ class _TodoRow extends ConsumerWidget {
                       runSpacing: 4,
                       children: [
                         _Tag(
-                          key: Key('todo-source-${todo.id}'),
-                          icon: Icons.link,
-                          label: localizedSourceLabel(l10n, todo.sourceLabel),
-                          onTap: _sourceTarget(todo) == null
-                              ? null
-                              : () => context.push(_sourceTarget(todo)!),
-                        ),
-                        _Tag(
                           icon: todo.isSchedule
                               ? Icons.event_available_outlined
                               : Icons.info_outline,
@@ -486,14 +478,6 @@ class _QuietSummary extends StatelessWidget {
   }
 }
 
-String? _sourceTarget(TodoListItem todo) {
-  final sourceCaptureId = todo.sourceCaptureId;
-  if (sourceCaptureId == null || sourceCaptureId.trim().isEmpty) {
-    return null;
-  }
-  return '/timeline/items/${Uri.encodeComponent(sourceCaptureId)}';
-}
-
 String _priorityLabel(AppLocalizations l10n, String? priority) {
   return switch (priority) {
     'high' => l10n.todoPriorityHigh,
@@ -557,16 +541,15 @@ class _EmptyLine extends StatelessWidget {
 }
 
 class _Tag extends StatelessWidget {
-  const _Tag({required this.icon, required this.label, this.onTap, super.key});
+  const _Tag({required this.icon, required this.label, super.key});
 
   final IconData icon;
   final String label;
-  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final tag = DecoratedBox(
+    return DecoratedBox(
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
         borderRadius: BorderRadius.circular(8),
@@ -590,14 +573,6 @@ class _Tag extends StatelessWidget {
           ],
         ),
       ),
-    );
-    if (onTap == null) {
-      return tag;
-    }
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: tag,
     );
   }
 }

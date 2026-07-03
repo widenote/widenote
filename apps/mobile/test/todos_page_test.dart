@@ -57,12 +57,30 @@ void main() {
       isFalse,
     );
 
-    await tester.tap(find.byKey(const Key('todo-source-todo-page-1')));
+    expect(find.byKey(const Key('todo-source-todo-page-1')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('todo-row-todo-page-1')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('todo-detail-page')), findsOneWidget);
+    final sourceButton = find.byKey(
+      const Key('todo-detail-source-todo-page-1'),
+    );
+    await tester.drag(
+      find.byKey(const Key('todo-detail-scroll')),
+      const Offset(0, -520),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('source: capture-todo-page'), findsOneWidget);
+    await tester.tap(sourceButton);
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('todo-source-destination')), findsOneWidget);
     expect(find.text('capture-todo-page'), findsOneWidget);
 
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('todo-detail-page')), findsOneWidget);
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
 
@@ -79,7 +97,7 @@ void main() {
     await _pumpTodosPage(tester, database, locale: const Locale('zh'));
 
     expect(find.text('智能体建议行动'), findsOneWidget);
-    expect(find.text('来源：capture-todo-page'), findsOneWidget);
+    expect(find.text('来源：capture-todo-page'), findsNothing);
     expect(find.text('suggested by agent'), findsNothing);
   });
 
@@ -103,6 +121,7 @@ void main() {
     );
     expect(find.text('Schedule candidate'), findsOneWidget);
     expect(find.text('Time cue: tomorrow'), findsOneWidget);
+    expect(find.byKey(const Key('todo-source-schedule-page-1')), findsNothing);
   });
 
   testWidgets('todo detail page edits local metadata', (tester) async {

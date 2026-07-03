@@ -18,6 +18,7 @@ import 'package:widenote_mobile/features/capture/application/capture_orchestrato
 import 'package:widenote_mobile/features/capture/domain/capture_models.dart';
 import 'package:widenote_mobile/features/capture/media/capture_media.dart';
 import 'package:widenote_mobile/features/location/application/location_settings_controller.dart';
+import 'package:widenote_mobile/features/recap/application/daily_recap_repository.dart';
 
 void main() {
   testWidgets(
@@ -70,9 +71,9 @@ void main() {
     await _openTab(tester, const Key('tab-plugins'));
     await _openTab(tester, const Key('tab-home'));
 
-    await _scrollHomeTextIntoView(tester, '1 processed');
-    expect(find.text('1 processed'), findsOneWidget);
-    expect(find.text('1 accepted'), findsOneWidget);
+    await _scrollHomeTextIntoView(tester, 'captures: 1');
+    expect(find.text('captures: 1'), findsOneWidget);
+    expect(find.text('Memory: 1'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.byKey(Key('record-row-${record.id}')),
       120,
@@ -107,9 +108,9 @@ void main() {
     await tester.pumpAndSettle();
     await _pumpApp(tester, database: database, closeDatabase: false);
 
-    await _scrollHomeTextIntoView(tester, '1 processed');
-    expect(find.text('1 processed'), findsOneWidget);
-    expect(find.text('1 accepted'), findsOneWidget);
+    await _scrollHomeTextIntoView(tester, 'captures: 1');
+    expect(find.text('captures: 1'), findsOneWidget);
+    expect(find.text('Memory: 1'), findsOneWidget);
     final hydrated = _readCaptureState(tester);
     expect(hydrated.records.single.body, captureText);
     expect(hydrated.todos.single.id, todo.id);
@@ -133,12 +134,18 @@ void main() {
   ) async {
     final database = WideNoteLocalDatabase.inMemory();
     addTearDown(database.close);
-    await _pumpApp(tester, database: database, closeDatabase: false);
+    final createdAt = DateTime.utc(2026, 7, 2, 10, 30);
+    await _pumpApp(
+      tester,
+      database: database,
+      closeDatabase: false,
+      overrides: [dailyRecapNowProvider.overrideWithValue(createdAt)],
+    );
 
     expect(_readCaptureState(tester).records, isEmpty);
     expect(find.text('Externally inserted capture.'), findsNothing);
+    expect(find.text('captures: 0'), findsOneWidget);
 
-    final createdAt = DateTime.utc(2026, 7, 2, 10, 30);
     database.captures.insert(
       localdb.CaptureRecord(
         id: 'home-refresh-capture',
@@ -159,6 +166,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(_readCaptureState(tester).records.single.id, 'home-refresh-capture');
+    expect(find.text('captures: 1'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.byKey(const Key('record-row-home-refresh-capture')),
       120,
@@ -276,11 +284,25 @@ void main() {
       ),
       findsOneWidget,
     );
+    expect(
+      find.descendant(
+        of: find.byKey(Key('record-row-${record.id}')),
+        matching: find.textContaining(record.id),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(Key('record-row-${record.id}')),
+        matching: find.textContaining('Processed'),
+      ),
+      findsOneWidget,
+    );
     expect(state.cards, hasLength(2));
     expect(state.insights, hasLength(greaterThanOrEqualTo(4)));
 
-    await _scrollHomeTextIntoView(tester, '1 accepted');
-    expect(find.text('1 accepted'), findsOneWidget);
+    await _scrollHomeTextIntoView(tester, 'Memory: 1');
+    expect(find.text('Memory: 1'), findsOneWidget);
     expect(find.text('Memory saved automatically'), findsNothing);
     expect(find.textContaining('auto-accepted'), findsNothing);
     expect(find.byKey(Key('card-row-${state.cards.first.id}')), findsNothing);
@@ -310,18 +332,18 @@ void main() {
 
     expect(_readCaptureState(tester).records, isEmpty);
     expect(_readCaptureState(tester).todos, isEmpty);
-    await _scrollHomeTextIntoView(tester, 'idle');
-    expect(find.text('idle'), findsOneWidget);
-    expect(find.text('ready'), findsOneWidget);
+    await _scrollHomeTextIntoView(tester, 'captures: 0');
+    expect(find.text('captures: 0'), findsOneWidget);
+    expect(find.text('Memory: 0'), findsOneWidget);
     expect(find.textContaining('Processed locally'), findsNothing);
 
     await _submitQuickCapture(tester, '   ');
 
     expect(_readCaptureState(tester).records, isEmpty);
     expect(_readCaptureState(tester).todos, isEmpty);
-    await _scrollHomeTextIntoView(tester, 'idle');
-    expect(find.text('idle'), findsOneWidget);
-    expect(find.text('ready'), findsOneWidget);
+    await _scrollHomeTextIntoView(tester, 'captures: 0');
+    expect(find.text('captures: 0'), findsOneWidget);
+    expect(find.text('Memory: 0'), findsOneWidget);
     expect(find.textContaining('Processed locally'), findsNothing);
     expect(_readCaptureState(tester).cards, isEmpty);
     expect(_readCaptureState(tester).insights, isEmpty);
@@ -455,7 +477,7 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.text(captureText), findsOneWidget);
-    expect(find.textContaining('Saved locally, agent failed'), findsOneWidget);
+    expect(find.textContaining('Failed'), findsOneWidget);
 
     final state = _readCaptureState(tester);
     expect(state.records.single.body, captureText);
@@ -482,7 +504,7 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.text(captureText), findsOneWidget);
-    expect(find.textContaining('Saved locally, agent failed'), findsOneWidget);
+    expect(find.textContaining('Failed'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.textContaining('Configure a model provider or retry'),
       -120,
@@ -616,14 +638,17 @@ void main() {
     expect(state.cards, hasLength(2));
     expect(state.insights, hasLength(4));
     expect(state.todos, hasLength(1));
-    await _scrollHomeTextIntoView(tester, '1 processed');
-    expect(find.text('1 processed'), findsOneWidget);
-    expect(find.text('1 accepted'), findsOneWidget);
-    expect(find.text('4 source-linked'), findsOneWidget);
+    await _scrollHomeTextIntoView(tester, 'captures: 1');
+    expect(find.text('captures: 1'), findsOneWidget);
+    expect(find.text('Memory: 1'), findsOneWidget);
+    expect(find.text('insights: 4'), findsOneWidget);
 
     await ProviderScope.containerOf(tester.element(find.byType(WideNoteApp)))
         .read(captureControllerProvider.notifier)
         .submitCapture('Second follow-up for Chen.');
+    ProviderScope.containerOf(
+      tester.element(find.byType(WideNoteApp)),
+    ).invalidate(dailyRecapProvider);
     await tester.pumpAndSettle();
     state = _readCaptureState(tester);
     expect(state.records, hasLength(2));
@@ -631,10 +656,10 @@ void main() {
     expect(state.cards, hasLength(4));
     expect(state.insights, hasLength(4));
     expect(state.todos, hasLength(2));
-    await _scrollHomeTextIntoView(tester, '2 processed');
-    expect(find.text('2 processed'), findsOneWidget);
-    expect(find.text('2 accepted'), findsOneWidget);
-    expect(find.text('4 source-linked'), findsOneWidget);
+    await _scrollHomeTextIntoView(tester, 'captures: 2');
+    expect(find.text('captures: 2'), findsOneWidget);
+    expect(find.text('Memory: 2'), findsOneWidget);
+    expect(find.text('insights: 4'), findsOneWidget);
   });
 
   testWidgets('sensitive Memory candidate stays out of the home surface', (
@@ -675,12 +700,12 @@ void main() {
     expect(find.byKey(Key('todo-row-${todo.id}')), findsOneWidget);
     expect(find.text(captureText), findsOneWidget);
     expect(find.text('Suggested action'), findsOneWidget);
-    expect(find.text('source: ${record.id}'), findsOneWidget);
+    expect(find.text('source: ${record.id}'), findsNothing);
     expect(
       _visibleTextValues(tester).where(
         (text) => text.startsWith('source: ') && !text.contains('sample'),
       ),
-      isNotEmpty,
+      isEmpty,
     );
   });
 
