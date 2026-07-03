@@ -11,6 +11,7 @@ import '../../plugins/application/pack_catalog.dart';
 import '../../traces/application/trace_console_controller.dart';
 import '../../transcription/transcription_service.dart';
 import '../../transcription/transcription_settings.dart';
+import '../application/debugging_controller.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -87,6 +88,7 @@ class _ControlSurface extends ConsumerWidget {
         ?.settings;
     final backupState = ref.watch(backupControllerProvider);
     final traceSnapshot = ref.watch(traceConsoleControllerProvider);
+    final debuggingState = ref.watch(debuggingControllerProvider).valueOrNull;
     final packState = ref.watch(packLibraryControllerProvider);
     final permissionState = ref.watch(permissionGateControllerProvider);
     final packSettingsRows = _packSettingsRows(
@@ -167,6 +169,15 @@ class _ControlSurface extends ConsumerWidget {
               traceSnapshot.warningCount,
             ),
             onTap: () => context.push('/settings/traces'),
+          ),
+          const Divider(height: 20),
+          _ControlRow(
+            key: const Key('settings-debugging-entry'),
+            icon: Icons.bug_report_outlined,
+            title: l10n.settingsDebuggingTitle,
+            subtitle: l10n.settingsDebuggingSubtitle,
+            status: _debuggingStatus(l10n, debuggingState),
+            onTap: () => context.push('/settings/debugging'),
           ),
           if (packSettingsRows.isNotEmpty) ...[
             const Divider(height: 20),
@@ -371,6 +382,16 @@ class _ControlSurface extends ConsumerWidget {
       return l10n.settingsLocationStatusAmap;
     }
     return l10n.settingsLocationStatusGps;
+  }
+
+  String _debuggingStatus(AppLocalizations l10n, DebuggingState? state) {
+    if (state == null) {
+      return l10n.debuggingStatusLoading;
+    }
+    return l10n.settingsDebuggingStatusSummary(
+      state.snapshot.retryableAgentTasks,
+      state.snapshot.matchingCaptures,
+    );
   }
 }
 

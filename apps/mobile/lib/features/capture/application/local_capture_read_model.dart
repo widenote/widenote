@@ -79,6 +79,43 @@ final class LocalCaptureReadModelStore {
     return captures.map(_processingInput).toList(growable: false);
   }
 
+  List<CaptureProcessingInput> readProcessingInputsInDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+    int? limit,
+  }) {
+    final captures =
+        _database.captures
+            .readAll()
+            .where(
+              (capture) => _isWithinLocalDateRange(
+                capture.createdAt,
+                startDate: startDate,
+                endDate: endDate,
+              ),
+            )
+            .toList(growable: false)
+          ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    final limited = limit == null ? captures : captures.take(limit);
+    return limited.map(_processingInput).toList(growable: false);
+  }
+
+  int countProcessingInputsInDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+  }) {
+    return _database.captures
+        .readAll()
+        .where(
+          (capture) => _isWithinLocalDateRange(
+            capture.createdAt,
+            startDate: startDate,
+            endDate: endDate,
+          ),
+        )
+        .length;
+  }
+
   CaptureProcessingInput _processingInput(localdb.CaptureRecord capture) {
     return CaptureProcessingInput(
       record: _captureView(capture),
@@ -193,6 +230,22 @@ final class CaptureProcessingInput {
   final CaptureRecord record;
   final String typedText;
   final List<CaptureAttachment> attachments;
+}
+
+bool _isWithinLocalDateRange(
+  DateTime value, {
+  required DateTime startDate,
+  required DateTime endDate,
+}) {
+  final start = _localDateOnly(startDate);
+  final endExclusive = _localDateOnly(endDate).add(const Duration(days: 1));
+  final localValue = value.toLocal();
+  return !localValue.isBefore(start) && localValue.isBefore(endExclusive);
+}
+
+DateTime _localDateOnly(DateTime value) {
+  final local = value.toLocal();
+  return DateTime(local.year, local.month, local.day);
 }
 
 localdb.CaptureRecord _captureRecord(

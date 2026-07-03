@@ -224,6 +224,7 @@ void main() {
       '/settings/transcription',
       '/settings/location',
       '/settings/backup',
+      '/settings/debugging',
       '/settings/usage-stats',
       '/settings/traces',
       '/settings/traces/agents',
@@ -359,6 +360,12 @@ void main() {
       _DeepLinkCase(
         path: '/settings/backup',
         pageKey: Key('backup-page'),
+        firstParentKey: Key('settings-page'),
+        secondParentKey: Key('home-page'),
+      ),
+      _DeepLinkCase(
+        path: '/settings/debugging',
+        pageKey: Key('debugging-page'),
         firstParentKey: Key('settings-page'),
         secondParentKey: Key('home-page'),
       ),

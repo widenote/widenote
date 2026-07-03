@@ -586,6 +586,172 @@
       }
     }
   },
+  "settingsDebuggingTitle": "Debugging",
+  "settingsDebuggingSubtitle": "修复本地 Agent 执行，并按日期回放历史输入处理。",
+  "settingsDebuggingStatusSummary": "{agentCount} 个 Agent / {captureCount} 条输入",
+  "@settingsDebuggingStatusSummary": {
+    "placeholders": {
+      "agentCount": {
+        "type": "int"
+      },
+      "captureCount": {
+        "type": "int"
+      }
+    }
+  },
+  "debuggingStatusLoading": "检查中",
+  "debuggingTitle": "Debugging",
+  "debuggingSubtitle": "修复本地 Agent 任务，并在不改动原始输入的前提下回放下游处理。",
+  "debuggingBackTooltip": "从 Debugging 返回",
+  "debuggingAgentRetryTitle": "重试失败 Agent",
+  "debuggingAgentRetryBody": "重试失败的 Agent 任务，以及可安全重新运行的依赖阻塞下游任务。",
+  "debuggingAgentRetryStatus": "{count} 个可重试 / 每次最多 {limit} 个",
+  "@debuggingAgentRetryStatus": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "debuggingNoRetryableAgents": "没有可重试的失败 Agent 任务。",
+  "debuggingRetryFailedAgentsButton": "重试失败 Agent",
+  "debuggingDateReplayTitle": "按日期处理输入",
+  "debuggingDateReplayBody": "让历史记录重新走一遍本地处理路径，同时保留原始记录和附件。",
+  "debuggingStartDateValue": "开始：{date}",
+  "@debuggingStartDateValue": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "debuggingEndDateValue": "结束：{date}",
+  "@debuggingEndDateValue": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "debuggingDateReplayStatus": "{count} 条输入 / 每次最多 {limit} 条",
+  "@debuggingDateReplayStatus": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "debuggingDateRangeInvalid": "结束日期必须晚于或等于开始日期。",
+  "debuggingNoMatchingCaptures": "这个日期范围内没有匹配的记录。",
+  "debuggingReplayDateRangeButton": "处理日期范围",
+  "debuggingRunningLabel": "运行中...",
+  "debuggingRetryConfirmTitle": "重试失败 Agent？",
+  "debuggingRetryConfirmBody": "将重试 {count} 个失败或依赖阻塞 Agent 任务中的最多 {limit} 个。这个操作可能调用模型提供商并消耗电量。",
+  "@debuggingRetryConfirmBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "debuggingRetryConfirmAction": "重试",
+  "debuggingReplayConfirmTitle": "处理历史输入？",
+  "debuggingReplayConfirmBody": "将处理所选日期范围内 {count} 条记录中的最多 {limit} 条。原始输入不会改变；下游 Agent 输出可能会被创建或刷新。",
+  "@debuggingReplayConfirmBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "debuggingReplayConfirmAction": "处理",
+  "debuggingConfirmCancel": "取消",
+  "debuggingResultTitle": "上次结果",
+  "debuggingOperationFailed": "Debugging 操作失败：{message}",
+  "@debuggingOperationFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "debuggingAgentRetrySummary": "已重试 {selected} 个任务中的 {retried} 个，执行队列 {drained} 个，刷新 {refreshed} 条记录，刷新失败 {failed} 条，跳过 {skipped} 条。",
+  "@debuggingAgentRetrySummary": {
+    "placeholders": {
+      "retried": {
+        "type": "int"
+      },
+      "selected": {
+        "type": "int"
+      },
+      "drained": {
+        "type": "int"
+      },
+      "refreshed": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      },
+      "skipped": {
+        "type": "int"
+      }
+    }
+  },
+  "debuggingAgentRetryLimited": "本次只处理前 {count} 个 Agent 任务。",
+  "@debuggingAgentRetryLimited": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "debuggingDateReplaySummary": "已处理 {selected} 条输入中的：首次处理 {processed} 条，重试 {retried} 条，刷新 {refreshed} 条，失败 {failed} 条，跳过 {skipped} 条，延期 {deferred} 条。",
+  "@debuggingDateReplaySummary": {
+    "placeholders": {
+      "processed": {
+        "type": "int"
+      },
+      "retried": {
+        "type": "int"
+      },
+      "refreshed": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      },
+      "skipped": {
+        "type": "int"
+      },
+      "deferred": {
+        "type": "int"
+      },
+      "selected": {
+        "type": "int"
+      }
+    }
+  },
+  "debuggingDateReplayLimited": "本次只处理前 {count} 条记录。",
+  "@debuggingDateReplayLimited": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "usageStatsTitle": "使用统计",
   "usageStatsSettingsSubtitle": "从本地证据打开 Token、工具、记忆和缓存看板。",
   "usageStatsSubtitle": "最近 {days} 天的本地输入、Token、工具、记忆和缓存统计。",
