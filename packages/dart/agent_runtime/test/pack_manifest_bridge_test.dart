@@ -12,6 +12,7 @@ void main() {
     final defaultManifest = bridge.loadFile(_officialDefaultPath);
     final todoManifest = bridge.loadFile(_officialTodoPath);
     final pkmManifest = bridge.loadFile(_officialPkmPath);
+    final transcriptManifest = bridge.loadFile(_officialTranscriptPath);
 
     expect(defaultManifest.id, 'pack.default');
     expect(defaultManifest.name, 'Default Capture Loop');
@@ -78,6 +79,20 @@ void main() {
       _manifestOutputEvents(defaultManifest),
       isNot(contains(WnEventTypes.todoSuggested)),
     );
+    expect(
+      defaultManifest.uiContributions.map((contribution) => contribution.id),
+      <String>['insight.detail.blocks', 'plugins.pack_home.capture_status'],
+    );
+    final insightContribution = defaultManifest.uiContributions.first;
+    expect(insightContribution.surface, 'insight.detail');
+    expect(insightContribution.kind, 'event_blocks');
+    expect(insightContribution.events, <String>{WnEventTypes.insightCreated});
+    expect(insightContribution.blocks, <String>{
+      'claim_list',
+      'metric_row',
+      'source_refs',
+      'note',
+    });
 
     expect(todoManifest.id, 'pack.todo');
     expect(todoManifest.requiredPermissions, <String>{
@@ -110,6 +125,28 @@ void main() {
           .agentDefinitions['agent.pkm_profile_builder']
           ?.modelProfileRef,
       'local_or_user_selected_model',
+    );
+    expect(
+      pkmManifest.uiContributions.map((contribution) => contribution.surface),
+      <String>['artifact.detail', 'plugins.pack_home'],
+    );
+    expect(
+      transcriptManifest.uiContributions
+          .singleWhere(
+            (contribution) =>
+                contribution.id == 'settings.transcript_correction.glossary',
+          )
+          .kind,
+      'settings_form',
+    );
+    expect(
+      transcriptManifest.uiContributions
+          .singleWhere(
+            (contribution) =>
+                contribution.id == 'settings.transcript_correction.glossary',
+          )
+          .settingsSchemaRef,
+      '#/settings_schema',
     );
 
     final registry = InMemoryPackRegistry()
@@ -610,6 +647,135 @@ void main() {
         (json) => _firstAgent(json)['output_events'] = <Object?>[],
         'output_events',
       );
+      _expectManifestFails(
+        'ui contribution permission outside pack',
+        (json) => json['ui_contributions'] = <Object?>[
+          <String, Object?>{
+            'id': 'settings.bad',
+            'surface': 'settings.pack_detail',
+            'kind': 'settings_form',
+            'title': 'Unsafe settings',
+            'settings_schema_ref': '#/settings_schema',
+            'required_permissions': <Object?>['todo.suggest'],
+          },
+        ],
+        'not declared by pack',
+      );
+      _expectManifestFails(
+        'ui event blocks need events and blocks',
+        (json) => json['ui_contributions'] = <Object?>[
+          <String, Object?>{
+            'id': 'insight.bad',
+            'surface': 'insight.detail',
+            'kind': 'event_blocks',
+            'title': 'Bad blocks',
+          },
+        ],
+        'events and blocks',
+      );
+      _expectManifestFails(
+        'ui contribution blocks must be declared by pack',
+        (json) {
+          json['ui_blocks'] = <Object?>[
+            <String, Object?>{
+              'type': 'note',
+              'events': <Object?>['wn.insight.created'],
+            },
+          ];
+          json['ui_contributions'] = <Object?>[
+            <String, Object?>{
+              'id': 'insight.bad',
+              'surface': 'insight.detail',
+              'kind': 'event_blocks',
+              'title': 'Bad blocks',
+              'events': <Object?>['wn.insight.created'],
+              'blocks': <Object?>['source_refs'],
+            },
+          ];
+        },
+        'UI blocks not declared by pack',
+      );
+      final extendedBlocksManifest = _officialDefaultJson();
+      extendedBlocksManifest['ui_blocks'] = <Object?>[
+        for (final block in <String>[
+          'evidence_list',
+          'counter_evidence',
+          'confidence_band',
+          'contrast',
+          'trend_chart',
+          'timeline',
+        ])
+          <String, Object?>{
+            'type': block,
+            'events': <Object?>['wn.insight.created'],
+          },
+      ];
+      extendedBlocksManifest['ui_contributions'] = <Object?>[
+        <String, Object?>{
+          'id': 'insight.extended_blocks',
+          'surface': 'insight.detail',
+          'kind': 'event_blocks',
+          'title': 'Extended insight blocks',
+          'events': <Object?>['wn.insight.created'],
+          'blocks': <Object?>[
+            'evidence_list',
+            'counter_evidence',
+            'confidence_band',
+            'contrast',
+            'trend_chart',
+            'timeline',
+          ],
+        },
+      ];
+      final extended = bridge.parseJsonString(
+        jsonEncode(extendedBlocksManifest),
+        sourceName: 'extended-ui-blocks',
+      );
+      expect(extended.uiContributions.single.blocks, <String>{
+        'evidence_list',
+        'counter_evidence',
+        'confidence_band',
+        'contrast',
+        'trend_chart',
+        'timeline',
+      });
+      _expectManifestFails(
+        'settings form needs schema ref',
+        (json) => json['ui_contributions'] = <Object?>[
+          <String, Object?>{
+            'id': 'settings.bad',
+            'surface': 'settings.pack_detail',
+            'kind': 'settings_form',
+            'title': 'Bad settings',
+          },
+        ],
+        'settings_schema_ref',
+      );
+      _expectManifestFails(
+        'settings schema ref needs settings schema',
+        (json) => json['ui_contributions'] = <Object?>[
+          <String, Object?>{
+            'id': 'settings.bad',
+            'surface': 'settings.pack_detail',
+            'kind': 'settings_form',
+            'title': 'Bad settings',
+            'settings_schema_ref': '#/settings_schema',
+            'required_permissions': <Object?>['memory.read'],
+          },
+        ],
+        'references missing settings_schema',
+      );
+      _expectManifestFails('community bottom tab contribution', (json) {
+        json['edition'] = 'community';
+        json['ui_contributions'] = <Object?>[
+          <String, Object?>{
+            'id': 'navigation.bottom',
+            'surface': 'bottom_tab',
+            'kind': 'bottom_tab',
+            'title': 'Unsafe tab',
+          },
+        ];
+      }, 'bottom_tab');
     },
   );
 
@@ -829,6 +995,8 @@ void main() {
 const _officialDefaultPath = '../../../packs/official/default/manifest.json';
 const _officialTodoPath = '../../../packs/official/todo/manifest.json';
 const _officialPkmPath = '../../../packs/official/pkm_library/manifest.json';
+const _officialTranscriptPath =
+    '../../../packs/official/transcript_correction/manifest.json';
 
 RuntimeKernel _kernel({
   required EventStore store,
@@ -914,6 +1082,7 @@ AgentPackManifestSnapshot _copyManifest(
   Map<String, AgentDefinition>? agentDefinitions,
   RunMode? defaultRunMode,
   Map<String, AgentPackToolDefinition>? toolDefinitions,
+  List<AgentPackUiContributionDefinition>? uiContributions,
 }) {
   return AgentPackManifestSnapshot(
     id: id ?? manifest.id,
@@ -927,6 +1096,7 @@ AgentPackManifestSnapshot _copyManifest(
     subscriptions: subscriptions ?? manifest.subscriptions,
     agentDefinitions: agentDefinitions ?? manifest.agentDefinitions,
     toolDefinitions: toolDefinitions ?? manifest.toolDefinitions,
+    uiContributions: uiContributions ?? manifest.uiContributions,
   );
 }
 

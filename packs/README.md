@@ -42,9 +42,12 @@ Generated manifests, schema docs, or pack indexes must document their source of 
 3. Prefer `additive_slots` for extension behavior. `replacement_slots` are
    reserved for official/local-dev experiments until permission, rollback, and
    trace review gates are accepted.
-4. Emit public runtime events and preserve source refs. Packs must not mutate
+4. Declare `ui_contributions` when a Pack should add host-rendered settings,
+   pack panels, detail surfaces, actions, or event-block views. Store-safe Packs
+   do not ship arbitrary Flutter, WebView, or native UI code.
+5. Emit public runtime events and preserve source refs. Packs must not mutate
    raw captures, accepted Memory, or mobile-private tables directly.
-5. Add or update the Pack README, marketplace index entry, validator tests, and
+6. Add or update the Pack README, marketplace index entry, validator tests, and
    mobile Pack Library/runtime tests when the Pack is bundled.
 
 ## Validation

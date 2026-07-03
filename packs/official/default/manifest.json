@@ -230,6 +230,38 @@
       ]
     }
   ],
+  "ui_contributions": [
+    {
+      "id": "insight.detail.blocks",
+      "surface": "insight.detail",
+      "kind": "event_blocks",
+      "title": "Insight detail blocks",
+      "description": "Render capture insights with claims, metrics, notes, and source references.",
+      "slot": "insight.detail.body",
+      "placement": "section",
+      "events": [
+        "wn.insight.created"
+      ],
+      "blocks": [
+        "claim_list",
+        "metric_row",
+        "source_refs",
+        "note"
+      ],
+      "required_permissions": [
+        "insight.write"
+      ]
+    },
+    {
+      "id": "plugins.pack_home.capture_status",
+      "surface": "plugins.pack_home",
+      "kind": "panel",
+      "title": "Capture loop panel",
+      "description": "Show runtime state and output events for the default capture loop.",
+      "slot": "plugins.pack_home.summary",
+      "placement": "section"
+    }
+  ],
   "storage_quota": {
     "local_bytes": 0
   },

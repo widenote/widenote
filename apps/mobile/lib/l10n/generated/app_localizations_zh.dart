@@ -1945,6 +1945,44 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String packLibraryUiContributionCount(int count) {
+    return '$count 个 UI 挂载点';
+  }
+
+  @override
+  String get packLibraryUiContributionsTitle => 'UI 拓展';
+
+  @override
+  String packLibraryUiSurface(String surface) {
+    return '位置：$surface';
+  }
+
+  @override
+  String packLibraryUiKind(String kind) {
+    return '类型：$kind';
+  }
+
+  @override
+  String packLibraryUiSlot(String slot) {
+    return '槽位：$slot';
+  }
+
+  @override
+  String packLibraryUiEvents(int count) {
+    return '$count 个事件';
+  }
+
+  @override
+  String packLibraryUiBlocks(String blocks) {
+    return '区块：$blocks';
+  }
+
+  @override
+  String packLibraryUiPermissions(int count) {
+    return '$count 个 UI 权限';
+  }
+
+  @override
   String packLibraryLastFailure(String message) {
     return '最近失败：$message';
   }
@@ -2081,6 +2119,16 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get permissionGateDeferredPrivacy => '隐私决策覆盖前延期。';
+
+  @override
+  String settingsPackUiContributionSubtitle(String pack, String description) {
+    return '$pack：$description';
+  }
+
+  @override
+  String settingsPackUiContributionPermissionRequired(int count) {
+    return '$count 项权限待授权';
+  }
 
   @override
   String get agentPlatformTitle => '日志中心';

@@ -15,3 +15,4 @@ export 'src/task.dart';
 export 'src/tool_loop.dart';
 export 'src/tools.dart';
 export 'src/trace.dart';
+export 'src/ui_contributions.dart';

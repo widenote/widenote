@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
 import 'package:widenote_local_db/widenote_local_db.dart';
 import 'package:widenote_mobile/app/local_database.dart';
 import 'package:widenote_mobile/features/plugins/application/pack_catalog.dart';
@@ -89,6 +90,38 @@ void main() {
       tester,
       entryKey: const Key('settings-trace-console-entry'),
       pageKey: const Key('trace-console-page'),
+    );
+    await _openChildAndReturn(
+      tester,
+      entryKey: const Key(
+        'settings-ui-contribution-pack.transcript_correction-settings.transcript_correction.glossary',
+      ),
+      pageKey: const Key('permission-gate-page'),
+    );
+  });
+
+  testWidgets('settings contribution opens pack library after permission grant', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    ensureBuiltInPackInstallations(database);
+    await LocalDbPermissionStore(database).upsert(
+      runtime.PermissionDecision(
+        packId: 'pack.transcript_correction',
+        permission: 'source.write.transcript_correction',
+        state: runtime.PermissionDecisionState.granted,
+        updatedAt: DateTime.utc(2026, 7, 3, 10),
+      ),
+    );
+    await _pumpApp(tester, database: database);
+    await _openSettings(tester);
+
+    await _openChildAndReturn(
+      tester,
+      entryKey: const Key(
+        'settings-ui-contribution-pack.transcript_correction-settings.transcript_correction.glossary',
+      ),
+      pageKey: const Key('pack-library-page'),
     );
   });
 
@@ -243,13 +276,16 @@ void _seedTrace(
   );
 }
 
-Future<void> _pumpApp(WidgetTester tester) async {
-  final database = WideNoteLocalDatabase.inMemory();
-  addTearDown(database.close);
+Future<void> _pumpApp(
+  WidgetTester tester, {
+  WideNoteLocalDatabase? database,
+}) async {
+  final appDatabase = database ?? WideNoteLocalDatabase.inMemory();
+  addTearDown(appDatabase.close);
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        localDatabaseProvider.overrideWithValue(database),
+        localDatabaseProvider.overrideWithValue(appDatabase),
         locationSettingsRepositoryProvider.overrideWithValue(
           InMemoryLocationSettingsRepository(),
         ),
@@ -302,7 +338,7 @@ Future<void> _openChildAndReturn(
   required Key entryKey,
   required Key pageKey,
 }) async {
-  await tester.ensureVisible(find.byKey(entryKey));
+  await _ensureVisible(tester, entryKey);
   await tester.pumpAndSettle();
   await tester.tap(find.byKey(entryKey));
   await tester.pumpAndSettle();
@@ -312,6 +348,20 @@ Future<void> _openChildAndReturn(
   await tester.pumpAndSettle();
   expect(find.byKey(const Key('settings-page')), findsOneWidget);
   expect(find.byKey(pageKey), findsNothing);
+}
+
+Future<void> _ensureVisible(WidgetTester tester, Key key) async {
+  final finder = find.byKey(key);
+  if (finder.evaluate().isNotEmpty) {
+    await tester.ensureVisible(finder);
+  } else {
+    await tester.scrollUntilVisible(
+      finder,
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
+  }
+  await tester.pumpAndSettle();
 }
 
 void _expectButtonSemantics(

@@ -82,6 +82,7 @@ agents:
 | `agents[]` | Yes | Agent handlers and prompts |
 | `tools[]` | No | Tool declarations used by agents |
 | `ui_blocks[]` | No | Store-safe structured UI blocks exposed by the pack. Phase-one block kinds are `claim_list`, `metric_row`, `source_refs`, and `note`. |
+| `ui_contributions[]` | No | Host-rendered UI placements that declare where Pack settings, panels, actions, or event blocks may appear. Store-safe contributions are data and schema, not arbitrary Flutter/WebView code. |
 
 ## Schema Source Paths
 
@@ -154,6 +155,62 @@ Slots document where Packs extend or replace behavior:
   policy.
 - Slots are declarative in the manifest first. Runtime arbitration and UI
   conflict resolution are future work.
+
+## UI Contribution Contract
+
+`ui_contributions[]` declare where a Pack may appear in the app. They are
+separate from `ui_blocks[]`: `ui_blocks[]` describes safe structured result
+block kinds, while `ui_contributions[]` describes host surfaces and placements
+for settings, panels, actions, and event-block rendering.
+
+A contribution is a validated declaration, not proof that the mobile app has a
+renderer for that surface. The initial implemented host surfaces are Pack
+Library metadata display and Settings entry points. Event-block detail surfaces
+such as `insight.detail`, `artifact.detail`, and `timeline.item.detail` remain
+accepted contract targets, but need explicit mobile renderers and widget tests
+before they become user-visible detail UI.
+
+Supported contribution fields:
+
+| Field | Required | Notes |
+| --- | --- | --- |
+| `id` | Yes | Stable pack-local contribution id |
+| `surface` | Yes | Public host surface id such as `settings.pack_detail`, `plugins.pack_home`, `artifact.detail`, `insight.detail`, `timeline.card.accessory`, or `chat.tool_result` |
+| `kind` | Yes | `settings_form`, `panel`, `event_blocks`, `action`, `inline_status`, or `bottom_tab` |
+| `title` | Yes | Pack-authored display title for the contribution |
+| `description` | No | Pack-authored description for review and host rendering |
+| `slot` | No | More specific placement inside the host surface |
+| `placement` | No | `section`, `inline`, `primary_action`, `secondary_action`, or `tab` |
+| `events[]` | Required for `event_blocks` | Public event types that may feed this contribution |
+| `blocks[]` | Required for `event_blocks` | Safe structured block kinds from `ui_blocks[]` |
+| `settings_schema_ref` | Required for `settings_form` | Reference to the pack-owned settings schema, usually `#/settings_schema` |
+| `required_permissions[]` | No | Permissions that must also be declared by the pack |
+
+The JSON Schema enforces field shape and enum membership. Pack validators and
+runtime parsers enforce combination rules that JSON Schema does not fully
+capture in this slice: `event_blocks` must provide `events[]` and `blocks[]`,
+`blocks[]` must reference block kinds declared by the same pack in
+`ui_blocks[]`, `settings_form` must provide `settings_schema_ref` that resolves
+to a pack-owned schema such as `#/settings_schema`,
+`required_permissions[]` must be a subset of pack permissions, and navigation
+contributions must pass edition gates.
+
+Store-safe and community-safe UI contributions are host-rendered. Packs provide
+manifest data, schemas, public events, and permissions; mobile owns Flutter
+widgets, navigation, persistence, and permission enforcement. Contributions
+must not write mobile-private tables, mutate raw captures, or register native
+handlers. Settings entry points must fail closed on pack enablement and
+required permission grants before they navigate to pack-owned settings UI.
+
+Navigation-level contributions are stricter. `bottom_tab` is reserved for
+`official` and `local_dev` packs until a follow-up decision accepts conflict
+arbitration, rollback, review, and route ownership policy. A navigation
+contribution must use `surface = bottom_tab` and `kind = bottom_tab`; host
+validators reject mixed bottom-tab declarations.
+
+Sandboxed WebView or iframe-like plugin UI is intentionally deferred. It may be
+accepted later for rich tools or OAuth-like flows, but it is not the default
+community Pack UI mechanism.
 
 ## Subscription Contract
 
@@ -251,20 +308,23 @@ Pack prompts should follow progressive context disclosure:
 1. Create a Pack folder under `packs/official/<id>` for official examples or a
    separate GitHub repository for community experiments.
 2. Add `manifest.json` with public permissions, subscriptions, agents,
-   `marketplace`, and slot declarations.
+   `marketplace`, slot declarations, and any `ui_contributions`.
 3. Use additive slots for extension behavior. Do not declare replacement slots
    for community/store packs.
 4. Emit public runtime events only. Derived output should use source refs and
    must not mutate raw capture or accepted Memory directly.
-5. If the Pack should appear in the bundled catalog, add it to
+5. Use host-rendered UI contributions for settings, pack panels, and derived
+   result views. Do not ship arbitrary Flutter, WebView, or native UI code in
+   the store-safe path.
+6. If the Pack should appear in the bundled catalog, add it to
    `packs/marketplace/index.json`.
-6. If it is a native official Pack, embed the manifest in
+7. If it is a native official Pack, embed the manifest in
    `apps/mobile/lib/features/plugins/application/official_pack_manifests.dart`,
    register the native handler in the capture/runtime host, and add Pack
    Library/permission/runtime tests.
-7. Update `packs/README.md`, affected module READMEs, and
+8. Update `packs/README.md`, affected module READMEs, and
    `docs/agent-context/project-map.md`.
-8. Run schema fixtures, pack validator tests, targeted runtime tests, and
+9. Run schema fixtures, pack validator tests, targeted runtime tests, and
    mobile widget tests for user-visible Pack Library changes.
 
 ## Migration Plan
@@ -283,6 +343,7 @@ Pack prompts should follow progressive context disclosure:
 - Hosted marketplace registry and remote install/update.
 - Remote runner execution.
 - Dynamic UI block scripting.
+- Sandboxed arbitrary plugin UI/WebView surfaces.
 - Cross-device sync of pack state.
 
 ## Resolved Phase-One Decisions

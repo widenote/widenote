@@ -404,6 +404,35 @@ void main() {
       find.byKey(const Key('pack-additive-slots-pack.pkm_library')),
       findsOneWidget,
     );
+    expect(
+      find.byKey(const Key('pack-ui-contribution-count-pack.default')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(
+        const Key('pack-ui-contribution-pack.default-insight.detail.blocks'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('UI contributions'), findsWidgets);
+    expect(find.text('Insight detail blocks'), findsOneWidget);
+    expect(find.text('surface: insight.detail'), findsOneWidget);
+    expect(
+      find.text('blocks: claim_list, metric_row, source_refs, note'),
+      findsOneWidget,
+    );
+    await tester.scrollUntilVisible(
+      find.byKey(
+        const Key(
+          'pack-ui-contribution-pack.transcript_correction-settings.transcript_correction.glossary',
+        ),
+      ),
+      140,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Transcript glossary'), findsOneWidget);
+    expect(find.text('surface: settings.pack_detail'), findsOneWidget);
 
     await _pumpLocalizedPage(tester, const PermissionGatePage());
     expect(find.byKey(const Key('permission-gate-page')), findsOneWidget);
@@ -931,6 +960,10 @@ void _expectManifestSnapshot(
           MapEntry<String, Object?>(id, _agentShape(definition)),
     ),
   );
+  expect(
+    mobile.uiContributions.map(_uiContributionShape).toList(growable: false),
+    official.uiContributions.map(_uiContributionShape).toList(growable: false),
+  );
 }
 
 Map<String, Object?> _subscriptionShape(runtime.Subscription subscription) {
@@ -952,6 +985,28 @@ Map<String, Object?> _agentShape(runtime.AgentDefinition definition) {
     'retry_policy': definition.retryPolicy.normalizedMaxAttempts,
     'model_profile_ref': definition.modelProfileRef,
   };
+}
+
+Map<String, Object?> _uiContributionShape(
+  runtime.AgentPackUiContributionDefinition contribution,
+) {
+  return <String, Object?>{
+    'id': contribution.id,
+    'surface': contribution.surface,
+    'kind': contribution.kind,
+    'title': contribution.title,
+    'description': contribution.description,
+    'slot': contribution.slot,
+    'placement': contribution.placement,
+    'events': _sortedSet(contribution.events),
+    'blocks': _sortedSet(contribution.blocks),
+    'settings_schema_ref': contribution.settingsSchemaRef,
+    'required_permissions': _sortedSet(contribution.requiredPermissions),
+  };
+}
+
+List<String> _sortedSet(Set<String> values) {
+  return values.toList(growable: false)..sort();
 }
 
 Map<String, Object?> _mutableManifest(String packId) {

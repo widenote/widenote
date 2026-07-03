@@ -89,7 +89,50 @@
     }
   ],
   "tools": [],
-  "ui_blocks": [],
+  "ui_blocks": [
+    {
+      "type": "note",
+      "events": [
+        "wn.artifact.created"
+      ]
+    },
+    {
+      "type": "source_refs",
+      "events": [
+        "wn.artifact.created"
+      ]
+    }
+  ],
+  "ui_contributions": [
+    {
+      "id": "artifact.detail.pkm_profile",
+      "surface": "artifact.detail",
+      "kind": "event_blocks",
+      "title": "PKM profile artifact",
+      "description": "Render source-linked PKM profile artifacts with notes and source references.",
+      "slot": "artifact.detail.body",
+      "placement": "section",
+      "events": [
+        "wn.artifact.created"
+      ],
+      "blocks": [
+        "note",
+        "source_refs"
+      ],
+      "required_permissions": [
+        "artifact.write"
+      ]
+    },
+    {
+      "id": "plugins.pack_home.pkm_status",
+      "surface": "plugins.pack_home",
+      "kind": "panel",
+      "title": "PKM pack panel",
+      "description": "Show derived artifact output status for the PKM example pack.",
+      "slot": "plugins.pack_home.summary",
+      "placement": "section"
+    }
+  ],
   "storage_quota": {
     "local_bytes": 0
   },

@@ -4,6 +4,11 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
+import {
+  validateUiBlocks,
+  validateUiContributions,
+} from "./ui_contributions.mjs";
+
 const TODO_PERMISSION = "todo.suggest";
 const TODO_PERMISSIONS = new Set(["model.complete", TODO_PERMISSION]);
 const TODO_OUTPUT_EVENT = "wn.todo.suggested";
@@ -100,19 +105,6 @@ const DEFERRED_ONLY_SIDE_EFFECTS = new Set([
   "script_execution",
 ]);
 const NON_LIVE_EXECUTIONS = new Set(["fake", "deferred", "disabled"]);
-const INSIGHT_UI_BLOCK_KINDS = new Set([
-  "claim_list",
-  "metric_row",
-  "source_refs",
-  "note",
-  "evidence_list",
-  "counter_evidence",
-  "confidence_band",
-  "contrast",
-  "trend_chart",
-  "timeline",
-]);
-
 const requiredManifestFields = [
   "id",
   "name",
@@ -238,6 +230,8 @@ export function validateManifest(manifest) {
   validateOutputEvents(agents, errors);
   validateRunModeToolBoundaries(manifest, agents, tools, errors);
   validateExecutableSafety(agents, tools, errors);
+  const declaredUiBlocks = validateUiBlocks(manifest, errors);
+  validateUiContributions(manifest, packPermissionSet, declaredUiBlocks, errors);
   validatePhaseOneGuardrails(manifest, agents, errors);
 
   return errors;
@@ -302,12 +296,6 @@ function validateBasicShape(manifest, errors) {
 
   if ("additive_slots" in manifest) {
     validateObjectArrayField(manifest, "additive_slots", errors, {
-      allowEmpty: true,
-    });
-  }
-
-  if ("ui_blocks" in manifest) {
-    validateObjectArrayField(manifest, "ui_blocks", errors, {
       allowEmpty: true,
     });
   }
@@ -503,26 +491,6 @@ function validateBasicShape(manifest, errors) {
     });
   }
 
-  if (Array.isArray(manifest.ui_blocks)) {
-    manifest.ui_blocks.forEach((block, index) => {
-      if (!isPlainObject(block)) {
-        return;
-      }
-
-      const path = `ui_blocks[${index}]`;
-      validateStringEnumValue(
-        block.type,
-        `${path}.type`,
-        INSIGHT_UI_BLOCK_KINDS,
-        errors,
-      );
-      if ("events" in block) {
-        validateStringArrayValue(block.events, `${path}.events`, errors, {
-          allowEmpty: true,
-        });
-      }
-    });
-  }
 }
 
 function validateAgentIds(agents, errors) {
