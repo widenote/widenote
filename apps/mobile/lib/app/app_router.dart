@@ -251,6 +251,64 @@ NoTransitionPage<void> _noTransitionPage(GoRouterState state, Widget child) {
   return NoTransitionPage<void>(key: state.pageKey, child: child);
 }
 
+String? mobileParentPathFor(String location) {
+  final path = _normalizeMobilePath(location);
+  if (path.startsWith('/settings/traces/raw/')) {
+    return '/settings/traces/raw';
+  }
+  if (path.startsWith('/timeline/cards/')) {
+    return '/timeline';
+  }
+  if (path.startsWith('/timeline/items/')) {
+    return '/timeline';
+  }
+  if (path.startsWith('/insights/')) {
+    return '/insights';
+  }
+  if (path.startsWith('/chat/session/')) {
+    return '/chat';
+  }
+  if (_isTodoDetailPath(path)) {
+    return '/todos';
+  }
+  return _mobileParentPaths[path];
+}
+
+String _normalizeMobilePath(String location) {
+  final path = Uri.tryParse(location)?.path ?? location;
+  if (path.length > 1 && path.endsWith('/')) {
+    return path.substring(0, path.length - 1);
+  }
+  return path.isEmpty ? '/' : path;
+}
+
+bool _isTodoDetailPath(String path) {
+  if (!path.startsWith('/todos/')) {
+    return false;
+  }
+  return path.substring('/todos/'.length).isNotEmpty;
+}
+
+const _mobileParentPaths = <String, String>{
+  '/timeline': '/',
+  '/timeline/search': '/timeline',
+  '/memory': '/',
+  '/recap': '/',
+  '/insights': '/',
+  '/settings': '/',
+  '/settings/permissions': '/settings',
+  '/settings/system-permissions': '/settings',
+  '/settings/model-providers': '/settings',
+  '/settings/transcription': '/settings',
+  '/settings/location': '/settings',
+  '/settings/backup': '/settings',
+  '/settings/traces': '/settings',
+  '/settings/traces/agents': '/settings/traces',
+  '/settings/traces/events': '/settings/traces',
+  '/settings/traces/raw': '/settings/traces',
+  '/plugins/packs': '/plugins',
+};
+
 final appRouter = createAppRouter();
 
 class WideNoteShell extends ConsumerWidget {
@@ -276,52 +334,68 @@ class WideNoteShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final showBottomNavigationBar = _bottomNavigationPaths.contains(location);
-    return Scaffold(
-      body: SafeArea(
-        child: AgentExecutionStatusLayer(
-          showBottomNavigationBar: showBottomNavigationBar,
-          child: child,
+    return BackButtonListener(
+      onBackButtonPressed: () => _handleBackButton(context),
+      child: Scaffold(
+        body: SafeArea(
+          child: AgentExecutionStatusLayer(
+            showBottomNavigationBar: showBottomNavigationBar,
+            child: child,
+          ),
         ),
+        bottomNavigationBar: showBottomNavigationBar
+            ? NavigationBar(
+                selectedIndex: _selectedIndex,
+                onDestinationSelected: (index) => _openTab(context, ref, index),
+                destinations: [
+                  NavigationDestination(
+                    key: const Key('tab-home'),
+                    icon: const Icon(Icons.home_outlined),
+                    selectedIcon: const Icon(Icons.home),
+                    label: l10n.tabHome,
+                  ),
+                  NavigationDestination(
+                    key: const Key('tab-chat'),
+                    icon: const Icon(Icons.forum_outlined),
+                    selectedIcon: const Icon(Icons.forum),
+                    label: l10n.tabChat,
+                  ),
+                  NavigationDestination(
+                    key: const Key('tab-record-action'),
+                    icon: const Icon(Icons.add_circle_outline),
+                    selectedIcon: const Icon(Icons.add_circle),
+                    label: l10n.tabRecord,
+                  ),
+                  NavigationDestination(
+                    key: const Key('tab-todos'),
+                    icon: const Icon(Icons.checklist_outlined),
+                    selectedIcon: const Icon(Icons.checklist),
+                    label: l10n.tabTodos,
+                  ),
+                  NavigationDestination(
+                    key: const Key('tab-plugins'),
+                    icon: const Icon(Icons.extension_outlined),
+                    selectedIcon: const Icon(Icons.extension),
+                    label: l10n.tabPlugins,
+                  ),
+                ],
+              )
+            : null,
       ),
-      bottomNavigationBar: showBottomNavigationBar
-          ? NavigationBar(
-              selectedIndex: _selectedIndex,
-              onDestinationSelected: (index) => _openTab(context, ref, index),
-              destinations: [
-                NavigationDestination(
-                  key: const Key('tab-home'),
-                  icon: const Icon(Icons.home_outlined),
-                  selectedIcon: const Icon(Icons.home),
-                  label: l10n.tabHome,
-                ),
-                NavigationDestination(
-                  key: const Key('tab-chat'),
-                  icon: const Icon(Icons.forum_outlined),
-                  selectedIcon: const Icon(Icons.forum),
-                  label: l10n.tabChat,
-                ),
-                NavigationDestination(
-                  key: const Key('tab-record-action'),
-                  icon: const Icon(Icons.add_circle_outline),
-                  selectedIcon: const Icon(Icons.add_circle),
-                  label: l10n.tabRecord,
-                ),
-                NavigationDestination(
-                  key: const Key('tab-todos'),
-                  icon: const Icon(Icons.checklist_outlined),
-                  selectedIcon: const Icon(Icons.checklist),
-                  label: l10n.tabTodos,
-                ),
-                NavigationDestination(
-                  key: const Key('tab-plugins'),
-                  icon: const Icon(Icons.extension_outlined),
-                  selectedIcon: const Icon(Icons.extension),
-                  label: l10n.tabPlugins,
-                ),
-              ],
-            )
-          : null,
     );
+  }
+
+  Future<bool> _handleBackButton(BuildContext context) async {
+    final router = GoRouter.of(context);
+    if (router.canPop()) {
+      return false;
+    }
+    final parentPath = mobileParentPathFor(location);
+    if (parentPath == null) {
+      return false;
+    }
+    context.go(parentPath);
+    return true;
   }
 
   void _openTab(BuildContext context, WidgetRef ref, int index) {
