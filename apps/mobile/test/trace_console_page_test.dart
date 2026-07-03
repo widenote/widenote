@@ -165,6 +165,10 @@ void main() {
     expect(find.byKey(const Key('agent-console-filter-all')), findsOneWidget);
     expect(find.byKey(const Key('trace-raw-search-field')), findsOneWidget);
     expect(find.byKey(const Key('trace-raw-text-box')), findsOneWidget);
+    final boxHeight = tester
+        .getSize(find.byKey(const Key('trace-raw-text-box')))
+        .height;
+    expect(boxHeight, inInclusiveRange(260, 380));
     expect(find.byType(SelectableText), findsOneWidget);
     expect(find.byIcon(Icons.copy), findsOneWidget);
     expect(find.byIcon(Icons.share), findsNothing);
@@ -253,13 +257,20 @@ void main() {
     }
     await _pumpTraceRawLogs(tester, database);
 
-    expect(find.text('Page 1 of 2 - 1-25 of 26'), findsOneWidget);
+    expect(find.text('Page 1 of 3 - 1-10 of 26'), findsOneWidget);
     expect(find.textContaining('trace-026'), findsOneWidget);
     expect(find.textContaining('trace-001'), findsNothing);
 
     await _tap(tester, const Key('trace-raw-next-page'));
 
-    expect(find.text('Page 2 of 2 - 26-26 of 26'), findsOneWidget);
+    expect(find.text('Page 2 of 3 - 11-20 of 26'), findsOneWidget);
+    expect(find.textContaining('trace-016'), findsOneWidget);
+    expect(find.textContaining('trace-001'), findsNothing);
+    expect(find.textContaining('trace-026'), findsNothing);
+
+    await _tap(tester, const Key('trace-raw-last-page'));
+
+    expect(find.text('Page 3 of 3 - 21-26 of 26'), findsOneWidget);
     expect(find.textContaining('trace-001'), findsOneWidget);
     expect(find.textContaining('trace-026'), findsNothing);
   });
