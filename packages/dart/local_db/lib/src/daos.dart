@@ -1,3 +1,8 @@
+import 'dart:convert';
+import 'dart:math' as math;
+import 'dart:typed_data';
+
+import 'package:crypto/crypto.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 import 'json.dart';
@@ -14,6 +19,8 @@ part 'daos_cards.dart';
 part 'daos_insights.dart';
 part 'daos_chat.dart';
 part 'daos_model_provider_configs.dart';
+part 'daos_embedding_provider_configs.dart';
+part 'daos_search_index.dart';
 part 'daos_todos.dart';
 part 'daos_runtime_tasks.dart';
 part 'daos_runtime_runs.dart';

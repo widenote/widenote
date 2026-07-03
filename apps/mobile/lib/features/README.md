@@ -45,6 +45,8 @@ Features may own presentation and temporary app-local controllers. Durable runti
 - `plugins`: pack, permission, model, backup, and log control entries.
 - `model_providers`: provider setup, fake connection tests, and default-provider
   local state.
+- `retrieval`: local hybrid search, embedding provider settings, search-index
+  rebuild controls, and evidence handles for UI and Agent tools.
 - `traces`: read-only local Agent Runtime log center.
 
 ## Generated Artifacts

@@ -768,12 +768,10 @@
       }
     }
   },
-  "timelineSearchHint": "Filter by type, or use text after retriever setup",
+  "timelineSearchHint": "Search local evidence or filter by type",
   "timelineFilterAll": "All",
   "timelineSearchEmptyTitle": "Nothing to search yet",
   "timelineSearchEmptyBody": "Create a capture first, then browse cards, Memory, and todos.",
-  "timelineSearchNeedsRetrieverTitle": "Text search needs a retriever",
-  "timelineSearchNeedsRetrieverBody": "Clear the text field to browse locally by type. Semantic search will use a model-backed retriever.",
   "timelineSearchNoResultsTitle": "No matching timeline items",
   "timelineSearchNoResultsBody": "Remove the type filter to show more local items.",
   "timelineSearchResultCount": "{count, plural, =1{1 result} other{{count} results}}",
@@ -784,6 +782,13 @@
       }
     }
   },
+  "timelineSearchHybridStatus": "Hybrid retrieval is using keyword and embedding evidence.",
+  "timelineSearchKeywordStatus": "Keyword retrieval is active. Configure Embedding for semantic recall.",
+  "timelineSearchSensitiveSnippetHidden": "Sensitive snippet hidden. Open the source to review under local policy.",
+  "timelineSearchSensitiveBadge": "Sensitive",
+  "timelineSearchKindArtifact": "Artifact",
+  "timelineSearchMatchKeyword": "Keyword",
+  "timelineSearchMatchSemantic": "Semantic",
   "timelineKindCapture": "Capture",
   "timelineKindCaptures": "Captures",
   "timelineKindCard": "Card",
@@ -888,6 +893,10 @@
   "settingsSystemPermissionsStatus": "device",
   "settingsModelProvidersTitle": "Model Providers",
   "settingsModelProvidersSubtitle": "Configure local or BYOK model access for runtime and Agent Packs.",
+  "settingsRetrievalTitle": "Retrieval & Embedding",
+  "settingsRetrievalSubtitle": "Configure online embedding for hybrid search without changing the chat model.",
+  "settingsRetrievalStatusKeyword": "keyword",
+  "settingsRetrievalStatusHybrid": "hybrid",
   "settingsTranscriptionTitle": "Voice Transcription",
   "settingsTranscriptionSubtitle": "Configure local SenseVoice, MiMo ASR, live preview, and transcript correction.",
   "settingsTranscriptionStatusLoading": "loading",
@@ -915,6 +924,47 @@
       }
     }
   },
+  "retrievalSettingsTitle": "Retrieval & Embedding",
+  "retrievalSettingsSubtitle": "Hybrid search keeps local FTS on device and uses your embedding key only when semantic recall is needed.",
+  "retrievalSettingsError": "Retrieval settings failed to load: {error}",
+  "@retrievalSettingsError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "retrievalSettingsConfiguredTitle": "Hybrid search ready",
+  "retrievalSettingsConfiguredBody": "Embedding model: {model}",
+  "@retrievalSettingsConfiguredBody": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "retrievalSettingsUnconfiguredTitle": "Keyword search active",
+  "retrievalSettingsUnconfiguredBody": "Add an OpenRouter key to enable online Qwen embeddings for semantic recall.",
+  "retrievalSettingsProviderTitle": "Embedding provider",
+  "retrievalSettingsDisplayNameLabel": "Display name",
+  "retrievalSettingsEndpointLabel": "Endpoint",
+  "retrievalSettingsModelLabel": "Embedding model",
+  "retrievalSettingsApiKeyLabel": "OpenRouter API key",
+  "retrievalSettingsApiKeyKeptHint": "Saved key kept if this stays blank",
+  "retrievalSettingsBatchSizeLabel": "Batch size",
+  "retrievalSettingsTestAction": "Test",
+  "retrievalSettingsRebuildAction": "Rebuild index",
+  "retrievalSettingsDeleteAction": "Delete",
+  "retrievalSettingsSaved": "Embedding provider saved.",
+  "retrievalSettingsRebuildDone": "{count, plural, =0{Search index is up to date} =1{Indexed 1 chunk} other{Indexed {count} chunks}}.",
+  "@retrievalSettingsRebuildDone": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "retrievalSettingsRebuildNeedsProvider": "Add an embedding provider before rebuilding semantic vectors.",
   "settingsDebuggingTitle": "Debugging",
   "settingsDebuggingSubtitle": "Repair local Agent work and replay historical input processing.",
   "settingsDebuggingStatusSummary": "{agentCount} agents / {captureCount} inputs",

@@ -1,5 +1,6 @@
 export 'src/compatible_model_provider.dart';
 export 'src/connection_test.dart';
+export 'src/embedding_provider.dart';
 export 'src/fake_model_provider.dart';
 export 'src/model_listing.dart';
 export 'src/model_provider.dart';

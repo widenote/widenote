@@ -582,6 +582,213 @@ final class ModelProviderConfigRecord {
   final DateTime updatedAt;
 }
 
+final class EmbeddingProviderConfigRecord {
+  const EmbeddingProviderConfigRecord({
+    required this.id,
+    required this.providerKind,
+    required this.displayName,
+    required this.endpoint,
+    required this.model,
+    required this.createdAt,
+    required this.updatedAt,
+    this.schemaVersion = 1,
+    this.status = 'active',
+    this.isDefault = false,
+    this.hasApiKey = false,
+    this.apiKey = '',
+    this.dimensions,
+    this.batchSize = 16,
+    this.payload = const <String, Object?>{},
+  });
+
+  final String id;
+  final int schemaVersion;
+  final String providerKind;
+  final String displayName;
+  final String endpoint;
+  final String model;
+  final String status;
+  final bool isDefault;
+  final bool hasApiKey;
+  final String apiKey;
+  final int? dimensions;
+  final int batchSize;
+  final JsonMap payload;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+}
+
+final class SearchDocumentRecord {
+  const SearchDocumentRecord({
+    required this.id,
+    required this.sourceKind,
+    required this.sourceId,
+    required this.sourceType,
+    required this.title,
+    required this.status,
+    required this.sensitivity,
+    required this.sourceRefs,
+    required this.metadata,
+    required this.contentHash,
+    required this.createdAt,
+    required this.updatedAt,
+    this.schemaVersion = 1,
+  });
+
+  final String id;
+  final int schemaVersion;
+  final String sourceKind;
+  final String sourceId;
+  final String sourceType;
+  final String title;
+  final String status;
+  final String sensitivity;
+  final JsonList sourceRefs;
+  final JsonMap metadata;
+  final String contentHash;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+}
+
+final class SearchChunkRecord {
+  const SearchChunkRecord({
+    required this.id,
+    required this.docId,
+    required this.sourceKind,
+    required this.sourceId,
+    required this.sourceType,
+    required this.title,
+    required this.body,
+    required this.snippet,
+    required this.tokenText,
+    required this.status,
+    required this.sensitivity,
+    required this.sourceRefs,
+    required this.metadata,
+    required this.contentHash,
+    required this.chunkIndex,
+    required this.createdAt,
+    required this.updatedAt,
+    this.schemaVersion = 1,
+  });
+
+  final String id;
+  final int schemaVersion;
+  final String docId;
+  final String sourceKind;
+  final String sourceId;
+  final String sourceType;
+  final String title;
+  final String body;
+  final String snippet;
+  final String tokenText;
+  final String status;
+  final String sensitivity;
+  final JsonList sourceRefs;
+  final JsonMap metadata;
+  final String contentHash;
+  final int chunkIndex;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+}
+
+enum LocalSearchMode { hybrid, keyword, semantic }
+
+extension LocalSearchModeWireName on LocalSearchMode {
+  String get wireName {
+    return switch (this) {
+      LocalSearchMode.hybrid => 'hybrid',
+      LocalSearchMode.keyword => 'keyword',
+      LocalSearchMode.semantic => 'semantic',
+    };
+  }
+}
+
+LocalSearchMode localSearchModeFromWireName(String value) {
+  return switch (value.trim().toLowerCase()) {
+    'hybrid' => LocalSearchMode.hybrid,
+    'keyword' || 'fts' || 'bm25' => LocalSearchMode.keyword,
+    'semantic' || 'dense' || 'embedding' => LocalSearchMode.semantic,
+    _ => throw StateError('Unknown local search mode: $value'),
+  };
+}
+
+final class LocalSearchRequest {
+  const LocalSearchRequest({
+    required this.query,
+    this.mode = LocalSearchMode.hybrid,
+    this.limit = 10,
+    this.keywordLimit = 120,
+    this.semanticLimit = 120,
+    this.fusionK = 60,
+    this.sourceKinds = const <String>{},
+    this.sourceRefs = const <JsonMap>[],
+    this.statuses = const <String>{},
+    this.since,
+    this.until,
+    this.includeBody = false,
+    this.includeHighSensitivity = true,
+    this.queryEmbedding,
+    this.embeddingProviderId,
+    this.embeddingModel,
+  });
+
+  final String query;
+  final LocalSearchMode mode;
+  final int limit;
+  final int keywordLimit;
+  final int semanticLimit;
+  final int fusionK;
+  final Set<String> sourceKinds;
+  final List<JsonMap> sourceRefs;
+  final Set<String> statuses;
+  final DateTime? since;
+  final DateTime? until;
+  final bool includeBody;
+  final bool includeHighSensitivity;
+  final List<double>? queryEmbedding;
+  final String? embeddingProviderId;
+  final String? embeddingModel;
+}
+
+final class LocalSearchResultSet {
+  const LocalSearchResultSet({
+    required this.query,
+    required this.mode,
+    required this.results,
+    required this.keywordCandidateCount,
+    required this.semanticCandidateCount,
+    required this.embeddingUsed,
+  });
+
+  final String query;
+  final LocalSearchMode mode;
+  final List<LocalSearchResult> results;
+  final int keywordCandidateCount;
+  final int semanticCandidateCount;
+  final bool embeddingUsed;
+}
+
+final class LocalSearchResult {
+  const LocalSearchResult({
+    required this.chunk,
+    required this.score,
+    required this.matchedBy,
+    this.keywordRank,
+    this.keywordScore,
+    this.semanticRank,
+    this.semanticScore,
+  });
+
+  final SearchChunkRecord chunk;
+  final double score;
+  final Set<String> matchedBy;
+  final int? keywordRank;
+  final double? keywordScore;
+  final int? semanticRank;
+  final double? semanticScore;
+}
+
 final class TodoRecord {
   const TodoRecord({
     required this.id,

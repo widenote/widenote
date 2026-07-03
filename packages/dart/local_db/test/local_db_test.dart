@@ -1572,11 +1572,25 @@ INSERT INTO trace_events (
       expect(migrated.packInstallations.readAll(), isEmpty);
       expect(migrated.permissionGrants.readAll(), isEmpty);
       expect(migrated.contextPacketCaches.readAll(), isEmpty);
+      expect(migrated.embeddingProviderConfigs.readAll(), isEmpty);
+      expect(migrated.searchIndex.listDocuments(), isEmpty);
       expect(
         rawDatabase
             .select('PRAGMA table_info(model_provider_configs);')
             .map((row) => row['name']),
         contains('api_key'),
+      );
+      expect(
+        rawDatabase
+            .select("SELECT name FROM sqlite_master WHERE type = 'table';")
+            .map((row) => row['name']),
+        containsAll(<String>[
+          'embedding_provider_configs',
+          'search_documents',
+          'search_chunks',
+          'search_chunk_embeddings',
+          'search_chunks_fts',
+        ]),
       );
       expect(
         rawDatabase
@@ -1594,6 +1608,11 @@ INSERT INTO trace_events (
           'memory_items_created_at_idx',
           'memory_candidates_created_at_idx',
           'context_packet_cache_created_at_idx',
+          'embedding_provider_configs_default_idx',
+          'search_documents_kind_status_idx',
+          'search_chunks_doc_idx',
+          'search_chunks_kind_status_idx',
+          'search_chunk_embeddings_model_idx',
         ]),
       );
       expect(
@@ -1623,6 +1642,18 @@ INSERT INTO trace_events (
           'runtime_tasks',
           'runtime_runs',
         ]),
+      );
+      expect(
+        rawDatabase
+            .select('PRAGMA foreign_key_list(search_chunks);')
+            .map((row) => row['table']),
+        contains('search_documents'),
+      );
+      expect(
+        rawDatabase
+            .select('PRAGMA foreign_key_list(search_chunk_embeddings);')
+            .map((row) => row['table']),
+        contains('search_chunks'),
       );
       LocalDbMigrator.bootstrap(rawDatabase);
       expect(migrated.schemaVersion, LocalDbSchema.currentVersion);

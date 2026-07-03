@@ -29,6 +29,7 @@ It should stay short. It points to the right local context instead of duplicatin
 
 ## Research
 
+- `docs/research/2026-07-03-hybrid-retrieval-kimi-review.md`
 - `docs/research/2026-07-03-insight-depth-design.md`
 - `docs/research/2026-07-03-usage-stats-plugin-kimi-review.md`
 - `docs/research/2026-07-03-mobile-child-page-tabs-kimi-review.md`
@@ -143,6 +144,7 @@ It should stay short. It points to the right local context instead of duplicatin
 | Mobile location | `apps/mobile/lib/features/location/README.md` | Opt-in foreground GPS capture, AMap reverse geocoding, fact-backed place metadata, and redacted location display |
 | Mobile Memory | `apps/mobile/lib/features/memory/README.md` | Accepted Memory list, edit, tombstone delete, and restore UI |
 | Mobile model providers | `apps/mobile/lib/features/model_providers/README.md` | Provider settings UI and local state |
+| Mobile retrieval | `apps/mobile/lib/features/retrieval/README.md` | Hybrid local search, embedding provider settings, and evidence handles |
 | Mobile traces | `apps/mobile/lib/features/traces/README.md` | Read-only local Agent Runtime log center |
 | Mobile usage stats | `apps/mobile/lib/features/usage_stats/README.md` | Settings dashboard for local input, token, tool, Memory, and cache statistics |
 | API service | `apps/api/README.md` | Optional backend API |

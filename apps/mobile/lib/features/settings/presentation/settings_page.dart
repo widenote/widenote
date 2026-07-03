@@ -8,6 +8,7 @@ import '../../location/application/location_settings_controller.dart';
 import '../../location/domain/location_context.dart';
 import '../../model_providers/application/model_provider_settings_controller.dart';
 import '../../plugins/application/pack_catalog.dart';
+import '../../retrieval/application/embedding_settings_controller.dart';
 import '../../traces/application/trace_console_controller.dart';
 import '../../transcription/transcription_service.dart';
 import '../../transcription/transcription_settings.dart';
@@ -79,6 +80,9 @@ class _ControlSurface extends ConsumerWidget {
     final providerState = ref
         .watch(modelProviderSettingsControllerProvider)
         .valueOrNull;
+    final retrievalState = ref
+        .watch(embeddingSettingsControllerProvider)
+        .valueOrNull;
     final voiceSettings = ref
         .watch(voiceTranscriptionSettingsControllerProvider)
         .valueOrNull;
@@ -130,6 +134,15 @@ class _ControlSurface extends ConsumerWidget {
             subtitle: l10n.settingsModelProvidersSubtitle,
             status: _providerStatus(l10n, providerState),
             onTap: () => context.push('/settings/model-providers'),
+          ),
+          const Divider(height: 20),
+          _ControlRow(
+            key: const Key('settings-retrieval-entry'),
+            icon: Icons.manage_search_outlined,
+            title: l10n.settingsRetrievalTitle,
+            subtitle: l10n.settingsRetrievalSubtitle,
+            status: _retrievalStatus(l10n, retrievalState),
+            onTap: () => context.push('/settings/retrieval'),
           ),
           const Divider(height: 20),
           _ControlRow(
@@ -351,6 +364,16 @@ class _ControlSurface extends ConsumerWidget {
       return l10n.providerConnectionConnected;
     }
     return l10n.pluginsModelProviderConfigured(state.providers.length);
+  }
+
+  String _retrievalStatus(
+    AppLocalizations l10n,
+    EmbeddingSettingsState? state,
+  ) {
+    if (state == null || !state.isConfigured) {
+      return l10n.settingsRetrievalStatusKeyword;
+    }
+    return l10n.settingsRetrievalStatusHybrid;
   }
 
   String _transcriptionStatus(

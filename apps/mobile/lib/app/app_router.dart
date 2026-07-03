@@ -15,6 +15,7 @@ import '../features/plugins/presentation/pack_library_page.dart';
 import '../features/plugins/presentation/permission_gate_page.dart';
 import '../features/plugins/presentation/plugins_page.dart';
 import '../features/recap/presentation/daily_recap_page.dart';
+import '../features/retrieval/presentation/retrieval_settings_page.dart';
 import '../features/settings/presentation/debugging_page.dart';
 import '../features/settings/presentation/settings_page.dart';
 import '../features/system_permissions/presentation/system_permissions_page.dart';
@@ -133,6 +134,12 @@ GoRouter createAppRouter({String initialLocation = '/'}) {
                       state,
                       const ModelProviderSettingsPage(),
                     ),
+                  ),
+                  GoRoute(
+                    path: 'retrieval',
+                    name: 'settings-retrieval',
+                    pageBuilder: (context, state) =>
+                        _noTransitionPage(state, const RetrievalSettingsPage()),
                   ),
                   GoRoute(
                     path: 'transcription',

@@ -1311,6 +1311,8 @@ const _zhChatContextLabels = ChatContextLabels(
 
 const _chatReadToolPermissions = <String>{
   LocalDbCoreToolCatalog.semanticSearchQueryTool,
+  LocalDbCoreToolCatalog.sourceOpenTool,
+  LocalDbCoreToolCatalog.sourcesListTool,
   LocalDbCoreToolCatalog.contextPacketBuildTool,
   LocalDbCoreToolCatalog.memoryReadTool,
   LocalDbCoreToolCatalog.timelineReadTool,

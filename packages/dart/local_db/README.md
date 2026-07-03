@@ -8,7 +8,8 @@ This package owns local tables, migration bootstrap, and DAO APIs for the
 minimum phase-one record surfaces: events, captures, Memory, cards, insights,
 todos, attachment metadata, durable runtime state, Agent Pack install state,
 permission grants/revocations, runtime approval queue metadata, context packet
-caches, and traces.
+caches, rebuildable search projections, embedding provider configuration, and
+traces.
 
 ## Ownership Boundary
 
@@ -47,6 +48,8 @@ rendering.
 - `PermissionGrantsDao`
 - `ContextPacketCachesDao`
 - `TraceEventsDao`
+- `EmbeddingProviderConfigsDao`
+- `SearchIndexDao`
 - `LocalDbEventStore`
 - `LocalDbTraceSink`
 - `LocalDbApprovalStore`
@@ -61,9 +64,9 @@ persistence responsibility small while preserving the existing import boundary.
 
 ## Dependencies
 
-Depends on the pure Dart `sqlite3` package, runtime port interfaces from
-`packages/dart/agent_runtime`, and the Memory repository interface from
-`packages/dart/memory`. Must not depend on Flutter UI.
+Depends on the pure Dart `sqlite3` and `crypto` packages, runtime port
+interfaces from `packages/dart/agent_runtime`, and the Memory repository
+interface from `packages/dart/memory`. Must not depend on Flutter UI.
 
 The dependency direction is intentional:
 
@@ -81,6 +84,18 @@ interfaces to SQLite rows.
 The accepted long-term client decision still points to SQLite + Drift. This
 MVP intentionally uses hand-written SQLite with no code generation so the local
 truth tables can be tested before mobile integration.
+
+`SearchIndexDao` owns rebuildable `search_documents`, `search_chunks`,
+`search_chunks_fts`, and `search_chunk_embeddings` projections over local
+object truth. It implements the local BM25/FTS side of hybrid retrieval,
+app-level CJK and ASCII tokenization, metadata filters, exact dense-vector
+cosine scoring over stored embedding blobs, and RRF fusion. These tables are
+derived state and may be rebuilt from canonical objects.
+
+`EmbeddingProviderConfigsDao` is deliberately separate from
+`ModelProviderConfigsDao`. Chat/completion provider settings and embedding
+provider settings have different model roles, validation, and defaults even
+when both use OpenRouter-compatible HTTP.
 
 `WideNoteLocalDatabase.rawDatabase` is intentionally retained as a narrow escape
 hatch for migrations, low-level inspection, and tests. Product code should
@@ -185,9 +200,12 @@ guardrails, and runtime EventStore/TraceSink adapters. Backup tests also cover
 the directory `.widenote` archive, full SQLite snapshots, media entries,
 diagnostic support entries, checksum verification, and the legacy Markdown
 projection boundary.
-Core tool catalog tests cover DB-backed Context Packet, Memory read/propose,
-todo suggestion, and redacted trace read tools, including required permission
-metadata, source refs, limits, redaction, and invalid-input behavior.
+Search index tests cover Chinese tokenization, BM25/FTS lookup, stored
+embedding search, and hybrid fusion. Core tool catalog tests cover DB-backed
+Context Packet, hybrid semantic search evidence handles, source opening, source
+listing, Memory read/propose, todo suggestion, and redacted trace read tools,
+including required permission metadata, source refs, limits, redaction, and
+invalid-input behavior.
 
 The runtime approval store is a persistence boundary, not an execution bridge.
 It records pending approval requests and decisions with redacted metadata only.

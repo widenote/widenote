@@ -5,6 +5,7 @@ import 'package:widenote_local_db/widenote_local_db.dart';
 import '../../../app/local_database.dart';
 import '../../../app/model_client.dart';
 import '../../../shared/text_preview.dart';
+import '../../retrieval/application/local_search_service.dart';
 import '../domain/chat_models.dart';
 import 'chat_assistant.dart';
 import 'chat_context.dart';
@@ -36,6 +37,7 @@ final chatReadOnlyToolRegistryProvider = Provider<runtime.ToolRegistry>((ref) {
   final registry = runtime.InMemoryToolRegistry();
   LocalDbCoreToolCatalog(
     ref.watch(localDatabaseProvider),
+    queryEmbeddingResolver: ref.watch(localDbQueryEmbeddingResolverProvider),
   ).registerInto(registry);
   return registry;
 });
@@ -628,6 +630,8 @@ bool _isDefaultSessionTitle(String title) {
 
 const _chatReadOnlyPermissionIds = <String>{
   LocalDbCoreToolCatalog.semanticSearchQueryTool,
+  LocalDbCoreToolCatalog.sourceOpenTool,
+  LocalDbCoreToolCatalog.sourcesListTool,
   LocalDbCoreToolCatalog.contextPacketBuildTool,
   LocalDbCoreToolCatalog.memoryReadTool,
   LocalDbCoreToolCatalog.timelineReadTool,

@@ -1,7 +1,7 @@
 import 'package:sqlite3/sqlite3.dart';
 
 abstract final class LocalDbSchema {
-  static const currentVersion = 12;
+  static const currentVersion = 13;
 }
 
 final class LocalDbMigrator {
@@ -80,6 +80,10 @@ final class LocalDbMigrator {
       if (currentVersion < 12 && targetVersion >= 12) {
         _migrateToV12(database);
         database.execute('PRAGMA user_version = 12;');
+      }
+      if (currentVersion < 13 && targetVersion >= 13) {
+        _migrateToV13(database);
+        database.execute('PRAGMA user_version = 13;');
       }
       database.execute('COMMIT;');
     } catch (_) {
@@ -817,6 +821,121 @@ ON memory_candidates(created_at);
       ..execute('''
 CREATE INDEX IF NOT EXISTS context_packet_cache_created_at_idx
 ON context_packet_cache(created_at);
+''');
+  }
+
+  static void _migrateToV13(Database database) {
+    database
+      ..execute('''
+CREATE TABLE IF NOT EXISTS embedding_provider_configs (
+  id TEXT PRIMARY KEY,
+  schema_version INTEGER NOT NULL,
+  provider_kind TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  endpoint TEXT NOT NULL,
+  model TEXT NOT NULL,
+  status TEXT NOT NULL,
+  is_default INTEGER NOT NULL,
+  has_api_key INTEGER NOT NULL,
+  api_key TEXT NOT NULL,
+  dimensions INTEGER,
+  batch_size INTEGER NOT NULL,
+  payload_json TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS embedding_provider_configs_default_idx
+ON embedding_provider_configs(is_default);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS embedding_provider_configs_kind_idx
+ON embedding_provider_configs(provider_kind);
+''')
+      ..execute('''
+CREATE TABLE IF NOT EXISTS search_documents (
+  id TEXT PRIMARY KEY,
+  schema_version INTEGER NOT NULL,
+  source_kind TEXT NOT NULL,
+  source_id TEXT NOT NULL,
+  source_type TEXT NOT NULL,
+  title TEXT NOT NULL,
+  status TEXT NOT NULL,
+  sensitivity TEXT NOT NULL,
+  source_refs_json TEXT NOT NULL,
+  metadata_json TEXT NOT NULL,
+  content_hash TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+''')
+      ..execute('''
+CREATE UNIQUE INDEX IF NOT EXISTS search_documents_source_idx
+ON search_documents(source_kind, source_id);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS search_documents_kind_status_idx
+ON search_documents(source_kind, status, updated_at);
+''')
+      ..execute('''
+CREATE TABLE IF NOT EXISTS search_chunks (
+  id TEXT PRIMARY KEY,
+  schema_version INTEGER NOT NULL,
+  doc_id TEXT NOT NULL,
+  source_kind TEXT NOT NULL,
+  source_id TEXT NOT NULL,
+  source_type TEXT NOT NULL,
+  title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  snippet TEXT NOT NULL,
+  token_text TEXT NOT NULL,
+  status TEXT NOT NULL,
+  sensitivity TEXT NOT NULL,
+  source_refs_json TEXT NOT NULL,
+  metadata_json TEXT NOT NULL,
+  content_hash TEXT NOT NULL,
+  chunk_index INTEGER NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY(doc_id) REFERENCES search_documents(id) ON DELETE CASCADE
+);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS search_chunks_doc_idx
+ON search_chunks(doc_id, chunk_index);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS search_chunks_kind_status_idx
+ON search_chunks(source_kind, status, updated_at);
+''')
+      ..execute('''
+CREATE TABLE IF NOT EXISTS search_chunk_embeddings (
+  chunk_id TEXT NOT NULL,
+  provider_id TEXT NOT NULL,
+  model TEXT NOT NULL,
+  dimensions INTEGER NOT NULL,
+  embedding_blob BLOB NOT NULL,
+  content_hash TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY(chunk_id, provider_id, model),
+  FOREIGN KEY(chunk_id) REFERENCES search_chunks(id) ON DELETE CASCADE
+);
+''')
+      ..execute('''
+CREATE INDEX IF NOT EXISTS search_chunk_embeddings_model_idx
+ON search_chunk_embeddings(provider_id, model, updated_at);
+''')
+      ..execute('''
+CREATE VIRTUAL TABLE IF NOT EXISTS search_chunks_fts
+USING fts5(
+  chunk_id UNINDEXED,
+  title,
+  body,
+  token_text,
+  tokenize = 'unicode61'
+);
 ''');
   }
 }
