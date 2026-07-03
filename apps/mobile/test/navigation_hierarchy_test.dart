@@ -5,6 +5,8 @@ import 'package:widenote_local_db/widenote_local_db.dart';
 import 'package:widenote_mobile/app/app_router.dart';
 import 'package:widenote_mobile/app/app_theme.dart';
 import 'package:widenote_mobile/app/local_database.dart';
+import 'package:widenote_mobile/features/agent_status/application/agent_execution_status_controller.dart';
+import 'package:widenote_mobile/features/agent_status/application/agent_status_platform.dart';
 import 'package:widenote_mobile/features/location/application/location_settings_controller.dart';
 import 'package:widenote_mobile/features/system_permissions/application/system_permissions_controller.dart';
 import 'package:widenote_mobile/app/widenote_app.dart';
@@ -237,6 +239,36 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpAndSettle();
     }
+  });
+
+  testWidgets('agent status overlay preserves shell navigation hierarchy', (
+    tester,
+  ) async {
+    final now = DateTime.utc(2026, 7, 3, 12);
+    await _pumpRoute(
+      tester,
+      '/',
+      seed: (database) => _seedAgentRuntimeTask(database, now),
+      agentStatusNow: now,
+    );
+
+    expect(find.byKey(const Key('home-page')), findsOneWidget);
+    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byKey(const Key('agent-status-overlay')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('agent-status-open-sheet')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('agent-status-open-log-center')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('trace-agents-page')), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
+    expect(find.byKey(const Key('agent-status-overlay')), findsOneWidget);
+
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('home-page')), findsOneWidget);
+    expect(find.byType(NavigationBar), findsOneWidget);
   });
 
   testWidgets('deep linked home-owned pages expose parent back stacks', (
@@ -588,6 +620,7 @@ class _ShortcutCase {
 
 Future<void> _pumpWideNoteApp(WidgetTester tester) async {
   final database = WideNoteLocalDatabase.inMemory();
+  final agentStatusNow = DateTime.utc(2026, 7, 3, 12);
   addTearDown(database.close);
   await tester.pumpWidget(
     ProviderScope(
@@ -599,6 +632,10 @@ Future<void> _pumpWideNoteApp(WidgetTester tester) async {
         systemPermissionAdapterProvider.overrideWithValue(
           FakeSystemPermissionAdapter.ready(),
         ),
+        agentStatusPlatformClientProvider.overrideWithValue(
+          const _NoopAgentStatusPlatformClient(),
+        ),
+        agentExecutionStatusNowProvider.overrideWithValue(() => agentStatusNow),
       ],
       child: const WideNoteApp(locale: Locale('en')),
     ),
@@ -610,8 +647,11 @@ Future<void> _pumpRoute(
   WidgetTester tester,
   String initialLocation, {
   void Function(WideNoteLocalDatabase database)? seed,
+  DateTime? agentStatusNow,
 }) async {
   final database = WideNoteLocalDatabase.inMemory();
+  final effectiveAgentStatusNow =
+      agentStatusNow ?? DateTime.utc(2026, 7, 3, 12);
   seed?.call(database);
   final router = createAppRouter(initialLocation: initialLocation);
   addTearDown(database.close);
@@ -626,6 +666,12 @@ Future<void> _pumpRoute(
         ),
         systemPermissionAdapterProvider.overrideWithValue(
           FakeSystemPermissionAdapter.ready(),
+        ),
+        agentStatusPlatformClientProvider.overrideWithValue(
+          const _NoopAgentStatusPlatformClient(),
+        ),
+        agentExecutionStatusNowProvider.overrideWithValue(
+          () => effectiveAgentStatusNow,
         ),
       ],
       child: MaterialApp.router(
@@ -704,4 +750,47 @@ void _seedTodo(WideNoteLocalDatabase database) {
       updatedAt: now,
     ),
   );
+}
+
+void _seedAgentRuntimeTask(WideNoteLocalDatabase database, DateTime now) {
+  database.eventLog.append(
+    EventLogEntry(
+      id: 'event-agent-nav',
+      type: 'wn.capture.created',
+      actor: 'user',
+      createdAt: now.subtract(const Duration(minutes: 1)),
+    ),
+  );
+  database.runtimeTasks.insert(
+    RuntimeTaskRecord(
+      id: 'task-agent-nav',
+      packId: 'pack.default',
+      packVersion: '1.0.0',
+      agentId: 'agent.capture_loop',
+      handlerId: 'handler.capture',
+      subscriptionId: 'subscription.capture',
+      triggerEventId: 'event-agent-nav',
+      status: 'running',
+      attempts: 0,
+      maxAttempts: 2,
+      leasedUntil: now.add(const Duration(minutes: 5)),
+      createdAt: now.subtract(const Duration(minutes: 1)),
+      updatedAt: now,
+    ),
+  );
+}
+
+final class _NoopAgentStatusPlatformClient
+    implements AgentStatusPlatformClient {
+  const _NoopAgentStatusPlatformClient();
+
+  @override
+  Future<AgentStatusPlatformResult> sync(
+    AgentStatusPlatformPayload payload,
+  ) async {
+    return const AgentStatusPlatformResult(
+      notificationStatus: 'test',
+      liveActivityStatus: 'test',
+    );
+  }
 }

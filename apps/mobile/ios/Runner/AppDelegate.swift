@@ -15,5 +15,8 @@ import UIKit
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "BackupImportBridge") {
       BackupImportBridge.register(messenger: registrar.messenger())
     }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "AgentStatusBridge") {
+      AgentStatusBridge.register(messenger: registrar.messenger())
+    }
   }
 }

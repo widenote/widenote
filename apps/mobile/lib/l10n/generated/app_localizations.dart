@@ -6183,6 +6183,191 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Location unavailable'**
   String get locationRecordUnavailable;
+
+  /// No description provided for @agentStatusActiveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agents are working'**
+  String get agentStatusActiveTitle;
+
+  /// No description provided for @agentStatusAttentionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent work needs attention'**
+  String get agentStatusAttentionTitle;
+
+  /// No description provided for @agentStatusCompletedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent work completed'**
+  String get agentStatusCompletedTitle;
+
+  /// No description provided for @agentStatusIdleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agents idle'**
+  String get agentStatusIdleTitle;
+
+  /// No description provided for @agentStatusOverlaySummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{running} running / {queued} queued / {retrying} retrying / {attention} need attention'**
+  String agentStatusOverlaySummary(
+    int running,
+    int queued,
+    int retrying,
+    int attention,
+  );
+
+  /// No description provided for @agentStatusSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Current Agent status'**
+  String get agentStatusSheetTitle;
+
+  /// No description provided for @agentStatusRefreshTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh Agent status'**
+  String get agentStatusRefreshTooltip;
+
+  /// No description provided for @agentStatusRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Running: {count}'**
+  String agentStatusRunning(int count);
+
+  /// No description provided for @agentStatusQueued.
+  ///
+  /// In en, this message translates to:
+  /// **'Queued: {count}'**
+  String agentStatusQueued(int count);
+
+  /// No description provided for @agentStatusRetrying.
+  ///
+  /// In en, this message translates to:
+  /// **'Retrying: {count}'**
+  String agentStatusRetrying(int count);
+
+  /// No description provided for @agentStatusRecovering.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovering: {count}'**
+  String agentStatusRecovering(int count);
+
+  /// No description provided for @agentStatusAttention.
+  ///
+  /// In en, this message translates to:
+  /// **'Attention: {count}'**
+  String agentStatusAttention(int count);
+
+  /// No description provided for @agentStatusSucceeded.
+  ///
+  /// In en, this message translates to:
+  /// **'Done: {count}'**
+  String agentStatusSucceeded(int count);
+
+  /// No description provided for @agentStatusIdleBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No current local Agent work.'**
+  String get agentStatusIdleBody;
+
+  /// No description provided for @agentStatusOpenLogCenter.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Log Center'**
+  String get agentStatusOpenLogCenter;
+
+  /// No description provided for @agentStatusPack.
+  ///
+  /// In en, this message translates to:
+  /// **'pack: {packId}'**
+  String agentStatusPack(String packId);
+
+  /// No description provided for @agentStatusAttempt.
+  ///
+  /// In en, this message translates to:
+  /// **'attempts: {count}'**
+  String agentStatusAttempt(int count);
+
+  /// No description provided for @agentStatusMissingDependencies.
+  ///
+  /// In en, this message translates to:
+  /// **'missing deps: {count}'**
+  String agentStatusMissingDependencies(int count);
+
+  /// No description provided for @agentStatusNextRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'next retry: {time}'**
+  String agentStatusNextRetry(String time);
+
+  /// No description provided for @agentStatusOutputs.
+  ///
+  /// In en, this message translates to:
+  /// **'outputs: {count}'**
+  String agentStatusOutputs(int count);
+
+  /// No description provided for @agentStatusErrorRedacted.
+  ///
+  /// In en, this message translates to:
+  /// **'Error details are kept in the local Log Center.'**
+  String get agentStatusErrorRedacted;
+
+  /// No description provided for @agentStatusKindRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'running'**
+  String get agentStatusKindRunning;
+
+  /// No description provided for @agentStatusKindQueued.
+  ///
+  /// In en, this message translates to:
+  /// **'queued'**
+  String get agentStatusKindQueued;
+
+  /// No description provided for @agentStatusKindRetrying.
+  ///
+  /// In en, this message translates to:
+  /// **'retrying'**
+  String get agentStatusKindRetrying;
+
+  /// No description provided for @agentStatusKindRecovering.
+  ///
+  /// In en, this message translates to:
+  /// **'recovering'**
+  String get agentStatusKindRecovering;
+
+  /// No description provided for @agentStatusKindSucceeded.
+  ///
+  /// In en, this message translates to:
+  /// **'succeeded'**
+  String get agentStatusKindSucceeded;
+
+  /// No description provided for @agentStatusKindFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'failed'**
+  String get agentStatusKindFailed;
+
+  /// No description provided for @agentStatusKindDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'denied'**
+  String get agentStatusKindDenied;
+
+  /// No description provided for @agentStatusKindCanceled.
+  ///
+  /// In en, this message translates to:
+  /// **'canceled'**
+  String get agentStatusKindCanceled;
+
+  /// No description provided for @agentStatusKindBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'blocked'**
+  String get agentStatusKindBlocked;
 }
 
 class _AppLocalizationsDelegate

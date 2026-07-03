@@ -30,6 +30,7 @@ database code live under `packages/`.
 - feature pages under `features/*/presentation`
 - `features/backup/BackupPage`
 - `features/insights/InsightsPage` and `InsightDetailPage`
+- `features/agent_status/AgentExecutionStatusLayer`
 - `features/model_providers/ModelProviderSettingsPage`
 - `features/transcription/VoiceTranscriptionSettingsPage`
 - `features/traces/TraceConsolePage` and `TraceRawLogsPage`
