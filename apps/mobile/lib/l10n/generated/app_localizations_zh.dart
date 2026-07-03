@@ -1664,6 +1664,182 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get usageStatsTitle => '使用统计';
+
+  @override
+  String get usageStatsSettingsSubtitle => '从本地证据打开 Token、工具、记忆和缓存看板。';
+
+  @override
+  String usageStatsSubtitle(int days) {
+    return '最近 $days 天的本地输入、Token、工具、记忆和缓存统计。';
+  }
+
+  @override
+  String get usageStatsBackTooltip => '从使用统计返回';
+
+  @override
+  String get usageStatsRefreshTooltip => '刷新使用统计';
+
+  @override
+  String get usageStatsScopeTitle => '统计范围';
+
+  @override
+  String get usageStatsPeriodDaily => '按日';
+
+  @override
+  String get usageStatsPeriodWeekly => '按周';
+
+  @override
+  String get usageStatsAgentFilterTitle => 'Agent 过滤';
+
+  @override
+  String get usageStatsAllAgents => '全部 Agent';
+
+  @override
+  String get usageStatsUnknownAgent => '未知 Agent';
+
+  @override
+  String get usageStatsSummaryTitle => '使用概览';
+
+  @override
+  String get usageStatsInputCountLabel => '原始输入';
+
+  @override
+  String get usageStatsInputCharactersLabel => '输入字符';
+
+  @override
+  String get usageStatsMemoryProducedLabel => '产生记忆';
+
+  @override
+  String get usageStatsModelCallsLabel => '模型调用';
+
+  @override
+  String get usageStatsTotalTokensLabel => '总 Token';
+
+  @override
+  String get usageStatsEstimatedCostLabel => '预估成本';
+
+  @override
+  String usageStatsModelFailures(int count) {
+    return '$count 次失败';
+  }
+
+  @override
+  String get usageStatsTokensTitle => 'Token 消耗';
+
+  @override
+  String get usageStatsInputTokensLabel => '输入 Token';
+
+  @override
+  String get usageStatsOutputTokensLabel => '输出 Token';
+
+  @override
+  String get usageStatsCachedTokensLabel => '服务商缓存输入';
+
+  @override
+  String get usageStatsThoughtTokensLabel => '推理 Token';
+
+  @override
+  String usageStatsCachedTokensValue(String tokens, String ratio) {
+    return '$tokens · $ratio';
+  }
+
+  @override
+  String get usageStatsNotReported => '未报告';
+
+  @override
+  String get usageStatsProviderCacheNote => '服务商缓存输入来自模型服务返回；本地上下文包复用在下方单独统计。';
+
+  @override
+  String get usageStatsToolsCacheTitle => '工具与本地缓存';
+
+  @override
+  String get usageStatsToolCallsLabel => '工具调用';
+
+  @override
+  String usageStatsToolBreakdown(int completed, int failed) {
+    return '$completed 次完成 / $failed 次失败';
+  }
+
+  @override
+  String get usageStatsContextReuseLabel => '本地上下文复用';
+
+  @override
+  String usageStatsContextReuseDetail(int hits, int calls) {
+    return '$hits 次复用 / $calls 次上下文调用';
+  }
+
+  @override
+  String get usageStatsContextCacheRowsLabel => '上下文缓存行';
+
+  @override
+  String usageStatsContextCacheRowsDetail(int active, int invalidated) {
+    return '$active 个活跃 / $invalidated 个已失效';
+  }
+
+  @override
+  String get usageStatsDailyTrendTitle => '每日趋势';
+
+  @override
+  String get usageStatsWeeklyTrendTitle => '每周趋势';
+
+  @override
+  String get usageStatsTrendEmpty => '这个范围内还没有使用数据。';
+
+  @override
+  String usageStatsTrendTokenValue(String tokens) {
+    return '$tokens Token';
+  }
+
+  @override
+  String usageStatsTrendInputs(int count) {
+    return '$count 次输入';
+  }
+
+  @override
+  String usageStatsTrendTools(int count) {
+    return '$count 次工具';
+  }
+
+  @override
+  String usageStatsTrendMemory(int count) {
+    return '$count 条记忆';
+  }
+
+  @override
+  String get usageStatsAgentBreakdownTitle => 'Agent 细分';
+
+  @override
+  String get usageStatsAgentEmpty => '这个窗口里还没有可归因到 Agent 的使用数据。';
+
+  @override
+  String usageStatsAgentTokens(String tokens) {
+    return '$tokens Token';
+  }
+
+  @override
+  String usageStatsAgentModelCalls(int count) {
+    return '$count 次模型调用';
+  }
+
+  @override
+  String usageStatsAgentToolCalls(int count) {
+    return '$count 次工具调用';
+  }
+
+  @override
+  String usageStatsAgentMemory(int count) {
+    return '$count 条记忆';
+  }
+
+  @override
+  String get usageStatsEmptyTitle => '还没有使用统计';
+
+  @override
+  String get usageStatsEmptyBody =>
+      '保存记录或运行本地 Agent 后，聚合统计会出现在这里，不会暴露原始 prompt 或记录内容。';
+
+  @override
   String get systemPermissionsTitle => '系统权限';
 
   @override

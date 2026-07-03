@@ -2,7 +2,7 @@
   "$schema": "../../packages/schemas/src/agent_pack/agent_pack_marketplace.schema.json",
   "schema_version": 1,
   "source": "github",
-  "updated_at": "2026-07-01",
+  "updated_at": "2026-07-03",
   "packs": [
     {
       "id": "pack.default",
@@ -75,6 +75,25 @@
       ],
       "repository_url": "https://github.com/widenote/widenote",
       "docs_path": "packs/official/transcript_correction/README.md"
+    },
+    {
+      "id": "pack.usage_stats",
+      "manifest_path": "../official/usage_stats/manifest.json",
+      "publisher": "widenote",
+      "edition": "official",
+      "trust_level": "official",
+      "status": "available",
+      "categories": [
+        "analytics",
+        "runtime"
+      ],
+      "capabilities": [
+        "usage.stats",
+        "trace.read",
+        "context_packet.observe"
+      ],
+      "repository_url": "https://github.com/widenote/widenote",
+      "docs_path": "packs/official/usage_stats/README.md"
     }
   ]
 }

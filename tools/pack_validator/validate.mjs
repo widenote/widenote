@@ -270,9 +270,17 @@ function validateBasicShape(manifest, errors) {
     errors.push("schema_version must be 1");
   }
 
+  const hasUiContributions =
+    Array.isArray(manifest.ui_contributions) &&
+    manifest.ui_contributions.length > 0;
+
   validateStringArrayField(manifest, "permissions", errors, { allowEmpty: true });
-  validateObjectArrayField(manifest, "subscriptions", errors);
-  validateObjectArrayField(manifest, "agents", errors);
+  validateObjectArrayField(manifest, "subscriptions", errors, {
+    allowEmpty: hasUiContributions,
+  });
+  validateObjectArrayField(manifest, "agents", errors, {
+    allowEmpty: hasUiContributions,
+  });
 
   if ("model_profiles" in manifest) {
     validateObjectArrayField(manifest, "model_profiles", errors, {

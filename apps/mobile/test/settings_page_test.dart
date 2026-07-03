@@ -32,6 +32,13 @@ void main() {
     expect(find.text('Model Providers'), findsOneWidget);
     expect(find.text('Backup & Restore'), findsOneWidget);
     expect(find.text('Log Center'), findsOneWidget);
+    await _ensureVisible(
+      tester,
+      const Key(
+        'settings-ui-contribution-pack.usage_stats-settings.usage_stats.dashboard',
+      ),
+    );
+    expect(find.text('Usage Statistics'), findsOneWidget);
 
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
@@ -97,6 +104,13 @@ void main() {
         'settings-ui-contribution-pack.transcript_correction-settings.transcript_correction.glossary',
       ),
       pageKey: const Key('permission-gate-page'),
+    );
+    await _openChildAndReturn(
+      tester,
+      entryKey: const Key(
+        'settings-ui-contribution-pack.usage_stats-settings.usage_stats.dashboard',
+      ),
+      pageKey: const Key('usage-stats-page'),
     );
   });
 

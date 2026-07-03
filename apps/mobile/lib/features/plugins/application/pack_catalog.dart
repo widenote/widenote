@@ -130,7 +130,8 @@ final class PackUiContribution {
   final List<String> requiredPermissions;
 
   bool get isSettingsContribution {
-    return surface == 'settings.pack_detail' && kind == 'settings_form';
+    return surface == 'settings.pack_detail' &&
+        (kind == 'settings_form' || kind == 'panel');
   }
 }
 

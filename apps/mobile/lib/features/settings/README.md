@@ -19,6 +19,8 @@ backup/restore, log inspection, and display status.
 - Links to existing feature pages for permission review, provider setup,
   system permission review, voice transcription settings, backup/restore, and
   log center instead of duplicating their behavior.
+- Routes host-owned Pack settings contributions such as Usage Statistics to
+  their dedicated Settings child pages.
 - Does not own backup codecs, model-provider persistence, permission schemas,
   trace storage, or locale persistence.
 
@@ -31,6 +33,7 @@ backup/restore, log inspection, and display status.
 - `features/model_providers` for provider status chips
 - `features/transcription` for voice transcription status and settings
 - Existing `plugins`, `backup`, and `traces` read models and presentation pages
+- `features/usage_stats` for the host-rendered usage statistics Pack panel
 
 ## Public Surface
 

@@ -88,6 +88,30 @@ ${allowUpdate ? _captureUpsertClause : ';'}
     );
     return rows.map(_captureFromRow).toList(growable: false);
   }
+
+  List<CaptureRecord> readByCreatedAtRange({
+    required DateTime startInclusive,
+    required DateTime endExclusive,
+    String? status,
+    int? limit,
+    int? offset,
+  }) {
+    final rows = _selectOrdered(
+      _database,
+      'captures',
+      whereSql: status == null
+          ? 'created_at >= ? AND created_at < ?'
+          : 'created_at >= ? AND created_at < ? AND status = ?',
+      parameters: <Object?>[
+        _encodeDateTime(startInclusive),
+        _encodeDateTime(endExclusive),
+        if (status != null) status,
+      ],
+      limit: limit,
+      offset: offset,
+    );
+    return rows.map(_captureFromRow).toList(growable: false);
+  }
 }
 
 const _captureUpsertClause = '''

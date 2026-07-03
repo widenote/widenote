@@ -47,6 +47,7 @@ void main() {
         'pack.todo',
         'pack.pkm_library',
         'pack.transcript_correction',
+        'pack.usage_stats',
       ],
     );
 
@@ -92,6 +93,12 @@ void main() {
       'source.write.transcript_correction',
     ]);
     expect(transcriptPack.outputEvents, <String>['wn.transcript.corrected']);
+
+    final usageStatsPack = builtInPacks.singleWhere(
+      (pack) => pack.id == 'pack.usage_stats',
+    );
+    expect(usageStatsPack.permissions, isEmpty);
+    expect(usageStatsPack.outputEvents, isEmpty);
 
     expect(
       builtInPermissions
@@ -175,6 +182,7 @@ void main() {
         'pack.transcript_correction': officialPackManifestSource(
           'pack.transcript_correction',
         ),
+        'pack.usage_stats': officialPackManifestSource('pack.usage_stats'),
       }),
       throwsA(isA<FormatException>()),
     );
@@ -189,6 +197,7 @@ void main() {
         'pack.transcript_correction': officialPackManifestSource(
           'pack.transcript_correction',
         ),
+        'pack.usage_stats': officialPackManifestSource('pack.usage_stats'),
       }),
       throwsA(isA<FormatException>()),
     );
@@ -201,6 +210,7 @@ void main() {
         'pack.transcript_correction': officialPackManifestSource(
           'pack.transcript_correction',
         ),
+        'pack.usage_stats': officialPackManifestSource('pack.usage_stats'),
       }),
       throwsA(
         isA<ArgumentError>().having(
@@ -374,16 +384,20 @@ void main() {
       find.byKey(const Key('pack-row-pack.transcript_correction')),
       findsOneWidget,
     );
+    expect(find.byKey(const Key('pack-row-pack.usage_stats')), findsOneWidget);
     expect(find.text('Default Capture Loop'), findsOneWidget);
     expect(find.text('Todo Extraction Loop'), findsOneWidget);
     expect(find.text('PKM Personal Library'), findsOneWidget);
     expect(find.text('Transcript Correction'), findsOneWidget);
-    expect(find.text('v0.1.0'), findsNWidgets(4));
+    expect(find.text('Usage Statistics Dashboard'), findsOneWidget);
+    expect(find.text('v0.1.0'), findsNWidgets(5));
+    expect(find.text('0 permissions'), findsOneWidget);
     expect(find.text('9 permissions'), findsOneWidget);
     expect(find.text('4 permissions'), findsOneWidget);
     expect(find.text('3 outputs'), findsOneWidget);
     expect(find.text('2 permissions'), findsNWidgets(2));
     expect(find.text('1 output'), findsNWidgets(3));
+    expect(find.text('0 outputs'), findsOneWidget);
     expect(
       find.byKey(const Key('pack-marketplace-source-pack.pkm_library')),
       findsOneWidget,
@@ -432,7 +446,19 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('Transcript glossary'), findsOneWidget);
-    expect(find.text('surface: settings.pack_detail'), findsOneWidget);
+    expect(find.text('surface: settings.pack_detail'), findsWidgets);
+    await tester.scrollUntilVisible(
+      find.byKey(
+        const Key(
+          'pack-ui-contribution-pack.usage_stats-settings.usage_stats.dashboard',
+        ),
+      ),
+      140,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Usage statistics'), findsOneWidget);
+    expect(find.text('kind: panel'), findsWidgets);
 
     await _pumpLocalizedPage(tester, const PermissionGatePage());
     expect(find.byKey(const Key('permission-gate-page')), findsOneWidget);
@@ -512,7 +538,7 @@ void main() {
       'enabled',
     );
     expect(find.text('1 enabled'), findsNothing);
-    expect(find.text('4 enabled'), findsOneWidget);
+    expect(find.text('5 enabled'), findsOneWidget);
     expect(
       find.textContaining('Disabling affects future local tasks only'),
       findsOneWidget,
@@ -525,7 +551,7 @@ void main() {
       'disabled',
     );
     expect(find.text('1 disabled'), findsOneWidget);
-    expect(find.text('3 enabled'), findsOneWidget);
+    expect(find.text('4 enabled'), findsOneWidget);
     expect(find.byKey(const Key('pack-status-pack.default')), findsOneWidget);
     expect(find.text('disabled'), findsOneWidget);
 
@@ -535,7 +561,7 @@ void main() {
       database.packInstallations.readById('pack.default')!.status,
       'enabled',
     );
-    expect(find.text('4 enabled'), findsOneWidget);
+    expect(find.text('5 enabled'), findsOneWidget);
   });
 
   testWidgets('pack library hides app-owned internal installations', (
@@ -574,7 +600,7 @@ void main() {
     expect(database.packInstallations.readById('chat'), isNotNull);
     expect(find.text('Chat'), findsNothing);
     expect(find.byKey(const Key('pack-card-chat')), findsNothing);
-    expect(find.text('4 enabled'), findsOneWidget);
+    expect(find.text('5 enabled'), findsOneWidget);
   });
 
   test('pack disable rebuilds capture runtime without disabled pack', () async {
@@ -908,6 +934,7 @@ String _officialManifestPath(String packId) {
     'pack.pkm_library' => '../../packs/official/pkm_library/manifest.json',
     'pack.transcript_correction' =>
       '../../packs/official/transcript_correction/manifest.json',
+    'pack.usage_stats' => '../../packs/official/usage_stats/manifest.json',
     _ => throw ArgumentError.value(packId, 'packId', 'Unknown official pack'),
   };
 }

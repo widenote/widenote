@@ -34,6 +34,7 @@ database code live under `packages/`.
 - `features/model_providers/ModelProviderSettingsPage`
 - `features/transcription/VoiceTranscriptionSettingsPage`
 - `features/traces/TraceConsolePage` and `TraceRawLogsPage`
+- `features/usage_stats/UsageStatsPage`
 - localizations under `l10n/`
 
 The app shell shows bottom tabs only for the four peer route roots: `/`,
