@@ -19,7 +19,11 @@ void main() {
     await _pumpTodosPage(tester, database);
 
     expect(find.byKey(const Key('todo-row-todo-page-1')), findsOneWidget);
-    expect(find.text('Suggested action'), findsOneWidget);
+    expect(find.byKey(const Key('todo-focus-card')), findsOneWidget);
+    expect(
+      find.byKey(const Key('todo-focus-title-todo-page-1')),
+      findsOneWidget,
+    );
 
     await tester.tap(find.byKey(const Key('todo-checkbox-todo-page-1')));
     await tester.pumpAndSettle();
@@ -30,7 +34,7 @@ void main() {
       isA<String>(),
     );
     expect(find.byKey(const Key('todo-row-todo-page-1')), findsOneWidget);
-    expect(find.text('Completed'), findsWidgets);
+    expect(find.text('COMPLETED'), findsOneWidget);
     expect(
       find.byKey(const Key('todo-completed-at-todo-page-1')),
       findsOneWidget,
@@ -57,19 +61,12 @@ void main() {
       isFalse,
     );
 
-    expect(find.byKey(const Key('todo-source-todo-page-1')), findsNothing);
-
     await tester.tap(find.byKey(const Key('todo-row-todo-page-1')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('todo-detail-page')), findsOneWidget);
     final sourceButton = find.byKey(
       const Key('todo-detail-source-todo-page-1'),
     );
-    await tester.drag(
-      find.byKey(const Key('todo-detail-scroll')),
-      const Offset(0, -520),
-    );
-    await tester.pumpAndSettle();
     expect(find.text('source: capture-todo-page'), findsOneWidget);
     await tester.tap(sourceButton);
     await tester.pumpAndSettle();
@@ -96,9 +93,45 @@ void main() {
     _seedTodo(database);
     await _pumpTodosPage(tester, database, locale: const Locale('zh'));
 
-    expect(find.text('智能体建议行动'), findsOneWidget);
-    expect(find.text('来源：capture-todo-page'), findsNothing);
+    expect(find.text('下一项行动'), findsOneWidget);
+    expect(find.text('来源：capture-todo-page'), findsOneWidget);
     expect(find.text('suggested by agent'), findsNothing);
+  });
+
+  testWidgets('todos page focus card prefers structured today actions', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    _seedTodo(database);
+    _seedTodayTodo(database);
+    await _pumpTodosPage(tester, database);
+
+    expect(
+      find.byKey(const Key('todo-focus-title-todo-focus-today')),
+      findsOneWidget,
+    );
+    expect(find.text('Review source-linked todo'), findsOneWidget);
+    expect(find.text('Review today action'), findsWidgets);
+  });
+
+  testWidgets('todos page focus card stays empty without model actions', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    await _pumpTodosPage(tester, database);
+
+    expect(find.byKey(const Key('todo-focus-card')), findsOneWidget);
+    expect(find.text('No open actions'), findsOneWidget);
+    expect(
+      find.text(
+        'Action suggestions appear here after the Todo agent returns a source-linked action.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('todo-flow-today')), findsOneWidget);
+    expect(find.byKey(const Key('todo-flow-later')), findsOneWidget);
   });
 
   testWidgets('todos page separates schedule candidates from actions', (
@@ -109,7 +142,7 @@ void main() {
     _seedSchedule(database);
     await _pumpTodosPage(tester, database);
 
-    expect(find.text('Schedule candidates'), findsOneWidget);
+    expect(find.byKey(const Key('todo-flow-later')), findsOneWidget);
     expect(find.byKey(const Key('todo-row-schedule-page-1')), findsOneWidget);
     expect(
       find.byKey(const Key('todo-schedule-icon-schedule-page-1')),
@@ -121,10 +154,11 @@ void main() {
     );
     expect(find.text('Schedule candidate'), findsOneWidget);
     expect(find.text('Time cue: tomorrow'), findsOneWidget);
-    expect(find.byKey(const Key('todo-source-schedule-page-1')), findsNothing);
   });
 
-  testWidgets('todo detail page edits local metadata', (tester) async {
+  testWidgets('todo detail page stays focused on source and model rationale', (
+    tester,
+  ) async {
     final database = WideNoteLocalDatabase.inMemory();
     addTearDown(database.close);
     _seedTodo(database);
@@ -134,33 +168,29 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('todo-detail-page')), findsOneWidget);
+    expect(find.byKey(const Key('todo-detail-title-field')), findsNothing);
+    expect(find.byKey(const Key('todo-priority-medium')), findsNothing);
+    expect(find.byKey(const Key('todo-due-tomorrow')), findsNothing);
+    expect(find.byKey(const Key('todo-indent-increase')), findsNothing);
+    expect(find.byKey(const Key('todo-sort-later')), findsNothing);
+    expect(find.text('Why this appeared'), findsOneWidget);
+    expect(find.text('Explicit action in the source'), findsOneWidget);
+    expect(find.text('high confidence'), findsOneWidget);
+    expect(
+      find.byKey(const Key('todo-detail-source-button-todo-page-1')),
+      findsOneWidget,
+    );
 
-    await tester.enterText(
-      find.byKey(const Key('todo-detail-title-field')),
-      'Updated detail title',
-    );
-    await tester.tap(find.byKey(const Key('todo-detail-save-title')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('todo-priority-medium')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('todo-due-tomorrow')));
-    await tester.pumpAndSettle();
-    await tester.drag(
-      find.byKey(const Key('todo-detail-scroll')),
-      const Offset(0, -240),
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('todo-indent-increase')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('todo-sort-later')));
+    await tester.tap(find.byKey(const Key('todo-detail-toggle-todo-page-1')));
     await tester.pumpAndSettle();
 
     final record = database.todos.readById('todo-page-1')!;
-    expect(record.payload['title'], 'Updated detail title');
-    expect(record.payload['priority'], 'medium');
-    expect(record.payload['due_at'], isA<String>());
-    expect(record.payload['indent_level'], 1);
-    expect(record.payload['sort_order'], 100);
+    expect(record.status, 'completed');
+    expect(record.payload['title'], 'Review source-linked todo');
+    expect(record.payload.containsKey('priority'), isFalse);
+    expect(record.payload.containsKey('due_at'), isFalse);
+    expect(record.payload.containsKey('indent_level'), isFalse);
+    expect(record.payload.containsKey('sort_order'), isFalse);
   });
 
   testWidgets('todo detail page reopens completed rows with crossed subtasks', (
@@ -187,7 +217,10 @@ void main() {
     );
     await tester.pumpAndSettle();
     final subtask = tester.widget<Text>(
-      find.byKey(const Key('todo-detail-subtask-subtask-draft')),
+      find.descendant(
+        of: find.byKey(const Key('todo-detail-subtask-subtask-draft')),
+        matching: find.text('Draft launch note'),
+      ),
     );
     expect(subtask.style?.decoration, TextDecoration.lineThrough);
     await tester.drag(
@@ -242,7 +275,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('todo-row-todo-refresh-1')), findsOneWidget);
-    expect(find.text('Refresh visible todo'), findsOneWidget);
+    expect(find.text('Refresh visible todo'), findsWidgets);
   });
 }
 
@@ -304,6 +337,27 @@ void _seedTodo(WideNoteLocalDatabase database) {
         'suggestion_confidence': 'high',
         'suggestion_reason': 'explicit_action',
         'body': 'Keep source-linked context.',
+      },
+      createdAt: now,
+      updatedAt: now,
+    ),
+  );
+}
+
+void _seedTodayTodo(WideNoteLocalDatabase database) {
+  final now = DateTime.utc(2026, 7, 3, 8);
+  database.todos.insert(
+    TodoRecord(
+      id: 'todo-focus-today',
+      sourceCaptureId: 'capture-focus-today',
+      payload: const <String, Object?>{
+        'title': 'Review today action',
+        'source_label': 'source: capture-focus-today',
+        'status_label': 'suggested action',
+        'suggestion_kind': 'action',
+        'suggestion_confidence': 'high',
+        'suggestion_reason': 'explicit_action',
+        'due_at': '2026-07-03T10:00:00.000Z',
       },
       createdAt: now,
       updatedAt: now,

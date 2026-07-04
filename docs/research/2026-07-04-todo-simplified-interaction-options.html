@@ -1,0 +1,1556 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WideNote Todo Simplified Interaction Options</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --page: #f3f4f6;
+        --paper: #fbfbf8;
+        --surface: #ffffff;
+        --soft: #f1f5f4;
+        --line: #dfe5e3;
+        --line-strong: #b7c4c0;
+        --ink: #17211f;
+        --muted: #64706d;
+        --weak: #8c9693;
+        --teal: #0f766e;
+        --teal-soft: #def2ee;
+        --blue: #315f8c;
+        --blue-soft: #e5eef7;
+        --rose: #9f4058;
+        --rose-soft: #f6e4e9;
+        --amber: #9a651e;
+        --amber-soft: #f6ead7;
+        --green: #2f7d50;
+        --green-soft: #e2f2e9;
+        --shadow: 0 18px 44px rgba(23, 33, 31, 0.12);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          linear-gradient(90deg, rgba(23, 33, 31, 0.035) 1px, transparent 1px),
+          linear-gradient(0deg, rgba(23, 33, 31, 0.035) 1px, transparent 1px),
+          var(--page);
+        background-size: 28px 28px;
+        color: var(--ink);
+        letter-spacing: 0;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      .page {
+        width: min(1580px, calc(100vw - 32px));
+        margin: 22px auto 40px;
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 340px;
+        gap: 18px;
+        align-items: stretch;
+        border: 1px solid rgba(23, 33, 31, 0.12);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: 0 12px 32px rgba(23, 33, 31, 0.08);
+        padding: 18px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 30px;
+        line-height: 1.18;
+      }
+
+      h2 {
+        font-size: 18px;
+        line-height: 1.28;
+      }
+
+      h3 {
+        font-size: 15px;
+        line-height: 1.3;
+      }
+
+      .lead {
+        margin-top: 10px;
+        max-width: 980px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.65;
+      }
+
+      .principles {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 14px;
+      }
+
+      .pill {
+        display: inline-flex;
+        min-height: 30px;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        padding: 6px 9px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 750;
+      }
+
+      .decision {
+        border-left: 4px solid var(--teal);
+        border-radius: 8px;
+        background: var(--teal-soft);
+        padding: 14px;
+      }
+
+      .decision strong {
+        display: block;
+        font-size: 13px;
+      }
+
+      .decision span {
+        display: block;
+        margin-top: 6px;
+        color: #2d524d;
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      .board {
+        display: grid;
+        gap: 20px;
+        margin-top: 20px;
+      }
+
+      .option {
+        display: grid;
+        grid-template-columns: 280px minmax(0, 1fr);
+        gap: 18px;
+        align-items: start;
+        border: 1px solid rgba(23, 33, 31, 0.12);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.84);
+        padding: 14px;
+      }
+
+      .option-meta {
+        position: sticky;
+        top: 16px;
+      }
+
+      .kicker {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .option-title {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-top: 6px;
+      }
+
+      .marker {
+        display: inline-grid;
+        width: 28px;
+        height: 28px;
+        place-items: center;
+        flex: 0 0 auto;
+        border-radius: 8px;
+        color: #ffffff;
+        font-size: 13px;
+        font-weight: 850;
+      }
+
+      .a {
+        background: var(--teal);
+      }
+
+      .b {
+        background: var(--blue);
+      }
+
+      .c {
+        background: var(--rose);
+      }
+
+      .d {
+        background: var(--amber);
+      }
+
+      .option-copy {
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.62;
+      }
+
+      .notes {
+        display: grid;
+        gap: 8px;
+        margin-top: 14px;
+      }
+
+      .note {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        padding: 10px;
+      }
+
+      .note strong {
+        display: block;
+        color: var(--ink);
+        font-size: 12px;
+      }
+
+      .note span {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.48;
+      }
+
+      .phones {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(292px, 1fr));
+        gap: 16px;
+      }
+
+      .phone-frame {
+        border-radius: 8px;
+        background: #111918;
+        box-shadow: var(--shadow);
+        padding: 10px;
+      }
+
+      .phone {
+        position: relative;
+        min-height: 720px;
+        overflow: hidden;
+        border-radius: 8px;
+        background: var(--paper);
+      }
+
+      .status {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 28px;
+        padding: 0 15px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 54px;
+        padding: 10px 16px;
+      }
+
+      .screen-title {
+        font-size: 21px;
+        font-weight: 850;
+        line-height: 1.2;
+      }
+
+      .screen-subtitle {
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.3;
+      }
+
+      .icon-row {
+        display: flex;
+        gap: 7px;
+        align-items: center;
+      }
+
+      .icon-btn {
+        display: inline-grid;
+        width: 36px;
+        height: 36px;
+        place-items: center;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--muted);
+        box-shadow: 0 4px 12px rgba(23, 33, 31, 0.05);
+      }
+
+      .content {
+        padding: 8px 16px 88px;
+      }
+
+      .section {
+        margin-top: 16px;
+      }
+
+      .section:first-child {
+        margin-top: 4px;
+      }
+
+      .section-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+
+      .section-title {
+        color: var(--weak);
+        font-size: 11px;
+        font-weight: 850;
+        text-transform: uppercase;
+      }
+
+      .section-count {
+        color: var(--weak);
+        font-size: 12px;
+        font-weight: 750;
+      }
+
+      .summary-strip {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin: 6px 16px 4px;
+      }
+
+      .summary-item {
+        min-height: 54px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        padding: 8px 9px;
+      }
+
+      .summary-item strong {
+        display: block;
+        font-size: 18px;
+        line-height: 1.1;
+      }
+
+      .summary-item span {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .tabline {
+        display: flex;
+        gap: 8px;
+        overflow: hidden;
+        padding: 8px 16px 2px;
+      }
+
+      .tab {
+        flex: 0 0 auto;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        padding: 7px 10px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 760;
+      }
+
+      .tab.active {
+        border-color: transparent;
+        background: var(--ink);
+        color: #ffffff;
+      }
+
+      .brief-card,
+      .task-card,
+      .source-card,
+      .detail-panel,
+      .sheet-panel,
+      .list-row {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        box-shadow: 0 8px 24px rgba(23, 33, 31, 0.055);
+      }
+
+      .brief-card {
+        padding: 14px;
+        background:
+          linear-gradient(135deg, rgba(15, 118, 110, 0.12), transparent 42%),
+          var(--surface);
+      }
+
+      .brief-title {
+        max-width: 100%;
+        font-size: 18px;
+        font-weight: 850;
+        line-height: 1.25;
+      }
+
+      .brief-copy {
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .brief-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .btn {
+        display: inline-flex;
+        min-height: 34px;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        padding: 7px 10px;
+        color: var(--ink);
+        font-size: 12px;
+        font-weight: 780;
+        white-space: nowrap;
+      }
+
+      .btn.primary {
+        border-color: transparent;
+        background: var(--teal);
+        color: #ffffff;
+      }
+
+      .btn.blue {
+        border-color: transparent;
+        background: var(--blue);
+        color: #ffffff;
+      }
+
+      .btn.rose {
+        border-color: transparent;
+        background: var(--rose);
+        color: #ffffff;
+      }
+
+      .btn.amber {
+        border-color: transparent;
+        background: var(--amber);
+        color: #ffffff;
+      }
+
+      .task-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .task-card {
+        display: grid;
+        grid-template-columns: 30px minmax(0, 1fr) auto;
+        gap: 8px;
+        align-items: start;
+        padding: 11px 11px 10px;
+      }
+
+      .task-card.compact {
+        grid-template-columns: 28px minmax(0, 1fr);
+        box-shadow: none;
+      }
+
+      .check,
+      .calendar-dot,
+      .source-dot {
+        display: inline-grid;
+        width: 23px;
+        height: 23px;
+        place-items: center;
+        flex: 0 0 auto;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 900;
+      }
+
+      .check {
+        border: 2px solid #b9c5c2;
+        color: transparent;
+      }
+
+      .check.done {
+        border-color: var(--green);
+        background: var(--green);
+        color: #ffffff;
+      }
+
+      .calendar-dot {
+        border: 1px solid var(--blue);
+        background: var(--blue-soft);
+        color: var(--blue);
+      }
+
+      .source-dot {
+        border: 1px solid var(--rose);
+        background: var(--rose-soft);
+        color: var(--rose);
+      }
+
+      .task-title {
+        font-size: 14px;
+        font-weight: 760;
+        line-height: 1.35;
+      }
+
+      .task-title.done {
+        color: var(--weak);
+        text-decoration: line-through;
+        text-decoration-thickness: 2px;
+      }
+
+      .task-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 6px;
+      }
+
+      .chip {
+        display: inline-flex;
+        min-height: 22px;
+        align-items: center;
+        border-radius: 8px;
+        background: var(--soft);
+        padding: 3px 7px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 720;
+      }
+
+      .chip.blue {
+        background: var(--blue-soft);
+        color: var(--blue);
+      }
+
+      .chip.rose {
+        background: var(--rose-soft);
+        color: var(--rose);
+      }
+
+      .chip.amber {
+        background: var(--amber-soft);
+        color: var(--amber);
+      }
+
+      .chip.green {
+        background: var(--green-soft);
+        color: var(--green);
+      }
+
+      .chev {
+        color: var(--weak);
+        font-size: 20px;
+        line-height: 1;
+      }
+
+      .timeline {
+        display: grid;
+        gap: 0;
+      }
+
+      .timeline-row {
+        display: grid;
+        grid-template-columns: 24px minmax(0, 1fr);
+        gap: 10px;
+      }
+
+      .timeline-mark {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .timeline-mark::before {
+        content: "";
+        width: 10px;
+        height: 10px;
+        margin-top: 12px;
+        border: 2px solid #ffffff;
+        border-radius: 50%;
+        background: var(--teal);
+        box-shadow: 0 0 0 3px var(--teal-soft);
+      }
+
+      .timeline-mark::after {
+        content: "";
+        width: 2px;
+        flex: 1 1 auto;
+        min-height: 18px;
+        background: var(--line);
+      }
+
+      .timeline-row:last-child .timeline-mark::after {
+        display: none;
+      }
+
+      .source-card {
+        padding: 12px;
+      }
+
+      .source-head {
+        display: flex;
+        gap: 9px;
+        align-items: center;
+      }
+
+      .source-thumb {
+        display: grid;
+        width: 42px;
+        height: 42px;
+        place-items: center;
+        flex: 0 0 auto;
+        border-radius: 8px;
+        background:
+          linear-gradient(135deg, rgba(159, 64, 88, 0.18), transparent),
+          repeating-linear-gradient(
+            0deg,
+            #eef3f2 0,
+            #eef3f2 4px,
+            #ffffff 4px,
+            #ffffff 9px
+          );
+        color: var(--rose);
+        font-weight: 900;
+      }
+
+      .source-title {
+        font-size: 14px;
+        font-weight: 780;
+        line-height: 1.35;
+      }
+
+      .source-copy {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .detail-phone .content {
+        padding-bottom: 114px;
+      }
+
+      .detail-hero {
+        padding: 8px 16px 14px;
+      }
+
+      .detail-title {
+        margin-top: 8px;
+        font-size: 25px;
+        font-weight: 850;
+        line-height: 1.22;
+      }
+
+      .detail-copy {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.55;
+      }
+
+      .detail-panel {
+        margin-top: 12px;
+        padding: 13px;
+      }
+
+      .panel-label {
+        color: var(--weak);
+        font-size: 11px;
+        font-weight: 850;
+        text-transform: uppercase;
+      }
+
+      .panel-title {
+        margin-top: 6px;
+        font-size: 14px;
+        font-weight: 780;
+        line-height: 1.36;
+      }
+
+      .panel-copy {
+        margin-top: 7px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.48;
+      }
+
+      .bottom-action {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        border-top: 1px solid var(--line);
+        background: rgba(251, 251, 248, 0.96);
+        padding: 12px 16px 16px;
+      }
+
+      .bottom-action .btn {
+        width: 100%;
+      }
+
+      .sheet {
+        position: absolute;
+        right: 10px;
+        bottom: 10px;
+        left: 10px;
+        border: 1px solid var(--line-strong);
+        border-radius: 8px;
+        background: var(--surface);
+        box-shadow: 0 18px 44px rgba(23, 33, 31, 0.22);
+        padding: 12px;
+      }
+
+      .sheet-grabber {
+        width: 42px;
+        height: 4px;
+        margin: 0 auto 12px;
+        border-radius: 99px;
+        background: var(--line-strong);
+      }
+
+      .sheet-title {
+        font-size: 17px;
+        font-weight: 850;
+        line-height: 1.3;
+      }
+
+      .sheet-panel {
+        margin-top: 10px;
+        padding: 11px;
+        box-shadow: none;
+      }
+
+      .list-row {
+        display: grid;
+        grid-template-columns: 30px minmax(0, 1fr) auto;
+        gap: 7px;
+        align-items: center;
+        padding: 10px;
+        box-shadow: none;
+      }
+
+      .inline-list {
+        display: grid;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .inline-row {
+        display: grid;
+        grid-template-columns: 28px minmax(0, 1fr);
+        gap: 8px;
+        align-items: start;
+        padding: 2px 0;
+      }
+
+      .row-title {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 14px;
+        font-weight: 760;
+      }
+
+      .row-meta {
+        margin-top: 3px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .searchbar {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 8px;
+        align-items: center;
+        min-height: 40px;
+        margin: 6px 16px 2px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        padding: 0 11px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .empty-space {
+        height: 12px;
+      }
+
+      .matrix {
+        margin-top: 20px;
+        border: 1px solid rgba(23, 33, 31, 0.12);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 14px;
+      }
+
+      .matrix-grid {
+        display: grid;
+        grid-template-columns: 170px repeat(4, 1fr);
+        gap: 1px;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--line);
+        margin-top: 12px;
+      }
+
+      .matrix-cell {
+        min-height: 44px;
+        background: var(--surface);
+        padding: 10px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.42;
+      }
+
+      .matrix-cell.head {
+        color: var(--ink);
+        font-weight: 850;
+      }
+
+      .matrix-cell.axis {
+        color: var(--ink);
+        font-weight: 780;
+      }
+
+      @media (max-width: 1180px) {
+        .hero,
+        .option {
+          grid-template-columns: 1fr;
+        }
+
+        .option-meta {
+          position: static;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .page {
+          width: min(100vw - 18px, 560px);
+          margin-top: 10px;
+        }
+
+        .phones {
+          grid-template-columns: 1fr;
+        }
+
+        .phone {
+          min-height: 690px;
+        }
+
+        .matrix-grid {
+          grid-template-columns: 130px repeat(4, minmax(130px, 1fr));
+          overflow-x: auto;
+        }
+
+        h1 {
+          font-size: 28px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <div>
+          <div class="kicker">WideNote Todo Redesign, 2026-07-04</div>
+          <h1>待办页和待办卡详情页的简化交互方案</h1>
+          <p class="lead">
+            这版重做刻意避开“任务管理器”方向：不把优先级、截止日、缩进、排序、任务信息区放到默认详情里。
+            MemeX 的参考重点放在日程简报、轻量完成动作、source card、底部动作条和详情页信息密度上。
+          </p>
+          <div class="principles">
+            <span class="pill">行动项可以一键完成</span>
+            <span class="pill">日程候选只展示和回源</span>
+            <span class="pill">保留来源，不暴露调参感</span>
+            <span class="pill">详情页只做确认、回源、说明</span>
+            <span class="pill">高级 metadata 默认折叠</span>
+          </div>
+        </div>
+        <aside class="decision">
+          <strong>建议先决策交互模型</strong>
+          <span>
+            如果要最像 MemeX，选 A。要最快变轻，选 D。要强化可信度，选 C。
+            B 更像“把 AI 建议扫一遍”的收件箱，适合 Todo agent 还需要用户复核时。
+          </span>
+        </aside>
+      </section>
+
+      <section class="board">
+        <article class="option">
+          <aside class="option-meta">
+            <div class="kicker">Option A</div>
+            <div class="option-title">
+              <span class="marker a">A</span>
+              <h2>今日焦点流</h2>
+            </div>
+            <p class="option-copy">
+              最重度参考 MemeX schedule：用一个焦点卡加时间流替代多个桶和摘要卡。
+              详情页是一个清爽 child page，只展示动作、来源和生成理由。
+            </p>
+            <div class="notes">
+              <div class="note">
+                <strong>保留</strong>
+                <span>今日焦点、行动和日程分流、完成/恢复、打开来源。</span>
+              </div>
+              <div class="note">
+                <strong>删除</strong>
+                <span>任务信息区、priority/due/indent/sort 设置、搜索默认常驻。</span>
+              </div>
+              <div class="note">
+                <strong>风险</strong>
+                <span>如果待办很多，焦点流需要一个“全部”入口承接。</span>
+              </div>
+            </div>
+          </aside>
+          <div class="phones">
+            <div class="phone-frame">
+              <div class="phone">
+                <div class="status"><span>9:41</span><span>WideNote</span></div>
+                <div class="topbar">
+                  <div>
+                    <div class="screen-title">待办</div>
+                    <div class="screen-subtitle">今天 3 个行动，1 个日程候选</div>
+                  </div>
+                  <div class="icon-row">
+                    <button class="icon-btn" aria-label="搜索">⌕</button>
+                    <button class="icon-btn" aria-label="更多">⋯</button>
+                  </div>
+                </div>
+                <div class="content">
+                  <section class="section">
+                    <div class="brief-card">
+                      <div class="chip green">今日焦点</div>
+                      <div class="brief-title">先把签证材料补齐，下午再处理发布清单</div>
+                      <p class="brief-copy">
+                        这些行动都来自最近两条记录。没有明确时间的事项先放在“之后”。
+                      </p>
+                      <div class="brief-actions">
+                        <button class="btn primary">开始第一项</button>
+                        <button class="btn">查看来源</button>
+                      </div>
+                    </div>
+                  </section>
+                  <section class="section">
+                    <div class="section-head">
+                      <div class="section-title">今天</div>
+                      <div class="section-count">3</div>
+                    </div>
+                    <div class="timeline">
+                      <div class="timeline-row">
+                        <div class="timeline-mark"></div>
+                        <div class="task-card">
+                          <span class="check"></span>
+                          <div>
+                            <div class="task-title">补齐签证材料清单</div>
+                            <div class="task-meta">
+                              <span class="chip amber">高关注</span>
+                              <span class="chip">来自记录</span>
+                            </div>
+                          </div>
+                          <span class="chev">›</span>
+                        </div>
+                      </div>
+                      <div class="timeline-row">
+                        <div class="timeline-mark"></div>
+                        <div class="task-card">
+                          <span class="calendar-dot">日</span>
+                          <div>
+                            <div class="task-title">14:30 牙医复诊</div>
+                            <div class="task-meta">
+                              <span class="chip blue">日程候选</span>
+                              <span class="chip">不会写入系统日历</span>
+                            </div>
+                          </div>
+                          <span class="chev">›</span>
+                        </div>
+                      </div>
+                      <div class="timeline-row">
+                        <div class="timeline-mark"></div>
+                        <div class="task-card">
+                          <span class="check done">✓</span>
+                          <div>
+                            <div class="task-title done">确认备份边界</div>
+                            <div class="task-meta">
+                              <span class="chip green">今天 09:12 完成</span>
+                            </div>
+                          </div>
+                          <span class="chev">↺</span>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+                  <section class="section">
+                    <div class="section-head">
+                      <div class="section-title">之后</div>
+                      <div class="section-count">2</div>
+                    </div>
+                    <div class="task-list">
+                      <div class="task-card compact">
+                        <span class="check"></span>
+                        <div>
+                          <div class="task-title">整理 DeepSeek QA 结论</div>
+                          <div class="task-meta">
+                            <span class="chip">来自会议记录</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+                </div>
+                <div class="bottom-action">
+                  <button class="btn primary">显示全部待办</button>
+                </div>
+              </div>
+            </div>
+            <div class="phone-frame">
+              <div class="phone detail-phone">
+                <div class="status"><span>9:41</span><span>详情</span></div>
+                <div class="topbar">
+                  <button class="icon-btn" aria-label="返回">‹</button>
+                  <div class="icon-row">
+                    <button class="icon-btn" aria-label="来源">↗</button>
+                    <button class="icon-btn" aria-label="更多">⋯</button>
+                  </div>
+                </div>
+                <div class="detail-hero">
+                  <span class="chip green">行动项</span>
+                  <h2 class="detail-title">补齐签证材料清单</h2>
+                  <p class="detail-copy">来自旅行准备记录，先完成资料整理，再回到来源确认上下文。</p>
+                </div>
+                <div class="content">
+                  <div class="detail-panel">
+                    <div class="panel-label">下一步</div>
+                    <div class="panel-title">先准备护照扫描件和预约确认页</div>
+                    <p class="panel-copy">护照扫描件和预约确认页最先处理，其他材料可以回源继续核对。</p>
+                  </div>
+                  <div class="detail-panel">
+                    <div class="panel-label">来源</div>
+                    <div class="source-head">
+                      <span class="source-thumb">录</span>
+                      <div>
+                        <div class="source-title">7 月 4 日旅行准备</div>
+                        <div class="screen-subtitle">原始记录，AI 输出不会覆盖</div>
+                      </div>
+                    </div>
+                    <p class="source-copy">
+                      “签证材料还差护照扫描件、预约确认页，最好今天整理出来。”
+                    </p>
+                  </div>
+                  <div class="detail-panel">
+                    <div class="panel-label">为什么出现</div>
+                    <div class="panel-title">明确行动表达，置信度高</div>
+                    <p class="panel-copy">这条记录里有明确的行动表达，和今天的旅行准备主题一致。</p>
+                  </div>
+                </div>
+                <div class="bottom-action">
+                  <button class="btn primary">标记完成</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="option">
+          <aside class="option-meta">
+            <div class="kicker">Option B</div>
+            <div class="option-title">
+              <span class="marker b">B</span>
+              <h2>AI 建议收件箱</h2>
+            </div>
+            <p class="option-copy">
+              把待办页定义为“AI 提出来的行动建议入口”。用户先快速扫一遍，接受、完成、稍后、忽略。
+              详情页采用底部 sheet，像 MemeX 的轻量动作层。
+            </p>
+            <div class="notes">
+              <div class="note">
+                <strong>保留</strong>
+                <span>待确认、已接受、已完成三个状态，适合模型建议仍需复核时。</span>
+              </div>
+              <div class="note">
+                <strong>删除</strong>
+                <span>多时间桶、任务编辑表单、所有默认可见技术 metadata。</span>
+              </div>
+              <div class="note">
+                <strong>风险</strong>
+                <span>会把 Todo 心智偏向审核队列，不如 A 那么日常可执行。</span>
+              </div>
+            </div>
+          </aside>
+          <div class="phones">
+            <div class="phone-frame">
+              <div class="phone">
+                <div class="status"><span>9:41</span><span>WideNote</span></div>
+                <div class="topbar">
+                  <div>
+                    <div class="screen-title">建议</div>
+                    <div class="screen-subtitle">AI 找到 5 个可能要处理的事项</div>
+                  </div>
+                  <button class="icon-btn" aria-label="刷新">↻</button>
+                </div>
+                <div class="tabline">
+                  <span class="tab active">待确认 2</span>
+                  <span class="tab">已接受 3</span>
+                  <span class="tab">已完成 8</span>
+                </div>
+                <div class="content">
+                  <section class="section">
+                    <div class="task-list">
+                      <div class="source-card">
+                        <div class="source-head">
+                          <span class="source-dot">AI</span>
+                          <div>
+                            <div class="source-title">“周一给 Alex 发预算草稿”</div>
+                            <div class="screen-subtitle">来自聊天记录，明确行动</div>
+                          </div>
+                        </div>
+                        <div class="brief-actions">
+                          <button class="btn blue">接受</button>
+                          <button class="btn">稍后</button>
+                          <button class="btn">忽略</button>
+                        </div>
+                      </div>
+                      <div class="source-card">
+                        <div class="source-head">
+                          <span class="calendar-dot">日</span>
+                          <div>
+                            <div class="source-title">“周四 10 点产品复盘”</div>
+                            <div class="screen-subtitle">日程候选，只作为本地提示</div>
+                          </div>
+                        </div>
+                        <div class="brief-actions">
+                          <button class="btn blue">保留</button>
+                          <button class="btn">打开来源</button>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+                  <section class="section">
+                    <div class="section-head">
+                      <div class="section-title">已接受</div>
+                      <div class="section-count">3</div>
+                    </div>
+                    <div class="task-list">
+                      <div class="list-row">
+                        <span class="check"></span>
+                        <div>
+                          <div class="row-title">整理发布说明</div>
+                          <div class="row-meta">今天，来自项目记录</div>
+                        </div>
+                        <span class="chev">›</span>
+                      </div>
+                      <div class="list-row">
+                        <span class="check done">✓</span>
+                        <div>
+                          <div class="row-title">确认备份恢复范围</div>
+                          <div class="row-meta">已完成，可恢复</div>
+                        </div>
+                        <span class="chev">↺</span>
+                      </div>
+                    </div>
+                  </section>
+                </div>
+              </div>
+            </div>
+            <div class="phone-frame">
+              <div class="phone">
+                <div class="status"><span>9:41</span><span>建议详情</span></div>
+                <div class="content">
+                  <section class="section">
+                    <div class="source-card">
+                      <div class="source-head">
+                        <span class="source-thumb">源</span>
+                        <div>
+                          <div class="source-title">聊天记录，7 月 4 日</div>
+                          <div class="screen-subtitle">source ref 已保留</div>
+                        </div>
+                      </div>
+                      <p class="source-copy">
+                        “周一给 Alex 发预算草稿，先把上次会议里确认的两项改进去。”
+                      </p>
+                    </div>
+                  </section>
+                </div>
+                <div class="sheet">
+                  <div class="sheet-grabber"></div>
+                  <span class="chip blue">待确认行动</span>
+                  <div class="sheet-title">周一给 Alex 发预算草稿</div>
+                  <div class="sheet-panel">
+                    <div class="panel-label">建议动作</div>
+                    <div class="panel-title">接受后进入今天/之后列表</div>
+                    <p class="panel-copy">接受后进入待办列表，来源记录会继续保留。</p>
+                  </div>
+                  <div class="brief-actions">
+                    <button class="btn blue">接受</button>
+                    <button class="btn">稍后</button>
+                    <button class="btn">忽略</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="option">
+          <aside class="option-meta">
+            <div class="kicker">Option C</div>
+            <div class="option-title">
+              <span class="marker c">C</span>
+              <h2>来源卡片优先</h2>
+            </div>
+            <p class="option-copy">
+              把“待办卡详情”改成 source-first：先看到它从哪条记录来，再看到行动。
+              适合 WideNote 的 source truth 和 Memory 风格，减少“这个任务从哪冒出来”的不信任。
+            </p>
+            <div class="notes">
+              <div class="note">
+                <strong>保留</strong>
+                <span>来源摘要、生成理由、相关记录，行动只作为卡片上的一个层。</span>
+              </div>
+              <div class="note">
+                <strong>删除</strong>
+                <span>详情页的编辑设置区。需要改标题时走轻量重命名入口。</span>
+              </div>
+              <div class="note">
+                <strong>风险</strong>
+                <span>执行效率弱于 A/D，但可信度最高。</span>
+              </div>
+            </div>
+          </aside>
+          <div class="phones">
+            <div class="phone-frame">
+              <div class="phone">
+                <div class="status"><span>9:41</span><span>WideNote</span></div>
+                <div class="topbar">
+                  <div>
+                    <div class="screen-title">待办卡</div>
+                    <div class="screen-subtitle">按来源记录组织</div>
+                  </div>
+                  <button class="icon-btn" aria-label="筛选">≡</button>
+                </div>
+                <div class="content">
+                  <section class="section">
+                    <div class="source-card">
+                      <div class="source-head">
+                        <span class="source-thumb">录</span>
+                        <div>
+                          <div class="source-title">旅行准备记录</div>
+                          <div class="screen-subtitle">今天 08:42，2 个事项</div>
+                        </div>
+                      </div>
+                      <div class="inline-list">
+                        <div class="inline-row">
+                          <span class="check"></span>
+                          <div>
+                            <div class="task-title">补齐签证材料清单</div>
+                            <div class="task-meta">
+                              <span class="chip rose">打开详情</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="inline-row">
+                          <span class="calendar-dot">日</span>
+                          <div>
+                            <div class="task-title">14:30 牙医复诊</div>
+                            <div class="task-meta">
+                              <span class="chip blue">日程候选</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+                  <section class="section">
+                    <div class="source-card">
+                      <div class="source-head">
+                        <span class="source-thumb">会</span>
+                        <div>
+                          <div class="source-title">发布会后续会议</div>
+                          <div class="screen-subtitle">昨天 19:16，1 个事项</div>
+                        </div>
+                      </div>
+                      <p class="source-copy">
+                        “发布说明先整理内部版，PR 描述保留中英文。”
+                      </p>
+                    </div>
+                  </section>
+                </div>
+              </div>
+            </div>
+            <div class="phone-frame">
+              <div class="phone detail-phone">
+                <div class="status"><span>9:41</span><span>待办卡</span></div>
+                <div class="topbar">
+                  <button class="icon-btn" aria-label="返回">‹</button>
+                  <button class="icon-btn" aria-label="更多">⋯</button>
+                </div>
+                <div class="detail-hero">
+                  <span class="chip rose">来源优先</span>
+                  <h2 class="detail-title">旅行准备记录</h2>
+                  <p class="detail-copy">今天这条记录里同时出现了旅行材料和复诊安排，两个事项都保留在同一来源下。</p>
+                </div>
+                <div class="content">
+                  <div class="detail-panel">
+                    <div class="panel-label">原始片段</div>
+                    <p class="panel-copy">
+                      “签证材料还差护照扫描件、预约确认页，最好今天整理出来。牙医复诊是下午两点半。”
+                    </p>
+                  </div>
+                  <div class="detail-panel">
+                    <div class="panel-label">提取的行动</div>
+                    <div class="inline-row" style="margin-top: 8px">
+                      <span class="check"></span>
+                      <div>
+                        <div class="task-title">补齐签证材料清单</div>
+                        <div class="task-meta">
+                          <span class="chip green">明确行动</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="inline-row" style="margin-top: 8px">
+                      <span class="calendar-dot">日</span>
+                      <div>
+                        <div class="task-title">14:30 牙医复诊</div>
+                        <div class="task-meta">
+                          <span class="chip blue">日程候选</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="detail-panel">
+                    <div class="panel-label">相关记忆</div>
+                    <div class="panel-title">近期还有 2 条旅行准备记录</div>
+                  </div>
+                </div>
+                <div class="bottom-action">
+                  <button class="btn rose">完成选中的行动</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="option">
+          <aside class="option-meta">
+            <div class="kicker">Option D</div>
+            <div class="option-title">
+              <span class="marker d">D</span>
+              <h2>极简清单</h2>
+            </div>
+            <p class="option-copy">
+              最克制：待办页就是一个轻量列表，详情页不再是页面，而是从底部弹出的卡片。
+              适合先快速修掉冗余感，后续再加更强的 briefing。
+            </p>
+            <div class="notes">
+              <div class="note">
+                <strong>保留</strong>
+                <span>搜索、今天/之后/完成三个段落、底部详情卡。</span>
+              </div>
+              <div class="note">
+                <strong>删除</strong>
+                <span>所有大卡片、指标卡、可编辑任务设置、完整详情页。</span>
+              </div>
+              <div class="note">
+                <strong>风险</strong>
+                <span>最轻但也最普通，WideNote 的 AI 来源感会弱一些。</span>
+              </div>
+            </div>
+          </aside>
+          <div class="phones">
+            <div class="phone-frame">
+              <div class="phone">
+                <div class="status"><span>9:41</span><span>WideNote</span></div>
+                <div class="topbar">
+                  <div>
+                    <div class="screen-title">待办</div>
+                    <div class="screen-subtitle">3 未完成，1 日程候选</div>
+                  </div>
+                  <button class="icon-btn" aria-label="更多">⋯</button>
+                </div>
+                <div class="searchbar"><span>⌕</span><span>搜索待办或来源</span></div>
+                <div class="tabline">
+                  <span class="tab active">今天</span>
+                  <span class="tab">之后</span>
+                  <span class="tab">完成</span>
+                </div>
+                <div class="content">
+                  <section class="section">
+                    <div class="task-list">
+                      <div class="list-row">
+                        <span class="check"></span>
+                        <div>
+                          <div class="row-title">补齐签证材料清单</div>
+                          <div class="row-meta">来自旅行准备记录</div>
+                        </div>
+                        <span class="chev">›</span>
+                      </div>
+                      <div class="list-row">
+                        <span class="check"></span>
+                        <div>
+                          <div class="row-title">整理发布说明内部版</div>
+                          <div class="row-meta">来自发布会后续会议</div>
+                        </div>
+                        <span class="chev">›</span>
+                      </div>
+                      <div class="list-row">
+                        <span class="calendar-dot">日</span>
+                        <div>
+                          <div class="row-title">14:30 牙医复诊</div>
+                          <div class="row-meta">日程候选，不写入系统日历</div>
+                        </div>
+                        <span class="chev">›</span>
+                      </div>
+                    </div>
+                  </section>
+                  <section class="section">
+                    <div class="section-head">
+                      <div class="section-title">完成</div>
+                      <div class="section-count">8</div>
+                    </div>
+                    <div class="list-row">
+                      <span class="check done">✓</span>
+                      <div>
+                        <div class="row-title">确认备份边界</div>
+                        <div class="row-meta">今天 09:12，点开可恢复</div>
+                      </div>
+                      <span class="chev">↺</span>
+                    </div>
+                  </section>
+                </div>
+              </div>
+            </div>
+            <div class="phone-frame">
+              <div class="phone">
+                <div class="status"><span>9:41</span><span>WideNote</span></div>
+                <div class="topbar">
+                  <div>
+                    <div class="screen-title">待办</div>
+                    <div class="screen-subtitle">3 未完成，1 日程候选</div>
+                  </div>
+                  <button class="icon-btn" aria-label="关闭">×</button>
+                </div>
+                <div class="content">
+                  <div class="empty-space"></div>
+                  <div class="list-row">
+                    <span class="check"></span>
+                    <div>
+                      <div class="row-title">补齐签证材料清单</div>
+                      <div class="row-meta">来自旅行准备记录</div>
+                    </div>
+                    <span class="chev">›</span>
+                  </div>
+                  <div class="list-row" style="margin-top: 8px; opacity: 0.55">
+                    <span class="check"></span>
+                    <div>
+                      <div class="row-title">整理发布说明内部版</div>
+                      <div class="row-meta">来自发布会后续会议</div>
+                    </div>
+                    <span class="chev">›</span>
+                  </div>
+                </div>
+                <div class="sheet">
+                  <div class="sheet-grabber"></div>
+                  <span class="chip amber">行动项</span>
+                  <div class="sheet-title">补齐签证材料清单</div>
+                  <div class="sheet-panel">
+                    <div class="panel-label">来源</div>
+                    <div class="panel-title">旅行准备记录</div>
+                    <p class="panel-copy">“签证材料还差护照扫描件、预约确认页。”</p>
+                  </div>
+                  <div class="brief-actions">
+                    <button class="btn amber">完成</button>
+                    <button class="btn">打开来源</button>
+                    <button class="btn">重命名</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="matrix">
+        <h2>决策矩阵</h2>
+        <p class="lead">
+          四版都遵守当前 WideNote 边界：待办是 source-linked derived output，日程候选不写系统日历，语义选择仍由模型负责。
+        </p>
+        <div class="matrix-grid">
+          <div class="matrix-cell head">维度</div>
+          <div class="matrix-cell head">A 今日焦点流</div>
+          <div class="matrix-cell head">B 建议收件箱</div>
+          <div class="matrix-cell head">C 来源卡片优先</div>
+          <div class="matrix-cell head">D 极简清单</div>
+
+          <div class="matrix-cell axis">最适合</div>
+          <div class="matrix-cell">默认产品方向，像 MemeX schedule briefing。</div>
+          <div class="matrix-cell">AI 建议需要用户先扫一遍。</div>
+          <div class="matrix-cell">强调可信来源和回源理解。</div>
+          <div class="matrix-cell">最快去掉冗余和表单感。</div>
+
+          <div class="matrix-cell axis">详情页</div>
+          <div class="matrix-cell">独立 child page，动作和来源优先。</div>
+          <div class="matrix-cell">底部 sheet，接受或忽略。</div>
+          <div class="matrix-cell">来源记录页，行动作为结论。</div>
+          <div class="matrix-cell">底部卡片，不跳完整详情。</div>
+
+          <div class="matrix-cell axis">该删掉</div>
+          <div class="matrix-cell">指标卡、任务设置区、缩进和排序。</div>
+          <div class="matrix-cell">时间桶和管理型筛选。</div>
+          <div class="matrix-cell">编辑型 metadata 表单。</div>
+          <div class="matrix-cell">几乎所有管理入口。</div>
+
+          <div class="matrix-cell axis">实现代价</div>
+          <div class="matrix-cell">中等，需要重排列表和详情。</div>
+          <div class="matrix-cell">中等，需要建议状态心智。</div>
+          <div class="matrix-cell">中高，需要 source 聚合体验。</div>
+          <div class="matrix-cell">最低，适合快速落地。</div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

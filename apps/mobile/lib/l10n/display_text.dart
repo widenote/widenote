@@ -63,6 +63,10 @@ String localizedConfidenceValue(AppLocalizations l10n, String value) {
   };
 }
 
+String localizedConfidenceLabel(AppLocalizations l10n, String value) {
+  return l10n.confidenceLabel(localizedConfidenceValue(l10n, value));
+}
+
 String localizedSensitivityValue(AppLocalizations l10n, String value) {
   return switch (value.trim()) {
     'high' => l10n.memorySensitivityHigh,
@@ -141,6 +145,20 @@ String localizedTodoStatusLabel(AppLocalizations l10n, String statusLabel) {
     'open' => l10n.todoStatusOpen,
     'completed' => l10n.todoStatusCompleted,
     _ => statusLabel,
+  };
+}
+
+String localizedTodoReasonLabel(AppLocalizations l10n, String? reasonLabel) {
+  return switch (reasonLabel?.trim()) {
+    'explicit_action' => l10n.todoReasonExplicitAction,
+    'explicit_schedule' => l10n.todoReasonExplicitSchedule,
+    'ordinary_record' => l10n.todoReasonOrdinaryRecord,
+    'ambiguous' => l10n.todoReasonAmbiguous,
+    'insufficient_evidence' => l10n.todoReasonInsufficientEvidence,
+    'legacy_missing_suggestion_kind' =>
+      l10n.todoReasonLegacyMissingSuggestionKind,
+    final value? when value.isNotEmpty => value,
+    _ => l10n.todoReasonUnknown,
   };
 }
 

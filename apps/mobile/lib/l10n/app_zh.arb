@@ -361,15 +361,35 @@
   "chatErrorModelEmptyAnswer": "模型没有返回回答。请重试或切换提供商。",
   "chatErrorModelUnavailable": "模型暂不可用。请检查提供商设置或稍后重试。",
   "todosTitle": "待办与日程",
-  "todosSubtitle": "把可执行行动、带时间的安排候选和普通记录分开展示。",
-  "todosSurfaceTitle": "来源关联待办",
-  "todosEmpty": "还没有来源关联待办。",
-  "todoActionsSectionTitle": "行动项",
-  "todoActionsEmpty": "还没有明确行动项。",
-  "todoSchedulesSectionTitle": "日程候选",
-  "todoSchedulesEmpty": "还没有日程候选。",
+  "todoFocusSubtitle": "{actionCount} 个未完成行动 · {scheduleCount} 个日程候选",
+  "@todoFocusSubtitle": {
+    "placeholders": {
+      "actionCount": {
+        "type": "int"
+      },
+      "scheduleCount": {
+        "type": "int"
+      }
+    }
+  },
+  "todoFocusLabel": "下一项行动",
+  "todoFocusEmptyTitle": "暂无未完成行动",
+  "todoFocusEmptyBody": "模型待办智能体返回带来源的行动后，会显示在这里。",
+  "todoFocusSourceLinkedBody": "这是带来源的模型建议。打开后可以先核对上下文。",
+  "todoFocusOpenAction": "打开",
+  "todoFlowToday": "今天",
+  "todoFlowLater": "之后",
+  "todoFlowTodayEmpty": "今天没有行动或日程候选。",
+  "todoFlowLaterEmpty": "之后没有行动或日程候选。",
   "todoStatusSuggestedAction": "智能体建议行动",
   "todoStatusScheduleCandidate": "日程候选",
+  "todoReasonExplicitAction": "来源中有明确行动",
+  "todoReasonExplicitSchedule": "来源中有明确日程意图",
+  "todoReasonOrdinaryRecord": "普通记录，未进入待办",
+  "todoReasonAmbiguous": "意图不明确",
+  "todoReasonInsufficientEvidence": "证据不足",
+  "todoReasonLegacyMissingSuggestionKind": "旧记录缺少模型建议类型",
+  "todoReasonUnknown": "模型未提供原因",
   "todoQuietTitle": "未进入待办",
   "todoQuietSummary": "{count, plural, one {# 条记录没有明确行动或日程意图，仍保留在时间线。} other {# 条记录没有明确行动或日程意图，仍保留在时间线。}}",
   "todoScheduledForLabel": "时间线索：{time}",
@@ -381,26 +401,10 @@
     }
   },
   "todoSearchHint": "搜索待办",
-  "todoSummaryOpen": "未完成",
-  "todoSummarySchedule": "日程",
-  "todoSummaryCompleted": "完成",
   "todoNoMatches": "没有匹配的待办。",
-  "todoBucketOverdue": "逾期",
-  "todoBucketToday": "今天",
-  "todoBucketTomorrow": "明天",
-  "todoBucketLater": "稍后",
-  "todoBucketNoDeadline": "无日期",
-  "todoBucketScheduleCandidates": "日程候选",
   "todoBucketCompleted": "已完成",
   "todoCompletedEmpty": "还没有已完成待办。",
-  "todoPriorityNone": "无",
-  "todoPriorityLow": "低",
-  "todoPriorityMedium": "中",
-  "todoPriorityHigh": "高",
   "todoDueNone": "无日期",
-  "todoDueToday": "今天",
-  "todoDueTomorrow": "明天",
-  "todoDueLater": "稍后",
   "todoDueLabel": "截止：{date}",
   "@todoDueLabel": {
     "placeholders": {
@@ -422,10 +426,6 @@
   },
   "todoDetailTitle": "待办详情",
   "todoDetailMissing": "这个待办已不可用。",
-  "todoDetailContent": "内容",
-  "todoDetailTitleField": "标题",
-  "todoDetailSaveTitle": "保存标题",
-  "todoDetailStatus": "状态",
   "todoCompletedAtLabel": "完成：{date}",
   "@todoCompletedAtLabel": {
     "placeholders": {
@@ -434,29 +434,10 @@
       }
     }
   },
-  "todoDetailScheduleNotice": "日程候选只是本地建议，不像行动项一样勾选完成。",
+  "todoDetailScheduleNotice": "日程候选来自模型待办输出，不像行动项一样勾选完成。",
   "todoDetailCompletedNotice": "已完成待办会沉到底部；重新打开后会回到未完成分组。",
-  "todoDetailMetadata": "任务信息",
-  "todoDetailPriority": "优先级",
-  "todoDetailDue": "截止日期",
-  "todoDetailIndent": "缩进层级 {level}",
-  "@todoDetailIndent": {
-    "placeholders": {
-      "level": {
-        "type": "int"
-      }
-    }
-  },
-  "todoDetailSort": "排序值 {order}",
-  "@todoDetailSort": {
-    "placeholders": {
-      "order": {
-        "type": "int"
-      }
-    }
-  },
-  "todoDetailSubtasks": "子任务",
-  "todoDetailNoSubtasks": "没有结构化子任务。",
+  "todoDetailNextSteps": "模型列出的步骤",
+  "todoDetailWhy": "为什么出现",
   "todoDetailSource": "来源",
   "todoDetailOpenSource": "打开来源",
   "timelineTitle": "时间线",

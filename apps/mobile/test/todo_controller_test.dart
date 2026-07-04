@@ -129,7 +129,7 @@ void main() {
         id: 'legacy-missing-kind',
         sourceCaptureId: 'capture-neutral',
         payload: const <String, Object?>{
-          'title': 'Follow up: Review launch checklist tomorrow',
+          'title': 'Urgent: review launch checklist tomorrow',
           'source_label': 'source: capture-neutral',
           'status_label': 'suggested by agent',
         },
@@ -288,17 +288,17 @@ void main() {
     );
   });
 
-  test('todo controller updates local metadata as user overrides', () {
+  test('todo controller only writes completion overrides from the UI', () {
     final database = WideNoteLocalDatabase.inMemory();
     addTearDown(database.close);
     final now = DateTime.utc(2026, 7, 3, 8);
     database.todos.insert(
       TodoRecord(
-        id: 'metadata-todo',
-        sourceCaptureId: 'capture-metadata',
+        id: 'completion-todo',
+        sourceCaptureId: 'capture-completion',
         payload: const <String, Object?>{
-          'title': 'Original title',
-          'source_label': 'source: capture-metadata',
+          'title': 'Model-provided action',
+          'source_label': 'source: capture-completion',
           'status_label': 'suggested action',
           'suggestion_kind': 'action',
           'suggestion_confidence': 'high',
@@ -315,23 +315,17 @@ void main() {
       ],
     );
     addTearDown(container.dispose);
-    final controller = container.read(todoControllerProvider.notifier);
 
-    controller.updateTitle('metadata-todo', 'Updated title');
-    controller.setPriority('metadata-todo', 'medium');
-    controller.setDuePreset('metadata-todo', TodoDuePreset.tomorrow);
-    controller.increaseIndent('metadata-todo');
-    controller.moveLater('metadata-todo');
+    container.read(todoControllerProvider.notifier).complete('completion-todo');
 
-    final record = database.todos.readById('metadata-todo')!;
-    expect(record.payload['title'], 'Updated title');
-    expect(record.payload['priority'], 'medium');
-    expect(record.payload['due_at'], isA<String>());
-    expect(record.payload['indent_level'], 1);
-    expect(record.payload['sort_order'], 100);
-    expect(
-      record.payload['user_overrides'],
-      containsAll(<String>['title', 'priority', 'due_at', 'indent_level']),
-    );
+    final record = database.todos.readById('completion-todo')!;
+    expect(record.payload['title'], 'Model-provided action');
+    expect(record.payload['completed_at'], isA<String>());
+    expect(record.payload['completed_by'], 'user');
+    expect(record.payload['user_overrides'], contains('status'));
+    expect(record.payload.containsKey('priority'), isFalse);
+    expect(record.payload.containsKey('due_at'), isFalse);
+    expect(record.payload.containsKey('indent_level'), isFalse);
+    expect(record.payload.containsKey('sort_order'), isFalse);
   });
 }
