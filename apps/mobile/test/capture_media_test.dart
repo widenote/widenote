@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -455,7 +456,7 @@ void main() {
         now: () => DateTime.utc(2026, 6, 24, 11),
       );
       final input = File('${tempDir.path}/input.wav');
-      await input.writeAsString('voice bytes');
+      await input.writeAsBytes(_wavBytes(dataLength: 128));
       final session = await fileStore.prepareVoiceSession();
 
       final asset = await fileStore.storeVoiceRecording(session, input.path);
@@ -470,6 +471,36 @@ void main() {
       expect(metadata['duration_ms'], 0);
       expect(File(metadata['local_path']! as String).existsSync(), isTrue);
 
+      final headerOnlySession = await fileStore.prepareVoiceSession();
+      await File(headerOnlySession.path).writeAsBytes(_wavBytes(dataLength: 0));
+      try {
+        await fileStore.storeVoiceRecording(
+          headerOnlySession,
+          headerOnlySession.path,
+        );
+        fail('Expected header-only recording to fail');
+      } on CaptureMediaException catch (error) {
+        expect(error.reason, CaptureMediaFailureReason.unavailable);
+        expect(error.message, 'Voice recording produced an empty file.');
+      }
+      expect(File(headerOnlySession.path).existsSync(), isFalse);
+
+      final paddedHeaderSession = await fileStore.prepareVoiceSession();
+      await File(
+        paddedHeaderSession.path,
+      ).writeAsBytes(_wavBytes(dataLength: 0, junkLength: 4));
+      try {
+        await fileStore.storeVoiceRecording(
+          paddedHeaderSession,
+          paddedHeaderSession.path,
+        );
+        fail('Expected padded header-only recording to fail');
+      } on CaptureMediaException catch (error) {
+        expect(error.reason, CaptureMediaFailureReason.unavailable);
+        expect(error.message, 'Voice recording produced an empty file.');
+      }
+      expect(File(paddedHeaderSession.path).existsSync(), isFalse);
+
       final emptySession = await fileStore.prepareVoiceSession();
       await File(emptySession.path).writeAsBytes(<int>[]);
       try {
@@ -482,6 +513,47 @@ void main() {
       expect(File(emptySession.path).existsSync(), isFalse);
     },
   );
+}
+
+List<int> _wavBytes({required int dataLength, int junkLength = 0}) {
+  final builder = BytesBuilder(copy: false);
+
+  void addAscii(String value) {
+    builder.add(value.codeUnits);
+  }
+
+  void addUint16(int value) {
+    final bytes = ByteData(2)..setUint16(0, value, Endian.little);
+    builder.add(bytes.buffer.asUint8List());
+  }
+
+  void addUint32(int value) {
+    final bytes = ByteData(4)..setUint32(0, value, Endian.little);
+    builder.add(bytes.buffer.asUint8List());
+  }
+
+  final junkPaddedLength = junkLength.isOdd ? junkLength + 1 : junkLength;
+  final junkChunkLength = junkLength > 0 ? 8 + junkPaddedLength : 0;
+  addAscii('RIFF');
+  addUint32(36 + junkChunkLength + dataLength);
+  addAscii('WAVE');
+  addAscii('fmt ');
+  addUint32(16);
+  addUint16(1);
+  addUint16(1);
+  addUint32(16000);
+  addUint32(32000);
+  addUint16(2);
+  addUint16(16);
+  if (junkLength > 0) {
+    addAscii('JUNK');
+    addUint32(junkLength);
+    builder.add(List<int>.filled(junkPaddedLength, 0));
+  }
+  addAscii('data');
+  addUint32(dataLength);
+  builder.add(List<int>.filled(dataLength, 1));
+  return builder.takeBytes();
 }
 
 final class _CountingPhotoAdapter implements PhotoCaptureAdapter {

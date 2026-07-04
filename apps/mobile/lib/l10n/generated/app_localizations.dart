@@ -372,7 +372,7 @@ abstract class AppLocalizations {
   /// No description provided for @backgroundVoiceActiveBody.
   ///
   /// In en, this message translates to:
-  /// **'Audio is being preserved as local source material. Stop to review the draft and add context.'**
+  /// **'Audio is being preserved as local source material. Stop to save it, transcribe it, and continue local processing.'**
   String get backgroundVoiceActiveBody;
 
   /// No description provided for @backgroundVoiceTimerPlaceholder.
@@ -618,7 +618,7 @@ abstract class AppLocalizations {
   /// No description provided for @captureVoiceBody.
   ///
   /// In en, this message translates to:
-  /// **'WideNote requests microphone permission, stores the raw audio locally, and keeps transcript generation as a later agent step.'**
+  /// **'WideNote requests microphone permission, stores raw audio locally, then transcribes it before local agents continue.'**
   String get captureVoiceBody;
 
   /// No description provided for @captureVoiceStartButton.
@@ -636,7 +636,7 @@ abstract class AppLocalizations {
   /// No description provided for @captureVoiceRecordingBody.
   ///
   /// In en, this message translates to:
-  /// **'Stop to attach the recording, or cancel to discard it without creating a record.'**
+  /// **'Stop to save, transcribe, and process the recording, or cancel to discard it without creating a record.'**
   String get captureVoiceRecordingBody;
 
   /// No description provided for @captureVoiceStopButton.
@@ -978,7 +978,7 @@ abstract class AppLocalizations {
   /// No description provided for @captureVoiceAttachedMessage.
   ///
   /// In en, this message translates to:
-  /// **'Voice draft attached. Review the transcript before saving.'**
+  /// **'Voice recording saved. Transcription and local processing are starting.'**
   String get captureVoiceAttachedMessage;
 
   /// No description provided for @captureShareAttachedMessage.

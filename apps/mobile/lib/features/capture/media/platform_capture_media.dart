@@ -96,7 +96,7 @@ final class CaptureMediaFileStore {
     }
 
     final byteLength = await target.length();
-    if (byteLength <= 0) {
+    if (!await _hasVoiceAudioData(target, byteLength)) {
       await target.delete();
       throw const CaptureMediaException(
         CaptureMediaFailureReason.unavailable,
@@ -339,6 +339,14 @@ final class RecordVoiceCaptureAdapter implements VoiceCaptureAdapter {
     _StreamingWavFileWriter? writer;
     StreamSubscription<Uint8List>? subscription;
     StreamController<Uint8List>? previewController;
+    final streamDone = Completer<void>();
+    var cancelSubscriptionAfterDrain = false;
+    void markStreamDone() {
+      if (!streamDone.isCompleted) {
+        streamDone.complete();
+      }
+    }
+
     try {
       writer = _StreamingWavFileWriter(
         file: File(session.path),
@@ -361,9 +369,12 @@ final class RecordVoiceCaptureAdapter implements VoiceCaptureAdapter {
           previewController?.add(chunk);
         },
         onError: (Object error, StackTrace stackTrace) {
+          cancelSubscriptionAfterDrain = true;
           previewController?.addError(error, stackTrace);
+          markStreamDone();
         },
         onDone: () {
+          markStreamDone();
           unawaited(previewController?.close());
         },
         cancelOnError: false,
@@ -377,7 +388,14 @@ final class RecordVoiceCaptureAdapter implements VoiceCaptureAdapter {
         numChannels: 1,
         usesStreamingSource: true,
         finalizeStreamingSource: () async {
-          await subscription?.cancel();
+          try {
+            await streamDone.future.timeout(_streamStopDrainTimeout);
+          } on TimeoutException {
+            cancelSubscriptionAfterDrain = true;
+          }
+          if (cancelSubscriptionAfterDrain) {
+            await subscription?.cancel();
+          }
           await writer?.finalizeFile();
           if (!(previewController?.isClosed ?? true)) {
             await previewController?.close();
@@ -409,6 +427,70 @@ final class RecordVoiceCaptureAdapter implements VoiceCaptureAdapter {
       return session;
     }
   }
+}
+
+const _minimumWavHeaderBytes = 44;
+const _wavHeaderSampleBytes = 4096;
+const _streamStopDrainTimeout = Duration(seconds: 2);
+
+Future<bool> _hasVoiceAudioData(File file, int byteLength) async {
+  if (byteLength <= _minimumWavHeaderBytes) {
+    return false;
+  }
+
+  final sampleLength = byteLength < _wavHeaderSampleBytes
+      ? byteLength
+      : _wavHeaderSampleBytes;
+  final builder = await file.openRead(0, sampleLength).fold<BytesBuilder>(
+    BytesBuilder(copy: false),
+    (builder, chunk) {
+      builder.add(chunk);
+      return builder;
+    },
+  );
+  final header = builder.takeBytes();
+  if (!_hasAscii(header, 0, 'RIFF') || !_hasAscii(header, 8, 'WAVE')) {
+    return true;
+  }
+  final dataLength = _wavDataChunkLength(header);
+  return dataLength != null && dataLength > 0;
+}
+
+int? _wavDataChunkLength(Uint8List header) {
+  var offset = 12;
+  while (offset + 8 <= header.length) {
+    final chunkLength = _uint32LittleEndian(header, offset + 4);
+    if (_hasAscii(header, offset, 'data')) {
+      return chunkLength;
+    }
+    final paddedLength = chunkLength.isOdd ? chunkLength + 1 : chunkLength;
+    final nextOffset = offset + 8 + paddedLength;
+    if (nextOffset <= offset || nextOffset > header.length) {
+      return null;
+    }
+    offset = nextOffset;
+  }
+  return null;
+}
+
+bool _hasAscii(Uint8List bytes, int offset, String value) {
+  if (offset < 0 || offset + value.length > bytes.length) {
+    return false;
+  }
+  for (var index = 0; index < value.length; index += 1) {
+    if (bytes[offset + index] != value.codeUnitAt(index)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+int _uint32LittleEndian(Uint8List bytes, int offset) {
+  return ByteData.sublistView(
+    bytes,
+    offset,
+    offset + 4,
+  ).getUint32(0, Endian.little);
 }
 
 final class _StreamingWavFileWriter {
