@@ -156,7 +156,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get backgroundVoiceActiveTitle => '后台录音中';
 
   @override
-  String get backgroundVoiceActiveBody => '音频会作为本地原始素材保留。停止后可以复核草稿并补充上下文。';
+  String get backgroundVoiceActiveBody => '音频会作为本地原始素材保留。停止后会保存、转写，并继续本地处理。';
 
   @override
   String get backgroundVoiceTimerPlaceholder => '录音中';
@@ -285,7 +285,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get captureVoiceTitle => '录音';
 
   @override
-  String get captureVoiceBody => 'WideNote 会请求麦克风权限，保存本地原始音频；转写生成留给后续智能体步骤。';
+  String get captureVoiceBody =>
+      'WideNote 会请求麦克风权限，保存本地原始音频，然后先转写，再交给本地智能体继续处理。';
 
   @override
   String get captureVoiceStartButton => '开始录音';
@@ -294,7 +295,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get captureVoiceRecordingTitle => '正在录音';
 
   @override
-  String get captureVoiceRecordingBody => '停止后会附加录音；取消会丢弃录音且不会创建记录。';
+  String get captureVoiceRecordingBody => '停止后会保存、转写并处理这段录音；取消会丢弃录音且不会创建记录。';
 
   @override
   String get captureVoiceStopButton => '停止';
@@ -486,7 +487,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get capturePhotoAttachedMessage => '照片已添加，复核后可以保存记录。';
 
   @override
-  String get captureVoiceAttachedMessage => '语音草稿已添加，请先复核转写再保存。';
+  String get captureVoiceAttachedMessage => '语音记录已保存，正在开始转写和本地处理。';
 
   @override
   String get captureShareAttachedMessage => '导入项目已添加，复核后可以保存记录。';

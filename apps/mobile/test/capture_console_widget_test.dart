@@ -114,7 +114,7 @@ void main() {
     expect(find.text('Camera photo sample.jpg'), findsNothing);
   });
 
-  testWidgets('background voice starts, blocks save, stops, then saves', (
+  testWidgets('background voice starts, blocks save, then auto-saves on stop', (
     tester,
   ) async {
     final database = WideNoteLocalDatabase.inMemory();
@@ -165,20 +165,10 @@ void main() {
     inputState = _readCaptureInputState(tester);
     expect(inputState.isRecordingVoice, isFalse);
     expect(inputState.errorMessage, isNull);
-    expect(inputState.attachments, hasLength(1));
-    final attachment = inputState.attachments.single;
-    expect(attachment.kind, CaptureAssetKind.voice);
-    expect(find.byKey(const Key('capture-sheet')), findsOneWidget);
-    expect(find.text('Voice recording sample.wav'), findsOneWidget);
-    expect(find.textContaining('Ready'), findsOneWidget);
-
-    await container
-        .read(captureControllerProvider.notifier)
-        .submitCapture(
-          'This should wait for the recording to stop.',
-          attachments: inputState.attachments,
-        );
-    container.read(captureInputControllerProvider.notifier).clear();
+    expect(inputState.attachments, isEmpty);
+    expect(find.byKey(const Key('capture-sheet')), findsNothing);
+    final attachment = database.attachments.readAll().single;
+    expect(attachment.assetKind, 'voice');
     await tester.pump(const Duration(milliseconds: 500));
 
     final state = _readCaptureState(tester);
@@ -236,16 +226,10 @@ void main() {
     await tester.tap(find.byKey(const Key('background-voice-stop-button')));
     await tester.pumpAndSettle();
 
-    final container = ProviderScope.containerOf(
-      tester.element(find.byType(WideNoteApp)),
-    );
-    final inputState = _readCaptureInputState(tester);
-    await container
-        .read(captureControllerProvider.notifier)
-        .submitCapture('', attachments: inputState.attachments);
     await tester.pump(const Duration(milliseconds: 500));
 
     final state = _readCaptureState(tester);
+    expect(_readCaptureInputState(tester).attachments, isEmpty);
     expect(state.records.single.body, 'Live preview text');
     expect(
       database.captures.readAll().single.payload['text'],

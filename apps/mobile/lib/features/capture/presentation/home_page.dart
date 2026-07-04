@@ -136,7 +136,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           if (inputState.isRecordingVoice) ...[
             const SizedBox(height: 8),
             _BackgroundVoiceCard(
-              onStop: () => _stopVoice(openComposerAfterStop: true),
+              onStop: _stopVoice,
               onCancel: _cancelVoice,
               inputBusy: inputState.isBusy,
               preview: inputState.voicePreview,
@@ -323,15 +323,20 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  void _stopVoice({bool openComposerAfterStop = false}) {
+  void _stopVoice() {
     unawaited(() async {
       final added = await _addAttachment(
         () => ref
             .read(captureInputControllerProvider.notifier)
             .stopVoiceRecording(),
         (l10n) => l10n.captureVoiceAttachedMessage,
+        showSuccess: false,
       );
-      if (mounted && added && openComposerAfterStop) {
+      if (!mounted || !added) {
+        return;
+      }
+      final submitted = _submitCapture();
+      if (!submitted && mounted && !_isCaptureSheetOpen) {
         await _openCaptureSheet();
       }
     }());
@@ -345,8 +350,9 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   Future<bool> _addAttachment(
     Future<void> Function() action,
-    String Function(AppLocalizations l10n) successMessage,
-  ) async {
+    String Function(AppLocalizations l10n) successMessage, {
+    bool showSuccess = true,
+  }) async {
     final beforeCount = ref
         .read(captureInputControllerProvider)
         .attachments
@@ -360,7 +366,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         .attachments
         .length;
     if (afterCount > beforeCount) {
-      if (!_isCaptureSheetOpen) {
+      if (showSuccess && !_isCaptureSheetOpen) {
         _showFeedback(successMessage(context.l10n));
       }
       return true;

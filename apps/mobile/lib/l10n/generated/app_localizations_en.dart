@@ -226,7 +226,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backgroundVoiceActiveBody =>
-      'Audio is being preserved as local source material. Stop to review the draft and add context.';
+      'Audio is being preserved as local source material. Stop to save it, transcribe it, and continue local processing.';
 
   @override
   String get backgroundVoiceTimerPlaceholder => 'REC';
@@ -375,7 +375,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get captureVoiceBody =>
-      'WideNote requests microphone permission, stores the raw audio locally, and keeps transcript generation as a later agent step.';
+      'WideNote requests microphone permission, stores raw audio locally, then transcribes it before local agents continue.';
 
   @override
   String get captureVoiceStartButton => 'Start recording';
@@ -385,7 +385,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get captureVoiceRecordingBody =>
-      'Stop to attach the recording, or cancel to discard it without creating a record.';
+      'Stop to save, transcribe, and process the recording, or cancel to discard it without creating a record.';
 
   @override
   String get captureVoiceStopButton => 'Stop';
@@ -593,7 +593,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get captureVoiceAttachedMessage =>
-      'Voice draft attached. Review the transcript before saving.';
+      'Voice recording saved. Transcription and local processing are starting.';
 
   @override
   String get captureShareAttachedMessage =>
