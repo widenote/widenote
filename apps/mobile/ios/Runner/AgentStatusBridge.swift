@@ -191,7 +191,7 @@ final class AgentStatusBridge {
     if let existing {
       await existing.end(
         content,
-        dismissalPolicy: .after(Date().addingTimeInterval(10 * 60))
+        dismissalPolicy: .after(terminalDismissalDate(for: payload))
       )
       return "ending"
     }
@@ -204,7 +204,7 @@ final class AgentStatusBridge {
       )
       await activity.end(
         content,
-        dismissalPolicy: .after(Date().addingTimeInterval(10 * 60))
+        dismissalPolicy: .after(terminalDismissalDate(for: payload))
       )
       return "terminal"
     } catch {
@@ -228,6 +228,13 @@ final class AgentStatusBridge {
       staleAt: payload.staleAt
     )
     return ActivityContent(state: state, staleDate: payload.staleAt)
+  }
+
+  private static func terminalDismissalDate(for payload: AgentStatusPayload) -> Date {
+    let now = Date()
+    // ActivityKit accepts a dismissal date; use now when Dart's stale window
+    // has already elapsed so terminal status clears immediately.
+    return payload.staleAt > now ? payload.staleAt : now
   }
 #endif
 }

@@ -3,6 +3,9 @@
 ## Purpose
 
 Shows the current local Agent execution status as a lightweight mobile surface.
+The in-app floating layer is intentionally transient: active Agent work stays
+visible, terminal work appears only for a short completion window, and idle
+state does not reserve screen space.
 
 ## Ownership Boundary
 

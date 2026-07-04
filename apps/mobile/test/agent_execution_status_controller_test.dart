@@ -64,7 +64,7 @@ void main() {
           'task-failed',
           status: 'failed',
           attempts: 2,
-          updatedAt: now.subtract(const Duration(minutes: 2)),
+          updatedAt: now.subtract(const Duration(seconds: 2)),
           error: 'secret raw prompt SHOULD_NOT_RENDER',
         ),
       );
@@ -95,7 +95,7 @@ void main() {
   );
 
   test(
-    'old terminal successes are hidden while recent completion is visible',
+    'old terminal successes are hidden while short recent completion is visible',
     () {
       final database = WideNoteLocalDatabase.inMemory();
       final now = DateTime.utc(2026, 7, 3, 12);
@@ -113,7 +113,7 @@ void main() {
         _task(
           'task-old-success',
           status: 'succeeded',
-          updatedAt: now.subtract(const Duration(minutes: 30)),
+          updatedAt: now.subtract(const Duration(seconds: 6)),
         ),
       );
       _insertTask(
@@ -121,7 +121,7 @@ void main() {
         _task(
           'task-recent-success',
           status: 'succeeded',
-          updatedAt: now.subtract(const Duration(minutes: 3)),
+          updatedAt: now.subtract(const Duration(seconds: 3)),
         ),
       );
 
@@ -139,6 +139,51 @@ void main() {
       );
     },
   );
+
+  test('old terminal attention state is hidden after the short window', () {
+    final database = WideNoteLocalDatabase.inMemory();
+    final now = DateTime.utc(2026, 7, 3, 12);
+    final container = ProviderContainer(
+      overrides: [
+        localDatabaseProvider.overrideWithValue(database),
+        agentExecutionStatusNowProvider.overrideWithValue(() => now),
+      ],
+    );
+    addTearDown(container.dispose);
+    addTearDown(database.close);
+
+    _insertTask(
+      database,
+      _task(
+        'task-old-failed',
+        status: 'failed',
+        attempts: 2,
+        updatedAt: now.subtract(const Duration(seconds: 6)),
+      ),
+    );
+    _insertTask(
+      database,
+      _task(
+        'task-recent-failed',
+        status: 'failed',
+        attempts: 2,
+        updatedAt: now.subtract(const Duration(seconds: 3)),
+      ),
+    );
+
+    final snapshot = container.read(agentExecutionStatusControllerProvider);
+
+    expect(snapshot.failedCount, 1);
+    expect(snapshot.overallStatus, AgentExecutionOverallStatus.attention);
+    expect(
+      snapshot.items.map((item) => item.taskId),
+      isNot(contains('task-old-failed')),
+    );
+    expect(
+      snapshot.items.map((item) => item.taskId),
+      contains('task-recent-failed'),
+    );
+  });
 
   test('stale running task without retry budget needs attention', () {
     final database = WideNoteLocalDatabase.inMemory();
@@ -160,7 +205,7 @@ void main() {
         attempts: 2,
         maxAttempts: 2,
         leasedUntil: now.subtract(const Duration(seconds: 1)),
-        updatedAt: now.subtract(const Duration(minutes: 4)),
+        updatedAt: now.subtract(const Duration(seconds: 2)),
       ),
     );
 
@@ -326,6 +371,44 @@ void main() {
       );
     },
   );
+
+  test('terminal platform payload expires at the short visible window', () {
+    final generatedAt = DateTime.utc(2026, 7, 3, 12);
+    final updatedAt = generatedAt.subtract(const Duration(seconds: 2));
+    final snapshot = AgentExecutionStatusSnapshot(
+      generatedAt: generatedAt,
+      items: [
+        AgentExecutionStatusItem(
+          id: 'task-succeeded',
+          taskId: 'task-succeeded',
+          packId: 'pack.default',
+          agentId: 'agent.capture_loop',
+          status: 'succeeded',
+          kind: AgentExecutionStatusKind.succeeded,
+          attempts: 1,
+          maxAttempts: 2,
+          createdAt: generatedAt.subtract(const Duration(minutes: 1)),
+          updatedAt: updatedAt,
+          missingDependencyCount: 0,
+          hasError: false,
+        ),
+      ],
+    );
+
+    final payload = AgentStatusPlatformPayload.fromSnapshot(
+      snapshot,
+      labels: const AgentStatusPlatformLabels(
+        title: 'Agent work completed',
+        body: '0 running / 0 queued / 0 retrying / 0 need attention',
+      ),
+    );
+
+    expect(payload.hasActiveWork, isFalse);
+    expect(
+      payload.staleAt,
+      updatedAt.add(AgentExecutionStatusController.terminalVisibleWindow),
+    );
+  });
 }
 
 RuntimeTaskRecord _task(

@@ -132,11 +132,6 @@ final class AgentStatusPlatformPayload {
     AgentExecutionStatusSnapshot snapshot, {
     required AgentStatusPlatformLabels labels,
   }) {
-    final terminal = snapshot.overallStatus == AgentExecutionOverallStatus.idle
-        ? const Duration(seconds: 5)
-        : snapshot.activeCount > 0
-        ? const Duration(minutes: 15)
-        : const Duration(minutes: 10);
     final updatedAt = snapshot.lastUpdatedAt ?? snapshot.generatedAt;
     return AgentStatusPlatformPayload(
       schemaVersion: 1,
@@ -153,7 +148,7 @@ final class AgentStatusPlatformPayload {
       canceledCount: snapshot.canceledCount,
       succeededCount: snapshot.succeededCount,
       updatedAt: updatedAt,
-      staleAt: snapshot.generatedAt.add(terminal),
+      staleAt: _staleAtForSnapshot(snapshot),
       hasActiveWork: snapshot.activeCount > 0,
       items: snapshot.items
           .take(4)
@@ -219,6 +214,19 @@ final class AgentStatusPlatformPayload {
       'stale_at': staleAt.toUtc().toIso8601String(),
     };
   }
+}
+
+DateTime _staleAtForSnapshot(AgentExecutionStatusSnapshot snapshot) {
+  if (snapshot.overallStatus == AgentExecutionOverallStatus.idle) {
+    return snapshot.generatedAt.add(const Duration(seconds: 5));
+  }
+  if (snapshot.activeCount > 0) {
+    return snapshot.generatedAt.add(const Duration(minutes: 15));
+  }
+  return snapshot.terminalStatusExpiresAt ??
+      snapshot.generatedAt.add(
+        AgentExecutionStatusController.terminalVisibleWindow,
+      );
 }
 
 @immutable
