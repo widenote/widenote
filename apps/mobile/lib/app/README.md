@@ -27,6 +27,8 @@ orchestration behavior.
 - `WideNoteAppTheme`
 - `appRouter`
 - `mobileParentPathFor`
+- `mobileRouteStackFor`
+- `openMobileRouteWithParentStack`
 - `WideNoteShell`
 - `WideNoteMobileBootstrap`
 - `appSupportDirectoryProvider`
@@ -59,8 +61,8 @@ All other pages are child pages:
 - Todos children: `/todos/:todoId`
 - Settings children: `/settings/permissions`,
   `/settings/system-permissions`, `/settings/model-providers`,
-  `/settings/transcription`, `/settings/location`, `/settings/backup`,
-  `/settings/traces`, `/settings/traces/agents`,
+  `/settings/retrieval`, `/settings/transcription`, `/settings/location`,
+  `/settings/backup`, `/settings/traces`, `/settings/traces/agents`,
   `/settings/traces/events`, `/settings/traces/raw`,
   `/settings/traces/raw/:traceId`
 - Plugins children: `/plugins/packs`
@@ -76,6 +78,10 @@ The shell also keeps a parent-route fallback for non-root pages. If a child
 page is opened as a single-page stack by a platform entrypoint or future
 shortcut, system back uses the declared parent path instead of delegating
 directly to platform exit.
+
+When adding or moving a mobile child route, update the GoRouter route tree, the
+parent fallback in `mobile_navigation.dart`, this route inventory, and the
+navigation hierarchy widget tests in the same change.
 
 The Plugins tab may surface visual shortcuts for permissions, model providers,
 backup, and traces, but those shortcuts navigate to the Settings-owned

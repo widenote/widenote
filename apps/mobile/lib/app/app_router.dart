@@ -29,6 +29,13 @@ import '../features/traces/presentation/trace_console_page.dart';
 import '../features/transcription/presentation/voice_transcription_settings_page.dart';
 import '../features/usage_stats/presentation/usage_stats_page.dart';
 import '../l10n/l10n.dart';
+import 'mobile_navigation.dart';
+
+export 'mobile_navigation.dart'
+    show
+        mobileParentPathFor,
+        mobileRouteStackFor,
+        openMobileRouteWithParentStack;
 
 GoRouter createAppRouter({String initialLocation = '/'}) {
   return GoRouter(
@@ -271,64 +278,6 @@ GoRouter createAppRouter({String initialLocation = '/'}) {
 NoTransitionPage<void> _noTransitionPage(GoRouterState state, Widget child) {
   return NoTransitionPage<void>(key: state.pageKey, child: child);
 }
-
-String? mobileParentPathFor(String location) {
-  final path = _normalizeMobilePath(location);
-  if (path.startsWith('/settings/traces/raw/')) {
-    return '/settings/traces/raw';
-  }
-  if (path.startsWith('/timeline/cards/')) {
-    return '/timeline';
-  }
-  if (path.startsWith('/timeline/items/')) {
-    return '/timeline';
-  }
-  if (path.startsWith('/insights/')) {
-    return '/insights';
-  }
-  if (path.startsWith('/chat/session/')) {
-    return '/chat';
-  }
-  if (_isTodoDetailPath(path)) {
-    return '/todos';
-  }
-  return _mobileParentPaths[path];
-}
-
-String _normalizeMobilePath(String location) {
-  final path = Uri.tryParse(location)?.path ?? location;
-  if (path.length > 1 && path.endsWith('/')) {
-    return path.substring(0, path.length - 1);
-  }
-  return path.isEmpty ? '/' : path;
-}
-
-bool _isTodoDetailPath(String path) {
-  if (!path.startsWith('/todos/')) {
-    return false;
-  }
-  return path.substring('/todos/'.length).isNotEmpty;
-}
-
-const _mobileParentPaths = <String, String>{
-  '/timeline': '/',
-  '/timeline/search': '/timeline',
-  '/memory': '/',
-  '/recap': '/',
-  '/insights': '/',
-  '/settings': '/',
-  '/settings/permissions': '/settings',
-  '/settings/system-permissions': '/settings',
-  '/settings/model-providers': '/settings',
-  '/settings/transcription': '/settings',
-  '/settings/location': '/settings',
-  '/settings/backup': '/settings',
-  '/settings/traces': '/settings',
-  '/settings/traces/agents': '/settings/traces',
-  '/settings/traces/events': '/settings/traces',
-  '/settings/traces/raw': '/settings/traces',
-  '/plugins/packs': '/plugins',
-};
 
 final appRouter = createAppRouter();
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
+import '../../../app/mobile_navigation.dart';
 import '../../../l10n/l10n.dart';
 import '../application/agent_execution_status_controller.dart';
 import '../application/agent_status_platform.dart';
@@ -227,9 +227,11 @@ class AgentExecutionStatusSheet extends ConsumerWidget {
             child: OutlinedButton.icon(
               key: const Key('agent-status-open-log-center'),
               onPressed: () {
-                final router = GoRouter.of(context);
                 Navigator.of(context).pop();
-                router.push('/settings/traces/agents');
+                openMobileRouteWithParentStack(
+                  context,
+                  '/settings/traces/agents',
+                );
               },
               icon: const Icon(Icons.account_tree_outlined),
               label: Text(l10n.agentStatusOpenLogCenter),

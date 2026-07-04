@@ -85,3 +85,10 @@ the decision process.
 | `packages/schemas/**` | Public contracts, source truth, Agent Packs and permissions | Schemas README, schema fixtures, Agent Pack Schema RFC |
 | `packages/schemas/src/insight/**` | Insight depth and review, public contracts, source truth | Schemas README, ADR-0020, Insight Depth Design |
 | `docs/decisions/**`, `docs/rfcs/**`, `docs/architecture/**`, `docs/agent-context/**` | Documentation context and any contract area being changed | Decision update protocol, docs README, relevant ADR/RFC |
+
+### Mobile Navigation Maintenance
+
+When a mobile page route is added, moved, or renamed, update the GoRouter route
+tree, `mobileParentPathFor` fallback coverage, `apps/mobile/lib/app/README.md`
+route inventory, and `apps/mobile/test/navigation_hierarchy_test.dart` parent
+stack/bottom-tab cases in the same change.
