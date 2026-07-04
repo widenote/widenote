@@ -10,16 +10,17 @@ backup/restore, log inspection, and display status.
 
 - Owns the Settings hub presentation and navigation entries.
 - Owns the `/settings/...` route parent for permission review, model providers,
-  voice transcription, location, backup/restore, debugging repair, and trace
-  inspection pages.
+  retrieval, voice transcription, location, backup/restore, debugging repair,
+  and trace inspection pages.
 - Summarizes privacy state from accepted product rules: local-first core,
   revocable/deferred permissions, and safe-export secret boundaries.
 - Shows lightweight local status from existing read models: built-in/deferred
   permission counts, provider configuration state, backup state, log counts,
   and current locale.
 - Links to existing feature pages for permission review, provider setup,
-  system permission review, voice transcription settings, backup/restore, log
-  center, and capture replay repair instead of duplicating their behavior.
+  system permission review, retrieval settings, voice transcription settings,
+  backup/restore, log center, and capture replay repair instead of duplicating
+  their behavior.
 - Routes host-owned Pack settings contributions such as Usage Statistics to
   their dedicated Settings child pages.
 - Does not own backup codecs, model-provider persistence, permission schemas,

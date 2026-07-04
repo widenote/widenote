@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/mobile_navigation.dart';
 import '../../../l10n/l10n.dart';
 
 class HomeHeader extends StatelessWidget {
@@ -57,7 +58,8 @@ class HomeHeader extends StatelessWidget {
             IconButton.outlined(
               key: const Key('open-timeline-search-button'),
               tooltip: l10n.homeSearchTooltip,
-              onPressed: () => context.go('/timeline/search'),
+              onPressed: () =>
+                  openMobileRouteWithParentStack(context, '/timeline/search'),
               icon: const Icon(Icons.search),
             ),
             IconButton.outlined(

@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
+import '../../../app/mobile_navigation.dart';
 import '../application/backup_controller.dart';
 import '../application/backup_import_intent_service.dart';
 
@@ -61,7 +61,7 @@ class _BackupImportListenerState extends ConsumerState<BackupImportListener> {
         .read(backupControllerProvider.notifier)
         .loadArchivePathForImport(path);
     if (mounted) {
-      context.go('/settings/backup');
+      openMobileRouteWithParentStack(context, '/settings/backup');
     }
   }
 }

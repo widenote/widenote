@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
+import '../../../app/mobile_navigation.dart';
 import '../../../l10n/l10n.dart';
 import '../../traces/application/trace_console_controller.dart';
 
@@ -53,7 +53,10 @@ class AgentPlatformPanel extends ConsumerWidget {
                 ),
                 OutlinedButton.icon(
                   key: const Key('agent-platform-open-traces-button'),
-                  onPressed: () => context.go('/settings/traces'),
+                  onPressed: () => openMobileRouteWithParentStack(
+                    context,
+                    '/settings/traces',
+                  ),
                   icon: const Icon(Icons.account_tree_outlined),
                   label: Text(l10n.traceConsoleOpenButton),
                 ),

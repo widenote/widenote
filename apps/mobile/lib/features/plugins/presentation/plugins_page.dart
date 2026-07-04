@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/mobile_navigation.dart';
 import '../../../l10n/l10n.dart';
 import '../../model_providers/application/model_provider_settings_controller.dart';
 import 'agent_platform_panel.dart';
@@ -55,7 +56,10 @@ class _ControlList extends ConsumerWidget {
             title: l10n.pluginsPermissionGateTitle,
             subtitle: l10n.pluginsPermissionGateSubtitle,
             status: l10n.pluginsPermissionGateStatus,
-            onTap: () => context.go('/settings/permissions'),
+            onTap: () => openMobileRouteWithParentStack(
+              context,
+              '/settings/permissions',
+            ),
           ),
           const Divider(height: 20),
           _ControlRow(
@@ -64,7 +68,10 @@ class _ControlList extends ConsumerWidget {
             title: l10n.pluginsModelProviderTitle,
             subtitle: l10n.pluginsModelProviderSubtitle,
             status: _providerStatus(l10n, providerState),
-            onTap: () => context.go('/settings/model-providers'),
+            onTap: () => openMobileRouteWithParentStack(
+              context,
+              '/settings/model-providers',
+            ),
           ),
           const Divider(height: 20),
           _ControlRow(
@@ -73,7 +80,8 @@ class _ControlList extends ConsumerWidget {
             title: l10n.pluginsBackupTitle,
             subtitle: l10n.pluginsBackupSubtitle,
             status: l10n.pluginsBackupStatus,
-            onTap: () => context.go('/settings/backup'),
+            onTap: () =>
+                openMobileRouteWithParentStack(context, '/settings/backup'),
           ),
           const Divider(height: 20),
           _ControlRow(
@@ -82,7 +90,8 @@ class _ControlList extends ConsumerWidget {
             title: l10n.pluginsTraceConsoleTitle,
             subtitle: l10n.pluginsTraceConsoleSubtitle,
             status: l10n.pluginsTraceConsoleStatus,
-            onTap: () => context.go('/settings/traces'),
+            onTap: () =>
+                openMobileRouteWithParentStack(context, '/settings/traces'),
           ),
         ],
       ),

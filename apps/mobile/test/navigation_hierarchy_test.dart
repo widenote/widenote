@@ -221,6 +221,7 @@ void main() {
       '/settings/permissions',
       '/settings/system-permissions',
       '/settings/model-providers',
+      '/settings/retrieval',
       '/settings/transcription',
       '/settings/location',
       '/settings/backup',
@@ -267,6 +268,16 @@ void main() {
     expect(find.byKey(const Key('trace-agents-page')), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
     expect(find.byKey(const Key('agent-status-overlay')), findsOneWidget);
+
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('trace-console-page')), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
+
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('settings-page')), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
 
     expect(await tester.binding.handlePopRoute(), isTrue);
     await tester.pumpAndSettle();
@@ -342,6 +353,12 @@ void main() {
       _DeepLinkCase(
         path: '/settings/model-providers',
         pageKey: Key('model-provider-settings-page'),
+        firstParentKey: Key('settings-page'),
+        secondParentKey: Key('home-page'),
+      ),
+      _DeepLinkCase(
+        path: '/settings/retrieval',
+        pageKey: Key('retrieval-settings-page'),
         firstParentKey: Key('settings-page'),
         secondParentKey: Key('home-page'),
       ),
@@ -685,6 +702,13 @@ void main() {
         location: '/settings/model-providers',
         routePattern: '/settings/model-providers',
         pageKey: Key('model-provider-settings-page'),
+        parentPath: '/settings',
+        parentKey: Key('settings-page'),
+      ),
+      _FlatRouteCase(
+        location: '/settings/retrieval',
+        routePattern: '/settings/retrieval',
+        pageKey: Key('retrieval-settings-page'),
         parentPath: '/settings',
         parentKey: Key('settings-page'),
       ),
