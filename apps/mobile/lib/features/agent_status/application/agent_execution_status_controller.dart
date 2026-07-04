@@ -88,24 +88,44 @@ extension AgentExecutionOverallStatusWire on AgentExecutionOverallStatus {
 
 final class AgentExecutionStatusController
     extends Notifier<AgentExecutionStatusSnapshot> {
-  static const refreshInterval = Duration(seconds: 15);
-  static const successVisibleWindow = Duration(minutes: 10);
-  static const attentionVisibleWindow = Duration(hours: 24);
+  static const visibleRefreshInterval = Duration(seconds: 1);
+  static const idleRefreshInterval = Duration(seconds: 5);
+  static const terminalVisibleWindow = Duration(seconds: 5);
 
   Timer? _refreshTimer;
 
   @override
   AgentExecutionStatusSnapshot build() {
-    _refreshTimer ??= Timer.periodic(refreshInterval, (_) => refresh());
+    final snapshot = _load();
+    _scheduleRefresh(snapshot);
     ref.onDispose(() {
       _refreshTimer?.cancel();
       _refreshTimer = null;
     });
-    return _load();
+    return snapshot;
   }
 
   void refresh() {
-    state = _load();
+    try {
+      final snapshot = _load();
+      state = snapshot;
+      _scheduleRefresh(snapshot);
+    } catch (_) {
+      _scheduleRefresh(state);
+      rethrow;
+    }
+  }
+
+  void _scheduleRefresh(AgentExecutionStatusSnapshot snapshot) {
+    _refreshTimer?.cancel();
+    _refreshTimer = Timer(_nextRefreshDelay(snapshot), refresh);
+  }
+
+  Duration _nextRefreshDelay(AgentExecutionStatusSnapshot snapshot) {
+    if (snapshot.hasVisibleStatus) {
+      return visibleRefreshInterval;
+    }
+    return idleRefreshInterval;
   }
 
   AgentExecutionStatusSnapshot _load() {
@@ -187,6 +207,22 @@ final class AgentExecutionStatusSnapshot {
     for (final item in items) {
       if (latest == null || item.updatedAt.isAfter(latest)) {
         latest = item.updatedAt;
+      }
+    }
+    return latest;
+  }
+
+  DateTime? get terminalStatusExpiresAt {
+    DateTime? latest;
+    for (final item in items) {
+      if (item.kind.isActiveLike) {
+        continue;
+      }
+      final expiresAt = item.updatedAt.add(
+        AgentExecutionStatusController.terminalVisibleWindow,
+      );
+      if (latest == null || expiresAt.isAfter(latest)) {
+        latest = expiresAt;
       }
     }
     return latest;
@@ -315,17 +351,10 @@ bool _shouldShowTask(
   if (kind.isActiveLike) {
     return true;
   }
-  if (kind == AgentExecutionStatusKind.succeeded) {
-    return _withinWindow(
-      task.updatedAt,
-      now,
-      AgentExecutionStatusController.successVisibleWindow,
-    );
-  }
   return _withinWindow(
     task.updatedAt,
     now,
-    AgentExecutionStatusController.attentionVisibleWindow,
+    AgentExecutionStatusController.terminalVisibleWindow,
   );
 }
 

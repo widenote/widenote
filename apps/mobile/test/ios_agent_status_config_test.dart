@@ -25,6 +25,8 @@ void main() {
     expect(bridgeContents, contains('disabled_ended'));
     expect(bridgeContents, contains('dismissalPolicy: .immediate'));
     expect(bridgeContents, contains('dismissalPolicy: .after'));
+    expect(bridgeContents, contains('terminalDismissalDate'));
+    expect(bridgeContents, isNot(contains('10 * 60')));
     expect(attributes.readAsStringSync(), contains('ActivityAttributes'));
   });
 

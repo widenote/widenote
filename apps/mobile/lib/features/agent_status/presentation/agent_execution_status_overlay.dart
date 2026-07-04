@@ -19,28 +19,52 @@ class AgentExecutionStatusLayer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final snapshot = ref.watch(agentExecutionStatusControllerProvider);
-    final bottomPadding = snapshot.hasVisibleStatus ? 78.0 : 0.0;
+    final showOverlay = snapshot.hasVisibleStatus;
+    final bottomPadding = showOverlay ? 78.0 : 0.0;
     return SizedBox.expand(
       child: Stack(
         fit: StackFit.expand,
         children: [
           Positioned.fill(
-            child: Padding(
+            child: AnimatedPadding(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
               padding: EdgeInsets.only(bottom: bottomPadding),
               child: child,
             ),
           ),
           const AgentExecutionStatusPlatformSync(),
-          if (snapshot.hasVisibleStatus)
-            Positioned(
-              left: 16,
-              right: 16,
-              bottom: showBottomNavigationBar ? 12 : 16,
-              child: SafeArea(
-                top: false,
-                child: _AgentExecutionStatusPill(snapshot: snapshot),
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: showBottomNavigationBar ? 12 : 16,
+            child: SafeArea(
+              top: false,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 180),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                transitionBuilder: (child, animation) {
+                  final offsetAnimation = Tween<Offset>(
+                    begin: const Offset(0, 0.16),
+                    end: Offset.zero,
+                  ).animate(animation);
+                  return FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(
+                      position: offsetAnimation,
+                      child: child,
+                    ),
+                  );
+                },
+                child: showOverlay
+                    ? _AgentExecutionStatusPill(snapshot: snapshot)
+                    : const SizedBox.shrink(
+                        key: Key('agent-status-overlay-hidden'),
+                      ),
               ),
             ),
+          ),
         ],
       ),
     );

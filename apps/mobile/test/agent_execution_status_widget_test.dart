@@ -87,6 +87,65 @@ void main() {
     },
   );
 
+  testWidgets('completed overlay automatically disappears after short window', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    var now = DateTime.utc(2026, 7, 3, 12);
+    _insertTask(
+      database,
+      _task('task-succeeded', status: 'succeeded', updatedAt: now),
+    );
+    await _pumpOverlay(tester, database, nowProvider: () => now);
+
+    expect(find.byKey(const Key('agent-status-overlay')), findsOneWidget);
+    expect(find.text('Agent work completed'), findsOneWidget);
+
+    now = now.add(
+      AgentExecutionStatusController.terminalVisibleWindow +
+          const Duration(seconds: 1),
+    );
+    await tester.pump(
+      AgentExecutionStatusController.visibleRefreshInterval +
+          const Duration(milliseconds: 50),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('agent-status-overlay')), findsNothing);
+    expect(find.byKey(const Key('agent-status-test-child')), findsOneWidget);
+  });
+
+  testWidgets('running overlay stays visible past the terminal window', (
+    tester,
+  ) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    var now = DateTime.utc(2026, 7, 3, 12);
+    _insertTask(
+      database,
+      _task(
+        'task-running',
+        status: 'running',
+        leasedUntil: now.add(const Duration(minutes: 1)),
+        updatedAt: now,
+      ),
+    );
+    await _pumpOverlay(tester, database, nowProvider: () => now);
+
+    expect(find.byKey(const Key('agent-status-overlay')), findsOneWidget);
+
+    now = now.add(
+      AgentExecutionStatusController.terminalVisibleWindow +
+          const Duration(seconds: 1),
+    );
+    await tester.pump(
+      AgentExecutionStatusController.visibleRefreshInterval +
+          const Duration(milliseconds: 50),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('agent-status-overlay')), findsOneWidget);
+  });
+
   testWidgets('sheet opens the existing Log Center Agents child route', (
     tester,
   ) async {
@@ -117,6 +176,7 @@ Future<void> _pumpOverlay(
   WidgetTester tester,
   WideNoteLocalDatabase database, {
   DateTime? now,
+  DateTime Function()? nowProvider,
 }) async {
   addTearDown(database.close);
   await tester.pumpWidget(
@@ -124,7 +184,7 @@ Future<void> _pumpOverlay(
       overrides: [
         localDatabaseProvider.overrideWithValue(database),
         agentExecutionStatusNowProvider.overrideWithValue(
-          () => now ?? DateTime.utc(2026, 7, 3, 12),
+          () => nowProvider?.call() ?? now ?? DateTime.utc(2026, 7, 3, 12),
         ),
         agentStatusPlatformClientProvider.overrideWithValue(
           const _NoopPlatformClient(),
