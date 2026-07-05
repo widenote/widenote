@@ -12,6 +12,8 @@ import '../domain/capture_models.dart';
 import '../media/capture_media.dart';
 
 const captureAlreadyQueuedMessage = 'Capture is already queued for processing.';
+const _rollingInsightId = 'insight.depth.rolling';
+const _insightContextToolId = 'insight.context.read';
 
 final class CapturePipelineResult {
   const CapturePipelineResult({
@@ -84,7 +86,34 @@ final class CapturePipelineException implements Exception {
 
 abstract interface class CaptureKnowledgeSink {
   Future<void> save(cards.MemoryFirstCardBundle bundle);
+  Future<void> saveInsights(List<CaptureInsightOutput> insights);
   Future<void> saveArtifacts(List<CaptureDerivedArtifact> artifacts);
+}
+
+final class CaptureInsightOutput {
+  const CaptureInsightOutput({
+    required this.id,
+    required this.insightKind,
+    required this.title,
+    required this.summary,
+    required this.sourceRefs,
+    required this.payload,
+    required this.createdAt,
+    this.status = 'active',
+    this.metricLabel,
+    this.metricValue,
+  });
+
+  final String id;
+  final String insightKind;
+  final String status;
+  final String title;
+  final String summary;
+  final List<Object?> sourceRefs;
+  final String? metricLabel;
+  final num? metricValue;
+  final Map<String, Object?> payload;
+  final DateTime createdAt;
 }
 
 final class CaptureDerivedArtifact {
@@ -154,10 +183,21 @@ final class CaptureOrchestrator {
     final runtimeIdGenerator =
         idGenerator ?? MonotonicWnIdGenerator(clock: localClock);
     final permissions = permissionBroker ?? runtime.InMemoryPermissionBroker();
+    final localMemoryRepository =
+        memoryRepository ?? memory.InMemoryMemoryRepository();
     final registeredManifests = _enabledOfficialManifests(enabledPackIds);
     final registeredPackIds = registeredManifests
         .map((manifest) => manifest.id)
         .toSet();
+    final toolRegistry = runtime.InMemoryToolRegistry();
+    if (registeredPackIds.contains(_insightPackId)) {
+      _registerInsightContextTool(
+        toolRegistry,
+        eventStore: runtimeEventStore,
+        memoryRepository: localMemoryRepository,
+        clock: localClock,
+      );
+    }
     if (autoGrantOfficialPermissions &&
         permissions is runtime.InMemoryPermissionBroker) {
       for (final manifest in registeredManifests) {
@@ -168,7 +208,7 @@ final class CaptureOrchestrator {
       eventStore: runtimeEventStore,
       traceSink: runtimeTraceSink,
       permissionBroker: permissions,
-      toolRegistry: runtime.InMemoryToolRegistry(),
+      toolRegistry: toolRegistry,
       idGenerator: runtimeIdGenerator,
       clock: localClock,
       model: model ?? const _ModelRequiredCaptureModel(),
@@ -185,8 +225,6 @@ final class CaptureOrchestrator {
       },
     );
 
-    final localMemoryRepository =
-        memoryRepository ?? memory.InMemoryMemoryRepository();
     final memoryService = memory.MemoryService(
       repository: localMemoryRepository,
       clock: localClock.now,
@@ -207,6 +245,8 @@ final class CaptureOrchestrator {
   static const _defaultAgentId = 'agent.capture_loop';
   static const _todoPackId = 'pack.todo';
   static const _todoAgentId = 'agent.todo_loop';
+  static const _insightPackId = 'pack.insight_depth';
+  static const _insightAgentId = 'agent.insight_depth';
   static const _pkmPackId = 'pack.pkm_library';
   static const _pkmAgentId = 'agent.pkm_profile_builder';
   static const _transcriptCorrectionPackId = 'pack.transcript_correction';
@@ -217,6 +257,9 @@ final class CaptureOrchestrator {
           _defaultAgentId: _CaptureAgent(),
         },
         _todoPackId: <String, runtime.AgentHandler>{_todoAgentId: _TodoAgent()},
+        _insightPackId: <String, runtime.AgentHandler>{
+          _insightAgentId: _InsightDepthAgent(),
+        },
         _pkmPackId: <String, runtime.AgentHandler>{
           _pkmAgentId: _PkmProfileAgent(),
         },
@@ -446,6 +489,11 @@ final class CaptureOrchestrator {
     await _knowledgeSink?.saveArtifacts(
       _derivedArtifactsFromEvents(relatedEvents, trustedOutputEventIds),
     );
+    final deepInsights = _insightsFromEvents(
+      relatedEvents,
+      trustedOutputEventIds,
+    );
+    await _knowledgeSink?.saveInsights(deepInsights);
     final memoryResult = await _writeFirstMemoryProposal(
       relatedEvents,
       trustedOutputEventIds,
@@ -490,7 +538,10 @@ final class CaptureOrchestrator {
           )
           .toList(growable: false),
       cards: knowledgeLayer.cards,
-      insights: knowledgeLayer.insights,
+      insights: <SourceInsight>[
+        ...deepInsights.map(_sourceInsightView),
+        ...knowledgeLayer.insights,
+      ],
       acceptedMemoryCount: activeMemories.length,
       reviewMemoryCount: reviewProposals.length,
       memoryGenerated: memoryResult != null,
@@ -518,7 +569,50 @@ final class CaptureOrchestrator {
       ),
     );
     await _knowledgeSink?.save(bundle);
+    final trustedOutputEventIds = _trustedBuiltInOutputEventIds(events);
+    final deepInsights = _insightsFromEvents(events, trustedOutputEventIds);
+    await _knowledgeSink?.saveInsights(deepInsights);
     return _knowledgeLayerView(bundle);
+  }
+
+  Future<List<SourceInsight>> generateDeepInsight({
+    String reason = 'manual',
+  }) async {
+    await _kernel.restoreRuntimeState();
+    final request = await _kernel.publish(
+      runtime.WnEventDraft(
+        type: runtime.WnEventTypes.insightRequested,
+        actor: runtime.WnActor.user,
+        subjectRef: const runtime.SubjectRef(
+          kind: 'insight',
+          id: _rollingInsightId,
+        ),
+        payload: <String, Object?>{
+          'reason': reason,
+          'insight_id': _rollingInsightId,
+        },
+      ),
+    );
+    await _kernel.drainQueue();
+    final events = await _eventStore.readAll();
+    final trustedOutputEventIds = _trustedBuiltInOutputEventIds(events);
+    final outputs = _insightsFromEvents(
+      events
+          .where(
+            (event) =>
+                event.type == runtime.WnEventTypes.insightCreated &&
+                event.causationId == request.id,
+          )
+          .toList(growable: false),
+      trustedOutputEventIds,
+    );
+    await _knowledgeSink?.saveInsights(outputs);
+    if (outputs.isEmpty) {
+      throw const CapturePipelineException(
+        'Insight generation did not produce an insight.',
+      );
+    }
+    return outputs.map(_sourceInsightView).toList(growable: false);
   }
 
   Future<CaptureMemoryItem> acceptMemoryProposal(
@@ -735,7 +829,7 @@ final class CaptureOrchestrator {
         reasonLabel: 'model_no_suggestion',
         sourceCaptureId: sourceCaptureId,
         sourceEventId: capture.id,
-        sourceRefs: _todoSourceRefs(
+        sourceRefs: _sourceRefsWithFallback(
           const <Object?>[],
           sourceCaptureId: sourceCaptureId,
           sourceEventId: capture.id,
@@ -785,7 +879,7 @@ final class CaptureOrchestrator {
           : const <Object?>[],
       sourceCaptureId: sourceCaptureId,
       sourceEventId: sourceEventId,
-      sourceRefs: _todoSourceRefs(
+      sourceRefs: _sourceRefsWithFallback(
         todoEvent.payload['source_refs'],
         sourceCaptureId: sourceCaptureId,
         sourceEventId: sourceEventId,
@@ -1059,6 +1153,242 @@ List<runtime.AgentPackManifestSnapshot> _enabledOfficialManifests(
       .toList(growable: false);
 }
 
+void _registerInsightContextTool(
+  runtime.InMemoryToolRegistry registry, {
+  required runtime.EventStore eventStore,
+  required memory.MemoryRepository memoryRepository,
+  required WnClock clock,
+}) {
+  registry.register(
+    runtime.ToolDefinition(
+      name: _insightContextToolId,
+      description:
+          'Read a bounded local context packet for model-backed deep insight generation.',
+      requiredPermissions: const <String>{
+        'insight.context.read',
+        'memory.read',
+        'timeline.read',
+        'knowledge.read',
+      },
+      access: runtime.ToolAccess.read,
+      risk: runtime.ToolRisk.low,
+      locality: runtime.ToolLocality.local,
+      approvalRequirement: runtime.ToolApprovalRequirement.automatic,
+      execution: runtime.ToolExecution.local,
+      handler: (invocation) => _readInsightContext(
+        invocation,
+        eventStore: eventStore,
+        memoryRepository: memoryRepository,
+        clock: clock,
+      ),
+    ),
+  );
+}
+
+Future<Map<String, Object?>> _readInsightContext(
+  runtime.ToolInvocation invocation, {
+  required runtime.EventStore eventStore,
+  required memory.MemoryRepository memoryRepository,
+  required WnClock clock,
+}) async {
+  final limit = _boundedInt(invocation.input['limit'], min: 4, max: 32) ?? 18;
+  final events = await eventStore.readAll();
+  final memories = await memoryRepository.listItems(
+    status: memory.MemoryItemStatus.active,
+  );
+  final entries =
+      <Map<String, Object?>>[
+        ..._captureContextEntries(events),
+        ..._memoryContextEntries(memories),
+        ..._cardContextEntries(events),
+        ..._todoContextEntries(events),
+      ]..sort((left, right) {
+        final leftDate = DateTime.tryParse(
+          _string(left['created_at'], fallback: ''),
+        );
+        final rightDate = DateTime.tryParse(
+          _string(right['created_at'], fallback: ''),
+        );
+        if (leftDate == null || rightDate == null) {
+          return 0;
+        }
+        return rightDate.compareTo(leftDate);
+      });
+  final limited = entries.take(limit).toList(growable: false);
+  return <String, Object?>{
+    'generated_at': clock.now().toUtc().toIso8601String(),
+    'window_label': 'recent local state',
+    'trigger': <String, Object?>{
+      'event_id': invocation.input['trigger_event_id'],
+      'event_type': invocation.input['trigger_event_type'],
+      if (invocation.input['trigger_subject_ref'] != null)
+        'subject_ref': invocation.input['trigger_subject_ref'],
+      if (invocation.input['source_capture_id'] != null)
+        'source_capture_id': invocation.input['source_capture_id'],
+    },
+    'entries': limited,
+    'entry_count': limited.length,
+  };
+}
+
+List<Map<String, Object?>> _captureContextEntries(
+  List<runtime.WnEvent> events,
+) {
+  return events
+      .where((event) => event.type == runtime.WnEventTypes.captureCreated)
+      .map((event) {
+        final captureId = event.subjectRef?.id ?? event.id;
+        final text = _string(event.payload['text'], fallback: '');
+        return <String, Object?>{
+          'source_id': 'capture:$captureId',
+          'kind': 'capture',
+          'title': 'Capture',
+          'text': _redactSecretLikeText(text),
+          'created_at': event.createdAt.toUtc().toIso8601String(),
+          'source_refs': <Object?>[
+            <String, Object?>{
+              'kind': 'capture',
+              'id': captureId,
+              if (text.isNotEmpty) 'excerpt': _safeSourceExcerpt(text),
+            },
+            <String, Object?>{
+              'kind': 'event',
+              'id': event.id,
+              if (text.isNotEmpty) 'excerpt': _safeSourceExcerpt(text),
+            },
+          ],
+        };
+      })
+      .toList(growable: false);
+}
+
+List<Map<String, Object?>> _memoryContextEntries(
+  List<memory.MemoryItem> items,
+) {
+  return items
+      .map((item) {
+        return <String, Object?>{
+          'source_id': 'memory:${item.id}',
+          'kind': 'memory',
+          'title': item.memoryType.name,
+          'text': _redactSecretLikeText(item.body),
+          'created_at': item.updatedAt.toUtc().toIso8601String(),
+          'source_refs': <Object?>[
+            <String, Object?>{
+              'kind': 'memory',
+              'id': item.id,
+              'excerpt': _safeSourceExcerpt(item.body),
+            },
+            for (final ref in item.evidence)
+              <String, Object?>{
+                'kind': ref.sourceType,
+                'id': ref.sourceId,
+                if (ref.excerpt != null)
+                  'excerpt': _safeSourceExcerpt(ref.excerpt!),
+                if (ref.uri != null) 'uri': ref.uri.toString(),
+              },
+          ],
+        };
+      })
+      .toList(growable: false);
+}
+
+List<Map<String, Object?>> _cardContextEntries(List<runtime.WnEvent> events) {
+  return events
+      .where((event) => event.type == runtime.WnEventTypes.cardCreated)
+      .map((event) {
+        final title = _string(event.payload['title'], fallback: 'Card');
+        final body = _string(event.payload['body'], fallback: '');
+        return <String, Object?>{
+          'source_id': 'card:${event.id}',
+          'kind': 'card',
+          'title': _redactSecretLikeText(title),
+          'text': _redactSecretLikeText(body),
+          'created_at': event.createdAt.toUtc().toIso8601String(),
+          'source_refs': _normalizedSourceRefs(event.payload['source_refs']),
+        };
+      })
+      .toList(growable: false);
+}
+
+List<Map<String, Object?>> _todoContextEntries(List<runtime.WnEvent> events) {
+  return events
+      .where((event) => event.type == runtime.WnEventTypes.todoSuggested)
+      .map((event) {
+        final text = _string(event.payload['text'], fallback: 'Todo');
+        return <String, Object?>{
+          'source_id': 'todo:${event.id}',
+          'kind': 'todo',
+          'title': _redactSecretLikeText(text),
+          'text': _redactSecretLikeText(
+            _string(event.payload['suggestion_reason'], fallback: text),
+          ),
+          'created_at': event.createdAt.toUtc().toIso8601String(),
+          'source_refs': _normalizedSourceRefs(event.payload['source_refs']),
+        };
+      })
+      .toList(growable: false);
+}
+
+List<Object?> _normalizedSourceRefs(Object? value) {
+  if (value is! List) {
+    return const <Object?>[];
+  }
+  return value
+      .map(_sourceRefMap)
+      .whereType<Map<String, Object?>>()
+      .toList(growable: false);
+}
+
+int? _boundedInt(Object? value, {required int min, required int max}) {
+  final parsed = value is int
+      ? value
+      : value is num
+      ? value.toInt()
+      : value is String
+      ? int.tryParse(value)
+      : null;
+  if (parsed == null) {
+    return null;
+  }
+  return parsed.clamp(min, max).toInt();
+}
+
+List<_InsightContextEntry> _contextEntries(Map<String, Object?> packet) {
+  final rawEntries = packet['entries'];
+  if (rawEntries is! List) {
+    return const <_InsightContextEntry>[];
+  }
+  final entries = <_InsightContextEntry>[];
+  for (final rawEntry in rawEntries) {
+    if (rawEntry is! Map) {
+      continue;
+    }
+    final sourceId = _nullableString(rawEntry['source_id']);
+    final text = _nullableString(rawEntry['text']);
+    if (sourceId == null || text == null) {
+      continue;
+    }
+    entries.add(
+      _InsightContextEntry(
+        sourceId: sourceId,
+        sourceRefs: _normalizedSourceRefs(rawEntry['source_refs']),
+      ),
+    );
+  }
+  return entries;
+}
+
+final class _InsightContextEntry {
+  const _InsightContextEntry({
+    required this.sourceId,
+    required this.sourceRefs,
+  });
+
+  final String sourceId;
+  final List<Object?> sourceRefs;
+}
+
 runtime.WnEvent? _firstTrustedBuiltInEventOfType(
   List<runtime.WnEvent> events,
   String type,
@@ -1079,6 +1409,8 @@ bool _isTrustedBuiltInRun(String packId, String agentId) {
           agentId == CaptureOrchestrator._defaultAgentId) ||
       (packId == CaptureOrchestrator._todoPackId &&
           agentId == CaptureOrchestrator._todoAgentId) ||
+      (packId == CaptureOrchestrator._insightPackId &&
+          agentId == CaptureOrchestrator._insightAgentId) ||
       (packId == CaptureOrchestrator._pkmPackId &&
           agentId == CaptureOrchestrator._pkmAgentId) ||
       (packId == CaptureOrchestrator._transcriptCorrectionPackId &&
@@ -1097,6 +1429,10 @@ bool _isTrustedBuiltInOutputEvent(runtime.WnEvent event) {
   if (event.type == runtime.WnEventTypes.todoSuggested) {
     return event.packId == CaptureOrchestrator._todoPackId &&
         event.agentId == CaptureOrchestrator._todoAgentId;
+  }
+  if (event.type == runtime.WnEventTypes.insightCreated) {
+    return event.packId == CaptureOrchestrator._insightPackId &&
+        event.agentId == CaptureOrchestrator._insightAgentId;
   }
   if (event.type == runtime.WnEventTypes.artifactCreated) {
     return event.packId == CaptureOrchestrator._pkmPackId &&
@@ -1224,6 +1560,326 @@ List<CaptureDerivedArtifact> _derivedArtifactsFromEvents(
       .toList(growable: false);
 }
 
+List<CaptureInsightOutput> _insightsFromEvents(
+  List<runtime.WnEvent> events,
+  Set<String> trustedOutputEventIds,
+) {
+  return events
+      .where(
+        (event) =>
+            event.type == runtime.WnEventTypes.insightCreated &&
+            trustedOutputEventIds.contains(event.id) &&
+            _isTrustedBuiltInOutputEvent(event),
+      )
+      .map(_insightFromEvent)
+      .whereType<CaptureInsightOutput>()
+      .toList(growable: false);
+}
+
+CaptureInsightOutput? _insightFromEvent(runtime.WnEvent event) {
+  final payload = event.payload;
+  final sourceEventId = _string(
+    payload['source_event_id'],
+    fallback: event.causationId ?? event.id,
+  );
+  final sourceCaptureId = _nullableString(payload['source_capture_id']);
+  final sourceExcerpt = _string(payload['source_excerpt'], fallback: '');
+  final sourceRefs = _sourceRefsWithFallback(
+    payload['source_refs'],
+    sourceCaptureId: sourceCaptureId,
+    sourceEventId: sourceEventId,
+    excerpt: sourceExcerpt,
+  );
+  if (sourceRefs.isEmpty) {
+    return null;
+  }
+  final title = _redactSecretLikeText(
+    _string(payload['title'], fallback: 'Recent state insight'),
+  );
+  final summary = _redactSecretLikeText(
+    _string(payload['summary'], fallback: 'No insight summary.'),
+  );
+  final insightKind = _string(payload['insight_kind'], fallback: 'reflection');
+  final metric = _firstMetric(payload['metrics']);
+  final normalizedPayload = _schemaInsightPayload(
+    event: event,
+    rawPayload: payload,
+    insightKind: insightKind,
+    title: title,
+    summary: summary,
+    sourceRefs: sourceRefs,
+  );
+  return CaptureInsightOutput(
+    id: _string(payload['insight_id'], fallback: 'insight.${event.id}'),
+    insightKind: insightKind,
+    status: _string(payload['status'], fallback: 'active'),
+    title: title,
+    summary: summary,
+    sourceRefs: sourceRefs,
+    metricLabel: _nullableString(payload['metric_label']) ?? metric?.label,
+    metricValue: _numValue(payload['metric_value']) ?? metric?.value,
+    payload: normalizedPayload,
+    createdAt: event.createdAt,
+  );
+}
+
+Map<String, Object?> _schemaInsightPayload({
+  required runtime.WnEvent event,
+  required Map<String, Object?> rawPayload,
+  required String insightKind,
+  required String title,
+  required String summary,
+  required List<Object?> sourceRefs,
+}) {
+  final claims = _schemaClaims(rawPayload['claims']);
+  final metrics = _schemaMetrics(rawPayload['metrics']);
+  final evidence = _schemaEvidence(rawPayload['evidence'], 'supporting');
+  final counterEvidence = _schemaEvidence(
+    rawPayload['counter_evidence'],
+    'counter',
+  );
+  return <String, Object?>{
+    'schema_version': 2,
+    'insight_kind': insightKind,
+    'title': title,
+    'summary': summary,
+    if (_numValue(rawPayload['confidence']) != null)
+      'confidence': _numValue(rawPayload['confidence']),
+    'sensitivity': _string(rawPayload['sensitivity'], fallback: 'low'),
+    'evidence_density': _normalizedEvidenceDensity(
+      _nullableString(rawPayload['evidence_density']),
+    ),
+    'claims': claims,
+    if (metrics.isNotEmpty) 'metrics': metrics,
+    if (evidence.isNotEmpty) 'evidence': evidence,
+    if (counterEvidence.isNotEmpty) 'counter_evidence': counterEvidence,
+    'source_refs': _dedupedSourceRefs(sourceRefs),
+    'ui_blocks': _schemaUiBlocks(rawPayload['ui_blocks']),
+    'review': _schemaReview(rawPayload),
+    'generator': _schemaGenerator(rawPayload, event),
+    'created_at': _string(
+      rawPayload['created_at'],
+      fallback: event.createdAt.toUtc().toIso8601String(),
+    ),
+    'note': _redactSecretLikeText(
+      _string(rawPayload['note'], fallback: summary),
+    ),
+  };
+}
+
+List<Map<String, Object?>> _schemaClaims(Object? value) {
+  if (value is! List) {
+    return const <Map<String, Object?>>[];
+  }
+  final claims = <Map<String, Object?>>[];
+  for (final raw in value) {
+    if (raw is! Map) {
+      continue;
+    }
+    final item = raw.cast<String, Object?>();
+    final id = _nullableString(item['id']);
+    final text = _nullableString(item['text']);
+    final refs = _dedupedSourceRefs(_normalizedSourceRefs(item['source_refs']));
+    if (id == null || text == null || refs.isEmpty) {
+      continue;
+    }
+    claims.add(<String, Object?>{
+      'id': id,
+      'text': _redactSecretLikeText(text),
+      if (_numValue(item['confidence']) != null)
+        'confidence': _numValue(item['confidence']),
+      if (_nullableString(item['sensitivity']) != null)
+        'sensitivity': _nullableString(item['sensitivity']),
+      'source_refs': refs,
+    });
+  }
+  return List<Map<String, Object?>>.unmodifiable(claims);
+}
+
+List<Map<String, Object?>> _schemaMetrics(Object? value) {
+  if (value is! List) {
+    return const <Map<String, Object?>>[];
+  }
+  final metrics = <Map<String, Object?>>[];
+  for (final raw in value) {
+    if (raw is! Map) {
+      continue;
+    }
+    final item = raw.cast<String, Object?>();
+    final label = _nullableString(item['label']);
+    final metricValue = _numValue(item['value']);
+    if (label == null || metricValue == null) {
+      continue;
+    }
+    final refs = _dedupedSourceRefs(_normalizedSourceRefs(item['source_refs']));
+    metrics.add(<String, Object?>{
+      'label': _redactSecretLikeText(label),
+      'value': metricValue,
+      if (_nullableString(item['unit']) != null)
+        'unit': _nullableString(item['unit']),
+      if (refs.isNotEmpty) 'source_refs': refs,
+    });
+  }
+  return List<Map<String, Object?>>.unmodifiable(metrics);
+}
+
+List<Map<String, Object?>> _schemaEvidence(Object? value, String fallbackKind) {
+  if (value is! List) {
+    return const <Map<String, Object?>>[];
+  }
+  final items = <Map<String, Object?>>[];
+  for (final raw in value) {
+    if (raw is! Map) {
+      continue;
+    }
+    final item = raw.cast<String, Object?>();
+    final id = _nullableString(item['id']);
+    final text = _nullableString(item['text']);
+    final refs = _dedupedSourceRefs(_normalizedSourceRefs(item['source_refs']));
+    if (id == null || text == null || refs.isEmpty) {
+      continue;
+    }
+    final kind = switch (_nullableString(item['kind'])) {
+      'supporting' => 'supporting',
+      'counter' => 'counter',
+      'context' => 'context',
+      _ => fallbackKind,
+    };
+    items.add(<String, Object?>{
+      'id': id,
+      'kind': kind,
+      if (_nullableString(item['label']) != null)
+        'label': _nullableString(item['label']),
+      'text': _redactSecretLikeText(text),
+      if (_numValue(item['confidence']) != null)
+        'confidence': _numValue(item['confidence']),
+      'source_refs': refs,
+    });
+  }
+  return List<Map<String, Object?>>.unmodifiable(items);
+}
+
+List<Map<String, Object?>> _schemaUiBlocks(Object? value) {
+  final blocks = <Map<String, Object?>>[];
+  if (value is List) {
+    for (final raw in value) {
+      if (raw is! Map) {
+        continue;
+      }
+      final item = raw.cast<String, Object?>();
+      final kind = _nullableString(item['kind']);
+      if (kind == null) {
+        continue;
+      }
+      final ref = _nullableString(item['ref']);
+      final payload = item['payload'];
+      final block = <String, Object?>{'kind': kind};
+      if (ref != null) {
+        block['ref'] = ref;
+      }
+      if (payload is Map) {
+        block['payload'] = payload.cast<String, Object?>();
+      }
+      blocks.add(block);
+    }
+  }
+  if (blocks.isEmpty) {
+    blocks.add(<String, Object?>{'kind': 'claim_list'});
+    blocks.add(<String, Object?>{'kind': 'evidence_list'});
+    blocks.add(<String, Object?>{'kind': 'source_refs'});
+  }
+  return List<Map<String, Object?>>.unmodifiable(blocks);
+}
+
+Map<String, Object?> _schemaReview(Map<String, Object?> rawPayload) {
+  final raw = rawPayload['review'];
+  if (raw is Map) {
+    final review = raw.cast<String, Object?>();
+    final state = _nullableString(review['state']);
+    return <String, Object?>{
+      'state': state == 'needs_review' || state == 'rejected'
+          ? state
+          : 'auto_write',
+      'risk_flags': _schemaStringList(review['risk_flags']),
+      'review_reasons': _schemaStringList(review['review_reasons']),
+    };
+  }
+  final requiresReview = _boolValue(rawPayload['requires_review']);
+  return <String, Object?>{
+    'state': requiresReview ? 'needs_review' : 'auto_write',
+    'risk_flags': const <Object?>[],
+    'review_reasons': <Object?>[if (requiresReview) 'model_requested_review'],
+  };
+}
+
+Map<String, Object?> _schemaGenerator(
+  Map<String, Object?> rawPayload,
+  runtime.WnEvent event,
+) {
+  final raw = rawPayload['generator'];
+  if (raw is Map) {
+    final generator = raw.cast<String, Object?>();
+    final packId = _nullableString(generator['pack_id']) ?? event.packId;
+    final agentId = _nullableString(generator['agent_id']) ?? event.agentId;
+    return <String, Object?>{
+      'pack_id': packId ?? CaptureOrchestrator._insightPackId,
+      'agent_id': agentId ?? CaptureOrchestrator._insightAgentId,
+      if (_nullableString(generator['run_id']) != null)
+        'run_id': _nullableString(generator['run_id']),
+      if (_nullableString(generator['trace_id']) != null)
+        'trace_id': _nullableString(generator['trace_id']),
+      if (_nullableString(generator['model_ref']) != null)
+        'model_ref': _nullableString(generator['model_ref']),
+    };
+  }
+  return <String, Object?>{
+    'pack_id': event.packId ?? CaptureOrchestrator._insightPackId,
+    'agent_id': event.agentId ?? CaptureOrchestrator._insightAgentId,
+  };
+}
+
+List<Object?> _schemaStringList(Object? value) {
+  if (value is! List) {
+    return const <Object?>[];
+  }
+  return value
+      .whereType<String>()
+      .map((item) => item.trim())
+      .where((item) => item.isNotEmpty)
+      .toSet()
+      .toList(growable: false);
+}
+
+SourceInsight _sourceInsightView(CaptureInsightOutput insight) {
+  return SourceInsight(
+    id: insight.id,
+    title: insight.title,
+    summary: insight.summary,
+    sourceLabel: _sourceRefsLabel(insight.sourceRefs),
+    kindLabel: _insightKindLabel(insight.insightKind),
+    metricLabel: insight.metricLabel == null || insight.metricValue == null
+        ? 'source-linked'
+        : '${insight.metricValue} ${insight.metricLabel}',
+  );
+}
+
+({String? label, num? value})? _firstMetric(Object? value) {
+  if (value is! List) {
+    return null;
+  }
+  for (final item in value) {
+    if (item is! Map) {
+      continue;
+    }
+    final label = _nullableString(item['label']);
+    final metricValue = _numValue(item['value']);
+    if (label != null || metricValue != null) {
+      return (label: label, value: metricValue);
+    }
+  }
+  return null;
+}
+
 CaptureDerivedArtifact? _derivedArtifactFromEvent(runtime.WnEvent event) {
   final subject = event.subjectRef;
   final payload = event.payload;
@@ -1316,7 +1972,7 @@ List<Object?> _artifactSourceRefs(
   ];
 }
 
-List<Object?> _todoSourceRefs(
+List<Object?> _sourceRefsWithFallback(
   Object? value, {
   required String? sourceCaptureId,
   required String sourceEventId,
@@ -1361,17 +2017,15 @@ Map<String, Object?>? _sourceRefMap(Object? value) {
     'kind': kind,
     'id': id,
     for (final key in const <String>[
-      'source_type',
-      'source_id',
       'event_id',
       'source_version',
       'content_hash',
-      'excerpt',
-      'evidence_text',
       'uri',
       'sensitivity',
     ])
       if (value[key] != null) key: value[key],
+    if (value['excerpt'] != null || value['evidence_text'] != null)
+      'excerpt': value['excerpt'] ?? value['evidence_text'],
   };
 }
 
@@ -1399,6 +2053,50 @@ bool _hasSourceRef(List<Object?> refs, String kind, String id) {
         _nullableString(ref['id']) ?? _nullableString(ref['source_id']);
     return refKind == kind && refId == id;
   });
+}
+
+String _sourceRefsLabel(List<Object?> refs) {
+  Map<String, Object?>? first;
+  for (final ref in refs) {
+    first = _sourceRefMap(ref);
+    if (first != null) {
+      break;
+    }
+  }
+  if (first == null) {
+    return 'unknown source';
+  }
+  final kind = _string(first['kind'], fallback: 'source');
+  final id = _string(first['id'], fallback: 'unknown');
+  final extra = refs.length <= 1 ? '' : ' +${refs.length - 1}';
+  return 'source: $kind:$id$extra';
+}
+
+String _insightKindLabel(String kind) {
+  return switch (kind) {
+    'reflection' => 'deep reflection',
+    'tension' => 'tension insight',
+    'shift' => 'state shift',
+    'risk' => 'risk insight',
+    'opportunity' => 'opportunity insight',
+    'summary' => 'summary insight',
+    'count' => 'count insight',
+    'trend' => 'trend insight',
+    'source_mix' => 'source mix insight',
+    'action_pattern' => 'action pattern insight',
+    'attachment_evidence' => 'attachment evidence insight',
+    _ => kind,
+  };
+}
+
+num? _numValue(Object? value) {
+  if (value is num) {
+    return value;
+  }
+  if (value is String) {
+    return num.tryParse(value);
+  }
+  return null;
 }
 
 MemoryReviewCandidate _reviewCandidateView(
@@ -2139,6 +2837,465 @@ Object? _metadataValue(Map<String, Object?>? metadata, String key) {
   return null;
 }
 
+_DeepInsightSuggestion? _deepInsightSuggestion(
+  runtime.ModelResponse response,
+  List<_InsightContextEntry> entries,
+) {
+  final parsed = _jsonObject(response.text) ?? response.raw;
+  if (parsed.isEmpty) {
+    return null;
+  }
+  final kind = _normalizedDeepInsightKind(_nullableString(parsed['kind']));
+  if (kind == null || kind == 'quiet') {
+    return null;
+  }
+  final rawTitle = _nullableString(parsed['title']);
+  final rawSummary = _nullableString(parsed['summary']);
+  if (rawTitle == null || rawSummary == null) {
+    return null;
+  }
+  final sourceRefsById = _sourceRefsBySourceId(entries);
+  final sourceRefs = _deepInsightSourceRefs(
+    parsed['source_ids'],
+    sourceRefsById,
+  );
+  final claims = _deepInsightTextItems(
+    parsed['claims'],
+    sourceRefsById,
+    fallbackPrefix: 'claim',
+  );
+  final evidence = _deepInsightTextItems(
+    parsed['evidence'],
+    sourceRefsById,
+    fallbackPrefix: 'evidence',
+    itemKind: 'supporting',
+    includeLabel: true,
+  );
+  final counterEvidence = _deepInsightTextItems(
+    parsed['counter_evidence'],
+    sourceRefsById,
+    fallbackPrefix: 'counter',
+    itemKind: 'counter',
+    includeLabel: true,
+  );
+  final metrics = _deepInsightMetrics(parsed['metrics'], sourceRefsById);
+  final allSourceRefs = _dedupedSourceRefs(<Object?>[
+    ...sourceRefs,
+    for (final claim in claims) ..._normalizedSourceRefs(claim['source_refs']),
+    for (final item in evidence) ..._normalizedSourceRefs(item['source_refs']),
+    for (final item in counterEvidence)
+      ..._normalizedSourceRefs(item['source_refs']),
+    for (final metric in metrics)
+      ..._normalizedSourceRefs(metric['source_refs']),
+  ]);
+  if (allSourceRefs.isEmpty || claims.isEmpty || evidence.isEmpty) {
+    return null;
+  }
+
+  final title = _redactSecretLikeText(rawTitle);
+  final summary = _redactSecretLikeText(rawSummary);
+  final redacted =
+      title != rawTitle ||
+      summary != rawSummary ||
+      _listContainsRedactedText(claims) ||
+      _listContainsRedactedText(evidence) ||
+      _listContainsRedactedText(counterEvidence);
+
+  final metric = _firstMetric(metrics);
+  return _DeepInsightSuggestion(
+    kind: kind,
+    title: title,
+    summary: summary,
+    confidence: _numValue(parsed['confidence']) ?? 0,
+    sensitivity: _normalizedDeepInsightSensitivity(
+      _nullableString(parsed['sensitivity']),
+      redacted: redacted,
+    ),
+    evidenceDensity: _normalizedEvidenceDensity(
+      _nullableString(parsed['evidence_density']),
+    ),
+    requiresReview:
+        _boolValue(parsed['requires_review']) || redacted || kind == 'risk',
+    sourceRefs: allSourceRefs,
+    claims: claims,
+    metrics: metrics,
+    evidence: evidence,
+    counterEvidence: counterEvidence,
+    metricLabel: metric?.label,
+    metricValue: metric?.value,
+  );
+}
+
+final class _DeepInsightSuggestion {
+  const _DeepInsightSuggestion({
+    required this.kind,
+    required this.title,
+    required this.summary,
+    required this.confidence,
+    required this.sensitivity,
+    required this.evidenceDensity,
+    required this.requiresReview,
+    required this.sourceRefs,
+    required this.claims,
+    required this.metrics,
+    required this.evidence,
+    required this.counterEvidence,
+    this.metricLabel,
+    this.metricValue,
+  });
+
+  final String kind;
+  final String title;
+  final String summary;
+  final num confidence;
+  final String sensitivity;
+  final String evidenceDensity;
+  final bool requiresReview;
+  final List<Object?> sourceRefs;
+  final List<Map<String, Object?>> claims;
+  final List<Map<String, Object?>> metrics;
+  final List<Map<String, Object?>> evidence;
+  final List<Map<String, Object?>> counterEvidence;
+  final String? metricLabel;
+  final num? metricValue;
+
+  Map<String, Object?> payload({
+    required runtime.WnEvent triggerEvent,
+    required String packId,
+    required String agentId,
+    required String runId,
+    required DateTime createdAt,
+  }) {
+    final sourceCaptureId = triggerEvent.subjectRef?.kind == 'capture'
+        ? triggerEvent.subjectRef!.id
+        : null;
+    final sourceExcerpt = _firstSourceExcerpt(sourceRefs);
+    final payload = <String, Object?>{
+      'schema_version': 2,
+      'insight_id': _rollingInsightId,
+      'insight_kind': kind,
+      'status': 'active',
+      'title': title,
+      'summary': summary,
+      if (metricLabel != null) 'metric_label': metricLabel,
+      if (metricValue != null) 'metric_value': metricValue,
+      'source_event_id': triggerEvent.id,
+      'source_refs': sourceRefs,
+      'claims': claims,
+      if (metrics.isNotEmpty) 'metrics': metrics,
+      'evidence': evidence,
+      'counter_evidence': counterEvidence,
+      'confidence': confidence,
+      'sensitivity': sensitivity,
+      'evidence_density': evidenceDensity,
+      'requires_review': requiresReview,
+      'review': <String, Object?>{
+        'state': requiresReview ? 'needs_review' : 'auto_write',
+        'risk_flags': <Object?>[
+          if (sensitivity == 'medium' || sensitivity == 'high') sensitivity,
+          if (kind == 'risk') 'risk_claim',
+        ],
+        'review_reasons': <Object?>[
+          if (requiresReview) 'model_requested_review',
+        ],
+      },
+      'generator': <String, Object?>{
+        'pack_id': packId,
+        'agent_id': agentId,
+        'run_id': runId,
+      },
+      'generator_id': '$packId/$agentId',
+      'generator_version': '0.1.0',
+      'created_at': createdAt.toUtc().toIso8601String(),
+      'trigger_event_id': triggerEvent.id,
+      'trigger_event_type': triggerEvent.type,
+      'derived_output': true,
+      'source_truth': 'raw_capture_and_memory_remain_canonical',
+      'note': summary,
+      'ui_blocks': <Object?>[
+        <String, Object?>{'kind': 'claim_list'},
+        if (metrics.isNotEmpty) <String, Object?>{'kind': 'metric_row'},
+        <String, Object?>{'kind': 'evidence_list'},
+        if (counterEvidence.isNotEmpty)
+          <String, Object?>{'kind': 'counter_evidence'},
+        <String, Object?>{'kind': 'source_refs'},
+        <String, Object?>{
+          'kind': 'confidence_band',
+          'payload': <String, Object?>{
+            'confidence': confidence,
+            'evidence_density': evidenceDensity,
+          },
+        },
+      ],
+    };
+    if (sourceCaptureId != null) {
+      payload['source_capture_id'] = sourceCaptureId;
+    }
+    if (sourceExcerpt != null) {
+      payload['source_excerpt'] = sourceExcerpt;
+    }
+    return payload;
+  }
+}
+
+String? _normalizedDeepInsightKind(String? value) {
+  final normalized = value?.trim().replaceAll('-', '_').toLowerCase();
+  return switch (normalized) {
+    'reflection' => 'reflection',
+    'tension' => 'tension',
+    'shift' => 'shift',
+    'risk' => 'risk',
+    'opportunity' => 'opportunity',
+    'quiet' => 'quiet',
+    _ => null,
+  };
+}
+
+String _normalizedDeepInsightSensitivity(
+  String? value, {
+  required bool redacted,
+}) {
+  if (redacted) {
+    return 'high';
+  }
+  return switch (value?.trim().toLowerCase()) {
+    'high' => 'high',
+    'medium' => 'medium',
+    'low' => 'low',
+    _ => 'low',
+  };
+}
+
+String _normalizedEvidenceDensity(String? value) {
+  return switch (value?.trim().replaceAll('-', '_').toLowerCase()) {
+    'high' => 'high',
+    'medium' => 'medium',
+    'low' || 'thin' => 'thin',
+    _ => 'medium',
+  };
+}
+
+bool _boolValue(Object? value) {
+  if (value is bool) {
+    return value;
+  }
+  if (value is String) {
+    return value.trim().toLowerCase() == 'true';
+  }
+  return false;
+}
+
+Map<String, List<Object?>> _sourceRefsBySourceId(
+  List<_InsightContextEntry> entries,
+) {
+  return <String, List<Object?>>{
+    for (final entry in entries)
+      entry.sourceId: _dedupedSourceRefs(<Object?>[
+        ...entry.sourceRefs,
+        if (_sourceRefForSourceId(entry.sourceId) != null)
+          _sourceRefForSourceId(entry.sourceId),
+      ]),
+  };
+}
+
+List<Object?> _deepInsightSourceRefs(
+  Object? sourceIds,
+  Map<String, List<Object?>> sourceRefsById,
+) {
+  if (sourceIds is List && sourceIds.any((sourceId) => sourceId is Map)) {
+    final allowedRefs = _sourceRefsByIdentity(sourceRefsById);
+    return _dedupedSourceRefs(
+      sourceIds
+          .map(_sourceRefIdentity)
+          .whereType<(String, String)>()
+          .map((identity) => allowedRefs[identity])
+          .whereType<Map<String, Object?>>(),
+    );
+  }
+  return _dedupedSourceRefs(
+    _deepInsightSourceIds(
+      sourceIds,
+    ).expand((sourceId) => sourceRefsById[sourceId] ?? const <Object?>[]),
+  );
+}
+
+Map<(String, String), Map<String, Object?>> _sourceRefsByIdentity(
+  Map<String, List<Object?>> sourceRefsById,
+) {
+  final refsByIdentity = <(String, String), Map<String, Object?>>{};
+  for (final refs in sourceRefsById.values) {
+    for (final ref in refs) {
+      final normalized = _sourceRefMap(ref);
+      final identity = _sourceRefIdentity(normalized);
+      if (normalized != null && identity != null) {
+        refsByIdentity.putIfAbsent(identity, () => normalized);
+      }
+    }
+  }
+  return refsByIdentity;
+}
+
+(String, String)? _sourceRefIdentity(Object? value) {
+  final normalized = _sourceRefMap(value);
+  if (normalized == null) {
+    return null;
+  }
+  final kind = _nullableString(normalized['kind']);
+  final id = _nullableString(normalized['id']);
+  if (kind == null || id == null) {
+    return null;
+  }
+  return (kind, id);
+}
+
+List<String> _deepInsightSourceIds(Object? value) {
+  if (value is! List) {
+    return const <String>[];
+  }
+  return value
+      .whereType<String>()
+      .map((sourceId) => sourceId.trim())
+      .where((sourceId) => sourceId.isNotEmpty)
+      .toList(growable: false);
+}
+
+Map<String, Object?>? _sourceRefForSourceId(String sourceId) {
+  final separator = sourceId.indexOf(':');
+  if (separator <= 0 || separator == sourceId.length - 1) {
+    return null;
+  }
+  final kind = sourceId.substring(0, separator);
+  final id = sourceId.substring(separator + 1);
+  return <String, Object?>{'kind': kind, 'id': id};
+}
+
+List<Map<String, Object?>> _deepInsightTextItems(
+  Object? value,
+  Map<String, List<Object?>> sourceRefsById, {
+  required String fallbackPrefix,
+  String? itemKind,
+  bool includeLabel = false,
+}) {
+  if (value is! List) {
+    return const <Map<String, Object?>>[];
+  }
+  final items = <Map<String, Object?>>[];
+  for (final raw in value) {
+    if (raw is! Map) {
+      continue;
+    }
+    final item = raw.cast<String, Object?>();
+    final rawText =
+        _nullableString(item['text']) ??
+        _nullableString(item['summary']) ??
+        _nullableString(item['claim']);
+    if (rawText == null) {
+      continue;
+    }
+    final sourceRefs = _deepInsightSourceRefs(
+      item['source_ids'] ?? item['source_refs'],
+      sourceRefsById,
+    );
+    if (sourceRefs.isEmpty) {
+      continue;
+    }
+    final text = _redactSecretLikeText(rawText);
+    final label = _nullableString(item['label']);
+    final confidence = _numValue(item['confidence']);
+    final output = <String, Object?>{
+      'id':
+          _nullableString(item['id']) ?? '$fallbackPrefix.${items.length + 1}',
+      'text': text,
+      'source_refs': sourceRefs,
+    };
+    if (itemKind != null) {
+      output['kind'] = itemKind;
+    }
+    if (includeLabel && label != null) {
+      output['label'] = label;
+    }
+    if (confidence != null) {
+      output['confidence'] = confidence;
+    }
+    items.add(output);
+  }
+  return List<Map<String, Object?>>.unmodifiable(items);
+}
+
+List<Map<String, Object?>> _deepInsightMetrics(
+  Object? value,
+  Map<String, List<Object?>> sourceRefsById,
+) {
+  if (value is! List) {
+    return const <Map<String, Object?>>[];
+  }
+  final metrics = <Map<String, Object?>>[];
+  for (final raw in value) {
+    if (raw is! Map) {
+      continue;
+    }
+    final item = raw.cast<String, Object?>();
+    final label = _nullableString(item['label']);
+    final metricValue = _numValue(item['value']);
+    if (label == null || metricValue == null) {
+      continue;
+    }
+    final sourceRefs = _deepInsightSourceRefs(
+      item['source_ids'] ?? item['source_refs'],
+      sourceRefsById,
+    );
+    if (sourceRefs.isEmpty) {
+      continue;
+    }
+    metrics.add(<String, Object?>{
+      'label': _redactSecretLikeText(label),
+      'value': metricValue,
+      if (_nullableString(item['unit']) != null)
+        'unit': _nullableString(item['unit']),
+      'source_refs': sourceRefs,
+    });
+  }
+  return List<Map<String, Object?>>.unmodifiable(metrics);
+}
+
+bool _listContainsRedactedText(List<Map<String, Object?>> items) {
+  return items.any((item) {
+    final text = _nullableString(item['text']) ?? '';
+    return text.contains('[redacted]');
+  });
+}
+
+List<Object?> _dedupedSourceRefs(Iterable<Object?> refs) {
+  final deduped = <Object?>[];
+  for (final ref in refs) {
+    final normalized = _sourceRefMap(ref);
+    if (normalized == null) {
+      continue;
+    }
+    if (!_hasSourceRef(
+      deduped,
+      _string(normalized['kind'], fallback: ''),
+      _string(normalized['id'], fallback: ''),
+    )) {
+      deduped.add(normalized);
+    }
+  }
+  return List<Object?>.unmodifiable(deduped);
+}
+
+String? _firstSourceExcerpt(List<Object?> refs) {
+  for (final ref in refs) {
+    if (ref is! Map) {
+      continue;
+    }
+    final excerpt = _nullableString(ref['excerpt']);
+    if (excerpt != null) {
+      return excerpt;
+    }
+  }
+  return null;
+}
+
 final class _ModelRequiredCaptureModel implements runtime.ModelClient {
   const _ModelRequiredCaptureModel();
 
@@ -2146,6 +3303,76 @@ final class _ModelRequiredCaptureModel implements runtime.ModelClient {
   Future<runtime.ModelResponse> complete(runtime.ModelRequest request) async {
     throw const CapturePipelineException(
       'Configure a model provider before running capture agents.',
+    );
+  }
+}
+
+final class _InsightDepthAgent implements runtime.AgentHandler {
+  const _InsightDepthAgent();
+
+  @override
+  Future<runtime.AgentHandlerResult> handle(
+    runtime.AgentContext context,
+    runtime.WnEvent event,
+  ) async {
+    final contextResult = await context.invokeTool(
+      _insightContextToolId,
+      input: <String, Object?>{
+        'trigger_event_id': event.id,
+        'trigger_event_type': event.type,
+        if (event.subjectRef != null)
+          'trigger_subject_ref': event.subjectRef!.toJson(),
+        'source_capture_id': event.subjectRef?.kind == 'capture'
+            ? event.subjectRef!.id
+            : _nullableString(event.payload['source_capture_id']),
+        'limit': 18,
+      },
+    );
+    if (contextResult.isErr) {
+      throw CapturePipelineException(contextResult.failure.message);
+    }
+    final contextPacket = contextResult.value;
+    final entries = _contextEntries(contextPacket);
+    if (entries.isEmpty) {
+      return const runtime.AgentHandlerResult();
+    }
+    final response = await context.model.complete(
+      runtime.ModelRequest(
+        prompt: buildInsightDepthPrompt(
+          contextJson: jsonEncode(contextPacket),
+          triggerEventId: event.id,
+          generatedAtIso: context.task.createdAt.toUtc().toIso8601String(),
+        ),
+        context: <String, Object?>{
+          'prompt_ref': insightDepthPromptRef,
+          'trigger_event_id': event.id,
+          'trigger_event_type': event.type,
+          'context_entry_count': entries.length,
+        },
+      ),
+    );
+    final insight = _deepInsightSuggestion(response, entries);
+    if (insight == null) {
+      return const runtime.AgentHandlerResult();
+    }
+
+    return runtime.AgentHandlerResult(
+      events: <runtime.WnEventDraft>[
+        context.emit(
+          type: runtime.WnEventTypes.insightCreated,
+          subjectRef: const runtime.SubjectRef(
+            kind: 'insight',
+            id: _rollingInsightId,
+          ),
+          payload: insight.payload(
+            triggerEvent: event,
+            packId: context.packId,
+            agentId: context.agentId,
+            runId: context.run.id,
+            createdAt: context.task.createdAt,
+          ),
+        ),
+      ],
     );
   }
 }

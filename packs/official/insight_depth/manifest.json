@@ -1,0 +1,161 @@
+{
+  "$schema": "../../../packages/schemas/src/agent_pack/agent_pack_manifest.schema.json",
+  "id": "pack.insight_depth",
+  "name": "Insight Depth",
+  "version": "0.1.0",
+  "schema_version": 1,
+  "publisher": "widenote",
+  "edition": "official",
+  "description": "Official model-backed deep insight pack for source-linked recent-state synthesis.",
+  "compatibility": {
+    "widenote_min": "0.1.0",
+    "widenote_max": null,
+    "schema_version": 1
+  },
+  "marketplace": {
+    "source": "bundled",
+    "trust_level": "official",
+    "install_mode": "bundled",
+    "repository_url": "https://github.com/widenote/widenote",
+    "docs_path": "packs/official/insight_depth/README.md",
+    "icon_path": null,
+    "categories": ["insight", "memory", "reflection"],
+    "capabilities": ["insight.write", "insight.context.read"],
+    "status": "available"
+  },
+  "additive_slots": [
+    {
+      "id": "insight.depth",
+      "mode": "additive",
+      "description": "Create source-linked model-backed insight summaries over recent local state."
+    }
+  ],
+  "default_run_mode": "auto",
+  "entrypoint_kind": "native",
+  "permissions": [
+    "model.complete",
+    "insight.write",
+    "insight.context.read",
+    "memory.read",
+    "timeline.read",
+    "knowledge.read"
+  ],
+  "subscriptions": [
+    {
+      "id": "sub.insight_capture_created",
+      "event_types": ["wn.capture.created"],
+      "agent_id": "agent.insight_depth",
+      "delivery": "async",
+      "enabled_by_default": true,
+      "depends_on": ["pack.default::sub.capture_created"]
+    },
+    {
+      "id": "sub.insight_requested",
+      "event_types": ["wn.insight.requested"],
+      "agent_id": "agent.insight_depth",
+      "delivery": "async",
+      "enabled_by_default": true,
+      "depends_on": []
+    }
+  ],
+  "agents": [
+    {
+      "id": "agent.insight_depth",
+      "runtime": "native",
+      "run_mode": "auto",
+      "name": "Insight Depth Agent",
+      "prompt_ref": "insight.depth.v1",
+      "model_profile_ref": "local_or_user_selected_model",
+      "permissions": [
+        "model.complete",
+        "insight.write",
+        "insight.context.read",
+        "memory.read",
+        "timeline.read",
+        "knowledge.read"
+      ],
+      "tools": ["insight.context.read"],
+      "output_events": ["wn.insight.created"],
+      "retry_policy": {"max_attempts": 2}
+    }
+  ],
+  "model_profiles": [
+    {
+      "id": "local_or_user_selected_model",
+      "purpose": "Synthesize recent captures, Memory, cards, and todos into neutral source-linked deep insight.",
+      "required": false,
+      "routing_policy": "app_default",
+      "required_capabilities": ["chat", "completion"],
+      "allow_fallback": false
+    }
+  ],
+  "tools": [
+    {
+      "id": "insight.context.read",
+      "capability_kind": "local_core",
+      "permissions": ["insight.context.read", "memory.read", "timeline.read", "knowledge.read"],
+      "required_permissions": ["insight.context.read", "memory.read", "timeline.read", "knowledge.read"],
+      "access": "read",
+      "risk": "low",
+      "locality": "local",
+      "approval_requirement": "none",
+      "execution": "local",
+      "side_effect": "none",
+      "compatible_run_modes": ["read_only", "confirm", "auto"]
+    }
+  ],
+  "ui_blocks": [
+    {
+      "type": "claim_list",
+      "events": ["wn.insight.created"]
+    },
+    {
+      "type": "evidence_list",
+      "events": ["wn.insight.created"]
+    },
+    {
+      "type": "counter_evidence",
+      "events": ["wn.insight.created"]
+    },
+    {
+      "type": "confidence_band",
+      "events": ["wn.insight.created"]
+    },
+    {
+      "type": "source_refs",
+      "events": ["wn.insight.created"]
+    }
+  ],
+  "ui_contributions": [
+    {
+      "id": "insight.detail.depth",
+      "surface": "insight.detail",
+      "kind": "event_blocks",
+      "title": "Deep insight detail",
+      "description": "Render model-backed claims, evidence, counter-evidence, confidence, and source references.",
+      "slot": "insight.detail.body",
+      "placement": "section",
+      "events": ["wn.insight.created"],
+      "blocks": ["claim_list", "evidence_list", "counter_evidence", "confidence_band", "source_refs"],
+      "required_permissions": ["insight.write"]
+    },
+    {
+      "id": "plugins.pack_home.insight_depth_status",
+      "surface": "plugins.pack_home",
+      "kind": "panel",
+      "title": "Insight Depth panel",
+      "description": "Show generation status for model-backed recent-state insights.",
+      "slot": "plugins.pack_home.summary",
+      "placement": "section"
+    }
+  ],
+  "storage_quota": {"local_bytes": 0},
+  "integrity": {"checksum_sha256": null, "signature": null},
+  "metadata": {
+    "status": "draft",
+    "source": "packs/official/insight_depth/manifest.json",
+    "derived_output": true,
+    "source_truth": "raw_records_memory_cards_and_todos_remain_canonical",
+    "generation_policy": "model_backed_fail_closed"
+  }
+}

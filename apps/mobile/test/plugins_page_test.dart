@@ -45,6 +45,7 @@ void main() {
       <String>[
         'pack.default',
         'pack.todo',
+        'pack.insight_depth',
         'pack.pkm_library',
         'pack.transcript_correction',
         'pack.usage_stats',
@@ -74,6 +75,19 @@ void main() {
     final todoPack = builtInPacks.singleWhere((pack) => pack.id == 'pack.todo');
     expect(todoPack.permissions, <String>['model.complete', 'todo.suggest']);
     expect(todoPack.outputEvents, <String>['wn.todo.suggested']);
+
+    final insightPack = builtInPacks.singleWhere(
+      (pack) => pack.id == 'pack.insight_depth',
+    );
+    expect(insightPack.permissions, <String>[
+      'model.complete',
+      'insight.write',
+      'insight.context.read',
+      'memory.read',
+      'timeline.read',
+      'knowledge.read',
+    ]);
+    expect(insightPack.outputEvents, <String>['wn.insight.created']);
 
     final pkmPack = builtInPacks.singleWhere(
       (pack) => pack.id == 'pack.pkm_library',
@@ -113,6 +127,12 @@ void main() {
         'pack.default:semantic_search.query',
         'pack.todo:model.complete',
         'pack.todo:todo.suggest',
+        'pack.insight_depth:model.complete',
+        'pack.insight_depth:insight.write',
+        'pack.insight_depth:insight.context.read',
+        'pack.insight_depth:memory.read',
+        'pack.insight_depth:timeline.read',
+        'pack.insight_depth:knowledge.read',
         'pack.pkm_library:model.complete',
         'pack.pkm_library:artifact.write',
         'pack.transcript_correction:model.complete',
@@ -175,6 +195,7 @@ void main() {
       () => parseOfficialPackManifestSources(<String, String>{
         'pack.default': officialPackManifestSource('pack.default'),
         'pack.todo': '[]',
+        'pack.insight_depth': officialPackManifestSource('pack.insight_depth'),
         'pack.pkm_library': officialPackManifestSource('pack.pkm_library'),
         'pack.transcript_correction': officialPackManifestSource(
           'pack.transcript_correction',
@@ -190,6 +211,7 @@ void main() {
       () => parseOfficialPackManifestSources(<String, String>{
         'pack.default': officialPackManifestSource('pack.default'),
         'pack.todo': jsonEncode(unsupportedSchema),
+        'pack.insight_depth': officialPackManifestSource('pack.insight_depth'),
         'pack.pkm_library': officialPackManifestSource('pack.pkm_library'),
         'pack.transcript_correction': officialPackManifestSource(
           'pack.transcript_correction',
@@ -203,6 +225,7 @@ void main() {
       () => parseOfficialPackManifestSources(<String, String>{
         'pack.default': officialPackManifestSource('pack.default'),
         'pack.todo': officialPackManifestSource('pack.default'),
+        'pack.insight_depth': officialPackManifestSource('pack.insight_depth'),
         'pack.pkm_library': officialPackManifestSource('pack.pkm_library'),
         'pack.transcript_correction': officialPackManifestSource(
           'pack.transcript_correction',
@@ -346,6 +369,22 @@ void main() {
       <String>{runtime.WnEventTypes.todoSuggested},
     );
 
+    final insightManifest = officialPackManifestSnapshot('pack.insight_depth');
+    expect(insightManifest.requiredPermissions, <String>{
+      'model.complete',
+      'insight.write',
+      'insight.context.read',
+      'memory.read',
+      'timeline.read',
+      'knowledge.read',
+    });
+    expect(
+      insightManifest.agentDefinitions.values
+          .expand((definition) => definition.outputEvents)
+          .toSet(),
+      <String>{runtime.WnEventTypes.insightCreated},
+    );
+
     final packs = buildOfficialNativePacks(
       manifests: <runtime.AgentPackManifestSnapshot>[defaultManifest],
       nativeHandlersByPackId: <String, Map<String, runtime.AgentHandler>>{
@@ -376,6 +415,10 @@ void main() {
     expect(find.byKey(const Key('pack-library-page')), findsOneWidget);
     expect(find.byKey(const Key('pack-row-pack.default')), findsOneWidget);
     expect(find.byKey(const Key('pack-row-pack.todo')), findsOneWidget);
+    expect(
+      find.byKey(const Key('pack-row-pack.insight_depth')),
+      findsOneWidget,
+    );
     expect(find.byKey(const Key('pack-row-pack.pkm_library')), findsOneWidget);
     expect(
       find.byKey(const Key('pack-row-pack.transcript_correction')),
@@ -384,16 +427,18 @@ void main() {
     expect(find.byKey(const Key('pack-row-pack.usage_stats')), findsOneWidget);
     expect(find.text('Default Capture Loop'), findsOneWidget);
     expect(find.text('Todo Extraction Loop'), findsOneWidget);
+    expect(find.text('Insight Depth'), findsOneWidget);
     expect(find.text('PKM Personal Library'), findsOneWidget);
     expect(find.text('Transcript Correction'), findsOneWidget);
     expect(find.text('Usage Statistics Dashboard'), findsOneWidget);
-    expect(find.text('v0.1.0'), findsNWidgets(5));
+    expect(find.text('v0.1.0'), findsNWidgets(6));
     expect(find.text('0 permissions'), findsOneWidget);
     expect(find.text('8 permissions'), findsOneWidget);
+    expect(find.text('6 permissions'), findsOneWidget);
     expect(find.text('4 permissions'), findsOneWidget);
     expect(find.text('2 outputs'), findsOneWidget);
     expect(find.text('2 permissions'), findsNWidgets(2));
-    expect(find.text('1 output'), findsNWidgets(3));
+    expect(find.text('1 output'), findsNWidgets(4));
     expect(find.text('0 outputs'), findsOneWidget);
     expect(
       find.byKey(const Key('pack-marketplace-source-pack.pkm_library')),
@@ -467,6 +512,10 @@ void main() {
       findsOneWidget,
     );
     expect(
+      find.byKey(const Key('permission-row-pack.insight_depth-model.complete')),
+      findsOneWidget,
+    );
+    expect(
       find.byKey(const Key('permission-row-pack.pkm_library-model.complete')),
       findsOneWidget,
     );
@@ -478,9 +527,10 @@ void main() {
     );
     expect(find.text('pack.default'), findsWidgets);
     expect(find.text('pack.todo'), findsWidgets);
+    expect(find.text('pack.insight_depth'), findsWidgets);
     expect(find.text('pack.pkm_library'), findsWidgets);
     expect(find.text('pack.transcript_correction'), findsWidgets);
-    expect(find.text('medium risk'), findsNWidgets(4));
+    expect(find.text('medium risk'), findsNWidgets(5));
     expect(find.text('low risk'), findsWidgets);
     expect(find.text('Built-in / available'), findsWidgets);
     expect(
@@ -534,7 +584,7 @@ void main() {
       'enabled',
     );
     expect(find.text('1 enabled'), findsNothing);
-    expect(find.text('5 enabled'), findsOneWidget);
+    expect(find.text('6 enabled'), findsOneWidget);
     expect(
       find.textContaining('Disabling affects future local tasks only'),
       findsOneWidget,
@@ -547,7 +597,7 @@ void main() {
       'disabled',
     );
     expect(find.text('1 disabled'), findsOneWidget);
-    expect(find.text('4 enabled'), findsOneWidget);
+    expect(find.text('5 enabled'), findsOneWidget);
     expect(find.byKey(const Key('pack-status-pack.default')), findsOneWidget);
     expect(find.text('disabled'), findsOneWidget);
 
@@ -557,7 +607,7 @@ void main() {
       database.packInstallations.readById('pack.default')!.status,
       'enabled',
     );
-    expect(find.text('5 enabled'), findsOneWidget);
+    expect(find.text('6 enabled'), findsOneWidget);
   });
 
   testWidgets('pack library hides app-owned internal installations', (
@@ -596,7 +646,7 @@ void main() {
     expect(database.packInstallations.readById('chat'), isNotNull);
     expect(find.text('Chat'), findsNothing);
     expect(find.byKey(const Key('pack-card-chat')), findsNothing);
-    expect(find.text('5 enabled'), findsOneWidget);
+    expect(find.text('6 enabled'), findsOneWidget);
   });
 
   test('pack disable rebuilds capture runtime without disabled pack', () async {
@@ -927,6 +977,7 @@ String _officialManifestPath(String packId) {
   return switch (packId) {
     'pack.default' => '../../packs/official/default/manifest.json',
     'pack.todo' => '../../packs/official/todo/manifest.json',
+    'pack.insight_depth' => '../../packs/official/insight_depth/manifest.json',
     'pack.pkm_library' => '../../packs/official/pkm_library/manifest.json',
     'pack.transcript_correction' =>
       '../../packs/official/transcript_correction/manifest.json',

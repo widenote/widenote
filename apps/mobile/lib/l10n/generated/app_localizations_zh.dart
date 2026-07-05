@@ -589,6 +589,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get insightsBackTooltip => '关闭洞察';
 
   @override
+  String get insightsGenerateTooltip => '生成洞察';
+
+  @override
+  String get insightsGeneratingTooltip => '正在生成洞察';
+
+  @override
   String get insightsRefreshTooltip => '刷新洞察';
 
   @override
@@ -596,6 +602,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get insightsActiveEmpty => '还没有可溯源洞察。';
+
+  @override
+  String get insightGenerationFailedTitle => '未生成洞察';
+
+  @override
+  String get insightGenerationFailedBody => '重度洞察需要足够的本地证据，并且模型 Provider 可用。';
 
   @override
   String get insightDetailTitle => '洞察详情';
@@ -769,6 +781,21 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get insightKindAttachmentEvidence => '附件证据洞察';
+
+  @override
+  String get insightKindReflection => '深度反思';
+
+  @override
+  String get insightKindTension => '张力洞察';
+
+  @override
+  String get insightKindShift => '状态转变';
+
+  @override
+  String get insightKindRisk => '风险洞察';
+
+  @override
+  String get insightKindOpportunity => '机会洞察';
 
   @override
   String get insightMetricSourceLinked => '可溯源';

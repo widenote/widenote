@@ -1155,6 +1155,18 @@ abstract class AppLocalizations {
   /// **'Close Insights'**
   String get insightsBackTooltip;
 
+  /// No description provided for @insightsGenerateTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate insight'**
+  String get insightsGenerateTooltip;
+
+  /// No description provided for @insightsGeneratingTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Generating insight'**
+  String get insightsGeneratingTooltip;
+
   /// No description provided for @insightsRefreshTooltip.
   ///
   /// In en, this message translates to:
@@ -1172,6 +1184,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No source-linked insights yet.'**
   String get insightsActiveEmpty;
+
+  /// No description provided for @insightGenerationFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Insight not generated'**
+  String get insightGenerationFailedTitle;
+
+  /// No description provided for @insightGenerationFailedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A model-backed insight needs enough local evidence and an available provider.'**
+  String get insightGenerationFailedBody;
 
   /// No description provided for @insightDetailTitle.
   ///
@@ -1508,6 +1532,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'attachment evidence insight'**
   String get insightKindAttachmentEvidence;
+
+  /// No description provided for @insightKindReflection.
+  ///
+  /// In en, this message translates to:
+  /// **'deep reflection'**
+  String get insightKindReflection;
+
+  /// No description provided for @insightKindTension.
+  ///
+  /// In en, this message translates to:
+  /// **'tension insight'**
+  String get insightKindTension;
+
+  /// No description provided for @insightKindShift.
+  ///
+  /// In en, this message translates to:
+  /// **'state shift'**
+  String get insightKindShift;
+
+  /// No description provided for @insightKindRisk.
+  ///
+  /// In en, this message translates to:
+  /// **'risk insight'**
+  String get insightKindRisk;
+
+  /// No description provided for @insightKindOpportunity.
+  ///
+  /// In en, this message translates to:
+  /// **'opportunity insight'**
+  String get insightKindOpportunity;
 
   /// No description provided for @insightMetricSourceLinked.
   ///

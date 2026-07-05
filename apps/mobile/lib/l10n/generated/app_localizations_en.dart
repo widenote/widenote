@@ -740,6 +740,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get insightsBackTooltip => 'Close Insights';
 
   @override
+  String get insightsGenerateTooltip => 'Generate insight';
+
+  @override
+  String get insightsGeneratingTooltip => 'Generating insight';
+
+  @override
   String get insightsRefreshTooltip => 'Refresh Insights';
 
   @override
@@ -747,6 +753,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get insightsActiveEmpty => 'No source-linked insights yet.';
+
+  @override
+  String get insightGenerationFailedTitle => 'Insight not generated';
+
+  @override
+  String get insightGenerationFailedBody =>
+      'A model-backed insight needs enough local evidence and an available provider.';
 
   @override
   String get insightDetailTitle => 'Insight detail';
@@ -924,6 +937,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get insightKindAttachmentEvidence => 'attachment evidence insight';
+
+  @override
+  String get insightKindReflection => 'deep reflection';
+
+  @override
+  String get insightKindTension => 'tension insight';
+
+  @override
+  String get insightKindShift => 'state shift';
+
+  @override
+  String get insightKindRisk => 'risk insight';
+
+  @override
+  String get insightKindOpportunity => 'opportunity insight';
 
   @override
   String get insightMetricSourceLinked => 'source-linked';

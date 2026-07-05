@@ -110,6 +110,7 @@ It should stay short. It points to the right local context instead of duplicatin
 - `packages/schemas/src/transcript/transcript.schema.json`
 - `packs/official/default/manifest.json`
 - `packs/official/todo/manifest.json`
+- `packs/official/insight_depth/manifest.json`
 - `packs/official/pkm_library/manifest.json`
 - `packs/official/transcript_correction/manifest.json`
 - `packs/official/usage_stats/manifest.json`
@@ -161,8 +162,9 @@ It should stay short. It points to the right local context instead of duplicatin
 | TS protocol | `packages/ts/protocol/README.md` | TypeScript protocol helpers |
 | TS runner core | `packages/ts/runner_core/README.md` | Runner execution primitives |
 | TS agent SDK | `packages/ts/agent_sdk/README.md` | Runner-side Agent Pack SDK |
-| Default Agent Pack | `packs/official/default/README.md` | Default capture to insight loop |
+| Default Agent Pack | `packs/official/default/README.md` | Default capture to Memory/card loop |
 | Todo Agent Pack | `packs/official/todo/README.md` | Source-linked todo suggestion loop |
+| Insight Depth Agent Pack | `packs/official/insight_depth/README.md` | Model-backed source-linked deep insight loop |
 | PKM Agent Pack | `packs/official/pkm_library/README.md` | Source-linked PKM profile artifacts |
 | Transcript Correction Agent Pack | `packs/official/transcript_correction/README.md` | Source-linked transcript correction revisions |
 | Usage Statistics Agent Pack | `packs/official/usage_stats/README.md` | Read-only usage statistics Settings dashboard |

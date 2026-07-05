@@ -465,6 +465,41 @@ void _compareOfficialGuardrails(
       const <String>{WnEventTypes.todoSuggested},
     );
   }
+
+  if (manifest.id == 'pack.insight_depth') {
+    const expectedInsightPermissions = <String>{
+      ModelPermissions.complete,
+      'insight.write',
+      'insight.context.read',
+      'memory.read',
+      'timeline.read',
+      'knowledge.read',
+    };
+    _expectSetEqual(
+      issues,
+      'pack.insight_depth.permissions',
+      pack.requiredPermissions,
+      expectedInsightPermissions,
+    );
+    _expectSetEqual(
+      issues,
+      'pack.insight_depth.manifest_permissions',
+      manifest.requiredPermissions,
+      expectedInsightPermissions,
+    );
+    _expectSetEqual(
+      issues,
+      'pack.insight_depth.output_events',
+      _nativeOutputEvents(pack),
+      const <String>{WnEventTypes.insightCreated},
+    );
+    _expectSetEqual(
+      issues,
+      'pack.insight_depth.manifest_output_events',
+      _manifestOutputEvents(manifest),
+      const <String>{WnEventTypes.insightCreated},
+    );
+  }
 }
 
 Set<String> _nativeOutputEvents(AgentPack pack) {

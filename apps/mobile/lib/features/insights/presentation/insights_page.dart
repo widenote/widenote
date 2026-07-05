@@ -27,15 +27,48 @@ class InsightsPage extends ConsumerWidget {
             title: l10n.insightsPageTitle,
             subtitle: l10n.insightsPageSubtitle,
             onBack: () => _goBack(context),
-            trailing: IconButton(
-              key: const Key('insights-refresh-button'),
-              tooltip: l10n.insightsRefreshTooltip,
-              onPressed: () =>
-                  ref.read(insightsControllerProvider.notifier).refresh(),
-              icon: const Icon(Icons.refresh),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  key: const Key('insights-generate-button'),
+                  tooltip: state.isGenerating
+                      ? l10n.insightsGeneratingTooltip
+                      : l10n.insightsGenerateTooltip,
+                  onPressed: state.isGenerating
+                      ? null
+                      : () => ref
+                            .read(insightsControllerProvider.notifier)
+                            .generate(),
+                  icon: state.isGenerating
+                      ? const SizedBox.square(
+                          dimension: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.auto_awesome),
+                ),
+                IconButton(
+                  key: const Key('insights-refresh-button'),
+                  tooltip: l10n.insightsRefreshTooltip,
+                  onPressed: () =>
+                      ref.read(insightsControllerProvider.notifier).refresh(),
+                  icon: const Icon(Icons.refresh),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 16),
+          if (state.errorMessage != null) ...[
+            _Surface(
+              icon: Icons.error_outline,
+              title: l10n.insightGenerationFailedTitle,
+              child: Text(
+                l10n.insightGenerationFailedBody,
+                style: _mutedStyle(context),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
           _InsightSection(
             key: const Key('insights-active-section'),
             title: l10n.insightsActiveSectionTitle,

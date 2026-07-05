@@ -136,6 +136,73 @@ void main() {
         },
         timeout: const Timeout(Duration(minutes: 8)),
       );
+
+      test(
+        'creates source-linked heavy Insight Depth output for realistic recent-state input',
+        () async {
+          final provider = modelProviderFromConfig(
+            config: ModelProviderConfig(
+              id: 'deepseek-insight-depth',
+              kind: ModelProviderKind.anthropicCompatible,
+              displayName: 'DeepSeek Insight Depth Diagnostics',
+              endpoint: Uri.parse(endpointValue),
+              model: model,
+              apiKey: apiKey.trim(),
+            ),
+            httpClient: httpClient,
+          );
+          final modelClient = RuntimeModelClientAdapter(
+            provider: provider,
+            model: model,
+          );
+          final eventStore = runtime.InMemoryEventStore();
+          final traceSink = runtime.InMemoryTraceSink();
+          final orchestrator = CaptureOrchestrator.local(
+            eventStore: eventStore,
+            traceSink: traceSink,
+            clock: TickingWnClock(DateTime.utc(2026, 7, 5, 8)),
+            idGenerator: SequenceWnIdGenerator(seed: 'deepseek-insight'),
+            model: modelClient,
+            enabledPackIds: const <String>[
+              'pack.default',
+              'pack.todo',
+              'pack.insight_depth',
+            ],
+          );
+
+          final result = await orchestrator.processCapture(
+            'DeepSeek Insight: 最近三条记录都在说 WideNote 洞察要像一个中立观察者，'
+            '不是统计摘要；我反复卡在 review 节奏、MemeX 对标和手动入口之间，'
+            '真正需要的是指出这段时间状态里的主线和一个下一步启发。',
+            captureId: 'capture-deepseek-insight-depth',
+          );
+
+          expect(result.record.status, 'Processed locally');
+          expect(result.insights, isNotEmpty);
+          expect(
+            result.eventTypes,
+            contains(runtime.WnEventTypes.insightCreated),
+          );
+          final insightEvent = result.events.singleWhere(
+            (event) => event.type == runtime.WnEventTypes.insightCreated,
+          );
+          expect(insightEvent.packId, 'pack.insight_depth');
+          expect(insightEvent.agentId, 'agent.insight_depth');
+          expect(insightEvent.payload['claims'], isA<List<Object?>>());
+          expect(insightEvent.payload['evidence'], isA<List<Object?>>());
+          expect(insightEvent.payload['source_refs'], isA<List<Object?>>());
+          expect(
+            _sourceRefIds(
+              insightEvent.payload['source_refs']! as List<Object?>,
+            ),
+            contains('capture-deepseek-insight-depth'),
+          );
+          for (final trace in await traceSink.readAll()) {
+            expect(trace.details.toString(), isNot(contains(apiKey.trim())));
+          }
+        },
+        timeout: const Timeout(Duration(minutes: 4)),
+      );
     },
   );
 }

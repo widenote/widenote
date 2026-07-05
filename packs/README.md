@@ -24,8 +24,9 @@ Packs own declarative capability bundles. They must not depend on private app ta
 
 | Module | Context | Purpose |
 | --- | --- | --- |
-| Official default | `official/default/README.md` | Default capture to insight loop |
+| Official default | `official/default/README.md` | Default capture to Memory/card loop |
 | Official todo | `official/todo/README.md` | Source-linked todo suggestion loop |
+| Official Insight Depth | `official/insight_depth/README.md` | Model-backed source-linked deep insight loop |
 | Official PKM library | `official/pkm_library/README.md` | Source-linked derived PKM profile artifacts |
 | Official transcript correction | `official/transcript_correction/README.md` | Source-linked transcript correction revisions |
 | Official usage statistics | `official/usage_stats/README.md` | Read-only local usage and runtime statistics dashboard |
@@ -56,7 +57,7 @@ Generated manifests, schema docs, or pack indexes must document their source of 
 Validate phase-one official pack manifests with:
 
 ```sh
-node tools/pack_validator/validate.mjs packs/official/default/manifest.json packs/official/todo/manifest.json packs/official/pkm_library/manifest.json packs/official/transcript_correction/manifest.json packs/official/usage_stats/manifest.json packs/marketplace/index.json
+node tools/pack_validator/validate.mjs packs/official/default/manifest.json packs/official/todo/manifest.json packs/official/insight_depth/manifest.json packs/official/pkm_library/manifest.json packs/official/transcript_correction/manifest.json packs/official/usage_stats/manifest.json packs/marketplace/index.json
 ```
 
 Validator self-tests:

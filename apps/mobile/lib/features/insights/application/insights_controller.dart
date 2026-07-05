@@ -4,17 +4,38 @@ import 'package:widenote_cards/widenote_cards.dart';
 import 'package:widenote_local_db/widenote_local_db.dart' as localdb;
 
 import '../../../app/local_database.dart';
+import '../../capture/application/capture_controller.dart';
+import '../../capture/application/capture_orchestrator_provider.dart';
 
 final insightsControllerProvider =
     NotifierProvider<InsightsController, InsightsState>(InsightsController.new);
 
 @immutable
 final class InsightsState {
-  const InsightsState({required this.items});
+  const InsightsState({
+    required this.items,
+    this.isGenerating = false,
+    this.errorMessage,
+  });
 
   final List<InsightListItem> items;
+  final bool isGenerating;
+  final String? errorMessage;
 
   bool get isEmpty => items.isEmpty;
+
+  InsightsState copyWith({
+    List<InsightListItem>? items,
+    bool? isGenerating,
+    String? errorMessage,
+    bool clearError = false,
+  }) {
+    return InsightsState(
+      items: items ?? this.items,
+      isGenerating: isGenerating ?? this.isGenerating,
+      errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
+    );
+  }
 
   InsightListItem? itemById(String id) {
     for (final item in items) {
@@ -96,6 +117,23 @@ final class InsightsController extends Notifier<InsightsState> {
     state = _readState();
   }
 
+  Future<void> generate() async {
+    if (state.isGenerating) {
+      return;
+    }
+    state = state.copyWith(isGenerating: true, clearError: true);
+    try {
+      await ref.read(captureOrchestratorProvider).generateDeepInsight();
+      ref.invalidate(captureControllerProvider);
+      state = _readState();
+    } catch (error) {
+      state = _readState().copyWith(
+        isGenerating: false,
+        errorMessage: '$error',
+      );
+    }
+  }
+
   InsightListItem? readInsightById(String id) {
     final record = _database.insights.readById(id);
     if (record == null || _isLegacyArchived(record)) {
@@ -145,6 +183,8 @@ InsightListItem _insightView(localdb.InsightRecord record) {
     sensitivity: _string(record.payload['sensitivity']),
     evidenceDensity: _string(record.payload['evidence_density']),
     requiresReview:
+        _reviewState(record.payload['review']) == 'needs_review' ||
+        _reviewState(record.payload['review']) == 'rejected' ||
         _bool(record.payload['requires_review']) ||
         record.status == 'review' ||
         record.status == 'needs_review',
@@ -233,4 +273,11 @@ bool _bool(Object? value) {
     return value.toLowerCase() == 'true';
   }
   return false;
+}
+
+String? _reviewState(Object? value) {
+  if (value is! Map) {
+    return null;
+  }
+  return _string(value['state']);
 }
