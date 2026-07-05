@@ -23,7 +23,7 @@ Phase one must include these five product areas:
 | i18n | The mobile app supports at least Chinese and English through Flutter localization, not hardcoded strings. |
 | Model providers | Users can configure, test, and select local/BYOK model providers through a provider abstraction. |
 | Backup, import, migration | Users can export and import local data through a versioned WideNote backup format, with migration/error handling. |
-| Memory-first cards and insights | The app turns captures and Memory into source-linked cards and lightweight insights without adopting P.A.R.A as the core model. |
+| Memory-first cards and deep insights | The app turns captures and Memory into source-linked cards, then uses a dedicated model-backed insight path for deeper source-linked reflection without adopting P.A.R.A as the core model. |
 | Conversation system | The chat tab becomes a real local conversation surface with persistent messages and source-linked context from records/Memory/todos. |
 
 ## Out of Scope Unless Explicitly Reopened

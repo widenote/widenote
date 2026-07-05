@@ -73,7 +73,6 @@ void main() {
                 .toSet();
             var observedAcceptedCount = 0;
             var observedReviewCount = 0;
-            var observedTodoCount = 0;
 
             for (final scenario in scenarios) {
               final result = await orchestrator.processCapture(
@@ -121,7 +120,6 @@ void main() {
                 isNot(result.memoryItem.needsReview),
               );
               if (result.todo.isSuggested) {
-                observedTodoCount += 1;
                 expect(result.todo.title.trim(), isNotEmpty);
                 expect(result.todo.title, isNot(contains(apiKey)));
               } else {
@@ -147,7 +145,7 @@ void main() {
                         event.type == runtime.WnEventTypes.memoryProposed,
                   )
                   .length,
-              observedTodoCount,
+              scenarios.length,
             );
             expect(
               events
@@ -563,7 +561,6 @@ void _expectScenarioEventShape(
       runtime.WnEventTypes.captureCreated,
       runtime.WnEventTypes.memoryProposed,
       runtime.WnEventTypes.cardCreated,
-      runtime.WnEventTypes.insightCreated,
       if (result.todo.isSuggested) runtime.WnEventTypes.todoSuggested,
       runtime.WnEventTypes.artifactCreated,
     ]),
@@ -571,7 +568,6 @@ void _expectScenarioEventShape(
   for (final type in <String>[
     runtime.WnEventTypes.memoryProposed,
     runtime.WnEventTypes.cardCreated,
-    runtime.WnEventTypes.insightCreated,
     if (result.todo.isSuggested) runtime.WnEventTypes.todoSuggested,
     runtime.WnEventTypes.artifactCreated,
   ]) {
@@ -580,6 +576,11 @@ void _expectScenarioEventShape(
       hasLength(1),
     );
   }
+  expect(
+    result.eventTypes,
+    isNot(contains(runtime.WnEventTypes.insightCreated)),
+  );
+  expect(result.insights, isEmpty);
 
   final memoryEvent = result.events.singleWhere(
     (event) => event.type == runtime.WnEventTypes.memoryProposed,
@@ -605,16 +606,6 @@ void _expectScenarioEventShape(
   expect(cardEvent.payload['source_event_id'], checkedSourceEventId);
   expect(
     _sourceRefIds(cardEvent.payload['source_refs']! as List<Object?>),
-    containsAll(<String>[result.record.id, checkedSourceEventId]),
-  );
-
-  final insightEvent = result.events.singleWhere(
-    (event) => event.type == runtime.WnEventTypes.insightCreated,
-  );
-  expect(insightEvent.payload['source_capture_id'], result.record.id);
-  expect(insightEvent.payload['source_event_id'], checkedSourceEventId);
-  expect(
-    _sourceRefIds(insightEvent.payload['source_refs']! as List<Object?>),
     containsAll(<String>[result.record.id, checkedSourceEventId]),
   );
 

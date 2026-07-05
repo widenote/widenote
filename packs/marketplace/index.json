@@ -17,8 +17,7 @@
       ],
       "capabilities": [
         "memory.propose",
-        "card.write",
-        "insight.write"
+        "card.write"
       ],
       "repository_url": "https://github.com/widenote/widenote",
       "docs_path": "packs/official/default/README.md"

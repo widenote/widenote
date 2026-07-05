@@ -1,50 +1,28 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
 import 'package:widenote_cards/widenote_cards.dart';
 import 'package:widenote_local_db/widenote_local_db.dart' as localdb;
 
 import '../../../app/local_database.dart';
-import '../../capture/application/capture_controller.dart';
-import '../../timeline/application/timeline_repository.dart';
 
 final insightsControllerProvider =
     NotifierProvider<InsightsController, InsightsState>(InsightsController.new);
 
 @immutable
 final class InsightsState {
-  const InsightsState({
-    required this.activeItems,
-    required this.archivedItems,
-    this.errorMessage,
-  });
+  const InsightsState({required this.items});
 
-  final List<InsightListItem> activeItems;
-  final List<InsightListItem> archivedItems;
-  final String? errorMessage;
+  final List<InsightListItem> items;
 
-  bool get isEmpty => activeItems.isEmpty && archivedItems.isEmpty;
+  bool get isEmpty => items.isEmpty;
 
   InsightListItem? itemById(String id) {
-    for (final item in <InsightListItem>[...activeItems, ...archivedItems]) {
+    for (final item in items) {
       if (item.id == id) {
         return item;
       }
     }
     return null;
-  }
-
-  InsightsState copyWith({
-    List<InsightListItem>? activeItems,
-    List<InsightListItem>? archivedItems,
-    String? errorMessage,
-    bool clearError = false,
-  }) {
-    return InsightsState(
-      activeItems: activeItems ?? this.activeItems,
-      archivedItems: archivedItems ?? this.archivedItems,
-      errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
-    );
   }
 }
 
@@ -88,8 +66,6 @@ final class InsightListItem {
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  bool get isArchived => status == 'archived';
-
   int get sourceRefCount => sourceLinks.length;
 }
 
@@ -117,96 +93,34 @@ final class InsightsController extends Notifier<InsightsState> {
   }
 
   void refresh() {
-    state = _readState().copyWith(clearError: true);
-  }
-
-  void archiveInsight(String id) {
-    _updateStatus(id, 'archived', action: 'archived');
-  }
-
-  void restoreInsight(String id) {
-    _updateStatus(id, 'active', action: 'restored');
+    state = _readState();
   }
 
   InsightListItem? readInsightById(String id) {
     final record = _database.insights.readById(id);
-    return record == null ? null : _insightView(record);
-  }
-
-  void _updateStatus(String id, String status, {required String action}) {
-    try {
-      final existing = _database.insights.readById(id);
-      if (existing == null) {
-        throw StateError('Insight not found: $id');
-      }
-      final now = DateTime.now().toUtc();
-      final updated = existing.copyWith(status: status, updatedAt: now);
-      _database.insights.save(updated);
-      _appendLifecycleEvidence(existing, updated, action, now);
-      ref
-        ..invalidate(timelineSnapshotProvider)
-        ..invalidate(captureControllerProvider);
-      state = _readState().copyWith(clearError: true);
-    } catch (_) {
-      state = state.copyWith(errorMessage: 'Insight update failed.');
+    if (record == null || _isLegacyArchived(record)) {
+      return null;
     }
+    return _insightView(record);
   }
 
   InsightsState _readState() {
-    final records = _database.insights.readAll().reversed.map(_insightView);
-    final active = <InsightListItem>[];
-    final archived = <InsightListItem>[];
-    for (final record in records) {
-      if (record.isArchived) {
-        archived.add(record);
-      } else {
-        active.add(record);
-      }
-    }
-    return InsightsState(activeItems: active, archivedItems: archived);
+    final records = _database.insights
+        .readAll()
+        .reversed
+        .where((record) => !_isLegacyArchived(record))
+        .map(_insightView)
+        .toList(growable: false);
+    return InsightsState(items: records);
   }
 
   localdb.WideNoteLocalDatabase get _database {
     return ref.read(localDatabaseProvider);
   }
+}
 
-  void _appendLifecycleEvidence(
-    localdb.InsightRecord previous,
-    localdb.InsightRecord updated,
-    String action,
-    DateTime occurredAt,
-  ) {
-    final eventId =
-        'event-insight-$action-${updated.id}-${occurredAt.microsecondsSinceEpoch}';
-    _database.eventLog.append(
-      localdb.EventLogEntry(
-        id: eventId,
-        type: 'wn.insight.$action',
-        actor: runtime.WnActor.user.name,
-        subjectRef: <String, Object?>{'kind': 'insight', 'id': updated.id},
-        payload: <String, Object?>{
-          'action': action,
-          'insight_id': updated.id,
-          'previous_status': previous.status,
-          'status': updated.status,
-        },
-        createdAt: occurredAt,
-      ),
-    );
-    _database.traceEvents.insert(
-      localdb.TraceEventRecord(
-        id: 'trace-$eventId',
-        name: 'insight.lifecycle.$action',
-        level: 'info',
-        traceTypeOverride: 'insight.lifecycle',
-        message: 'Insight $action by user.',
-        sourceEventId: eventId,
-        status: 'ok',
-        payload: <String, Object?>{'insight_id': updated.id, 'action': action},
-        createdAt: occurredAt,
-      ),
-    );
-  }
+bool _isLegacyArchived(localdb.InsightRecord record) {
+  return record.status.trim().toLowerCase() == 'archived';
 }
 
 InsightListItem _insightView(localdb.InsightRecord record) {

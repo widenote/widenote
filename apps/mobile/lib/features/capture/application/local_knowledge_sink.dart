@@ -14,9 +14,6 @@ final class LocalDbCaptureKnowledgeSink implements CaptureKnowledgeSink {
     for (final card in bundle.cards) {
       _database.cards.save(_cardRecord(card, savedAt));
     }
-    for (final insight in bundle.insights) {
-      _database.insights.save(_insightRecord(insight, savedAt));
-    }
   }
 
   @override
@@ -55,24 +52,6 @@ CardRecord _cardRecord(cards.MemoryFirstCard card, DateTime savedAt) {
   );
 }
 
-InsightRecord _insightRecord(
-  cards.MemoryFirstInsight insight,
-  DateTime savedAt,
-) {
-  return InsightRecord(
-    id: insight.id,
-    insightKind: _insightKindName(insight.kind),
-    title: insight.title,
-    summary: insight.summary,
-    sourceRefs: _sourceRefs(insight.sourceLinks),
-    metricLabel: insight.metricLabel,
-    metricValue: insight.metricValue,
-    payload: insight.metadata,
-    createdAt: insight.createdAt,
-    updatedAt: savedAt,
-  );
-}
-
 DerivedArtifactRecord _artifactRecord(
   CaptureDerivedArtifact artifact,
   DateTime savedAt,
@@ -100,9 +79,6 @@ List<Object?> _sourceRefs(List<cards.SourceLink> links) {
 }
 
 DateTime _savedAt(cards.MemoryFirstCardBundle bundle) {
-  if (bundle.insights.isNotEmpty) {
-    return bundle.insights.first.createdAt;
-  }
   if (bundle.cards.isNotEmpty) {
     return bundle.cards.first.createdAt;
   }
@@ -113,16 +89,5 @@ String _cardKindName(cards.MemoryFirstCardKind kind) {
   return switch (kind) {
     cards.MemoryFirstCardKind.captureSummary => 'capture_summary',
     cards.MemoryFirstCardKind.memorySummary => 'memory_summary',
-  };
-}
-
-String _insightKindName(cards.MemoryFirstInsightKind kind) {
-  return switch (kind) {
-    cards.MemoryFirstInsightKind.summary => 'summary',
-    cards.MemoryFirstInsightKind.count => 'count',
-    cards.MemoryFirstInsightKind.trend => 'trend',
-    cards.MemoryFirstInsightKind.sourceMix => 'source_mix',
-    cards.MemoryFirstInsightKind.actionPattern => 'action_pattern',
-    cards.MemoryFirstInsightKind.attachmentEvidence => 'attachment_evidence',
   };
 }

@@ -60,7 +60,7 @@ void main() {
       expect(memoryCard.metadata['memory_key'], 'project.widenote.cards');
     });
 
-    test('derives summary, count, and trend insights with sources', () {
+    test('does not derive lightweight insights from captures and Memory', () {
       final bundle = service.generate(
         MemoryFirstCardInput(
           now: DateTime.utc(2026, 6, 24, 12),
@@ -80,7 +80,7 @@ void main() {
             MemoryCardSource(
               id: 'memory-latest',
               key: 'memory.latest',
-              body: 'Latest Memory wins the summary insight.',
+              body: 'Latest Memory remains a source-linked card.',
               createdAt: DateTime.utc(2026, 6, 24, 9),
               sourceLinks: const <SourceLink>[
                 SourceLink(kind: 'capture', id: 'capture-late'),
@@ -90,32 +90,11 @@ void main() {
         ),
       );
 
-      expect(bundle.insights.map((insight) => insight.kind), [
-        MemoryFirstInsightKind.summary,
-        MemoryFirstInsightKind.count,
-        MemoryFirstInsightKind.trend,
-        MemoryFirstInsightKind.sourceMix,
-      ]);
-      expect(
-        bundle.insights.every((insight) => insight.isSourceLinked),
-        isTrue,
-      );
-      expect(
-        bundle.insights[0].summary,
-        'Latest Memory wins the summary insight.',
-      );
-      expect(bundle.insights[1].metricValue, 3);
-      expect(bundle.insights[1].summary, contains('2 captures and 1 Memory'));
-      expect(bundle.insights[1].claims.single.sourceLinks, isNotEmpty);
-      expect(bundle.insights[1].metrics.single.label, 'source-linked cards');
-      expect(bundle.insights[1].metadata['ui_blocks'], isA<List>());
-      expect(bundle.insights[2].metadata['day'], '2026-06-24');
-      expect(bundle.insights[2].metricValue, 2);
-      expect(bundle.insights[3].summary, contains('3 card(s)'));
-      expect(bundle.insights[3].metadata['source_kinds'], isA<Map>());
+      expect(bundle.cards, hasLength(3));
+      expect(bundle.insights, isEmpty);
     });
 
-    test('does not infer semantic insights from local text keywords', () {
+    test('does not infer semantic or statistical insights locally', () {
       final bundle = service.generate(
         MemoryFirstCardInput(
           now: DateTime.utc(2026, 6, 24, 12),
@@ -136,27 +115,8 @@ void main() {
         ),
       );
 
-      expect(
-        bundle.insights.map((insight) => insight.kind),
-        isNot(contains(MemoryFirstInsightKind.actionPattern)),
-      );
-      expect(
-        bundle.insights.map((insight) => insight.kind),
-        isNot(contains(MemoryFirstInsightKind.attachmentEvidence)),
-      );
-      expect(
-        bundle.insights.map((insight) => insight.kind),
-        <MemoryFirstInsightKind>[
-          MemoryFirstInsightKind.summary,
-          MemoryFirstInsightKind.count,
-          MemoryFirstInsightKind.trend,
-          MemoryFirstInsightKind.sourceMix,
-        ],
-      );
-      expect(
-        bundle.insights.every((insight) => insight.isSourceLinked),
-        isTrue,
-      );
+      expect(bundle.cards, hasLength(2));
+      expect(bundle.insights, isEmpty);
     });
 
     test(
@@ -243,7 +203,7 @@ void main() {
       ]);
     });
 
-    test('dedupes duplicate cards before ranking insight source refs', () {
+    test('dedupes duplicate cards without creating local insights', () {
       final bundle = service.generate(
         MemoryFirstCardInput(
           now: DateTime.utc(2026, 6, 24, 12),
@@ -271,14 +231,7 @@ void main() {
         'card.capture.capture-1',
         'card.capture.capture-2',
       ]);
-      final count = bundle.insights.singleWhere(
-        (insight) => insight.kind == MemoryFirstInsightKind.count,
-      );
-      expect(count.metricValue, 2);
-      expect(count.sourceLinks.map((link) => '${link.kind}:${link.id}'), [
-        'capture:capture-2',
-        'capture:capture-1',
-      ]);
+      expect(bundle.insights, isEmpty);
     });
 
     test('card and insight models reject missing source links', () {

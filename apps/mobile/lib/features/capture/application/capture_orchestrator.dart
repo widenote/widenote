@@ -1090,8 +1090,7 @@ bool _isTrustedBuiltInOutputEvent(runtime.WnEvent event) {
     return false;
   }
   if (event.type == runtime.WnEventTypes.memoryProposed ||
-      event.type == runtime.WnEventTypes.cardCreated ||
-      event.type == runtime.WnEventTypes.insightCreated) {
+      event.type == runtime.WnEventTypes.cardCreated) {
     return event.packId == CaptureOrchestrator._defaultPackId &&
         event.agentId == CaptureOrchestrator._defaultAgentId;
   }
@@ -1629,7 +1628,7 @@ List<cards.SourceLink> _cardSourceLinks(List<memory.MemorySourceRef> refs) {
 CaptureKnowledgeLayer _knowledgeLayerView(cards.MemoryFirstCardBundle bundle) {
   return CaptureKnowledgeLayer(
     cards: bundle.cards.map(_cardView).toList(growable: false),
-    insights: bundle.insights.map(_insightView).toList(growable: false),
+    insights: const <SourceInsight>[],
   );
 }
 
@@ -1644,46 +1643,16 @@ SourceCard _cardView(cards.MemoryFirstCard card) {
   );
 }
 
-SourceInsight _insightView(cards.MemoryFirstInsight insight) {
-  return SourceInsight(
-    id: insight.id,
-    title: insight.title,
-    summary: insight.summary,
-    sourceLabel: _sourceLinkLabel(insight.sourceLinks),
-    kindLabel: _insightKindLabel(insight.kind),
-    metricLabel: _metricLabel(insight),
-  );
-}
-
 String _sourceLinkLabel(List<cards.SourceLink> links) {
   final first = links.first;
   final extra = links.length == 1 ? '' : ' +${links.length - 1}';
   return 'source: ${first.kind}:${first.id}$extra';
 }
 
-String _metricLabel(cards.MemoryFirstInsight insight) {
-  if (insight.metricLabel == null || insight.metricValue == null) {
-    return 'source-linked';
-  }
-  return '${insight.metricValue} ${insight.metricLabel}';
-}
-
 String _cardKindLabel(cards.MemoryFirstCardKind kind) {
   return switch (kind) {
     cards.MemoryFirstCardKind.captureSummary => 'capture card',
     cards.MemoryFirstCardKind.memorySummary => 'Memory card',
-  };
-}
-
-String _insightKindLabel(cards.MemoryFirstInsightKind kind) {
-  return switch (kind) {
-    cards.MemoryFirstInsightKind.summary => 'summary insight',
-    cards.MemoryFirstInsightKind.count => 'count insight',
-    cards.MemoryFirstInsightKind.trend => 'trend insight',
-    cards.MemoryFirstInsightKind.sourceMix => 'source mix insight',
-    cards.MemoryFirstInsightKind.actionPattern => 'action pattern insight',
-    cards.MemoryFirstInsightKind.attachmentEvidence =>
-      'attachment evidence insight',
   };
 }
 
@@ -1710,7 +1679,8 @@ final class _CaptureAgent implements runtime.AgentHandler {
       text: text,
       sourceEventId: event.id,
     );
-    final candidate = _memoryCandidate(summary);
+    final candidate = _memoryCandidate(summary, sourceText: text);
+    final sourceExcerpt = _safeSourceExcerpt(text);
 
     return runtime.AgentHandlerResult(
       events: <runtime.WnEventDraft>[
@@ -1721,17 +1691,17 @@ final class _CaptureAgent implements runtime.AgentHandler {
             'key': 'capture.${subject.id}.summary',
             'text': candidate.text,
             'source_event_id': event.id,
-            'source_excerpt': previewText(text),
+            'source_excerpt': sourceExcerpt,
             'source_refs': <Object?>[
               <String, Object?>{
                 'kind': 'capture',
                 'id': subject.id,
-                'excerpt': previewText(text),
+                'excerpt': sourceExcerpt,
               },
               <String, Object?>{
                 'kind': 'event',
                 'id': event.id,
-                'excerpt': previewText(text),
+                'excerpt': sourceExcerpt,
               },
             ],
             if (candidate.memoryType != null)
@@ -1758,34 +1728,12 @@ final class _CaptureAgent implements runtime.AgentHandler {
               <String, Object?>{
                 'kind': 'capture',
                 'id': subject.id,
-                'excerpt': previewText(text),
+                'excerpt': sourceExcerpt,
               },
               <String, Object?>{
                 'kind': 'event',
                 'id': event.id,
-                'excerpt': previewText(text),
-              },
-            ],
-          },
-        ),
-        context.emit(
-          type: runtime.WnEventTypes.insightCreated,
-          subjectRef: subject,
-          payload: <String, Object?>{
-            'kind': 'capture_reflection',
-            'text': 'This capture can be recalled through Memory.',
-            'source_capture_id': subject.id,
-            'source_event_id': event.id,
-            'source_refs': <Object?>[
-              <String, Object?>{
-                'kind': 'capture',
-                'id': subject.id,
-                'excerpt': previewText(text),
-              },
-              <String, Object?>{
-                'kind': 'event',
-                'id': event.id,
-                'excerpt': previewText(text),
+                'excerpt': sourceExcerpt,
               },
             ],
           },
@@ -1832,13 +1780,17 @@ final class _MemoryCandidateEnvelope {
   final List<String> policyReasons;
 }
 
-_MemoryCandidateEnvelope _memoryCandidate(runtime.ModelResponse response) {
+_MemoryCandidateEnvelope _memoryCandidate(
+  runtime.ModelResponse response, {
+  String sourceText = '',
+}) {
   final parsed = _jsonObject(response.text);
   final raw = response.raw;
-  final text =
+  final modelText =
       _metadataString(parsed, 'text') ??
       _metadataString(raw, 'text') ??
       _legacyCandidateText(response.text);
+  final text = _redactSecretLikeText(modelText);
   final memoryType =
       _metadataString(parsed, 'memory_type') ??
       _metadataString(raw, 'memory_type');
@@ -1850,6 +1802,9 @@ _MemoryCandidateEnvelope _memoryCandidate(runtime.ModelResponse response) {
   final durability =
       _metadataString(parsed, 'durability') ??
       _metadataString(raw, 'durability');
+  final sourceHasSecret = _containsSecretLikeText(sourceText);
+  final modelTextWasRedacted = text != modelText;
+  final shouldProtectCredentialLike = sourceHasSecret || modelTextWasRedacted;
   final reasons = <String>[
     if (parsed == null && !_hasMemoryMetadata(raw)) 'model_output_unstructured',
     if (memoryType == null ||
@@ -1857,13 +1812,17 @@ _MemoryCandidateEnvelope _memoryCandidate(runtime.ModelResponse response) {
         sensitivity == null ||
         durability == null)
       'model_metadata_missing',
+    if (sourceHasSecret) 'secret_like_source_requires_review',
+    if (modelTextWasRedacted) 'secret_like_text_redacted',
   ];
 
   return _MemoryCandidateEnvelope(
     text: text,
-    memoryType: memoryType,
-    confidence: confidence,
-    sensitivity: sensitivity,
+    memoryType: shouldProtectCredentialLike ? 'credential' : memoryType,
+    confidence: shouldProtectCredentialLike
+        ? (confidence ?? 'medium')
+        : confidence,
+    sensitivity: shouldProtectCredentialLike ? 'high' : sensitivity,
     durability: durability,
     policyReasons: reasons,
   );
@@ -1890,7 +1849,7 @@ final class _PkmProfileAgent implements runtime.AgentHandler {
       ),
     );
     final entry = _pkmProfileEntry(response, fallbackText: text);
-    final sourceExcerpt = previewText(
+    final sourceExcerpt = _safeSourceExcerpt(
       entry.sourceExcerpt.isEmpty ? text : entry.sourceExcerpt,
     );
     final sourceRefs = <Object?>[
@@ -1972,14 +1931,16 @@ _PkmProfileEntry _pkmProfileEntry(
       _metadataString(parsed, 'title') ??
       _metadataString(raw, 'title') ??
       'PKM profile entry';
-  final summary =
+  final rawSummary =
       _metadataString(parsed, 'summary') ??
       _metadataString(raw, 'summary') ??
       _legacyCandidateText(response.text);
-  final sourceExcerpt =
+  final summary = _redactSecretLikeText(rawSummary);
+  final rawSourceExcerpt =
       _metadataString(parsed, 'source_excerpt') ??
       _metadataString(raw, 'source_excerpt') ??
       previewText(fallbackText);
+  final sourceExcerpt = _redactSecretLikeText(rawSourceExcerpt);
   final confidence = _normalizedPkmValue(
     _metadataString(parsed, 'confidence') ?? _metadataString(raw, 'confidence'),
     const <String>{'high', 'medium', 'low'},
@@ -1991,25 +1952,34 @@ _PkmProfileEntry _pkmProfileEntry(
     const <String>{'high', 'medium', 'low'},
     fallback: 'low',
   );
+  final sourceHasSecret =
+      _containsSecretLikeText(fallbackText) ||
+      sourceExcerpt != rawSourceExcerpt ||
+      summary != rawSummary;
   final reasons = <String>[
     if (parsed == null) 'model_output_unstructured',
     if (summary.trim().isEmpty) 'model_summary_missing',
+    if (sourceHasSecret) 'secret_like_text_redacted',
   ];
+  final titleText = _redactSecretLikeText(title);
+  final topics = _safeMetadataStringList(parsed, raw, 'topics');
+  final people = _safeMetadataStringList(parsed, raw, 'people');
+  final projects = _safeMetadataStringList(parsed, raw, 'projects');
   return _PkmProfileEntry(
-    title: previewText(title, maxLength: 48),
+    title: previewText(titleText, maxLength: 48),
     body: _pkmBody(
-      title: title,
+      title: titleText,
       summary: summary.trim().isEmpty ? previewText(fallbackText) : summary,
-      topics: _metadataStringList(parsed, raw, 'topics'),
-      people: _metadataStringList(parsed, raw, 'people'),
-      projects: _metadataStringList(parsed, raw, 'projects'),
+      topics: topics,
+      people: people,
+      projects: projects,
     ),
-    topics: _metadataStringList(parsed, raw, 'topics'),
-    people: _metadataStringList(parsed, raw, 'people'),
-    projects: _metadataStringList(parsed, raw, 'projects'),
+    topics: topics,
+    people: people,
+    projects: projects,
     sourceExcerpt: sourceExcerpt,
     confidence: confidence,
-    sensitivity: sensitivity,
+    sensitivity: sourceHasSecret ? 'high' : sensitivity,
     policyReasons: reasons,
   );
 }
@@ -2042,6 +2012,18 @@ List<String> _metadataStringList(
     ..._stringList(parsed?[key]),
     ..._stringList(raw[key]),
   }.toList(growable: false);
+}
+
+List<String> _safeMetadataStringList(
+  Map<String, Object?>? parsed,
+  Map<String, Object?> raw,
+  String key,
+) {
+  return _metadataStringList(
+    parsed,
+    raw,
+    key,
+  ).map(_redactSecretLikeText).toList(growable: false);
 }
 
 String _normalizedPkmValue(
@@ -2091,6 +2073,44 @@ String _legacyCandidateText(String value) {
     return 'Memory candidate unavailable.';
   }
   return text;
+}
+
+String _safeSourceExcerpt(String value) {
+  return previewText(_redactSecretLikeText(value));
+}
+
+bool _containsSecretLikeText(String value) {
+  return _redactSecretLikeText(value) != value;
+}
+
+String _redactSecretLikeText(String value) {
+  var redacted = value.replaceAllMapped(
+    RegExp(
+      r'((api[_-]?key|token|secret|password|authorization|credential)\s*[:=]\s*)([^\s,;]+)',
+      caseSensitive: false,
+    ),
+    (match) => '${match.group(1)}[redacted]',
+  );
+  redacted = redacted.replaceAllMapped(
+    RegExp(r'\bBearer\s+[^\s,;]+', caseSensitive: false),
+    (_) => 'Bearer [redacted]',
+  );
+  redacted = redacted.replaceAllMapped(
+    RegExp(r'\b(sk|tp)-[A-Za-z0-9][A-Za-z0-9_-]{8,}\b'),
+    (match) => '${match.group(1)}-[redacted]',
+  );
+  redacted = redacted.replaceAllMapped(
+    RegExp(
+      r'\b(?:demo-)?(?:secret|token)-[A-Za-z0-9][A-Za-z0-9_-]{6,}\b',
+      caseSensitive: false,
+    ),
+    (match) {
+      final value = match.group(0)!;
+      final prefix = value.split('-').take(2).join('-');
+      return '$prefix-[redacted]';
+    },
+  );
+  return redacted;
 }
 
 bool _hasMemoryMetadata(Map<String, Object?> raw) {
@@ -2150,6 +2170,7 @@ final class _TodoAgent implements runtime.AgentHandler {
     }
     final subject =
         event.subjectRef ?? runtime.SubjectRef(kind: 'capture', id: event.id);
+    final sourceExcerpt = _safeSourceExcerpt(text);
 
     return runtime.AgentHandlerResult(
       events: <runtime.WnEventDraft>[
@@ -2175,17 +2196,17 @@ final class _TodoAgent implements runtime.AgentHandler {
             'todo_schema_version': 1,
             'source_capture_id': subject.id,
             'source_event_id': event.id,
-            'source_excerpt': previewText(text),
+            'source_excerpt': sourceExcerpt,
             'source_refs': <Object?>[
               <String, Object?>{
                 'kind': 'capture',
                 'id': subject.id,
-                'excerpt': previewText(text),
+                'excerpt': sourceExcerpt,
               },
               <String, Object?>{
                 'kind': 'event',
                 'id': event.id,
-                'excerpt': previewText(text),
+                'excerpt': sourceExcerpt,
               },
             ],
           },

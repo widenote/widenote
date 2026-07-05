@@ -22,7 +22,7 @@ void main() {
 
     expect(find.byKey(const Key('insights-page')), findsOneWidget);
     expect(find.text('Insights'), findsOneWidget);
-    expect(find.text('No active source-linked insights yet.'), findsOneWidget);
+    expect(find.text('No source-linked insights yet.'), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
   });
 
@@ -71,7 +71,7 @@ void main() {
     expect(find.text('Capture: capture-insight-1'), findsWidgets);
   });
 
-  testWidgets('insights page archives and restores a local insight', (
+  testWidgets('insights page does not expose archive or restore actions', (
     tester,
   ) async {
     final database = WideNoteLocalDatabase.inMemory();
@@ -80,27 +80,39 @@ void main() {
 
     await _pumpRoute(tester, '/insights', database: database);
 
-    await tester.tap(
-      find.byKey(const Key('insight-row-archive-insight-depth-1')),
-    );
-    await tester.pumpAndSettle();
-
-    expect(database.insights.readById('insight-depth-1')!.status, 'archived');
-    expect(find.text('No active source-linked insights yet.'), findsOneWidget);
-    expect(find.byKey(const Key('insights-archived-section')), findsOneWidget);
-    expect(database.eventLog.readByType('wn.insight.archived'), hasLength(1));
-
-    await tester.tap(
-      find.byKey(const Key('insight-row-restore-insight-depth-1')),
-    );
-    await tester.pumpAndSettle();
-
     expect(database.insights.readById('insight-depth-1')!.status, 'active');
     expect(
       find.byKey(const Key('insight-row-insight-depth-1')),
       findsOneWidget,
     );
-    expect(database.eventLog.readByType('wn.insight.restored'), hasLength(1));
+    expect(
+      find.byKey(const Key('insight-row-archive-insight-depth-1')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const Key('insight-row-restore-insight-depth-1')),
+      findsNothing,
+    );
+    expect(find.byKey(const Key('insights-archived-section')), findsNothing);
+    expect(database.eventLog.readByType('wn.insight.archived'), isEmpty);
+    expect(database.eventLog.readByType('wn.insight.restored'), isEmpty);
+  });
+
+  testWidgets('insights page hides legacy archived rows', (tester) async {
+    final database = WideNoteLocalDatabase.inMemory();
+    addTearDown(database.close);
+    _seedInsight(database, status: 'archived');
+
+    await _pumpRoute(tester, '/insights', database: database);
+
+    expect(database.insights.readById('insight-depth-1')!.status, 'archived');
+    expect(find.byKey(const Key('insight-row-insight-depth-1')), findsNothing);
+    expect(find.text('No source-linked insights yet.'), findsOneWidget);
+
+    await _pumpRoute(tester, '/insights/insight-depth-1', database: database);
+
+    expect(find.byKey(const Key('insight-detail-missing')), findsOneWidget);
+    expect(find.byKey(const Key('insight-detail-page')), findsNothing);
   });
 
   testWidgets('home insight teaser opens the insight detail page', (
@@ -240,7 +252,7 @@ Future<void> _pumpRoute(
   await tester.pumpAndSettle();
 }
 
-void _seedInsight(WideNoteLocalDatabase database) {
+void _seedInsight(WideNoteLocalDatabase database, {String status = 'active'}) {
   final now = DateTime.utc(2026, 7, 3, 9);
   database.captures.insert(
     CaptureRecord(
@@ -283,6 +295,7 @@ void _seedInsight(WideNoteLocalDatabase database) {
       ],
       metricLabel: 'source-linked',
       metricValue: 3,
+      status: status,
       payload: const <String, Object?>{
         'confidence': 0.78,
         'sensitivity': 'low',

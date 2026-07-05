@@ -86,10 +86,7 @@ void main() {
       findsOneWidget,
     );
     expect(_readCaptureState(tester).cards, hasLength(2));
-    expect(
-      _readCaptureState(tester).insights,
-      hasLength(greaterThanOrEqualTo(4)),
-    );
+    expect(_readCaptureState(tester).insights, isEmpty);
   });
 
   testWidgets('home and todos hydrate from local DB after relaunch', (
@@ -116,7 +113,7 @@ void main() {
     expect(hydrated.todos.single.id, todo.id);
     expect(hydrated.todos.single.sourceRefs, isNotEmpty);
     expect(hydrated.cards, hasLength(2));
-    expect(hydrated.insights, hasLength(greaterThanOrEqualTo(4)));
+    expect(hydrated.insights, isEmpty);
 
     await tester.scrollUntilVisible(
       find.text(captureText),
@@ -125,8 +122,12 @@ void main() {
     );
     expect(find.text(captureText), findsOneWidget);
     await _openTab(tester, const Key('tab-todos'));
-    expect(find.byKey(Key('todo-row-${todo.id}')), findsOneWidget);
-    expect(find.text(captureText), findsOneWidget);
+    final todoRow = find.byKey(Key('todo-row-${todo.id}'));
+    expect(todoRow, findsOneWidget);
+    expect(
+      find.descendant(of: todoRow, matching: find.text(captureText)),
+      findsOneWidget,
+    );
   });
 
   testWidgets('home pull-to-refresh rehydrates externally inserted captures', (
@@ -299,17 +300,14 @@ void main() {
       findsNothing,
     );
     expect(state.cards, hasLength(2));
-    expect(state.insights, hasLength(greaterThanOrEqualTo(4)));
+    expect(state.insights, isEmpty);
 
     await _scrollHomeTextIntoView(tester, 'Memory: 1');
     expect(find.text('Memory: 1'), findsOneWidget);
     expect(find.text('Memory saved automatically'), findsNothing);
     expect(find.textContaining('auto-accepted'), findsNothing);
     expect(find.byKey(Key('card-row-${state.cards.first.id}')), findsNothing);
-    expect(
-      find.byKey(Key('insight-row-${state.insights.first.id}')),
-      findsNothing,
-    );
+    expect(find.byKey(const Key('home-open-insights-button')), findsOneWidget);
     expect(find.textContaining('runtime.run.completed'), findsNothing);
 
     final completedRuns = _readCaptureState(
@@ -636,12 +634,12 @@ void main() {
     expect(state.records, hasLength(1));
     expect(state.memories, hasLength(1));
     expect(state.cards, hasLength(2));
-    expect(state.insights, hasLength(4));
+    expect(state.insights, isEmpty);
     expect(state.todos, hasLength(1));
     await _scrollHomeTextIntoView(tester, 'captures: 1');
     expect(find.text('captures: 1'), findsOneWidget);
     expect(find.text('Memory: 1'), findsOneWidget);
-    expect(find.text('insights: 4'), findsOneWidget);
+    expect(find.text('insights: 0'), findsOneWidget);
 
     await ProviderScope.containerOf(tester.element(find.byType(WideNoteApp)))
         .read(captureControllerProvider.notifier)
@@ -654,12 +652,12 @@ void main() {
     expect(state.records, hasLength(2));
     expect(state.memories, hasLength(2));
     expect(state.cards, hasLength(4));
-    expect(state.insights, hasLength(4));
+    expect(state.insights, isEmpty);
     expect(state.todos, hasLength(2));
     await _scrollHomeTextIntoView(tester, 'captures: 2');
     expect(find.text('captures: 2'), findsOneWidget);
     expect(find.text('Memory: 2'), findsOneWidget);
-    expect(find.text('insights: 4'), findsOneWidget);
+    expect(find.text('insights: 0'), findsOneWidget);
   });
 
   testWidgets('sensitive Memory candidate stays out of the home surface', (
@@ -697,9 +695,12 @@ void main() {
     await _openTab(tester, const Key('tab-todos'));
 
     expect(find.byKey(const Key('todos-page')), findsOneWidget);
-    expect(find.byKey(Key('todo-row-${todo.id}')), findsOneWidget);
-    expect(find.text(captureText), findsOneWidget);
-    expect(find.text('Suggested action'), findsOneWidget);
+    final todoRow = find.byKey(Key('todo-row-${todo.id}'));
+    expect(todoRow, findsOneWidget);
+    expect(
+      find.descendant(of: todoRow, matching: find.text(captureText)),
+      findsOneWidget,
+    );
     expect(find.text('source: ${record.id}'), findsNothing);
     expect(
       _visibleTextValues(tester).where(
@@ -732,7 +733,6 @@ void main() {
         eventTypes,
         containsAll(<String>[
           runtime.WnEventTypes.cardCreated,
-          runtime.WnEventTypes.insightCreated,
           runtime.WnEventTypes.todoSuggested,
           runtime.WnEventTypes.artifactCreated,
         ]),
@@ -761,13 +761,6 @@ void main() {
         isA<List>(),
       );
       expect(
-        events
-            .where((event) => event.type == runtime.WnEventTypes.insightCreated)
-            .single
-            .payload['source_refs'],
-        isA<List>(),
-      );
-      expect(
         traces
             .where((trace) => trace.name == 'runtime.run.completed')
             .map((trace) => trace.packId),
@@ -788,10 +781,7 @@ void main() {
         containsAll(<String>[todoRecord.sourceCaptureId!, events.first.id]),
       );
       expect(database.cards.readAll(status: 'active'), hasLength(2));
-      expect(
-        database.insights.readAll(status: 'active'),
-        hasLength(greaterThanOrEqualTo(4)),
-      );
+      expect(database.insights.readAll(status: 'active'), isEmpty);
       final pkmArtifact = database.derivedArtifacts
           .readAll(artifactKind: 'pkm_profile_entry')
           .single;

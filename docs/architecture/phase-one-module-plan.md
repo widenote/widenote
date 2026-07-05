@@ -399,7 +399,7 @@ Phase-one pack set:
 
 | Pack | Default | Responsibility |
 | --- | --- | --- |
-| `default` | enabled | Capture to cards, Memory candidates, lightweight insight |
+| `default` | enabled | Capture to cards and Memory candidates |
 | `memory-core` | enabled or built-in | Candidate dedupe, merge, provenance, recall policy |
 | `file-context` | enabled with permissions | OCR, transcript, file/link parsing |
 | `todo` | recommended enabled | Source-linked action items and reminders |

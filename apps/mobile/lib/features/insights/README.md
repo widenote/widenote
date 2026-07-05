@@ -6,10 +6,10 @@ Mobile read and review surface for source-linked local insights.
 
 ## Ownership Boundary
 
-This feature owns the Insights list, detail page, and app-local archive/restore
-controller. It reads and updates `InsightRecord` rows through the local database
-provider, but it does not own insight generation, model prompts, Agent Pack
-execution, or public insight schemas.
+This feature owns the Insights list and detail page. It reads `InsightRecord`
+rows through the local database provider, but it does not own insight
+generation, model prompts, Agent Pack execution, public insight schemas, or a
+separate insight archive lifecycle.
 
 Deep insight generation belongs behind public schemas, permissioned Agent Pack
 tools, reviewable traces, and source-ref validation before it writes local
@@ -25,9 +25,8 @@ derived state.
 
 ## Public Surface
 
-- `application/insights_controller.dart`: hydrates active and archived
-  insights from local object truth, parses structured payload evidence, and
-  records archive/restore lifecycle events.
+- `application/insights_controller.dart`: hydrates insights from local object
+  truth and parses structured payload evidence.
 - `presentation/insights_page.dart`: Home-owned `/insights` list page and
   `/insights/:insightId` detail page.
 

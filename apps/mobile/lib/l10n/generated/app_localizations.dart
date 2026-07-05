@@ -954,7 +954,7 @@ abstract class AppLocalizations {
   /// No description provided for @captureRecordSavedModelRequired.
   ///
   /// In en, this message translates to:
-  /// **'Record saved locally. Configure a model provider or retry after agent recovery to generate Memory, cards, insights, and todos.'**
+  /// **'Record saved locally. Configure a model provider or retry after agent recovery to generate Memory, cards, and todos.'**
   String get captureRecordSavedModelRequired;
 
   /// No description provided for @captureRecordSavedAgentFailed.
@@ -1164,26 +1164,14 @@ abstract class AppLocalizations {
   /// No description provided for @insightsActiveSectionTitle.
   ///
   /// In en, this message translates to:
-  /// **'Active insights'**
+  /// **'Recent insights'**
   String get insightsActiveSectionTitle;
 
   /// No description provided for @insightsActiveEmpty.
   ///
   /// In en, this message translates to:
-  /// **'No active source-linked insights yet.'**
+  /// **'No source-linked insights yet.'**
   String get insightsActiveEmpty;
-
-  /// No description provided for @insightsArchivedSectionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Archived insights'**
-  String get insightsArchivedSectionTitle;
-
-  /// No description provided for @insightsArchivedEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'No archived insights yet.'**
-  String get insightsArchivedEmpty;
 
   /// No description provided for @insightDetailTitle.
   ///
@@ -1233,29 +1221,11 @@ abstract class AppLocalizations {
   /// **'Timeline'**
   String get insightOpenTimelineAction;
 
-  /// No description provided for @insightActionArchive.
-  ///
-  /// In en, this message translates to:
-  /// **'Archive'**
-  String get insightActionArchive;
-
-  /// No description provided for @insightActionRestore.
-  ///
-  /// In en, this message translates to:
-  /// **'Restore'**
-  String get insightActionRestore;
-
   /// No description provided for @insightConfidenceLabel.
   ///
   /// In en, this message translates to:
   /// **'{value} confidence'**
   String insightConfidenceLabel(String value);
-
-  /// No description provided for @insightUpdateFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Insight update failed.'**
-  String get insightUpdateFailed;
 
   /// No description provided for @recordsTitle.
   ///
@@ -4360,7 +4330,7 @@ abstract class AppLocalizations {
   /// No description provided for @packDefaultDescription.
   ///
   /// In en, this message translates to:
-  /// **'Conservative built-in pack for capture cards, Memory candidates, and lightweight insight.'**
+  /// **'Conservative built-in pack for capture cards and Memory candidates. Deep insights are owned by pack.insight_depth.'**
   String get packDefaultDescription;
 
   /// No description provided for @packTodoName.

@@ -283,7 +283,7 @@
   "captureVoiceFileNotCreated": "Voice recording file was not created.",
   "captureVoiceEmptyFile": "Voice recording produced an empty file.",
   "captureVoiceFileNotReturned": "Voice recording file was not returned.",
-  "captureRecordSavedModelRequired": "Record saved locally. Configure a model provider or retry after agent recovery to generate Memory, cards, insights, and todos.",
+  "captureRecordSavedModelRequired": "Record saved locally. Configure a model provider or retry after agent recovery to generate Memory, cards, and todos.",
   "captureRecordSavedAgentFailed": "Record saved locally, but agent processing failed. Retry after model or permission recovery.",
   "captureMemoryReviewFailed": "Memory review failed: {details}",
   "@captureMemoryReviewFailed": {
@@ -370,10 +370,8 @@
   "insightsPageSubtitle": "Review source-linked patterns, claims, and evidence.",
   "insightsBackTooltip": "Close Insights",
   "insightsRefreshTooltip": "Refresh Insights",
-  "insightsActiveSectionTitle": "Active insights",
-  "insightsActiveEmpty": "No active source-linked insights yet.",
-  "insightsArchivedSectionTitle": "Archived insights",
-  "insightsArchivedEmpty": "No archived insights yet.",
+  "insightsActiveSectionTitle": "Recent insights",
+  "insightsActiveEmpty": "No source-linked insights yet.",
   "insightDetailTitle": "Insight detail",
   "insightDetailSubtitle": "Inspect claims, metrics, evidence, and source refs.",
   "insightMissingTitle": "Insight unavailable",
@@ -382,8 +380,6 @@
   "insightEvidenceSectionTitle": "Evidence",
   "insightCounterEvidenceSectionTitle": "Counter-evidence",
   "insightOpenTimelineAction": "Timeline",
-  "insightActionArchive": "Archive",
-  "insightActionRestore": "Restore",
   "insightConfidenceLabel": "{value} confidence",
   "@insightConfidenceLabel": {
     "placeholders": {
@@ -392,7 +388,6 @@
       }
     }
   },
-  "insightUpdateFailed": "Insight update failed.",
   "recordsTitle": "Records",
   "recordsEmpty": "No local records yet.",
   "memoryReviewTitle": "Memory Review",
@@ -1584,7 +1579,7 @@
     }
   },
   "packDefaultName": "Default Capture Loop",
-  "packDefaultDescription": "Conservative built-in pack for capture cards, Memory candidates, and lightweight insight.",
+  "packDefaultDescription": "Conservative built-in pack for capture cards and Memory candidates. Deep insights are owned by pack.insight_depth.",
   "packTodoName": "Todo Extraction Loop",
   "packTodoDescription": "Built-in pack for source-linked todo suggestions.",
   "permissionGateTitle": "Permission Gate",

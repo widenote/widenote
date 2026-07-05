@@ -60,7 +60,6 @@ void main() {
       'model.complete',
       'card.write',
       'memory.propose',
-      'insight.write',
       'context_packet.build',
       'memory.read',
       'timeline.read',
@@ -70,7 +69,6 @@ void main() {
     expect(defaultPack.outputEvents, <String>[
       'wn.card.created',
       'wn.memory.proposed',
-      'wn.insight.created',
     ]);
 
     final todoPack = builtInPacks.singleWhere((pack) => pack.id == 'pack.todo');
@@ -108,7 +106,6 @@ void main() {
         'pack.default:model.complete',
         'pack.default:card.write',
         'pack.default:memory.propose',
-        'pack.default:insight.write',
         'pack.default:context_packet.build',
         'pack.default:memory.read',
         'pack.default:timeline.read',
@@ -392,9 +389,9 @@ void main() {
     expect(find.text('Usage Statistics Dashboard'), findsOneWidget);
     expect(find.text('v0.1.0'), findsNWidgets(5));
     expect(find.text('0 permissions'), findsOneWidget);
-    expect(find.text('9 permissions'), findsOneWidget);
+    expect(find.text('8 permissions'), findsOneWidget);
     expect(find.text('4 permissions'), findsOneWidget);
-    expect(find.text('3 outputs'), findsOneWidget);
+    expect(find.text('2 outputs'), findsOneWidget);
     expect(find.text('2 permissions'), findsNWidgets(2));
     expect(find.text('1 output'), findsNWidgets(3));
     expect(find.text('0 outputs'), findsOneWidget);
@@ -424,17 +421,16 @@ void main() {
     );
     expect(
       find.byKey(
-        const Key('pack-ui-contribution-pack.default-insight.detail.blocks'),
+        const Key(
+          'pack-ui-contribution-pack.default-plugins.pack_home.capture_status',
+        ),
       ),
       findsOneWidget,
     );
     expect(find.text('UI contributions'), findsWidgets);
-    expect(find.text('Insight detail blocks'), findsOneWidget);
-    expect(find.text('surface: insight.detail'), findsOneWidget);
-    expect(
-      find.text('blocks: claim_list, metric_row, source_refs, note'),
-      findsOneWidget,
-    );
+    expect(find.text('Capture loop panel'), findsOneWidget);
+    expect(find.text('surface: plugins.pack_home'), findsWidgets);
+    expect(find.text('Insight detail blocks'), findsNothing);
     await tester.scrollUntilVisible(
       find.byKey(
         const Key(

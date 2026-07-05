@@ -135,7 +135,7 @@ void main() {
         hasLength(totalCaptures),
       );
       expect(database.cards.readAll(status: 'active'), isNotEmpty);
-      expect(database.insights.readAll(status: 'active'), isNotEmpty);
+      expect(database.insights.readAll(status: 'active'), isEmpty);
       expect(
         database.traceEvents.readAll().map((trace) => trace.name),
         contains('runtime.model.completed'),
@@ -265,7 +265,7 @@ const _memexInspiredCaptureCorpus = <String>[
   'Finance-like note: paid 128.50 for cloud storage and should tag it as a reimbursable project expense later.',
   'Location-like note: coffee shop near Xujiahui was too noisy for voice capture, so preserve audio references before transcription.',
   'Backup note: safe export should include records, traces, Memory, todos, cards, and provider metadata, but never credential values.',
-  'Runtime note: pack.default should produce Memory, cards, insights, todos, and trace events after capture without overwriting raw text.',
+  'Runtime note: pack.default should produce Memory, cards, todos, and trace events after capture without overwriting raw text.',
   'Chat note: later I will ask what changed between the old import-first preference and the new quick-capture-first preference.',
   'Review note: low-risk durable facts should become Memory silently, while explicit sensitive or conflicting metadata can still use review.',
   'Release note: before publishing, rerun targeted tests, Android emulator QA, iOS simulator QA, and a secret scan.',

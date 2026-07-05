@@ -2,19 +2,20 @@
 
 ## Purpose
 
-Pure Dart Memory-first card and insight derivation for WideNote.
+Pure Dart Memory-first card derivation and insight payload models for WideNote.
 
 This package turns raw capture snapshots and accepted Memory snapshots into
-source-linked, browseable cards and first-pass summary/count/trend insights.
-Cards and insights are projections. They must never overwrite or replace the
-original capture or Memory records.
+source-linked, browseable cards. It keeps structured insight payload models for
+model-backed deep insights, but it must not create summary/count/trend or other
+lightweight statistical insights locally. Cards and insights are projections.
+They must never overwrite or replace the original capture or Memory records.
 
 ## Ownership Boundary
 
 Owns small card/insight domain models, source-link validation, and deterministic
-derivation rules. Timeline browse filtering is limited to typed object filters;
-text retrieval belongs to an embedding/model-backed retriever, not local
-substring matching.
+card derivation rules. Timeline browse filtering is limited to typed object
+filters; text retrieval belongs to an embedding/model-backed retriever, not
+local substring matching.
 
 It must not own Flutter UI, local database migrations, backup/export formats,
 model-provider calls, prompts, PKM/PARA structures, or generated public schemas.
@@ -45,8 +46,8 @@ repository adapters, model providers, or backend services.
 None. Future generated card or insight contracts should point back to
 `packages/schemas`.
 The package accepts renderer-safe Insight UI block declarations reserved by the
-public Insight Payload schema, but it still emits only conservative first-pass
-insights unless a governed model-backed Pack supplies richer derived output.
+public Insight Payload schema, but it does not emit local insights. Governed
+model-backed deep insight output belongs to `pack.insight_depth`.
 
 ## Tests
 
@@ -56,7 +57,7 @@ Run:
 dart test
 ```
 
-Current tests cover empty input, capture and Memory card generation, insight
-generation, required source links, claim-level source refs, structured insight
-payload round-trips, source-ref detail grouping, and browse filtering without
-local text matching.
+Current tests cover empty input, capture and Memory card generation, the absence
+of local insight generation, required source links, claim-level source refs,
+structured insight payload round-trips, source-ref detail grouping, and browse
+filtering without local text matching.

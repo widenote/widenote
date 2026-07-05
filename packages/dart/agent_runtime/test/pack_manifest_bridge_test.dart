@@ -22,7 +22,6 @@ void main() {
       ModelPermissions.complete,
       'card.write',
       'memory.propose',
-      'insight.write',
       'context_packet.build',
       'memory.read',
       'timeline.read',
@@ -34,11 +33,7 @@ void main() {
     expect(defaultManifest.subscriptions.single.agentId, 'agent.capture_loop');
     expect(
       defaultManifest.agentDefinitions['agent.capture_loop']?.outputEvents,
-      <String>{
-        WnEventTypes.cardCreated,
-        WnEventTypes.memoryProposed,
-        WnEventTypes.insightCreated,
-      },
+      <String>{WnEventTypes.cardCreated, WnEventTypes.memoryProposed},
     );
     expect(
       defaultManifest.agentDefinitions['agent.capture_loop']?.modelProfileRef,
@@ -76,24 +71,14 @@ void main() {
           .normalizedMaxAttempts,
       2,
     );
-    expect(
-      _manifestOutputEvents(defaultManifest),
-      isNot(contains(WnEventTypes.todoSuggested)),
-    );
+    expect(_manifestOutputEvents(defaultManifest), <String>{
+      WnEventTypes.cardCreated,
+      WnEventTypes.memoryProposed,
+    });
     expect(
       defaultManifest.uiContributions.map((contribution) => contribution.id),
-      <String>['insight.detail.blocks', 'plugins.pack_home.capture_status'],
+      <String>['plugins.pack_home.capture_status'],
     );
-    final insightContribution = defaultManifest.uiContributions.first;
-    expect(insightContribution.surface, 'insight.detail');
-    expect(insightContribution.kind, 'event_blocks');
-    expect(insightContribution.events, <String>{WnEventTypes.insightCreated});
-    expect(insightContribution.blocks, <String>{
-      'claim_list',
-      'metric_row',
-      'source_refs',
-      'note',
-    });
 
     expect(todoManifest.id, 'pack.todo');
     expect(todoManifest.requiredPermissions, <String>{
@@ -260,7 +245,6 @@ void main() {
         WnEventTypes.captureCreated,
         WnEventTypes.memoryProposed,
         WnEventTypes.cardCreated,
-        WnEventTypes.insightCreated,
         WnEventTypes.todoSuggested,
         WnEventTypes.artifactCreated,
       ]);
@@ -275,7 +259,6 @@ void main() {
       ..grantAll(defaultManifest.id, <String>{
         ModelPermissions.complete,
         'memory.propose',
-        'insight.write',
       });
     final kernel = _kernel(
       store: store,
@@ -1157,11 +1140,6 @@ final class _OfficialDefaultHandler implements AgentHandler {
           type: WnEventTypes.cardCreated,
           subjectRef: event.subjectRef,
           payload: <String, Object?>{'body': response.text},
-        ),
-        context.emit(
-          type: WnEventTypes.insightCreated,
-          subjectRef: event.subjectRef,
-          payload: const <String, Object?>{'kind': 'official'},
         ),
       ],
     );

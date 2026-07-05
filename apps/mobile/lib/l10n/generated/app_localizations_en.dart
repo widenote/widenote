@@ -576,7 +576,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get captureRecordSavedModelRequired =>
-      'Record saved locally. Configure a model provider or retry after agent recovery to generate Memory, cards, insights, and todos.';
+      'Record saved locally. Configure a model provider or retry after agent recovery to generate Memory, cards, and todos.';
 
   @override
   String get captureRecordSavedAgentFailed =>
@@ -743,16 +743,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get insightsRefreshTooltip => 'Refresh Insights';
 
   @override
-  String get insightsActiveSectionTitle => 'Active insights';
+  String get insightsActiveSectionTitle => 'Recent insights';
 
   @override
-  String get insightsActiveEmpty => 'No active source-linked insights yet.';
-
-  @override
-  String get insightsArchivedSectionTitle => 'Archived insights';
-
-  @override
-  String get insightsArchivedEmpty => 'No archived insights yet.';
+  String get insightsActiveEmpty => 'No source-linked insights yet.';
 
   @override
   String get insightDetailTitle => 'Insight detail';
@@ -781,18 +775,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get insightOpenTimelineAction => 'Timeline';
 
   @override
-  String get insightActionArchive => 'Archive';
-
-  @override
-  String get insightActionRestore => 'Restore';
-
-  @override
   String insightConfidenceLabel(String value) {
     return '$value confidence';
   }
-
-  @override
-  String get insightUpdateFailed => 'Insight update failed.';
 
   @override
   String get recordsTitle => 'Records';
@@ -2771,7 +2756,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get packDefaultDescription =>
-      'Conservative built-in pack for capture cards, Memory candidates, and lightweight insight.';
+      'Conservative built-in pack for capture cards and Memory candidates. Deep insights are owned by pack.insight_depth.';
 
   @override
   String get packTodoName => 'Todo Extraction Loop';

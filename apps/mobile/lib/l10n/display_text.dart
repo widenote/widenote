@@ -105,13 +105,6 @@ String localizedMetricLabel(AppLocalizations l10n, String value) {
   return value;
 }
 
-String localizedInsightError(AppLocalizations l10n, String message) {
-  return switch (message.trim()) {
-    'Insight update failed.' => l10n.insightUpdateFailed,
-    _ => message,
-  };
-}
-
 String localizedSourceLinkCount(AppLocalizations l10n, String value) {
   final match = RegExp(r'^(\d+) source link\(s\)$').firstMatch(value.trim());
   if (match == null) {
@@ -214,7 +207,7 @@ String localizedCaptureError(AppLocalizations l10n, String message) {
       l10n.captureRemoveBlockedAttachments,
     'Review attachments before saving.' => l10n.captureReviewAttachments,
     'Voice recording cancelled.' => l10n.captureVoiceCancelled,
-    'Record saved locally. Configure a model provider or retry after agent recovery to generate Memory, cards, insights, and todos.' =>
+    'Record saved locally. Configure a model provider or retry after agent recovery to generate Memory, cards, and todos.' =>
       l10n.captureRecordSavedModelRequired,
     'Record saved locally, but agent processing failed. Retry after model or permission recovery.' =>
       l10n.captureRecordSavedAgentFailed,
@@ -387,6 +380,13 @@ String _localizedSourceBody(AppLocalizations l10n, String body) {
       : int.parse(extraMatch.group(2)!);
   if (base == 'unknown') {
     return l10n.sourceUnknownLabel;
+  }
+
+  final localRecordLabel = _localCaptureLabel(l10n, 'capture', base);
+  if (localRecordLabel != null) {
+    return extraCount == null
+        ? localRecordLabel
+        : '$localRecordLabel +$extraCount';
   }
 
   final separator = base.indexOf(':');

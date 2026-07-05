@@ -23,6 +23,7 @@ historical decisions, rationale, and supersession history, use
 
 - [Current Architecture Contracts](./architecture/current-contracts.md)
 - [Operational Principles](./architecture/operational-principles.md)
+- [Insight Interaction Candidates](./research/2026-07-04-insight-interaction-candidates.html)
 - [Mobile Child Page Bottom Tabs Kimi Review](./research/2026-07-03-mobile-child-page-tabs-kimi-review.md)
 - [Model Provider Token Plan Parity](./research/2026-07-03-model-provider-token-plan-parity.md)
 - [Chat Session Management Plan](./research/2026-07-01-chat-session-management-plan.md)
