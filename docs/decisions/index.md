@@ -24,6 +24,7 @@
 | [ADR-0019](./0019-hide-bottom-tabs-on-mobile-child-pages.md) | Hide Bottom Tabs On Mobile Child Pages | accepted | 2026-07-03 |
 | [ADR-0020](./0020-accept-insight-depth-foundation.md) | Accept Insight Depth Foundation | accepted | 2026-07-03 |
 | [ADR-0021](./0021-use-host-rendered-pack-ui-contributions.md) | Use Host-Rendered Pack UI Contributions | accepted | 2026-07-03 |
+| [ADR-0022](./0022-drop-insight-archive-actions.md) | Drop Insight Archive Actions | accepted | 2026-07-04 |
 
 ## RFC Status
 
@@ -52,3 +53,9 @@ Supersession note: [ADR-0019](./0019-hide-bottom-tabs-on-mobile-child-pages.md)
 partially supersedes [ADR-0015](./0015-use-hierarchical-mobile-navigation.md)
 for bottom-tab visibility on child pages only; ADR-0015 remains accepted for
 route hierarchy and back-stack construction.
+
+Supersession note: [ADR-0022](./0022-drop-insight-archive-actions.md)
+partially supersedes [ADR-0020](./0020-accept-insight-depth-foundation.md)
+for mobile Insights archive/restore actions only; ADR-0020 remains accepted for
+the source-linked Insights page, schema foundation, deep insight guardrails, and
+future dedicated Pack direction.

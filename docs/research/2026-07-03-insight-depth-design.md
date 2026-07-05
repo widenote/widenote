@@ -41,11 +41,12 @@ WideNote already has the right structural primitives:
 - Runtime permissions, trace sinks, Context Packets, and official Pack
   manifests for source-linked derived output.
 
-The missing product layer is depth. Current generated insights are mostly
+The missing product layer is depth. Early generated insights were mostly
 lightweight deterministic projections such as latest source summary, count,
-most active day, and source mix. They prove provenance, but they do not yet
-create the user-facing "aha" moments that connect repeated records, Memory,
-context shifts, and behavior changes.
+most active day, and source mix. Product review rejected that as the primary
+direction: those projections prove provenance, but they do not create the
+user-facing "aha" moments that connect repeated records, Memory, context
+shifts, and behavior changes.
 
 ## Memex Backup Findings
 
@@ -143,8 +144,8 @@ The prompt quality bar is also instructive:
    not local keyword heuristics.
 3. A strong insight must expose evidence density: source count, span, confidence,
    and the main source refs.
-4. The UI should make insight cards feel like living objects: pin, archive,
-   ask, correct, inspect sources, and regenerate.
+4. The UI should make insight cards feel like living objects: pin, ask,
+   correct, inspect sources, regenerate, dismiss, or supersede.
 5. PKM-style organization can help, but only as derived artifacts or Pack
    outputs. Memory remains the canonical long-term context layer.
 6. External review prompts may receive this design and code context, but never
@@ -204,8 +205,8 @@ bindings, not keep a private copy of the contract.
 
 Use a staged pipeline instead of one giant prompt:
 
-1. `agent.capture_loop` keeps doing immediate capture, Memory proposals, cards,
-   and lightweight source-linked insight.
+1. `agent.capture_loop` keeps doing immediate capture, Memory proposals, and
+   cards. It does not emit lightweight insight fallbacks.
 2. `agent.pattern_indexer` runs on capture completion and accepted Memory. It
    writes compact, source-linked pattern candidates into derived artifacts or
    low-risk insight drafts. It does not create grand claims.
@@ -219,31 +220,104 @@ Use a staged pipeline instead of one giant prompt:
    every claim has refs, source span is sufficient, maps require explicit
    coordinates, sensitive/high-risk topics route to review or soften to a
    question.
-6. `agent.insight_maintainer` deduplicates, updates, archives, or supersedes old
-   insights without deleting pinned or user-edited insights.
+6. `agent.insight_maintainer` deduplicates, updates, dismisses, or supersedes
+   old insights without deleting pinned or user-edited insights.
 7. Chat can open an insight-scoped session that receives the insight, claims,
    allowed source excerpts, and source refs through Context Packet, then can
    request correction/regeneration through normal Pack/runtime gates.
 
 This should fit a dedicated official Pack rather than the conservative default
-Pack. `pack.default` remains responsible for capture -> card -> Memory ->
-lightweight insight. Deep insight has different triggers, higher evidence
-requirements, maintenance behavior, and review gates, so `pack.insight_depth`
-should own it.
+Pack. `pack.default` remains responsible for capture -> card -> Memory only.
+Deep insight has different triggers, higher evidence requirements, maintenance
+behavior, and review gates, so `pack.insight_depth` should own it.
 
 This can fit official Packs:
 
 | Pack / agent | Trigger | Output | Permission |
 | --- | --- | --- | --- |
-| `pack.default::agent.capture_loop` | `wn.capture.created` | card, Memory proposal, lightweight insight | existing |
+| `pack.default::agent.capture_loop` | `wn.capture.created` | card, Memory proposal | existing |
 | `pack.insight_depth::agent.pattern_indexer` | capture/card/memory created | source-linked pattern artifact | `artifact.write` |
 | `pack.insight_depth::agent.insight_scout` | scheduled/on-demand/density threshold | insight candidate event | `knowledge.read`, `context_packet.build` |
 | `pack.insight_depth::agent.insight_synthesizer` | candidate selected | `wn.insight.created` | `insight.write`, `model.complete` |
-| `pack.insight_depth::agent.insight_maintainer` | new insight/user feedback | update/archive/supersede insight | `insight.write` |
+| `pack.insight_depth::agent.insight_maintainer` | new insight/user feedback | update/dismiss/supersede insight | `insight.write` |
 
 Persisted child-agent execution is still roadmap, so the first implementation
 can be native mobile handlers with the same conceptual boundaries and trace
 names.
+
+### Independent Insight Agent Contract
+
+Deep insight is an independent official Agent path, not a sub-step of the
+default capture loop. `pack.default` can prepare cards and Memory candidates,
+but it must not create fallback insight objects when the deep path is
+unavailable. `pack.insight_depth` owns the model call, evidence selection,
+review gate, and `wn.insight.created` write.
+
+Dependency order:
+
+1. Raw capture, attachment metadata, transcript, OCR, and vision-summary
+   artifacts are persisted without being overwritten.
+2. `pack.default` turns the capture into source-linked cards and Memory
+   proposals, then Memory policy accepts or routes risky candidates to review.
+3. Retrieval projections and activity/statistical projections are refreshed as
+   rebuildable derived state.
+4. `agent.pattern_indexer` creates compact candidate windows from source-linked
+   cards, accepted Memory, recent captures, todos, and prior insights.
+5. `agent.insight_scout` uses model/context boundaries to select a window worth
+   reflection rather than a count, keyword match, or novelty notification.
+6. `agent.insight_synthesizer` uses a model to produce claims, evidence,
+   counter-evidence, confidence, template choice, and source refs.
+7. `agent.insight_reviewer` audits source refs, sensitivity, contradictions,
+   evidence count, and confidence before write.
+8. `agent.claim_verifier` or the reviewer conflict phase checks candidate
+   claims against accepted Memory, active insights, counter-evidence, and user
+   feedback before any auto-write.
+9. High-risk, low-confidence, conflicting, or sensitive drafts route through a
+   human-in-the-loop review action before they become active insights.
+10. `agent.insight_maintainer` later supersedes, updates, dismisses, or
+   regenerates insights based on new evidence and user feedback.
+
+Callable tools should stay permissioned and reviewable:
+
+- `model.complete`: generate the actual reflective judgment.
+- `knowledge.read`, `timeline.read`, `memory.read`, `card.read`: read bounded
+  source-linked objects through local object truth.
+- `context_packet.build`: assemble bounded, cited model context.
+- `semantic_search.query`: retrieve candidate evidence clusters through the
+  governed retrieval path.
+- `activity.stats.read`: provide deterministic counts and time-series summaries
+  as evidence, not as the insight itself.
+- `insight.read`: compare active, pinned, dismissed, superseded, and recent
+  insights.
+- `insight.write`: create, update, dismiss, or supersede schema-validated
+  insights.
+- `insight.template.list`: expose allowed visual templates and required payload
+  shapes.
+- `insight.review.submit` or `user.feedback.capture`: record explicit user
+  confirmation, rejection, edit, or feedback for insight drafts.
+- `claim.verifier`: check candidate claims against accepted Memory, active
+  insights, counter-evidence, sensitivity flags, and user feedback.
+- `source.audit`: validate source refs, evidence count, source versions, and
+  high-risk flags.
+- `trace.write`: persist reviewable task/run evidence without leaking secrets
+  into safe exports.
+
+Allowed data scope is local object truth and derived projections with source
+refs: recent captures, transcripts, OCR/vision summaries, accepted Memory,
+source-linked cards, todos, previous insights, user feedback, and bounded
+aggregate activity stats. Aggregate stats must be defined as evidence features,
+not as a privacy side channel or a replacement for model judgment. The Agent
+must not read provider credentials, backup secrets, arbitrary filesystem
+content, raw private databases, or raw media bytes unless a future
+permission/ADR explicitly grants that capability. If model access, retrieval,
+source refs, or required permission is missing, the Agent fails closed and
+writes no insight.
+
+The first viable implementation should prefer read-only drafts over auto-write:
+generate one narrow, source-linked insight candidate for a recent bounded window
+and require user confirmation before persisting it as active. Auto-write should
+wait until conflict checks, review feedback, trace evidence, and low-risk
+confidence thresholds are proven by tests.
 
 Phase 1 native handlers, if used before full persisted child-agent execution,
 must still be registered as official Pack behavior. They must pass through
@@ -255,20 +329,25 @@ validation, and trace emission. They must not become private
 
 Minimum tool set for deep insight:
 
+- `model.complete`: generate reflective, evidence-grounded claims.
 - `knowledge.read`: read source-linked cards, accepted Memory, previous
   insights, todos, and artifacts through local object truth.
 - `context_packet.build`: assemble bounded source context with citations and
   source versions.
 - `semantic_search.query`: retrieve candidate source clusters using model-backed
   retrieval, never local text heuristics.
-- `insight.read`: list existing active, pinned, archived, superseded, and
+- `insight.read`: list existing active, pinned, dismissed, superseded, and
   recent insights.
-- `insight.write`: create/update/archive/supersede schema-validated insights.
+- `insight.write`: create/update/dismiss/supersede schema-validated insights.
 - `insight.template.list`: expose the allowed visual templates and required
   payload shapes to the model.
+- `insight.review.submit` or `user.feedback.capture`: record explicit user
+  confirmation, rejection, edits, and feedback for drafts.
+- `claim.verifier`: check candidate claims against accepted Memory, active
+  insights, counter-evidence, and feedback before auto-write.
 - `activity.stats.read`: deterministic counts and time-series summaries for
   recent captures, Memory, cards, insights, todos, source types, and media
-  types.
+  types. These stats are evidence features, not standalone insight generation.
 - `source.audit`: validate source refs, source versions, evidence count, and
   high-risk flags before write.
 
@@ -312,7 +391,8 @@ List page:
 - Segmented switch: Insights / Activity.
 - Cards with visual template, title, short claim, source count, time window,
   confidence, and chips.
-- Pin/archive/regenerate actions via icon buttons and overflow menu.
+- Pin, ask, feedback, and regenerate actions via icon buttons and overflow
+  menu. Do not expose archive as a primary insight lifecycle.
 - Empty state that names what is needed: more records, model provider, or
   permission.
 
@@ -322,7 +402,7 @@ Detail page:
 - "Why this matters" claim list.
 - Evidence section grouped by source refs and time.
 - Counter-evidence or uncertainty when present.
-- Actions: ask about this, correct sources, regenerate, archive, pin.
+- Actions: ask about this, correct sources, regenerate, dismiss, pin.
 - Trace link for debug builds or Agent Console.
 
 Home:
@@ -414,7 +494,7 @@ cleanup of its derived artifacts without touching captures or accepted Memory.
 
 ### Phase 3: Dedupe, maintenance, and chat correction
 
-- Add pin/archive/supersede status semantics.
+- Add pin/dismiss/supersede status semantics.
 - Add maintainer logic that preserves pinned and user-edited insights.
 - Add insight-scoped chat that can propose corrections through normal review.
 - Add long-journey QA with synthetic inputs and opt-in live provider runs.
@@ -439,8 +519,8 @@ not full automatic deep insight generation:
 - Home-owned routes:
   `/insights` and `/insights/:insightId`.
 - Mobile behavior:
-  list active/archived insights, inspect claims/metrics/evidence/source refs,
-  and archive/restore insights with local lifecycle event and trace evidence.
+  list insights and inspect claims/metrics/evidence/source refs. ADR-0022
+  removed archive/restore as a primary mobile insight lifecycle action.
 
 Deferred work remains explicit: `pack.insight_depth`, model-backed pattern
 indexing, synthesis/reviewer/maintainer agents, and high-risk review queues are
@@ -453,8 +533,8 @@ not part of this foundation slice.
 - `dart test` in `packages/dart/local_db` for insight status, source refs,
   backup/restore, and Context Packet inclusion.
 - `flutter analyze` and targeted widget tests in `apps/mobile` for the Insights
-  page, detail page, source refs, pin/archive/regenerate actions, empty/loading
-  states, and localization.
+  page, detail page, source refs, ask/feedback/regenerate actions,
+  empty/loading states, and localization.
 - Capture orchestration tests covering `CaptureOrchestrator` as the cross-layer
   boundary.
 - Pack validator tests when adding the official Pack.
@@ -464,7 +544,7 @@ not part of this foundation slice.
 
 - Should deep insight be a new official Pack (`pack.insight_depth`) or a second
   agent inside `pack.default`? Kimi review recommends a dedicated official Pack.
-- Should `InsightRecord.status` use `active/archived/superseded/needs_review`,
+- Should `InsightRecord.status` use `active/dismissed/superseded/needs_review`,
   or do review states live in payload until a public schema lands?
 - Should visual templates be a schema family under `packages/schemas` now, or
   begin as app-local native renderers?

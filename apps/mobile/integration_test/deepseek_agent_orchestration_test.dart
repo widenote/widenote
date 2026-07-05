@@ -95,10 +95,17 @@ void main() {
           runtime.WnEventTypes.captureCreated,
           runtime.WnEventTypes.memoryProposed,
           runtime.WnEventTypes.cardCreated,
-          runtime.WnEventTypes.insightCreated,
           runtime.WnEventTypes.todoSuggested,
         ]),
       );
+      expect(
+        database.eventLog
+            .readAll()
+            .map((event) => event.type)
+            .contains(runtime.WnEventTypes.insightCreated),
+        isFalse,
+      );
+      expect(database.insights.readAll(status: 'active'), isEmpty);
 
       final traces = database.traceEvents.readAll();
       expect(

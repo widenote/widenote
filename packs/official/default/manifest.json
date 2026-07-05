@@ -6,7 +6,7 @@
   "schema_version": 1,
   "publisher": "widenote",
   "edition": "official",
-  "description": "Conservative built-in pack for capture cards, Memory candidates, and lightweight insight.",
+  "description": "Conservative built-in pack for capture cards and Memory candidates. Deep insights are owned by pack.insight_depth.",
   "compatibility": {
     "widenote_min": "0.1.0",
     "widenote_max": null,
@@ -25,8 +25,7 @@
     ],
     "capabilities": [
       "memory.propose",
-      "card.write",
-      "insight.write"
+      "card.write"
     ],
     "status": "available"
   },
@@ -36,7 +35,6 @@
     "model.complete",
     "card.write",
     "memory.propose",
-    "insight.write",
     "context_packet.build",
     "memory.read",
     "timeline.read",
@@ -66,7 +64,6 @@
         "model.complete",
         "card.write",
         "memory.propose",
-        "insight.write",
         "context_packet.build",
         "memory.read",
         "timeline.read",
@@ -82,8 +79,7 @@
       ],
       "output_events": [
         "wn.card.created",
-        "wn.memory.proposed",
-        "wn.insight.created"
+        "wn.memory.proposed"
       ],
       "retry_policy": {
         "max_attempts": 2
@@ -93,7 +89,7 @@
   "model_profiles": [
     {
       "id": "local_or_user_selected_model",
-      "purpose": "Summarize captures into cards, Memory candidates, and lightweight insights.",
+      "purpose": "Summarize captures into cards and Memory candidates.",
       "required": false
     }
   ],
@@ -204,54 +200,8 @@
       ]
     }
   ],
-  "ui_blocks": [
-    {
-      "type": "claim_list",
-      "events": [
-        "wn.insight.created"
-      ]
-    },
-    {
-      "type": "metric_row",
-      "events": [
-        "wn.insight.created"
-      ]
-    },
-    {
-      "type": "source_refs",
-      "events": [
-        "wn.insight.created"
-      ]
-    },
-    {
-      "type": "note",
-      "events": [
-        "wn.insight.created"
-      ]
-    }
-  ],
+  "ui_blocks": [],
   "ui_contributions": [
-    {
-      "id": "insight.detail.blocks",
-      "surface": "insight.detail",
-      "kind": "event_blocks",
-      "title": "Insight detail blocks",
-      "description": "Render capture insights with claims, metrics, notes, and source references.",
-      "slot": "insight.detail.body",
-      "placement": "section",
-      "events": [
-        "wn.insight.created"
-      ],
-      "blocks": [
-        "claim_list",
-        "metric_row",
-        "source_refs",
-        "note"
-      ],
-      "required_permissions": [
-        "insight.write"
-      ]
-    },
     {
       "id": "plugins.pack_home.capture_status",
       "surface": "plugins.pack_home",

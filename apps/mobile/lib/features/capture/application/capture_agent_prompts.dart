@@ -50,6 +50,7 @@ String buildTodoSuggestionPrompt({
     '- Decide whether one raw, local-first capture should become an action item, a schedule candidate, or no todo suggestion.',
     '- Use semantic judgment from the full capture, not keyword matching.',
     '- Treat ordinary diary, status, observation, idea, or product-note captures as quiet unless the source clearly asks for a future action or scheduled commitment.',
+    '- Treat captures that only ask to preserve literal paths, quotes, issue ids, tags, or other reference tokens unchanged as quiet unless they also state a separate future action or schedule.',
     '- Use action for an explicit task, follow-up, errand, message, review, fix, purchase, cleanup, or other user-actionable commitment without a concrete time cue.',
     '- Use schedule for an explicit action, event, appointment, meeting, reminder, deadline, or commitment with a concrete date, time, or time cue.',
     '- Do not invent actions, dates, people, or urgency. Preserve the source language when possible.',

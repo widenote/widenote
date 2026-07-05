@@ -35,42 +35,14 @@ class InsightsPage extends ConsumerWidget {
               icon: const Icon(Icons.refresh),
             ),
           ),
-          if (state.errorMessage != null) ...[
-            const SizedBox(height: 12),
-            _ErrorLine(text: localizedInsightError(l10n, state.errorMessage!)),
-          ],
           const SizedBox(height: 16),
           _InsightSection(
             key: const Key('insights-active-section'),
             title: l10n.insightsActiveSectionTitle,
             icon: Icons.auto_awesome_outlined,
             emptyText: l10n.insightsActiveEmpty,
-            items: state.activeItems,
-            isArchived: false,
-            onArchive: (item) => ref
-                .read(insightsControllerProvider.notifier)
-                .archiveInsight(item.id),
-            onRestore: (item) => ref
-                .read(insightsControllerProvider.notifier)
-                .restoreInsight(item.id),
+            items: state.items,
           ),
-          if (state.archivedItems.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            _InsightSection(
-              key: const Key('insights-archived-section'),
-              title: l10n.insightsArchivedSectionTitle,
-              icon: Icons.archive_outlined,
-              emptyText: l10n.insightsArchivedEmpty,
-              items: state.archivedItems,
-              isArchived: true,
-              onArchive: (item) => ref
-                  .read(insightsControllerProvider.notifier)
-                  .archiveInsight(item.id),
-              onRestore: (item) => ref
-                  .read(insightsControllerProvider.notifier)
-                  .restoreInsight(item.id),
-            ),
-          ],
         ],
       ),
     );
@@ -147,24 +119,6 @@ class InsightDetailPage extends ConsumerWidget {
                     icon: const Icon(Icons.timeline_outlined),
                     label: Text(l10n.insightOpenTimelineAction),
                   ),
-                  if (insight.isArchived)
-                    FilledButton.icon(
-                      key: Key('insight-detail-restore-${insight.id}'),
-                      onPressed: () => ref
-                          .read(insightsControllerProvider.notifier)
-                          .restoreInsight(insight.id),
-                      icon: const Icon(Icons.unarchive_outlined),
-                      label: Text(l10n.insightActionRestore),
-                    )
-                  else
-                    TextButton.icon(
-                      key: Key('insight-detail-archive-${insight.id}'),
-                      onPressed: () => ref
-                          .read(insightsControllerProvider.notifier)
-                          .archiveInsight(insight.id),
-                      icon: const Icon(Icons.archive_outlined),
-                      label: Text(l10n.insightActionArchive),
-                    ),
                 ],
               ),
             ],
@@ -222,9 +176,6 @@ class _InsightSection extends StatelessWidget {
     required this.icon,
     required this.emptyText,
     required this.items,
-    required this.isArchived,
-    required this.onArchive,
-    required this.onRestore,
     super.key,
   });
 
@@ -232,9 +183,6 @@ class _InsightSection extends StatelessWidget {
   final IconData icon;
   final String emptyText;
   final List<InsightListItem> items;
-  final bool isArchived;
-  final ValueChanged<InsightListItem> onArchive;
-  final ValueChanged<InsightListItem> onRestore;
 
   @override
   Widget build(BuildContext context) {
@@ -247,12 +195,7 @@ class _InsightSection extends StatelessWidget {
               children: [
                 for (var index = 0; index < items.length; index++) ...[
                   if (index > 0) const Divider(height: 20),
-                  _InsightRow(
-                    item: items[index],
-                    isArchived: isArchived,
-                    onArchive: onArchive,
-                    onRestore: onRestore,
-                  ),
+                  _InsightRow(item: items[index]),
                 ],
               ],
             ),
@@ -261,21 +204,12 @@ class _InsightSection extends StatelessWidget {
 }
 
 class _InsightRow extends StatelessWidget {
-  const _InsightRow({
-    required this.item,
-    required this.isArchived,
-    required this.onArchive,
-    required this.onRestore,
-  });
+  const _InsightRow({required this.item});
 
   final InsightListItem item;
-  final bool isArchived;
-  final ValueChanged<InsightListItem> onArchive;
-  final ValueChanged<InsightListItem> onRestore;
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
     return InkWell(
       key: Key('insight-row-${item.id}'),
       borderRadius: BorderRadius.circular(8),
@@ -286,7 +220,7 @@ class _InsightRow extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(
-              isArchived ? Icons.archive_outlined : Icons.lightbulb_outline,
+              Icons.lightbulb_outline,
               color: Theme.of(context).colorScheme.primary,
             ),
             const SizedBox(width: 10),
@@ -312,21 +246,6 @@ class _InsightRow extends StatelessWidget {
                   const SizedBox(height: 8),
                   _InsightTags(insight: item),
                 ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            IconButton(
-              key: Key(
-                isArchived
-                    ? 'insight-row-restore-${item.id}'
-                    : 'insight-row-archive-${item.id}',
-              ),
-              tooltip: isArchived
-                  ? l10n.insightActionRestore
-                  : l10n.insightActionArchive,
-              onPressed: () => isArchived ? onRestore(item) : onArchive(item),
-              icon: Icon(
-                isArchived ? Icons.unarchive_outlined : Icons.archive_outlined,
               ),
             ),
           ],
@@ -378,11 +297,6 @@ class _InsightTags extends StatelessWidget {
           TimelineTag(
             icon: Icons.rate_review_outlined,
             label: l10n.statusNeedsReview,
-          ),
-        if (insight.isArchived)
-          TimelineTag(
-            icon: Icons.archive_outlined,
-            label: timelineStatusLabel(l10n, insight.status),
           ),
       ],
     );
@@ -560,23 +474,6 @@ class _Surface extends StatelessWidget {
             child,
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _ErrorLine extends StatelessWidget {
-  const _ErrorLine({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      key: const Key('insights-error-line'),
-      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-        color: Theme.of(context).colorScheme.error,
       ),
     );
   }

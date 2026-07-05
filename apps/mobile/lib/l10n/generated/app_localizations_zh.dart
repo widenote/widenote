@@ -473,7 +473,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get captureRecordSavedModelRequired =>
-      '记录已本地保存。配置模型提供商或等智能体恢复后重试，即可生成记忆、卡片、洞察和待办。';
+      '记录已本地保存。配置模型提供商或等智能体恢复后重试，即可生成记忆、卡片和待办。';
 
   @override
   String get captureRecordSavedAgentFailed => '记录已本地保存，但智能体处理失败。请在模型或权限恢复后重试。';
@@ -592,16 +592,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get insightsRefreshTooltip => '刷新洞察';
 
   @override
-  String get insightsActiveSectionTitle => '活跃洞察';
+  String get insightsActiveSectionTitle => '最近洞察';
 
   @override
-  String get insightsActiveEmpty => '还没有活跃的可溯源洞察。';
-
-  @override
-  String get insightsArchivedSectionTitle => '已归档洞察';
-
-  @override
-  String get insightsArchivedEmpty => '还没有已归档洞察。';
+  String get insightsActiveEmpty => '还没有可溯源洞察。';
 
   @override
   String get insightDetailTitle => '洞察详情';
@@ -628,18 +622,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get insightOpenTimelineAction => '时间线';
 
   @override
-  String get insightActionArchive => '归档';
-
-  @override
-  String get insightActionRestore => '恢复';
-
-  @override
   String insightConfidenceLabel(String value) {
     return '$value 置信度';
   }
-
-  @override
-  String get insightUpdateFailed => '洞察更新失败。';
 
   @override
   String get recordsTitle => '记录';
@@ -2398,7 +2383,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get packDefaultName => '默认记录循环';
 
   @override
-  String get packDefaultDescription => '保守的内置插件，用于记录卡片、记忆候选和轻量洞察。';
+  String get packDefaultDescription =>
+      '保守的内置插件，用于记录卡片和记忆候选。重度洞察由 pack.insight_depth 负责。';
 
   @override
   String get packTodoName => '待办提取循环';

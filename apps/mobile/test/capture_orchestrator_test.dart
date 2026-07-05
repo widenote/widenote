@@ -36,6 +36,7 @@ void main() {
         'pack.todo',
         'pack.pkm_library',
         'pack.transcript_correction',
+        'pack.usage_stats',
       ]);
 
       for (final pack in packs) {
@@ -182,16 +183,7 @@ void main() {
       result.cards.map((card) => card.sourceLabel),
       everyElement(startsWith('source:')),
     );
-    expect(result.insights.map((insight) => insight.kindLabel), [
-      'summary insight',
-      'count insight',
-      'trend insight',
-      'source mix insight',
-    ]);
-    expect(
-      result.insights.map((insight) => insight.sourceLabel),
-      everyElement(startsWith('source:')),
-    );
+    expect(result.insights, isEmpty);
     expect(model.requests, hasLength(3));
     expect(model.requests.first.prompt, contains('Call Lin'));
     expect(
@@ -210,7 +202,6 @@ void main() {
         runtime.WnEventTypes.captureCreated,
         runtime.WnEventTypes.memoryProposed,
         runtime.WnEventTypes.cardCreated,
-        runtime.WnEventTypes.insightCreated,
         runtime.WnEventTypes.todoSuggested,
         runtime.WnEventTypes.artifactCreated,
       ]),
@@ -242,11 +233,9 @@ void main() {
       packId: 'pack.default',
       agentId: 'agent.capture_loop',
     );
-    _expectEventOrigin(
-      result.events,
-      runtime.WnEventTypes.insightCreated,
-      packId: 'pack.default',
-      agentId: 'agent.capture_loop',
+    expect(
+      result.eventTypes,
+      isNot(contains(runtime.WnEventTypes.insightCreated)),
     );
     _expectEventOrigin(
       result.events,
@@ -616,20 +605,69 @@ void main() {
     expect(memoryEvent.payload['sensitivity'], 'high');
     expect(memoryEvent.payload['durability'], 'durable');
     expect(result.cards.map((card) => card.kindLabel), ['capture card']);
-    expect(
-      result.insights.map((insight) => insight.kindLabel),
-      containsAll(<String>[
-        'summary insight',
-        'count insight',
-        'trend insight',
-        'source mix insight',
-      ]),
-    );
+    expect(result.insights, isEmpty);
     expect(result.todo.isSuggested, isFalse);
     expect(result.todo.statusLabel, 'not suggested');
     expect(
       result.eventTypes,
       isNot(contains(runtime.WnEventTypes.todoSuggested)),
+    );
+  });
+
+  test('redacts secret-like model output and source excerpts', () async {
+    const fakeSecret = 'sk-savage-demo-token-rotate-0000';
+    final orchestrator = CaptureOrchestrator.local(
+      clock: TickingWnClock(DateTime.utc(2026, 6, 23, 2, 30)),
+      idGenerator: SequenceWnIdGenerator(seed: 'secret-redact'),
+      model: runtime.FakeModel(
+        responses: const <String>[
+          '{"text":"The test log shows $fakeSecret and should be rotated.","memory_type":"task_context","confidence":"high","sensitivity":"low","durability":"durable"}',
+          _todoQuietJson,
+        ],
+      ),
+      enabledPackIds: _corePackIds,
+    );
+
+    final result = await orchestrator.processCapture(
+      'The test log shows $fakeSecret; remember only that it needs rotation.',
+    );
+
+    expect(result.record.body, contains(fakeSecret));
+    expect(result.acceptedMemoryCount, 0);
+    expect(result.reviewMemoryCount, 1);
+    expect(result.memoryItem.statusLabel, 'needs review');
+    expect(result.memoryItem.summary, isNot(contains(fakeSecret)));
+    expect(result.reviewCandidate, isNotNull);
+
+    final memoryEvent = result.events.singleWhere(
+      (event) => event.type == runtime.WnEventTypes.memoryProposed,
+    );
+    expect(memoryEvent.payload['text'].toString(), isNot(contains(fakeSecret)));
+    expect(
+      memoryEvent.payload['source_excerpt'].toString(),
+      isNot(contains(fakeSecret)),
+    );
+    expect(memoryEvent.payload['memory_type'], 'credential');
+    expect(memoryEvent.payload['sensitivity'], 'high');
+    expect(
+      memoryEvent.payload['policy_reasons'],
+      containsAll(<String>[
+        'secret_like_source_requires_review',
+        'secret_like_text_redacted',
+      ]),
+    );
+    expect(
+      memoryEvent.payload['source_refs'].toString(),
+      isNot(contains(fakeSecret)),
+    );
+
+    final cardEvent = result.events.singleWhere(
+      (event) => event.type == runtime.WnEventTypes.cardCreated,
+    );
+    expect(cardEvent.payload['body'].toString(), isNot(contains(fakeSecret)));
+    expect(
+      cardEvent.payload['source_refs'].toString(),
+      isNot(contains(fakeSecret)),
     );
   });
 
@@ -668,7 +706,7 @@ void main() {
         result.eventTypes.where(
           (type) => type == runtime.WnEventTypes.insightCreated,
         ),
-        hasLength(1),
+        isEmpty,
       );
       expect(
         result.eventTypes.where(
@@ -910,39 +948,45 @@ void main() {
     },
   );
 
-  test('unstructured provider output routes to exception review', () async {
-    final orchestrator = CaptureOrchestrator.local(
-      clock: TickingWnClock(DateTime.utc(2026, 6, 23, 5, 30)),
-      idGenerator: SequenceWnIdGenerator(seed: 'plain'),
-      model: runtime.FakeModel(
-        responses: const <String>['Lin prefers source-linked WideNote todos.'],
-      ),
-      enabledPackIds: _corePackIds,
-    );
+  test(
+    'unstructured credential-like output routes to protected review',
+    () async {
+      final orchestrator = CaptureOrchestrator.local(
+        clock: TickingWnClock(DateTime.utc(2026, 6, 23, 5, 30)),
+        idGenerator: SequenceWnIdGenerator(seed: 'plain'),
+        model: runtime.FakeModel(
+          responses: const <String>[
+            'Lin prefers source-linked WideNote todos.',
+          ],
+        ),
+        enabledPackIds: _corePackIds,
+      );
 
-    final result = await orchestrator.processCapture(
-      'Synthetic credential-shaped capture sk-demo-secret should not be '
-      'classified locally when provider metadata is missing.',
-    );
+      final result = await orchestrator.processCapture(
+        'Synthetic credential-shaped capture sk-demo-secret should not be '
+        'classified locally when provider metadata is missing.',
+      );
 
-    expect(result.memoryItem.statusLabel, 'needs review');
-    expect(result.reviewCandidate, isNotNull);
-    expect(result.acceptedMemoryCount, 0);
-    expect(result.reviewMemoryCount, 1);
-    expect(result.reviewCandidate!.reasonLabel, contains('policy_unclear'));
-    final memoryEvent = result.events.singleWhere(
-      (event) => event.type == runtime.WnEventTypes.memoryProposed,
-    );
-    expect(
-      memoryEvent.payload['policy_reasons'],
-      containsAll(<String>[
-        'model_output_unstructured',
-        'model_metadata_missing',
-      ]),
-    );
-    expect(memoryEvent.payload['memory_type'], isNull);
-    expect(memoryEvent.payload['sensitivity'], isNull);
-  });
+      expect(result.memoryItem.statusLabel, 'needs review');
+      expect(result.reviewCandidate, isNotNull);
+      expect(result.acceptedMemoryCount, 0);
+      expect(result.reviewMemoryCount, 1);
+      expect(result.reviewCandidate!.reasonLabel, contains('policy_unclear'));
+      final memoryEvent = result.events.singleWhere(
+        (event) => event.type == runtime.WnEventTypes.memoryProposed,
+      );
+      expect(
+        memoryEvent.payload['policy_reasons'],
+        containsAll(<String>[
+          'model_output_unstructured',
+          'model_metadata_missing',
+          'secret_like_source_requires_review',
+        ]),
+      );
+      expect(memoryEvent.payload['memory_type'], 'credential');
+      expect(memoryEvent.payload['sensitivity'], 'high');
+    },
+  );
 
   test('provider metadata routes health capture to review', () async {
     final orchestrator = CaptureOrchestrator.local(

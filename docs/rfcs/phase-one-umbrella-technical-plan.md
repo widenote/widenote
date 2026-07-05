@@ -163,7 +163,7 @@ These packages own domain policy above storage:
 | --- | --- |
 | `packages/dart/memory` | Memory candidate policy, auto-accept/review/merge/delete semantics, provenance, revision, source-linked query. |
 | `packages/dart/model_providers` | Provider config models, fake clients, request builders, error taxonomy, model capability metadata, credential-store port. |
-| `packages/dart/cards` | Source-linked cards and lightweight insight derivation. |
+| `packages/dart/cards` | Source-linked cards and Insight payload models; it must not derive lightweight insights locally. |
 | Future `context` service or module | Context Packet building and invalidation if it outgrows runtime/read-model adapters. Do not create this package until the boundary is real. |
 
 ### `packs/official/*`
@@ -175,7 +175,7 @@ Phase-one pack boundaries:
 
 | Pack | Default | Boundary |
 | --- | --- | --- |
-| `pack.default` | Enabled | Capture to summary/card, Memory candidate, policy evaluation, lightweight insight, rolling/final daily recap. It does not emit todos. |
+| `pack.default` | Enabled | Capture to summary/card, Memory candidate, policy evaluation, and rolling/final daily recap. It does not emit todos or lightweight insights. |
 | `pack.todo` | Visible, separately enableable | Source-linked todo suggestions and task lifecycle. |
 | `pack.conversation` | Enabled | Chat over local context and Memory; may propose writes only through policy services. |
 | `pack.backup_export` | Enabled | Backup/export/import jobs and readable projections. |
@@ -322,7 +322,6 @@ wn.capture.created
       -> source-linked summary/card
       -> Memory candidate
       -> Memory policy evaluation
-      -> lightweight insight candidate
       -> trace
   -> rolling daily recap trigger
   -> final daily recap trigger
@@ -745,8 +744,10 @@ Validation: runtime unit tests and the core orchestration test.
 ### 5. Default Pack Native Slice
 
 Implement `pack.default` as native handlers aligned with manifest shape:
-summary/card, Memory candidate, policy evaluation, lightweight insight, and
-rolling/final recap trigger modes.
+summary/card, Memory candidate, policy evaluation, and rolling/final recap
+trigger modes. Deep insight belongs to a dedicated model-backed
+`pack.insight_depth` path and must not be replaced by local lightweight
+projection.
 
 Validation: manifest validation, permission tests, orchestration tests.
 

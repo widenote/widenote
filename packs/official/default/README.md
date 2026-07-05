@@ -5,10 +5,11 @@
 The default pack should support the first product loop:
 
 ```text
-capture.created -> card extraction -> memory candidates -> lightweight insight
+capture.created -> card extraction -> memory candidates
 ```
 
-It should not enable todos, document generation, external export, or graphical agent flow by default.
+It should not enable todos, deep insights, document generation, external export,
+or graphical agent flow by default.
 
 ## Ownership Boundary
 
@@ -24,20 +25,19 @@ Current public surface:
 
 The manifest declares:
 
-- Permission requests: `model.complete`, `card.write`, `memory.propose`, `insight.write`
+- Permission requests: `model.complete`, `card.write`, `memory.propose`
 - Subscription: `wn.capture.created`
 - Native agent: `agent.capture_loop`
 - Prompt reference: `capture.memory_candidate.v2`
 - Retry policy: `max_attempts = 2`
-- Output events: `wn.card.created`, `wn.memory.proposed`, `wn.insight.created`
-- Insight UI blocks: `claim_list`, `metric_row`, `source_refs`, `note`
+- Output events: `wn.card.created`, `wn.memory.proposed`
 
 The current native prompt contract is implemented by
 `apps/mobile/lib/features/capture/application/capture_agent_prompts.dart`.
 
-Insight payloads emitted by this pack must keep claims, metrics, source refs,
-and UI block declarations in `InsightRecord.payload`. Every claim must carry at
-least one source ref; no-source claims are invalid pack output.
+Deep model-backed insight generation belongs to the future
+`pack.insight_depth` official Pack. The default capture loop must not emit
+statistical, summary, or reflection insights as a fallback.
 
 Future public surfaces include richer permission requests.
 
