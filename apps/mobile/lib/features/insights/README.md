@@ -6,14 +6,17 @@ Mobile read and review surface for source-linked local insights.
 
 ## Ownership Boundary
 
-This feature owns the Insights list and detail page. It reads `InsightRecord`
-rows through the local database provider, but it does not own insight
-generation, model prompts, Agent Pack execution, public insight schemas, or a
-separate insight archive lifecycle.
+This feature owns the Insights list, detail page, and manual generation entry.
+It reads `InsightRecord` rows through the local database provider and sends
+manual generation requests through the capture orchestrator. It does not own
+model prompts, Agent Pack execution, public insight schemas, or a separate
+insight archive lifecycle.
 
-Deep insight generation belongs behind public schemas, permissioned Agent Pack
-tools, reviewable traces, and source-ref validation before it writes local
-derived state.
+Deep insight generation is owned by the official `pack.insight_depth` native
+Pack. Automatic generation subscribes to capture creation, while manual
+generation publishes `wn.insight.requested` from `/insights`. Both paths run
+behind public schemas, permissioned Agent Pack tools, reviewable traces, and
+source-ref validation before writing local derived state.
 
 ## Dependencies
 
@@ -26,9 +29,9 @@ derived state.
 ## Public Surface
 
 - `application/insights_controller.dart`: hydrates insights from local object
-  truth and parses structured payload evidence.
+  truth, parses structured payload evidence, and triggers manual generation.
 - `presentation/insights_page.dart`: Home-owned `/insights` list page and
-  `/insights/:insightId` detail page.
+  `/insights/:insightId` detail page, including the manual generate action.
 
 ## Generated Artifacts
 

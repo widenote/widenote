@@ -17,6 +17,14 @@ final class LocalDbCaptureKnowledgeSink implements CaptureKnowledgeSink {
   }
 
   @override
+  Future<void> saveInsights(List<CaptureInsightOutput> insights) async {
+    final savedAt = DateTime.now().toUtc();
+    for (final insight in insights) {
+      _database.insights.save(_insightRecord(insight, savedAt));
+    }
+  }
+
+  @override
   Future<void> saveArtifacts(List<CaptureDerivedArtifact> artifacts) async {
     final savedAt = DateTime.now().toUtc();
     for (final artifact in artifacts) {
@@ -37,6 +45,23 @@ final class LocalDbCaptureKnowledgeSink implements CaptureKnowledgeSink {
               record.title.trim() == artifact.title.trim(),
         );
   }
+}
+
+InsightRecord _insightRecord(CaptureInsightOutput insight, DateTime savedAt) {
+  return InsightRecord(
+    id: insight.id,
+    schemaVersion: 2,
+    insightKind: insight.insightKind,
+    status: insight.status,
+    title: insight.title,
+    summary: insight.summary,
+    sourceRefs: insight.sourceRefs,
+    metricLabel: insight.metricLabel,
+    metricValue: insight.metricValue,
+    payload: insight.payload,
+    createdAt: insight.createdAt,
+    updatedAt: savedAt,
+  );
 }
 
 CardRecord _cardRecord(cards.MemoryFirstCard card, DateTime savedAt) {

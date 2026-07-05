@@ -7,6 +7,7 @@ abstract final class WnEventTypes {
   static const memoryDeleted = 'wn.memory.deleted';
   static const memoryRestored = 'wn.memory.restored';
   static const cardCreated = 'wn.card.created';
+  static const insightRequested = 'wn.insight.requested';
   static const insightCreated = 'wn.insight.created';
   static const todoSuggested = 'wn.todo.suggested';
   static const artifactCreated = 'wn.artifact.created';

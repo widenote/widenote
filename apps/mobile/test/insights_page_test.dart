@@ -23,7 +23,29 @@ void main() {
     expect(find.byKey(const Key('insights-page')), findsOneWidget);
     expect(find.text('Insights'), findsOneWidget);
     expect(find.text('No source-linked insights yet.'), findsOneWidget);
+    expect(find.byKey(const Key('insights-generate-button')), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
+  });
+
+  testWidgets('manual generate action fails closed without local evidence', (
+    tester,
+  ) async {
+    await _pumpRoute(tester, '/insights');
+
+    await tester.tap(find.byKey(const Key('insights-generate-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Insight not generated'), findsOneWidget);
+    expect(
+      find.text(
+        'A model-backed insight needs enough local evidence and an available provider.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('insight-row-insight.depth.rolling')),
+      findsNothing,
+    );
   });
 
   testWidgets('insights page renders detail evidence and source refs', (

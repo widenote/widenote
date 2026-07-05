@@ -5,6 +5,7 @@ import 'package:widenote_agent_runtime/widenote_agent_runtime.dart' as runtime;
 const officialPackManifestIds = <String>[
   'pack.default',
   'pack.todo',
+  'pack.insight_depth',
   'pack.pkm_library',
   'pack.transcript_correction',
   'pack.usage_stats',
@@ -264,6 +265,189 @@ const officialPackManifestMaps = <String, Map<String, Object?>>{
     'metadata': <String, Object?>{
       'status': 'draft',
       'source': 'packs/official/todo/manifest.json',
+    },
+  },
+  'pack.insight_depth': <String, Object?>{
+    r'$schema':
+        '../../../packages/schemas/src/agent_pack/agent_pack_manifest.schema.json',
+    'id': 'pack.insight_depth',
+    'name': 'Insight Depth',
+    'version': '0.1.0',
+    'schema_version': 1,
+    'publisher': 'widenote',
+    'edition': 'official',
+    'description':
+        'Official model-backed deep insight pack for source-linked recent-state synthesis.',
+    'compatibility': <String, Object?>{
+      'widenote_min': '0.1.0',
+      'widenote_max': null,
+      'schema_version': 1,
+    },
+    'marketplace': <String, Object?>{
+      'source': 'bundled',
+      'trust_level': 'official',
+      'install_mode': 'bundled',
+      'repository_url': 'https://github.com/widenote/widenote',
+      'docs_path': 'packs/official/insight_depth/README.md',
+      'icon_path': null,
+      'categories': <String>['insight', 'memory', 'reflection'],
+      'capabilities': <String>['insight.write', 'insight.context.read'],
+      'status': 'available',
+    },
+    'additive_slots': <Map<String, Object?>>[
+      <String, Object?>{
+        'id': 'insight.depth',
+        'mode': 'additive',
+        'description':
+            'Create source-linked model-backed insight summaries over recent local state.',
+      },
+    ],
+    'default_run_mode': 'auto',
+    'entrypoint_kind': 'native',
+    'permissions': <String>[
+      'model.complete',
+      'insight.write',
+      'insight.context.read',
+      'memory.read',
+      'timeline.read',
+      'knowledge.read',
+    ],
+    'subscriptions': <Map<String, Object?>>[
+      <String, Object?>{
+        'id': 'sub.insight_capture_created',
+        'event_types': <String>['wn.capture.created'],
+        'agent_id': 'agent.insight_depth',
+        'delivery': 'async',
+        'enabled_by_default': true,
+        'depends_on': <String>['pack.default::sub.capture_created'],
+      },
+      <String, Object?>{
+        'id': 'sub.insight_requested',
+        'event_types': <String>['wn.insight.requested'],
+        'agent_id': 'agent.insight_depth',
+        'delivery': 'async',
+        'enabled_by_default': true,
+        'depends_on': <String>[],
+      },
+    ],
+    'agents': <Map<String, Object?>>[
+      <String, Object?>{
+        'id': 'agent.insight_depth',
+        'runtime': 'native',
+        'run_mode': 'auto',
+        'name': 'Insight Depth Agent',
+        'prompt_ref': 'insight.depth.v1',
+        'model_profile_ref': 'local_or_user_selected_model',
+        'permissions': <String>[
+          'model.complete',
+          'insight.write',
+          'insight.context.read',
+          'memory.read',
+          'timeline.read',
+          'knowledge.read',
+        ],
+        'tools': <String>['insight.context.read'],
+        'output_events': <String>['wn.insight.created'],
+        'retry_policy': <String, Object?>{'max_attempts': 2},
+      },
+    ],
+    'model_profiles': <Map<String, Object?>>[
+      <String, Object?>{
+        'id': 'local_or_user_selected_model',
+        'purpose':
+            'Synthesize recent captures, Memory, cards, and todos into neutral source-linked deep insight.',
+        'required': false,
+        'routing_policy': 'app_default',
+        'required_capabilities': <String>['chat', 'completion'],
+        'allow_fallback': false,
+      },
+    ],
+    'tools': <Map<String, Object?>>[
+      <String, Object?>{
+        'id': 'insight.context.read',
+        'capability_kind': 'local_core',
+        'permissions': <String>[
+          'insight.context.read',
+          'memory.read',
+          'timeline.read',
+          'knowledge.read',
+        ],
+        'required_permissions': <String>[
+          'insight.context.read',
+          'memory.read',
+          'timeline.read',
+          'knowledge.read',
+        ],
+        'access': 'read',
+        'risk': 'low',
+        'locality': 'local',
+        'approval_requirement': 'none',
+        'execution': 'local',
+        'side_effect': 'none',
+        'compatible_run_modes': <String>['read_only', 'confirm', 'auto'],
+      },
+    ],
+    'ui_blocks': <Map<String, Object?>>[
+      <String, Object?>{
+        'type': 'claim_list',
+        'events': <String>['wn.insight.created'],
+      },
+      <String, Object?>{
+        'type': 'evidence_list',
+        'events': <String>['wn.insight.created'],
+      },
+      <String, Object?>{
+        'type': 'counter_evidence',
+        'events': <String>['wn.insight.created'],
+      },
+      <String, Object?>{
+        'type': 'confidence_band',
+        'events': <String>['wn.insight.created'],
+      },
+      <String, Object?>{
+        'type': 'source_refs',
+        'events': <String>['wn.insight.created'],
+      },
+    ],
+    'ui_contributions': <Map<String, Object?>>[
+      <String, Object?>{
+        'id': 'insight.detail.depth',
+        'surface': 'insight.detail',
+        'kind': 'event_blocks',
+        'title': 'Deep insight detail',
+        'description':
+            'Render model-backed claims, evidence, counter-evidence, confidence, and source references.',
+        'slot': 'insight.detail.body',
+        'placement': 'section',
+        'events': <String>['wn.insight.created'],
+        'blocks': <String>[
+          'claim_list',
+          'evidence_list',
+          'counter_evidence',
+          'confidence_band',
+          'source_refs',
+        ],
+        'required_permissions': <String>['insight.write'],
+      },
+      <String, Object?>{
+        'id': 'plugins.pack_home.insight_depth_status',
+        'surface': 'plugins.pack_home',
+        'kind': 'panel',
+        'title': 'Insight Depth panel',
+        'description':
+            'Show generation status for model-backed recent-state insights.',
+        'slot': 'plugins.pack_home.summary',
+        'placement': 'section',
+      },
+    ],
+    'storage_quota': <String, Object?>{'local_bytes': 0},
+    'integrity': <String, Object?>{'checksum_sha256': null, 'signature': null},
+    'metadata': <String, Object?>{
+      'status': 'draft',
+      'source': 'packs/official/insight_depth/manifest.json',
+      'derived_output': true,
+      'source_truth': 'raw_records_memory_cards_and_todos_remain_canonical',
+      'generation_policy': 'model_backed_fail_closed',
     },
   },
   'pack.pkm_library': <String, Object?>{

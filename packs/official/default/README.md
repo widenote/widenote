@@ -35,7 +35,7 @@ The manifest declares:
 The current native prompt contract is implemented by
 `apps/mobile/lib/features/capture/application/capture_agent_prompts.dart`.
 
-Deep model-backed insight generation belongs to the future
+Deep model-backed insight generation belongs to the dedicated
 `pack.insight_depth` official Pack. The default capture loop must not emit
 statistical, summary, or reflection insights as a fallback.
 

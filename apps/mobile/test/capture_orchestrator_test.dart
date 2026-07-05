@@ -11,6 +11,16 @@ import 'package:widenote_mobile/features/capture/media/capture_media.dart';
 import 'package:widenote_mobile/features/plugins/application/official_pack_manifests.dart';
 
 const _corePackIds = <String>['pack.default', 'pack.todo'];
+const _capturePipelinePackIds = <String>[
+  'pack.default',
+  'pack.todo',
+  'pack.pkm_library',
+];
+const _insightPipelinePackIds = <String>[
+  'pack.default',
+  'pack.todo',
+  'pack.insight_depth',
+];
 const _todoQuietJson =
     '{"kind":"quiet","title":"","confidence":"high","reason":"ordinary_record","scheduled_at_label":null}';
 const _todoActionJson =
@@ -19,6 +29,28 @@ const _todoScheduleJson =
     '{"kind":"schedule","title":"Review launch issue tomorrow","confidence":"high","reason":"explicit_schedule","scheduled_at_label":"tomorrow"}';
 const _pkmLinJson =
     '{"title":"Lin WideNote preference","summary":"Lin prefers source-linked WideNote todos.","topics":["WideNote","todos"],"people":["Lin"],"projects":["WideNote"],"source_excerpt":"Met Lin about WideNote source-linked todos.","confidence":"high","sensitivity":"low"}';
+const _insightQuietJson =
+    '{"kind":"quiet","title":"","summary":"","confidence":0,"claims":[],"metrics":[],"evidence":[],"counter_evidence":[],"source_ids":[],"requires_review":false}';
+const _insightPayloadSchemaKeys = <String>{
+  'schema_version',
+  'insight_kind',
+  'title',
+  'summary',
+  'confidence',
+  'sensitivity',
+  'evidence_density',
+  'pattern_window',
+  'claims',
+  'metrics',
+  'evidence',
+  'counter_evidence',
+  'source_refs',
+  'ui_blocks',
+  'review',
+  'generator',
+  'created_at',
+  'note',
+};
 
 void main() {
   test(
@@ -34,6 +66,7 @@ void main() {
       expect(packs.map((pack) => pack.id), <String>[
         'pack.default',
         'pack.todo',
+        'pack.insight_depth',
         'pack.pkm_library',
         'pack.transcript_correction',
         'pack.usage_stats',
@@ -80,6 +113,14 @@ void main() {
             .keys
             .toList(growable: false),
         <String>['agent.todo_loop'],
+      );
+      expect(
+        packs
+            .singleWhere((pack) => pack.id == 'pack.insight_depth')
+            .agents
+            .keys
+            .toList(growable: false),
+        <String>['agent.insight_depth'],
       );
       expect(
         packs
@@ -160,6 +201,7 @@ void main() {
       clock: TickingWnClock(DateTime.utc(2026, 6, 23, 1)),
       idGenerator: SequenceWnIdGenerator(seed: 'app'),
       model: model,
+      enabledPackIds: _capturePipelinePackIds,
     );
 
     final result = await orchestrator.processCapture(
@@ -287,6 +329,200 @@ void main() {
           .map((trace) => trace.packId),
       containsAll(<String>['pack.default', 'pack.todo', 'pack.pkm_library']),
     );
+  });
+
+  test('capture automatically runs model-backed Insight Depth pack', () async {
+    final sink = _RecordingKnowledgeSink();
+    final model = _SequenceMetadataModel(
+      responses: <String>[
+        'The capture shows the user is tightening review rhythm.',
+        _todoQuietJson,
+        _deepInsightJson(
+          sourceId: 'capture:capture-insight-auto',
+          title: 'Review rhythm is becoming the bottleneck',
+        ),
+      ],
+    );
+    final orchestrator = CaptureOrchestrator.local(
+      clock: TickingWnClock(DateTime.utc(2026, 7, 5, 2)),
+      idGenerator: SequenceWnIdGenerator(seed: 'insight-auto'),
+      model: model,
+      enabledPackIds: _insightPipelinePackIds,
+      knowledgeSink: sink,
+    );
+
+    final result = await orchestrator.processCapture(
+      '这周连续三次记录都是：先写方案，再卡在 review 节奏上。',
+      captureId: 'capture-insight-auto',
+    );
+
+    expect(result.eventTypes, contains(runtime.WnEventTypes.insightCreated));
+    expect(result.insights, hasLength(1));
+    expect(
+      result.insights.single.title,
+      'Review rhythm is becoming the bottleneck',
+    );
+    expect(result.insights.single.kindLabel, 'deep reflection');
+    _expectEventOrigin(
+      result.events,
+      runtime.WnEventTypes.insightCreated,
+      packId: 'pack.insight_depth',
+      agentId: 'agent.insight_depth',
+    );
+    final insightEvent = result.events.singleWhere(
+      (event) => event.type == runtime.WnEventTypes.insightCreated,
+    );
+    expect(insightEvent.payload['insight_kind'], 'reflection');
+    expect(insightEvent.payload['derived_output'], isTrue);
+    expect(insightEvent.payload['claims'], isA<List<Object?>>());
+    expect(insightEvent.payload['evidence'], isA<List<Object?>>());
+    expect(
+      _sourceRefIds(insightEvent.payload['source_refs']! as List<Object?>),
+      contains('capture-insight-auto'),
+    );
+    expect(model.requests.last.context['prompt_ref'], insightDepthPromptRef);
+    expect(model.requests.last.prompt, contains('Aha Moment'));
+    expect(sink.insights, isNotEmpty);
+    final savedPayload = sink.insights.first.payload;
+    expect(savedPayload['schema_version'], 2);
+    expect(savedPayload['generator'], isA<Map<String, Object?>>());
+    expect(savedPayload['review'], isA<Map<String, Object?>>());
+    expect(savedPayload['created_at'], isA<String>());
+    expect(
+      savedPayload.keys.toSet().difference(_insightPayloadSchemaKeys),
+      isEmpty,
+    );
+    final savedEvidence = savedPayload['evidence']! as List<Object?>;
+    expect((savedEvidence.single! as Map)['kind'], 'supporting');
+    expect(savedPayload.containsKey('requires_review'), isFalse);
+    expect(savedPayload.containsKey('generator_id'), isFalse);
+    expect(savedPayload.containsKey('source_links'), isFalse);
+  });
+
+  test(
+    'manual deep insight request publishes request event and saves output',
+    () async {
+      final eventStore = runtime.InMemoryEventStore();
+      final model = _SequenceMetadataModel(
+        responses: <String>[
+          'Manual insight seed memory.',
+          _todoQuietJson,
+          _insightQuietJson,
+          _deepInsightJson(
+            sourceId: 'capture:capture-insight-manual',
+            title: 'Manual regeneration finds the cross-record pattern',
+          ),
+        ],
+      );
+      final orchestrator = CaptureOrchestrator.local(
+        eventStore: eventStore,
+        clock: TickingWnClock(DateTime.utc(2026, 7, 5, 2, 30)),
+        idGenerator: SequenceWnIdGenerator(seed: 'insight-manual'),
+        model: model,
+        enabledPackIds: _insightPipelinePackIds,
+      );
+
+      final capture = await orchestrator.processCapture(
+        '先留一条记录，自动洞察保持 quiet，随后手动请求重算。',
+        captureId: 'capture-insight-manual',
+      );
+      expect(
+        capture.eventTypes,
+        isNot(contains(runtime.WnEventTypes.insightCreated)),
+      );
+
+      final insights = await orchestrator.generateDeepInsight();
+      final events = await eventStore.readAll();
+
+      expect(insights, hasLength(1));
+      expect(
+        insights.single.title,
+        'Manual regeneration finds the cross-record pattern',
+      );
+      expect(
+        events.map((event) => event.type),
+        containsAllInOrder(<String>[
+          runtime.WnEventTypes.insightRequested,
+          runtime.WnEventTypes.insightCreated,
+        ]),
+      );
+      final request = events.singleWhere(
+        (event) => event.type == runtime.WnEventTypes.insightRequested,
+      );
+      final output = events.singleWhere(
+        (event) => event.type == runtime.WnEventTypes.insightCreated,
+      );
+      expect(output.causationId, request.id);
+      expect(
+        output.payload['trigger_event_type'],
+        runtime.WnEventTypes.insightRequested,
+      );
+      expect(model.requests.last.context['prompt_ref'], insightDepthPromptRef);
+    },
+  );
+
+  test(
+    'malformed insight model output does not create lightweight fallback',
+    () async {
+      final model = _SequenceMetadataModel(
+        responses: <String>[
+          'Insight fail-closed seed memory.',
+          _todoQuietJson,
+          'not json, not an insight',
+        ],
+      );
+      final orchestrator = CaptureOrchestrator.local(
+        clock: TickingWnClock(DateTime.utc(2026, 7, 5, 3)),
+        idGenerator: SequenceWnIdGenerator(seed: 'insight-malformed'),
+        model: model,
+        enabledPackIds: _insightPipelinePackIds,
+      );
+
+      final result = await orchestrator.processCapture(
+        '这里有足够文本，但模型输出损坏时不能退回成本地摘要。',
+        captureId: 'capture-insight-malformed',
+      );
+
+      expect(
+        result.eventTypes,
+        isNot(contains(runtime.WnEventTypes.insightCreated)),
+      );
+      expect(result.insights, isEmpty);
+      expect(model.requests.last.context['prompt_ref'], insightDepthPromptRef);
+    },
+  );
+
+  test('insight output with hallucinated source ids fails closed', () async {
+    final sink = _RecordingKnowledgeSink();
+    final model = _SequenceMetadataModel(
+      responses: <String>[
+        'Insight hallucinated source seed memory.',
+        _todoQuietJson,
+        _deepInsightJson(
+          sourceId: 'capture:not-in-context',
+          title: 'This should not be materialized',
+        ),
+      ],
+    );
+    final orchestrator = CaptureOrchestrator.local(
+      clock: TickingWnClock(DateTime.utc(2026, 7, 5, 3, 15)),
+      idGenerator: SequenceWnIdGenerator(seed: 'insight-hallucinated-source'),
+      model: model,
+      enabledPackIds: _insightPipelinePackIds,
+      knowledgeSink: sink,
+    );
+
+    final result = await orchestrator.processCapture(
+      '真实 context 里只有这一条 capture，模型如果引用不存在来源必须 fail closed。',
+      captureId: 'capture-real-context-only',
+    );
+
+    expect(
+      result.eventTypes,
+      isNot(contains(runtime.WnEventTypes.insightCreated)),
+    );
+    expect(result.insights, isEmpty);
+    expect(sink.insights, isEmpty);
   });
 
   test('capture can complete without generating Memory', () async {
@@ -483,6 +719,30 @@ void main() {
           correlationId: capture.id,
           createdAt: now.add(const Duration(seconds: 4)),
         ),
+        _runtimeEvent(
+          id: 'evt-community-insight',
+          type: runtime.WnEventTypes.insightCreated,
+          actor: runtime.WnActor.agent,
+          packId: 'pack.community',
+          agentId: 'agent.insight_writer',
+          subjectRef: const runtime.SubjectRef(
+            kind: 'insight',
+            id: 'insight.community',
+          ),
+          payload: <String, Object?>{
+            'insight_id': 'insight.community',
+            'insight_kind': 'reflection',
+            'status': 'active',
+            'title': 'Community insight',
+            'summary': 'This should not be saved as a private insight.',
+            'source_capture_id': subject.id,
+            'source_event_id': capture.id,
+            'source_refs': sourceRefs,
+          },
+          causationId: capture.id,
+          correlationId: capture.id,
+          createdAt: now.add(const Duration(seconds: 5)),
+        ),
       ]);
 
       final orchestrator = CaptureOrchestrator.local(
@@ -499,12 +759,14 @@ void main() {
       expect(result!.eventTypes, contains(runtime.WnEventTypes.memoryProposed));
       expect(result.eventTypes, contains(runtime.WnEventTypes.todoSuggested));
       expect(result.eventTypes, contains(runtime.WnEventTypes.artifactCreated));
+      expect(result.eventTypes, contains(runtime.WnEventTypes.insightCreated));
       expect(result.memoryGenerated, isFalse);
       expect(result.memoryItem.title, 'memory.not_generated');
       expect(result.acceptedMemoryCount, 0);
       expect(result.reviewMemoryCount, 0);
       expect(result.todo.isSuggested, isFalse);
       expect(sink.artifacts, isEmpty);
+      expect(sink.insights, isEmpty);
     },
   );
 
@@ -1263,6 +1525,54 @@ void main() {
   });
 }
 
+String _deepInsightJson({required String sourceId, required String title}) {
+  return jsonEncode(<String, Object?>{
+    'kind': 'reflection',
+    'title': title,
+    'summary':
+        'A neutral observer would notice that review rhythm, not capture volume, is shaping the recent state.',
+    'confidence': 0.82,
+    'sensitivity': 'low',
+    'evidence_density': 'medium',
+    'requires_review': false,
+    'source_ids': <Object?>[sourceId],
+    'claims': <Object?>[
+      <String, Object?>{
+        'id': 'claim.1',
+        'text':
+            'The recent records point to review rhythm as the current bottleneck.',
+        'confidence': 0.84,
+        'source_ids': <Object?>[sourceId],
+      },
+    ],
+    'metrics': <Object?>[
+      <String, Object?>{
+        'label': 'source entries',
+        'value': 1,
+        'source_ids': <Object?>[sourceId],
+      },
+    ],
+    'evidence': <Object?>[
+      <String, Object?>{
+        'id': 'evidence.1',
+        'label': 'Repeated review context',
+        'text':
+            'The cited capture describes repeated planning followed by review friction.',
+        'source_ids': <Object?>[sourceId],
+      },
+    ],
+    'counter_evidence': <Object?>[
+      <String, Object?>{
+        'id': 'counter.1',
+        'label': 'Short window',
+        'text':
+            'The window is still short, so the insight should stay provisional.',
+        'source_ids': <Object?>[sourceId],
+      },
+    ],
+  });
+}
+
 final class _SequenceMetadataModel implements runtime.ModelClient {
   _SequenceMetadataModel({
     required List<String> responses,
@@ -1342,9 +1652,15 @@ final class _UndeclaredOutputAgent implements runtime.AgentHandler {
 
 final class _RecordingKnowledgeSink implements CaptureKnowledgeSink {
   final artifacts = <CaptureDerivedArtifact>[];
+  final insights = <CaptureInsightOutput>[];
 
   @override
   Future<void> save(cards.MemoryFirstCardBundle bundle) async {}
+
+  @override
+  Future<void> saveInsights(List<CaptureInsightOutput> insights) async {
+    this.insights.addAll(insights);
+  }
 
   @override
   Future<void> saveArtifacts(List<CaptureDerivedArtifact> artifacts) async {

@@ -94,6 +94,11 @@ String localizedInsightKindLabel(AppLocalizations l10n, String value) {
     'action_pattern' => l10n.insightKindActionPattern,
     'attachment evidence insight' ||
     'attachment_evidence' => l10n.insightKindAttachmentEvidence,
+    'deep reflection' || 'reflection' => l10n.insightKindReflection,
+    'tension insight' || 'tension' => l10n.insightKindTension,
+    'state shift' || 'shift' => l10n.insightKindShift,
+    'risk insight' || 'risk' => l10n.insightKindRisk,
+    'opportunity insight' || 'opportunity' => l10n.insightKindOpportunity,
     _ => value,
   };
 }

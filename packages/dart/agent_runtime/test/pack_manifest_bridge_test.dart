@@ -11,6 +11,7 @@ void main() {
   test('official manifest files decode and align with native registry', () {
     final defaultManifest = bridge.loadFile(_officialDefaultPath);
     final todoManifest = bridge.loadFile(_officialTodoPath);
+    final insightManifest = bridge.loadFile(_officialInsightDepthPath);
     final pkmManifest = bridge.loadFile(_officialPkmPath);
     final transcriptManifest = bridge.loadFile(_officialTranscriptPath);
     final usageStatsManifest = bridge.loadFile(_officialUsageStatsPath);
@@ -98,6 +99,39 @@ void main() {
       WnEventTypes.todoSuggested,
     });
 
+    expect(insightManifest.id, 'pack.insight_depth');
+    expect(insightManifest.requiredPermissions, <String>{
+      ModelPermissions.complete,
+      'insight.write',
+      'insight.context.read',
+      'memory.read',
+      'timeline.read',
+      'knowledge.read',
+    });
+    expect(insightManifest.defaultRunMode, RunMode.auto);
+    expect(
+      insightManifest.agentDefinitions['agent.insight_depth']?.modelProfileRef,
+      'local_or_user_selected_model',
+    );
+    expect(
+      insightManifest.agentDefinitions['agent.insight_depth']?.tools,
+      <String>{'insight.context.read'},
+    );
+    expect(
+      insightManifest.toolDefinitions['insight.context.read']?.access,
+      ToolAccess.read,
+    );
+    expect(_manifestOutputEvents(insightManifest), <String>{
+      WnEventTypes.insightCreated,
+    });
+    expect(
+      insightManifest.uiContributions.map((contribution) => contribution.id),
+      <String>[
+        'insight.detail.depth',
+        'plugins.pack_home.insight_depth_status',
+      ],
+    );
+
     expect(pkmManifest.id, 'pack.pkm_library');
     expect(pkmManifest.requiredPermissions, <String>{
       ModelPermissions.complete,
@@ -168,10 +202,19 @@ void main() {
             'agent.todo_loop': _OfficialTodoHandler(),
           },
         ),
+      )
+      ..register(
+        bridge.buildNativePack(
+          insightManifest,
+          nativeHandlers: const <String, AgentHandler>{
+            'agent.insight_depth': _InsightHandler(),
+          },
+        ),
       );
 
     expect(registry.checkManifestAlignment(defaultManifest).isAligned, isTrue);
     expect(registry.checkManifestAlignment(todoManifest).isAligned, isTrue);
+    expect(registry.checkManifestAlignment(insightManifest).isAligned, isTrue);
     expect(registry.checkManifestAlignment(pkmManifest).isAligned, isTrue);
   });
 
@@ -180,11 +223,13 @@ void main() {
     () async {
       final defaultManifest = bridge.loadFile(_officialDefaultPath);
       final todoManifest = bridge.loadFile(_officialTodoPath);
+      final insightManifest = bridge.loadFile(_officialInsightDepthPath);
       final pkmManifest = bridge.loadFile(_officialPkmPath);
       final store = InMemoryEventStore();
       final permissions = InMemoryPermissionBroker()
         ..grantAll(defaultManifest.id, defaultManifest.requiredPermissions)
         ..grantAll(todoManifest.id, todoManifest.requiredPermissions)
+        ..grantAll(insightManifest.id, insightManifest.requiredPermissions)
         ..grantAll(pkmManifest.id, pkmManifest.requiredPermissions);
       final kernel = _kernel(store: store, permissions: permissions);
 
@@ -193,6 +238,7 @@ void main() {
         manifests: <AgentPackManifestSnapshot>[
           defaultManifest,
           todoManifest,
+          insightManifest,
           pkmManifest,
         ],
         nativeHandlersByPackId: const <String, Map<String, AgentHandler>>{
@@ -201,6 +247,9 @@ void main() {
           },
           'pack.todo': <String, AgentHandler>{
             'agent.todo_loop': _OfficialTodoHandler(),
+          },
+          'pack.insight_depth': <String, AgentHandler>{
+            'agent.insight_depth': _InsightHandler(),
           },
           'pack.pkm_library': <String, AgentHandler>{
             'agent.pkm_profile_builder': _OfficialPkmHandler(),
@@ -217,7 +266,7 @@ void main() {
         ),
       );
 
-      expect(kernel.tasks, hasLength(3));
+      expect(kernel.tasks, hasLength(4));
       final identityKeys = kernel.tasks
           .map((task) => task.identityKey)
           .join('\n');
@@ -234,6 +283,12 @@ void main() {
       expect(
         identityKeys,
         contains(
+          'pack.insight_depth::0.1.0::sub.insight_capture_created::agent.insight_depth',
+        ),
+      );
+      expect(
+        identityKeys,
+        contains(
           'pack.pkm_library::0.1.0::sub.pkm_capture_created::agent.pkm_profile_builder',
         ),
       );
@@ -241,13 +296,20 @@ void main() {
         kernel.runs.map((run) => run.status),
         everyElement(RuntimeRunStatus.succeeded),
       );
-      expect((await store.readAll()).map((event) => event.type), <String>[
-        WnEventTypes.captureCreated,
-        WnEventTypes.memoryProposed,
-        WnEventTypes.cardCreated,
-        WnEventTypes.todoSuggested,
-        WnEventTypes.artifactCreated,
-      ]);
+      final eventTypes = (await store.readAll())
+          .map((event) => event.type)
+          .toList(growable: false);
+      expect(eventTypes.first, WnEventTypes.captureCreated);
+      expect(
+        eventTypes,
+        containsAll(<String>[
+          WnEventTypes.memoryProposed,
+          WnEventTypes.cardCreated,
+          WnEventTypes.todoSuggested,
+          WnEventTypes.insightCreated,
+          WnEventTypes.artifactCreated,
+        ]),
+      );
     },
   );
 
@@ -987,6 +1049,8 @@ void main() {
 
 const _officialDefaultPath = '../../../packs/official/default/manifest.json';
 const _officialTodoPath = '../../../packs/official/todo/manifest.json';
+const _officialInsightDepthPath =
+    '../../../packs/official/insight_depth/manifest.json';
 const _officialPkmPath = '../../../packs/official/pkm_library/manifest.json';
 const _officialTranscriptPath =
     '../../../packs/official/transcript_correction/manifest.json';

@@ -40,6 +40,25 @@
       "docs_path": "packs/official/todo/README.md"
     },
     {
+      "id": "pack.insight_depth",
+      "manifest_path": "../official/insight_depth/manifest.json",
+      "publisher": "widenote",
+      "edition": "official",
+      "trust_level": "official",
+      "status": "available",
+      "categories": [
+        "insight",
+        "memory",
+        "reflection"
+      ],
+      "capabilities": [
+        "insight.write",
+        "insight.context.read"
+      ],
+      "repository_url": "https://github.com/widenote/widenote",
+      "docs_path": "packs/official/insight_depth/README.md"
+    },
+    {
       "id": "pack.pkm_library",
       "manifest_path": "../official/pkm_library/manifest.json",
       "publisher": "widenote",
