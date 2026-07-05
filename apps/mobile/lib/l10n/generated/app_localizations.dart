@@ -2229,47 +2229,65 @@ abstract class AppLocalizations {
   /// **'Actions'**
   String get todosTitle;
 
-  /// No description provided for @todosSubtitle.
+  /// No description provided for @todoFocusSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Source-linked action items and schedule candidates, separated from ordinary records.'**
-  String get todosSubtitle;
+  /// **'{actionCount, plural, =0{No open actions} =1{1 open action} other{{actionCount} open actions}} · {scheduleCount, plural, =0{no schedule candidates} =1{1 schedule candidate} other{{scheduleCount} schedule candidates}}'**
+  String todoFocusSubtitle(int actionCount, int scheduleCount);
 
-  /// No description provided for @todosSurfaceTitle.
+  /// No description provided for @todoFocusLabel.
   ///
   /// In en, this message translates to:
-  /// **'Source-linked todos'**
-  String get todosSurfaceTitle;
+  /// **'Next action'**
+  String get todoFocusLabel;
 
-  /// No description provided for @todosEmpty.
+  /// No description provided for @todoFocusEmptyTitle.
   ///
   /// In en, this message translates to:
-  /// **'No source-linked todos yet.'**
-  String get todosEmpty;
+  /// **'No open actions'**
+  String get todoFocusEmptyTitle;
 
-  /// No description provided for @todoActionsSectionTitle.
+  /// No description provided for @todoFocusEmptyBody.
   ///
   /// In en, this message translates to:
-  /// **'Action items'**
-  String get todoActionsSectionTitle;
+  /// **'Action suggestions appear here after the Todo agent returns a source-linked action.'**
+  String get todoFocusEmptyBody;
 
-  /// No description provided for @todoActionsEmpty.
+  /// No description provided for @todoFocusSourceLinkedBody.
   ///
   /// In en, this message translates to:
-  /// **'No clear action items yet.'**
-  String get todoActionsEmpty;
+  /// **'This is a source-linked model suggestion. Open it to review context before acting.'**
+  String get todoFocusSourceLinkedBody;
 
-  /// No description provided for @todoSchedulesSectionTitle.
+  /// No description provided for @todoFocusOpenAction.
   ///
   /// In en, this message translates to:
-  /// **'Schedule candidates'**
-  String get todoSchedulesSectionTitle;
+  /// **'Open'**
+  String get todoFocusOpenAction;
 
-  /// No description provided for @todoSchedulesEmpty.
+  /// No description provided for @todoFlowToday.
   ///
   /// In en, this message translates to:
-  /// **'No schedule candidates yet.'**
-  String get todoSchedulesEmpty;
+  /// **'Today'**
+  String get todoFlowToday;
+
+  /// No description provided for @todoFlowLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get todoFlowLater;
+
+  /// No description provided for @todoFlowTodayEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No actions or schedule candidates for today.'**
+  String get todoFlowTodayEmpty;
+
+  /// No description provided for @todoFlowLaterEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No later actions or schedule candidates.'**
+  String get todoFlowLaterEmpty;
 
   /// No description provided for @todoStatusSuggestedAction.
   ///
@@ -2282,6 +2300,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Schedule candidate'**
   String get todoStatusScheduleCandidate;
+
+  /// No description provided for @todoReasonExplicitAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Explicit action in the source'**
+  String get todoReasonExplicitAction;
+
+  /// No description provided for @todoReasonExplicitSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Explicit schedule intent in the source'**
+  String get todoReasonExplicitSchedule;
+
+  /// No description provided for @todoReasonOrdinaryRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Ordinary record, kept out of actions'**
+  String get todoReasonOrdinaryRecord;
+
+  /// No description provided for @todoReasonAmbiguous.
+  ///
+  /// In en, this message translates to:
+  /// **'Ambiguous intent'**
+  String get todoReasonAmbiguous;
+
+  /// No description provided for @todoReasonInsufficientEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'Insufficient evidence'**
+  String get todoReasonInsufficientEvidence;
+
+  /// No description provided for @todoReasonLegacyMissingSuggestionKind.
+  ///
+  /// In en, this message translates to:
+  /// **'Older row without model suggestion kind'**
+  String get todoReasonLegacyMissingSuggestionKind;
+
+  /// No description provided for @todoReasonUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Model reason not provided'**
+  String get todoReasonUnknown;
 
   /// No description provided for @todoQuietTitle.
   ///
@@ -2307,65 +2367,11 @@ abstract class AppLocalizations {
   /// **'Search tasks'**
   String get todoSearchHint;
 
-  /// No description provided for @todoSummaryOpen.
-  ///
-  /// In en, this message translates to:
-  /// **'Open'**
-  String get todoSummaryOpen;
-
-  /// No description provided for @todoSummarySchedule.
-  ///
-  /// In en, this message translates to:
-  /// **'Schedule'**
-  String get todoSummarySchedule;
-
-  /// No description provided for @todoSummaryCompleted.
-  ///
-  /// In en, this message translates to:
-  /// **'Done'**
-  String get todoSummaryCompleted;
-
   /// No description provided for @todoNoMatches.
   ///
   /// In en, this message translates to:
   /// **'No matching tasks.'**
   String get todoNoMatches;
-
-  /// No description provided for @todoBucketOverdue.
-  ///
-  /// In en, this message translates to:
-  /// **'Overdue'**
-  String get todoBucketOverdue;
-
-  /// No description provided for @todoBucketToday.
-  ///
-  /// In en, this message translates to:
-  /// **'Today'**
-  String get todoBucketToday;
-
-  /// No description provided for @todoBucketTomorrow.
-  ///
-  /// In en, this message translates to:
-  /// **'Tomorrow'**
-  String get todoBucketTomorrow;
-
-  /// No description provided for @todoBucketLater.
-  ///
-  /// In en, this message translates to:
-  /// **'Later'**
-  String get todoBucketLater;
-
-  /// No description provided for @todoBucketNoDeadline.
-  ///
-  /// In en, this message translates to:
-  /// **'No deadline'**
-  String get todoBucketNoDeadline;
-
-  /// No description provided for @todoBucketScheduleCandidates.
-  ///
-  /// In en, this message translates to:
-  /// **'Schedule candidates'**
-  String get todoBucketScheduleCandidates;
 
   /// No description provided for @todoBucketCompleted.
   ///
@@ -2379,53 +2385,11 @@ abstract class AppLocalizations {
   /// **'No completed tasks yet.'**
   String get todoCompletedEmpty;
 
-  /// No description provided for @todoPriorityNone.
-  ///
-  /// In en, this message translates to:
-  /// **'None'**
-  String get todoPriorityNone;
-
-  /// No description provided for @todoPriorityLow.
-  ///
-  /// In en, this message translates to:
-  /// **'Low'**
-  String get todoPriorityLow;
-
-  /// No description provided for @todoPriorityMedium.
-  ///
-  /// In en, this message translates to:
-  /// **'Medium'**
-  String get todoPriorityMedium;
-
-  /// No description provided for @todoPriorityHigh.
-  ///
-  /// In en, this message translates to:
-  /// **'High'**
-  String get todoPriorityHigh;
-
   /// No description provided for @todoDueNone.
   ///
   /// In en, this message translates to:
   /// **'No date'**
   String get todoDueNone;
-
-  /// No description provided for @todoDueToday.
-  ///
-  /// In en, this message translates to:
-  /// **'Today'**
-  String get todoDueToday;
-
-  /// No description provided for @todoDueTomorrow.
-  ///
-  /// In en, this message translates to:
-  /// **'Tomorrow'**
-  String get todoDueTomorrow;
-
-  /// No description provided for @todoDueLater.
-  ///
-  /// In en, this message translates to:
-  /// **'Later'**
-  String get todoDueLater;
 
   /// No description provided for @todoDueLabel.
   ///
@@ -2451,30 +2415,6 @@ abstract class AppLocalizations {
   /// **'This task is no longer available.'**
   String get todoDetailMissing;
 
-  /// No description provided for @todoDetailContent.
-  ///
-  /// In en, this message translates to:
-  /// **'Content'**
-  String get todoDetailContent;
-
-  /// No description provided for @todoDetailTitleField.
-  ///
-  /// In en, this message translates to:
-  /// **'Title'**
-  String get todoDetailTitleField;
-
-  /// No description provided for @todoDetailSaveTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Save title'**
-  String get todoDetailSaveTitle;
-
-  /// No description provided for @todoDetailStatus.
-  ///
-  /// In en, this message translates to:
-  /// **'Status'**
-  String get todoDetailStatus;
-
   /// No description provided for @todoCompletedAtLabel.
   ///
   /// In en, this message translates to:
@@ -2484,7 +2424,7 @@ abstract class AppLocalizations {
   /// No description provided for @todoDetailScheduleNotice.
   ///
   /// In en, this message translates to:
-  /// **'Schedule candidates are local suggestions and are not completed like action items.'**
+  /// **'Schedule candidates come from model-backed Todo output and are not completed like action items.'**
   String get todoDetailScheduleNotice;
 
   /// No description provided for @todoDetailCompletedNotice.
@@ -2493,47 +2433,17 @@ abstract class AppLocalizations {
   /// **'Completed tasks stay at the bottom. Reopen to move this task back to active buckets.'**
   String get todoDetailCompletedNotice;
 
-  /// No description provided for @todoDetailMetadata.
+  /// No description provided for @todoDetailNextSteps.
   ///
   /// In en, this message translates to:
-  /// **'Task metadata'**
-  String get todoDetailMetadata;
+  /// **'Model-listed steps'**
+  String get todoDetailNextSteps;
 
-  /// No description provided for @todoDetailPriority.
+  /// No description provided for @todoDetailWhy.
   ///
   /// In en, this message translates to:
-  /// **'Priority'**
-  String get todoDetailPriority;
-
-  /// No description provided for @todoDetailDue.
-  ///
-  /// In en, this message translates to:
-  /// **'Due date'**
-  String get todoDetailDue;
-
-  /// No description provided for @todoDetailIndent.
-  ///
-  /// In en, this message translates to:
-  /// **'Indent level {level}'**
-  String todoDetailIndent(int level);
-
-  /// No description provided for @todoDetailSort.
-  ///
-  /// In en, this message translates to:
-  /// **'Sort order {order}'**
-  String todoDetailSort(int order);
-
-  /// No description provided for @todoDetailSubtasks.
-  ///
-  /// In en, this message translates to:
-  /// **'Subtasks'**
-  String get todoDetailSubtasks;
-
-  /// No description provided for @todoDetailNoSubtasks.
-  ///
-  /// In en, this message translates to:
-  /// **'No structured subtasks.'**
-  String get todoDetailNoSubtasks;
+  /// **'Why this appeared'**
+  String get todoDetailWhy;
 
   /// No description provided for @todoDetailSource.
   ///

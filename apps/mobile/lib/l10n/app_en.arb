@@ -641,15 +641,35 @@
   "chatErrorModelEmptyAnswer": "The model returned no answer. Retry or choose another provider.",
   "chatErrorModelUnavailable": "The model is unavailable. Check provider settings or retry.",
   "todosTitle": "Actions",
-  "todosSubtitle": "Source-linked action items and schedule candidates, separated from ordinary records.",
-  "todosSurfaceTitle": "Source-linked todos",
-  "todosEmpty": "No source-linked todos yet.",
-  "todoActionsSectionTitle": "Action items",
-  "todoActionsEmpty": "No clear action items yet.",
-  "todoSchedulesSectionTitle": "Schedule candidates",
-  "todoSchedulesEmpty": "No schedule candidates yet.",
+  "todoFocusSubtitle": "{actionCount, plural, =0{No open actions} =1{1 open action} other{{actionCount} open actions}} · {scheduleCount, plural, =0{no schedule candidates} =1{1 schedule candidate} other{{scheduleCount} schedule candidates}}",
+  "@todoFocusSubtitle": {
+    "placeholders": {
+      "actionCount": {
+        "type": "int"
+      },
+      "scheduleCount": {
+        "type": "int"
+      }
+    }
+  },
+  "todoFocusLabel": "Next action",
+  "todoFocusEmptyTitle": "No open actions",
+  "todoFocusEmptyBody": "Action suggestions appear here after the Todo agent returns a source-linked action.",
+  "todoFocusSourceLinkedBody": "This is a source-linked model suggestion. Open it to review context before acting.",
+  "todoFocusOpenAction": "Open",
+  "todoFlowToday": "Today",
+  "todoFlowLater": "Later",
+  "todoFlowTodayEmpty": "No actions or schedule candidates for today.",
+  "todoFlowLaterEmpty": "No later actions or schedule candidates.",
   "todoStatusSuggestedAction": "Suggested action",
   "todoStatusScheduleCandidate": "Schedule candidate",
+  "todoReasonExplicitAction": "Explicit action in the source",
+  "todoReasonExplicitSchedule": "Explicit schedule intent in the source",
+  "todoReasonOrdinaryRecord": "Ordinary record, kept out of actions",
+  "todoReasonAmbiguous": "Ambiguous intent",
+  "todoReasonInsufficientEvidence": "Insufficient evidence",
+  "todoReasonLegacyMissingSuggestionKind": "Older row without model suggestion kind",
+  "todoReasonUnknown": "Model reason not provided",
   "todoQuietTitle": "Kept out of actions",
   "todoQuietSummary": "{count, plural, one {# record did not have a clear action or schedule intent. It stays on the timeline.} other {# records did not have clear action or schedule intent. They stay on the timeline.}}",
   "todoScheduledForLabel": "Time cue: {time}",
@@ -661,26 +681,10 @@
     }
   },
   "todoSearchHint": "Search tasks",
-  "todoSummaryOpen": "Open",
-  "todoSummarySchedule": "Schedule",
-  "todoSummaryCompleted": "Done",
   "todoNoMatches": "No matching tasks.",
-  "todoBucketOverdue": "Overdue",
-  "todoBucketToday": "Today",
-  "todoBucketTomorrow": "Tomorrow",
-  "todoBucketLater": "Later",
-  "todoBucketNoDeadline": "No deadline",
-  "todoBucketScheduleCandidates": "Schedule candidates",
   "todoBucketCompleted": "Completed",
   "todoCompletedEmpty": "No completed tasks yet.",
-  "todoPriorityNone": "None",
-  "todoPriorityLow": "Low",
-  "todoPriorityMedium": "Medium",
-  "todoPriorityHigh": "High",
   "todoDueNone": "No date",
-  "todoDueToday": "Today",
-  "todoDueTomorrow": "Tomorrow",
-  "todoDueLater": "Later",
   "todoDueLabel": "Due: {date}",
   "@todoDueLabel": {
     "placeholders": {
@@ -702,10 +706,6 @@
   },
   "todoDetailTitle": "Task detail",
   "todoDetailMissing": "This task is no longer available.",
-  "todoDetailContent": "Content",
-  "todoDetailTitleField": "Title",
-  "todoDetailSaveTitle": "Save title",
-  "todoDetailStatus": "Status",
   "todoCompletedAtLabel": "Completed: {date}",
   "@todoCompletedAtLabel": {
     "placeholders": {
@@ -714,29 +714,10 @@
       }
     }
   },
-  "todoDetailScheduleNotice": "Schedule candidates are local suggestions and are not completed like action items.",
+  "todoDetailScheduleNotice": "Schedule candidates come from model-backed Todo output and are not completed like action items.",
   "todoDetailCompletedNotice": "Completed tasks stay at the bottom. Reopen to move this task back to active buckets.",
-  "todoDetailMetadata": "Task metadata",
-  "todoDetailPriority": "Priority",
-  "todoDetailDue": "Due date",
-  "todoDetailIndent": "Indent level {level}",
-  "@todoDetailIndent": {
-    "placeholders": {
-      "level": {
-        "type": "int"
-      }
-    }
-  },
-  "todoDetailSort": "Sort order {order}",
-  "@todoDetailSort": {
-    "placeholders": {
-      "order": {
-        "type": "int"
-      }
-    }
-  },
-  "todoDetailSubtasks": "Subtasks",
-  "todoDetailNoSubtasks": "No structured subtasks.",
+  "todoDetailNextSteps": "Model-listed steps",
+  "todoDetailWhy": "Why this appeared",
   "todoDetailSource": "Source",
   "todoDetailOpenSource": "Open source",
   "timelineTitle": "Timeline",

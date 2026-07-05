@@ -1336,32 +1336,82 @@ class AppLocalizationsEn extends AppLocalizations {
   String get todosTitle => 'Actions';
 
   @override
-  String get todosSubtitle =>
-      'Source-linked action items and schedule candidates, separated from ordinary records.';
+  String todoFocusSubtitle(int actionCount, int scheduleCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      actionCount,
+      locale: localeName,
+      other: '$actionCount open actions',
+      one: '1 open action',
+      zero: 'No open actions',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      scheduleCount,
+      locale: localeName,
+      other: '$scheduleCount schedule candidates',
+      one: '1 schedule candidate',
+      zero: 'no schedule candidates',
+    );
+    return '$_temp0 · $_temp1';
+  }
 
   @override
-  String get todosSurfaceTitle => 'Source-linked todos';
+  String get todoFocusLabel => 'Next action';
 
   @override
-  String get todosEmpty => 'No source-linked todos yet.';
+  String get todoFocusEmptyTitle => 'No open actions';
 
   @override
-  String get todoActionsSectionTitle => 'Action items';
+  String get todoFocusEmptyBody =>
+      'Action suggestions appear here after the Todo agent returns a source-linked action.';
 
   @override
-  String get todoActionsEmpty => 'No clear action items yet.';
+  String get todoFocusSourceLinkedBody =>
+      'This is a source-linked model suggestion. Open it to review context before acting.';
 
   @override
-  String get todoSchedulesSectionTitle => 'Schedule candidates';
+  String get todoFocusOpenAction => 'Open';
 
   @override
-  String get todoSchedulesEmpty => 'No schedule candidates yet.';
+  String get todoFlowToday => 'Today';
+
+  @override
+  String get todoFlowLater => 'Later';
+
+  @override
+  String get todoFlowTodayEmpty =>
+      'No actions or schedule candidates for today.';
+
+  @override
+  String get todoFlowLaterEmpty => 'No later actions or schedule candidates.';
 
   @override
   String get todoStatusSuggestedAction => 'Suggested action';
 
   @override
   String get todoStatusScheduleCandidate => 'Schedule candidate';
+
+  @override
+  String get todoReasonExplicitAction => 'Explicit action in the source';
+
+  @override
+  String get todoReasonExplicitSchedule =>
+      'Explicit schedule intent in the source';
+
+  @override
+  String get todoReasonOrdinaryRecord => 'Ordinary record, kept out of actions';
+
+  @override
+  String get todoReasonAmbiguous => 'Ambiguous intent';
+
+  @override
+  String get todoReasonInsufficientEvidence => 'Insufficient evidence';
+
+  @override
+  String get todoReasonLegacyMissingSuggestionKind =>
+      'Older row without model suggestion kind';
+
+  @override
+  String get todoReasonUnknown => 'Model reason not provided';
 
   @override
   String get todoQuietTitle => 'Kept out of actions';
@@ -1388,34 +1438,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get todoSearchHint => 'Search tasks';
 
   @override
-  String get todoSummaryOpen => 'Open';
-
-  @override
-  String get todoSummarySchedule => 'Schedule';
-
-  @override
-  String get todoSummaryCompleted => 'Done';
-
-  @override
   String get todoNoMatches => 'No matching tasks.';
-
-  @override
-  String get todoBucketOverdue => 'Overdue';
-
-  @override
-  String get todoBucketToday => 'Today';
-
-  @override
-  String get todoBucketTomorrow => 'Tomorrow';
-
-  @override
-  String get todoBucketLater => 'Later';
-
-  @override
-  String get todoBucketNoDeadline => 'No deadline';
-
-  @override
-  String get todoBucketScheduleCandidates => 'Schedule candidates';
 
   @override
   String get todoBucketCompleted => 'Completed';
@@ -1424,28 +1447,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get todoCompletedEmpty => 'No completed tasks yet.';
 
   @override
-  String get todoPriorityNone => 'None';
-
-  @override
-  String get todoPriorityLow => 'Low';
-
-  @override
-  String get todoPriorityMedium => 'Medium';
-
-  @override
-  String get todoPriorityHigh => 'High';
-
-  @override
   String get todoDueNone => 'No date';
-
-  @override
-  String get todoDueToday => 'Today';
-
-  @override
-  String get todoDueTomorrow => 'Tomorrow';
-
-  @override
-  String get todoDueLater => 'Later';
 
   @override
   String todoDueLabel(String date) {
@@ -1464,54 +1466,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get todoDetailMissing => 'This task is no longer available.';
 
   @override
-  String get todoDetailContent => 'Content';
-
-  @override
-  String get todoDetailTitleField => 'Title';
-
-  @override
-  String get todoDetailSaveTitle => 'Save title';
-
-  @override
-  String get todoDetailStatus => 'Status';
-
-  @override
   String todoCompletedAtLabel(String date) {
     return 'Completed: $date';
   }
 
   @override
   String get todoDetailScheduleNotice =>
-      'Schedule candidates are local suggestions and are not completed like action items.';
+      'Schedule candidates come from model-backed Todo output and are not completed like action items.';
 
   @override
   String get todoDetailCompletedNotice =>
       'Completed tasks stay at the bottom. Reopen to move this task back to active buckets.';
 
   @override
-  String get todoDetailMetadata => 'Task metadata';
+  String get todoDetailNextSteps => 'Model-listed steps';
 
   @override
-  String get todoDetailPriority => 'Priority';
-
-  @override
-  String get todoDetailDue => 'Due date';
-
-  @override
-  String todoDetailIndent(int level) {
-    return 'Indent level $level';
-  }
-
-  @override
-  String todoDetailSort(int order) {
-    return 'Sort order $order';
-  }
-
-  @override
-  String get todoDetailSubtasks => 'Subtasks';
-
-  @override
-  String get todoDetailNoSubtasks => 'No structured subtasks.';
+  String get todoDetailWhy => 'Why this appeared';
 
   @override
   String get todoDetailSource => 'Source';

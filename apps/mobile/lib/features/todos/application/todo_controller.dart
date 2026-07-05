@@ -11,8 +11,6 @@ final todoControllerProvider = NotifierProvider<TodoController, TodoState>(
 
 final todoNowProvider = Provider<DateTime>((ref) => DateTime.now());
 
-enum TodoDuePreset { none, today, tomorrow, later }
-
 enum TodoBucket { overdue, today, tomorrow, later, noDeadline }
 
 @immutable
@@ -217,63 +215,6 @@ final class TodoController extends Notifier<TodoState> {
     _setActionStatus(id, 'open');
   }
 
-  void updateTitle(String id, String title) {
-    final trimmed = title.trim();
-    if (trimmed.isEmpty) {
-      return;
-    }
-    _updatePayload(
-      id,
-      (payload, now) => payload
-        ..['title'] = trimmed
-        ..['todo_schema_version'] = 1,
-      userOverrideKeys: const <String>{'title'},
-    );
-  }
-
-  void setPriority(String id, String? priority) {
-    final normalized = _normalizedPriority(priority);
-    _updatePayload(id, (payload, now) {
-      payload['todo_schema_version'] = 1;
-      if (normalized == null) {
-        payload.remove('priority');
-      } else {
-        payload['priority'] = normalized;
-      }
-      return payload;
-    }, userOverrideKeys: const <String>{'priority'});
-  }
-
-  void setDuePreset(String id, TodoDuePreset preset) {
-    _updatePayload(id, (payload, now) {
-      payload['todo_schema_version'] = 1;
-      if (preset == TodoDuePreset.none) {
-        payload.remove('due_at');
-        payload.remove('due_label');
-        return payload;
-      }
-      payload['due_at'] = _dueAtForPreset(preset, now).toIso8601String();
-      payload.remove('due_label');
-      return payload;
-    }, userOverrideKeys: const <String>{'due_at'});
-  }
-
-  void increaseIndent(String id) {
-    _adjustIndent(id, 1);
-  }
-
-  void decreaseIndent(String id) {
-    _adjustIndent(id, -1);
-  }
-
-  void moveEarlier(String id) {
-    _adjustSortOrder(id, -100);
-  }
-
-  void moveLater(String id) {
-    _adjustSortOrder(id, 100);
-  }
-
   void _setActionStatus(String id, String status) {
     try {
       final record = _database.todos.readById(id);
@@ -301,53 +242,6 @@ final class TodoController extends Notifier<TodoState> {
       _database.todos.save(
         record.copyWith(status: status, payload: payload, updatedAt: now),
       );
-      ref.invalidate(timelineSnapshotProvider);
-      state = _readState(
-        searchQuery: state.searchQuery,
-      ).copyWith(clearError: true);
-    } catch (error) {
-      state = state.copyWith(errorMessage: 'Todo update failed.');
-    }
-  }
-
-  void _adjustIndent(String id, int delta) {
-    _updatePayload(id, (payload, now) {
-      final current = _int(payload['indent_level']) ?? 0;
-      payload['todo_schema_version'] = 1;
-      payload['indent_level'] = (current + delta).clamp(0, 3);
-      return payload;
-    }, userOverrideKeys: const <String>{'indent_level'});
-  }
-
-  void _adjustSortOrder(String id, int delta) {
-    _updatePayload(id, (payload, now) {
-      final current = _int(payload['sort_order']) ?? 0;
-      payload['todo_schema_version'] = 1;
-      payload['sort_order'] = current + delta;
-      return payload;
-    }, userOverrideKeys: const <String>{'sort_order'});
-  }
-
-  void _updatePayload(
-    String id,
-    Map<String, Object?> Function(Map<String, Object?> payload, DateTime now)
-    update, {
-    Set<String> userOverrideKeys = const <String>{},
-  }) {
-    try {
-      final record = _database.todos.readById(id);
-      if (record == null) {
-        return;
-      }
-      final now = ref.read(todoNowProvider).toUtc();
-      final payload = update(Map<String, Object?>.from(record.payload), now);
-      if (userOverrideKeys.isNotEmpty) {
-        payload['user_overrides'] = _mergeUserOverrides(
-          payload['user_overrides'],
-          userOverrideKeys,
-        );
-      }
-      _database.todos.save(record.copyWith(payload: payload, updatedAt: now));
       ref.invalidate(timelineSnapshotProvider);
       state = _readState(
         searchQuery: state.searchQuery,
@@ -495,17 +389,6 @@ TodoBucket _bucketFor(TodoListItem item, DateTime now) {
     return TodoBucket.tomorrow;
   }
   return TodoBucket.later;
-}
-
-DateTime _dueAtForPreset(TodoDuePreset preset, DateTime now) {
-  final today = _startOfLocalDay(now.toLocal());
-  final dueDay = switch (preset) {
-    TodoDuePreset.today => today,
-    TodoDuePreset.tomorrow => today.add(const Duration(days: 1)),
-    TodoDuePreset.later => today.add(const Duration(days: 7)),
-    TodoDuePreset.none => today,
-  };
-  return DateTime(dueDay.year, dueDay.month, dueDay.day, 23, 59).toUtc();
 }
 
 DateTime _startOfLocalDay(DateTime value) {

@@ -1158,31 +1158,63 @@ class AppLocalizationsZh extends AppLocalizations {
   String get todosTitle => '待办与日程';
 
   @override
-  String get todosSubtitle => '把可执行行动、带时间的安排候选和普通记录分开展示。';
+  String todoFocusSubtitle(int actionCount, int scheduleCount) {
+    return '$actionCount 个未完成行动 · $scheduleCount 个日程候选';
+  }
 
   @override
-  String get todosSurfaceTitle => '来源关联待办';
+  String get todoFocusLabel => '下一项行动';
 
   @override
-  String get todosEmpty => '还没有来源关联待办。';
+  String get todoFocusEmptyTitle => '暂无未完成行动';
 
   @override
-  String get todoActionsSectionTitle => '行动项';
+  String get todoFocusEmptyBody => '模型待办智能体返回带来源的行动后，会显示在这里。';
 
   @override
-  String get todoActionsEmpty => '还没有明确行动项。';
+  String get todoFocusSourceLinkedBody => '这是带来源的模型建议。打开后可以先核对上下文。';
 
   @override
-  String get todoSchedulesSectionTitle => '日程候选';
+  String get todoFocusOpenAction => '打开';
 
   @override
-  String get todoSchedulesEmpty => '还没有日程候选。';
+  String get todoFlowToday => '今天';
+
+  @override
+  String get todoFlowLater => '之后';
+
+  @override
+  String get todoFlowTodayEmpty => '今天没有行动或日程候选。';
+
+  @override
+  String get todoFlowLaterEmpty => '之后没有行动或日程候选。';
 
   @override
   String get todoStatusSuggestedAction => '智能体建议行动';
 
   @override
   String get todoStatusScheduleCandidate => '日程候选';
+
+  @override
+  String get todoReasonExplicitAction => '来源中有明确行动';
+
+  @override
+  String get todoReasonExplicitSchedule => '来源中有明确日程意图';
+
+  @override
+  String get todoReasonOrdinaryRecord => '普通记录，未进入待办';
+
+  @override
+  String get todoReasonAmbiguous => '意图不明确';
+
+  @override
+  String get todoReasonInsufficientEvidence => '证据不足';
+
+  @override
+  String get todoReasonLegacyMissingSuggestionKind => '旧记录缺少模型建议类型';
+
+  @override
+  String get todoReasonUnknown => '模型未提供原因';
 
   @override
   String get todoQuietTitle => '未进入待办';
@@ -1207,34 +1239,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get todoSearchHint => '搜索待办';
 
   @override
-  String get todoSummaryOpen => '未完成';
-
-  @override
-  String get todoSummarySchedule => '日程';
-
-  @override
-  String get todoSummaryCompleted => '完成';
-
-  @override
   String get todoNoMatches => '没有匹配的待办。';
-
-  @override
-  String get todoBucketOverdue => '逾期';
-
-  @override
-  String get todoBucketToday => '今天';
-
-  @override
-  String get todoBucketTomorrow => '明天';
-
-  @override
-  String get todoBucketLater => '稍后';
-
-  @override
-  String get todoBucketNoDeadline => '无日期';
-
-  @override
-  String get todoBucketScheduleCandidates => '日程候选';
 
   @override
   String get todoBucketCompleted => '已完成';
@@ -1243,28 +1248,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get todoCompletedEmpty => '还没有已完成待办。';
 
   @override
-  String get todoPriorityNone => '无';
-
-  @override
-  String get todoPriorityLow => '低';
-
-  @override
-  String get todoPriorityMedium => '中';
-
-  @override
-  String get todoPriorityHigh => '高';
-
-  @override
   String get todoDueNone => '无日期';
-
-  @override
-  String get todoDueToday => '今天';
-
-  @override
-  String get todoDueTomorrow => '明天';
-
-  @override
-  String get todoDueLater => '稍后';
 
   @override
   String todoDueLabel(String date) {
@@ -1283,52 +1267,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get todoDetailMissing => '这个待办已不可用。';
 
   @override
-  String get todoDetailContent => '内容';
-
-  @override
-  String get todoDetailTitleField => '标题';
-
-  @override
-  String get todoDetailSaveTitle => '保存标题';
-
-  @override
-  String get todoDetailStatus => '状态';
-
-  @override
   String todoCompletedAtLabel(String date) {
     return '完成：$date';
   }
 
   @override
-  String get todoDetailScheduleNotice => '日程候选只是本地建议，不像行动项一样勾选完成。';
+  String get todoDetailScheduleNotice => '日程候选来自模型待办输出，不像行动项一样勾选完成。';
 
   @override
   String get todoDetailCompletedNotice => '已完成待办会沉到底部；重新打开后会回到未完成分组。';
 
   @override
-  String get todoDetailMetadata => '任务信息';
+  String get todoDetailNextSteps => '模型列出的步骤';
 
   @override
-  String get todoDetailPriority => '优先级';
-
-  @override
-  String get todoDetailDue => '截止日期';
-
-  @override
-  String todoDetailIndent(int level) {
-    return '缩进层级 $level';
-  }
-
-  @override
-  String todoDetailSort(int order) {
-    return '排序值 $order';
-  }
-
-  @override
-  String get todoDetailSubtasks => '子任务';
-
-  @override
-  String get todoDetailNoSubtasks => '没有结构化子任务。';
+  String get todoDetailWhy => '为什么出现';
 
   @override
   String get todoDetailSource => '来源';

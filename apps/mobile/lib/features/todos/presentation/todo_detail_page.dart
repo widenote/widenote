@@ -5,338 +5,84 @@ import 'package:go_router/go_router.dart';
 import '../../../l10n/l10n.dart';
 import '../application/todo_controller.dart';
 
-class TodoDetailPage extends ConsumerStatefulWidget {
+class TodoDetailPage extends ConsumerWidget {
   const TodoDetailPage({required this.todoId, super.key});
 
   final String todoId;
 
   @override
-  ConsumerState<TodoDetailPage> createState() => _TodoDetailPageState();
-}
-
-class _TodoDetailPageState extends ConsumerState<TodoDetailPage> {
-  final TextEditingController _titleController = TextEditingController();
-  String? _loadedTodoId;
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final state = ref.watch(todoControllerProvider);
-    final now = ref.watch(todoNowProvider);
-    final todo = state.itemById(widget.todoId);
+    final todo = state.itemById(todoId);
     if (todo == null) {
       return Scaffold(
+        key: const Key('todo-detail-page'),
         appBar: AppBar(title: Text(l10n.todoDetailTitle)),
         body: Center(child: Text(l10n.todoDetailMissing)),
       );
     }
-    if (_loadedTodoId != todo.id) {
-      _loadedTodoId = todo.id;
-      _titleController.text = todo.title;
-    }
 
     return Scaffold(
       key: const Key('todo-detail-page'),
-      appBar: AppBar(title: Text(l10n.todoDetailTitle)),
+      appBar: AppBar(
+        title: Text(l10n.todoDetailTitle),
+        actions: [
+          if (_sourceTarget(todo) != null)
+            IconButton(
+              key: Key('todo-detail-source-${todo.id}'),
+              tooltip: l10n.todoDetailOpenSource,
+              onPressed: () => context.push(_sourceTarget(todo)!),
+              icon: const Icon(Icons.open_in_new),
+            ),
+        ],
+      ),
       body: ListView(
         key: const Key('todo-detail-scroll'),
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
-          _Section(
-            title: l10n.todoDetailContent,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  key: const Key('todo-detail-title-field'),
-                  controller: _titleController,
-                  decoration: InputDecoration(
-                    labelText: l10n.todoDetailTitleField,
-                    border: const OutlineInputBorder(),
-                  ),
-                  textInputAction: TextInputAction.done,
-                  onSubmitted: (_) => _saveTitle(todo.id),
-                ),
-                const SizedBox(height: 10),
-                FilledButton.icon(
-                  key: const Key('todo-detail-save-title'),
-                  onPressed: () => _saveTitle(todo.id),
-                  icon: const Icon(Icons.save_outlined),
-                  label: Text(l10n.todoDetailSaveTitle),
-                ),
-              ],
+          _Hero(todo: todo),
+          if (todo.subtasks.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _Section(
+              title: l10n.todoDetailNextSteps,
+              icon: Icons.checklist_outlined,
+              child: Column(
+                children: [
+                  for (final subtask in todo.subtasks)
+                    _SubtaskRow(
+                      key: Key('todo-detail-subtask-${subtask.id}'),
+                      subtask: subtask,
+                      completed: todo.isCompleted || subtask.completed,
+                    ),
+                ],
+              ),
             ),
-          ),
+          ],
           const SizedBox(height: 12),
           _Section(
-            title: l10n.todoDetailStatus,
+            title: l10n.todoDetailSource,
+            icon: Icons.link,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _InfoChip(
-                      icon: todo.isSchedule
-                          ? Icons.event_available_outlined
-                          : Icons.checklist_outlined,
-                      label: todo.isSchedule
-                          ? l10n.todoStatusScheduleCandidate
-                          : localizedTodoStatusLabel(l10n, todo.statusLabel),
-                    ),
-                    if (todo.completedAt != null)
-                      _InfoChip(
-                        icon: Icons.done_all_outlined,
-                        label: l10n.todoCompletedAtLabel(
-                          _dateLabel(todo.completedAt!),
-                        ),
-                      ),
-                    if (todo.reasonLabel != null)
-                      _InfoChip(
-                        icon: Icons.psychology_alt_outlined,
-                        label: todo.reasonLabel!,
-                      ),
-                  ],
+                _InfoLine(
+                  icon: Icons.article_outlined,
+                  text: localizedSourceLabel(l10n, todo.sourceLabel),
                 ),
-                const SizedBox(height: 10),
-                if (todo.isAction)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      OutlinedButton.icon(
-                        key: Key('todo-detail-toggle-${todo.id}'),
-                        onPressed: () {
-                          final controller = ref.read(
-                            todoControllerProvider.notifier,
-                          );
-                          if (todo.isCompleted) {
-                            controller.reopen(todo.id);
-                          } else {
-                            controller.complete(todo.id);
-                          }
-                        },
-                        icon: Icon(
-                          todo.isCompleted
-                              ? Icons.undo_outlined
-                              : Icons.check_circle_outline,
-                        ),
-                        label: Text(
-                          todo.isCompleted
-                              ? l10n.todoActionReopen
-                              : l10n.todoActionComplete,
-                        ),
-                      ),
-                      if (todo.isCompleted) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          l10n.todoDetailCompletedNotice,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
-                        ),
-                      ],
-                    ],
-                  )
-                else
+                if (todo.body != null) ...[
+                  const SizedBox(height: 10),
                   Text(
-                    l10n.todoDetailScheduleNotice,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          _Section(
-            title: l10n.todoDetailMetadata,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _Label(text: l10n.todoDetailPriority),
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _ChoiceChipButton(
-                      key: const Key('todo-priority-none'),
-                      label: l10n.todoPriorityNone,
-                      selected: todo.priority == null,
-                      onPressed: () => ref
-                          .read(todoControllerProvider.notifier)
-                          .setPriority(todo.id, null),
-                    ),
-                    for (final priority in const ['low', 'medium', 'high'])
-                      _ChoiceChipButton(
-                        key: Key('todo-priority-$priority'),
-                        label: _priorityLabel(l10n, priority),
-                        selected: todo.priority == priority,
-                        onPressed: () => ref
-                            .read(todoControllerProvider.notifier)
-                            .setPriority(todo.id, priority),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                _Label(text: l10n.todoDetailDue),
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _ChoiceChipButton(
-                      key: const Key('todo-due-none'),
-                      label: l10n.todoDueNone,
-                      selected: todo.dueAt == null,
-                      onPressed: () => ref
-                          .read(todoControllerProvider.notifier)
-                          .setDuePreset(todo.id, TodoDuePreset.none),
-                    ),
-                    _ChoiceChipButton(
-                      key: const Key('todo-due-today'),
-                      label: l10n.todoDueToday,
-                      selected: _isDuePreset(todo, TodoDuePreset.today, now),
-                      onPressed: () => ref
-                          .read(todoControllerProvider.notifier)
-                          .setDuePreset(todo.id, TodoDuePreset.today),
-                    ),
-                    _ChoiceChipButton(
-                      key: const Key('todo-due-tomorrow'),
-                      label: l10n.todoDueTomorrow,
-                      selected: _isDuePreset(todo, TodoDuePreset.tomorrow, now),
-                      onPressed: () => ref
-                          .read(todoControllerProvider.notifier)
-                          .setDuePreset(todo.id, TodoDuePreset.tomorrow),
-                    ),
-                    _ChoiceChipButton(
-                      key: const Key('todo-due-later'),
-                      label: l10n.todoDueLater,
-                      selected: _isDuePreset(todo, TodoDuePreset.later, now),
-                      onPressed: () => ref
-                          .read(todoControllerProvider.notifier)
-                          .setDuePreset(todo.id, TodoDuePreset.later),
-                    ),
-                  ],
-                ),
-                if (todo.dueAt != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.todoDueLabel(_dateLabel(todo.dueAt!)),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    todo.body!,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
-                const SizedBox(height: 14),
-                _StepperRow(
-                  label: l10n.todoDetailIndent(todo.indentLevel),
-                  decreaseKey: const Key('todo-indent-decrease'),
-                  increaseKey: const Key('todo-indent-increase'),
-                  onDecrease: () => ref
-                      .read(todoControllerProvider.notifier)
-                      .decreaseIndent(todo.id),
-                  onIncrease: () => ref
-                      .read(todoControllerProvider.notifier)
-                      .increaseIndent(todo.id),
-                ),
-                const SizedBox(height: 10),
-                _StepperRow(
-                  label: l10n.todoDetailSort(todo.sortOrder),
-                  decreaseKey: const Key('todo-sort-earlier'),
-                  increaseKey: const Key('todo-sort-later'),
-                  decreaseIcon: Icons.arrow_upward,
-                  increaseIcon: Icons.arrow_downward,
-                  onDecrease: () => ref
-                      .read(todoControllerProvider.notifier)
-                      .moveEarlier(todo.id),
-                  onIncrease: () => ref
-                      .read(todoControllerProvider.notifier)
-                      .moveLater(todo.id),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          _Section(
-            title: l10n.todoDetailSubtasks,
-            child: todo.subtasks.isEmpty
-                ? Text(
-                    l10n.todoDetailNoSubtasks,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  )
-                : Column(
-                    children: [
-                      for (final subtask in todo.subtasks)
-                        ListTile(
-                          dense: true,
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(
-                            subtask.completed
-                                ? Icons.check_circle
-                                : Icons.radio_button_unchecked,
-                          ),
-                          title: Text(
-                            subtask.title,
-                            key: Key('todo-detail-subtask-${subtask.id}'),
-                            style: TextStyle(
-                              decoration: todo.isCompleted || subtask.completed
-                                  ? TextDecoration.lineThrough
-                                  : null,
-                              color: todo.isCompleted || subtask.completed
-                                  ? Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant
-                                  : null,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-          ),
-          const SizedBox(height: 12),
-          _Section(
-            title: l10n.todoDetailSource,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _InfoChip(
-                      icon: Icons.link,
-                      label: localizedSourceLabel(l10n, todo.sourceLabel),
-                    ),
-                    _InfoChip(
-                      icon: Icons.speed_outlined,
-                      label: todo.confidenceLabel,
-                    ),
-                    if (todo.scheduledAtLabel != null)
-                      _InfoChip(
-                        icon: Icons.event_outlined,
-                        label: l10n.todoScheduledForLabel(
-                          todo.scheduledAtLabel!,
-                        ),
-                      ),
-                  ],
-                ),
                 if (_sourceTarget(todo) != null) ...[
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
                   OutlinedButton.icon(
-                    key: Key('todo-detail-source-${todo.id}'),
+                    key: Key('todo-detail-source-button-${todo.id}'),
                     onPressed: () => context.push(_sourceTarget(todo)!),
                     icon: const Icon(Icons.open_in_new),
                     label: Text(l10n.todoDetailOpenSource),
@@ -345,41 +91,165 @@ class _TodoDetailPageState extends ConsumerState<TodoDetailPage> {
               ],
             ),
           ),
+          const SizedBox(height: 12),
+          _Section(
+            title: l10n.todoDetailWhy,
+            icon: Icons.auto_awesome_outlined,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _InfoLine(
+                  icon: todo.isSchedule
+                      ? Icons.event_available_outlined
+                      : Icons.checklist_outlined,
+                  text: todo.isSchedule
+                      ? l10n.todoStatusScheduleCandidate
+                      : localizedTodoStatusLabel(l10n, todo.statusLabel),
+                ),
+                const SizedBox(height: 8),
+                _InfoLine(
+                  icon: Icons.psychology_alt_outlined,
+                  text: localizedTodoReasonLabel(l10n, todo.reasonLabel),
+                ),
+                const SizedBox(height: 8),
+                _InfoLine(
+                  icon: Icons.speed_outlined,
+                  text: localizedConfidenceLabel(l10n, todo.confidenceLabel),
+                ),
+                if (todo.scheduledAtLabel != null) ...[
+                  const SizedBox(height: 8),
+                  _InfoLine(
+                    icon: Icons.event_outlined,
+                    text: l10n.todoScheduledForLabel(todo.scheduledAtLabel!),
+                  ),
+                ],
+                if (todo.hasDue) ...[
+                  const SizedBox(height: 8),
+                  _InfoLine(
+                    icon: Icons.schedule_outlined,
+                    text: _dueLabel(l10n, todo),
+                  ),
+                ],
+              ],
+            ),
+          ),
         ],
       ),
+      bottomNavigationBar: _BottomAction(todo: todo),
     );
-  }
-
-  void _saveTitle(String id) {
-    ref
-        .read(todoControllerProvider.notifier)
-        .updateTitle(id, _titleController.text);
   }
 }
 
-class _Section extends StatelessWidget {
-  const _Section({required this.title, required this.child});
+class _Hero extends StatelessWidget {
+  const _Hero({required this.todo});
 
-  final String title;
-  final Widget child;
+  final TodoListItem todo;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final colorScheme = Theme.of(context).colorScheme;
     return DecoratedBox(
       decoration: BoxDecoration(
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+        border: Border.all(color: colorScheme.outlineVariant),
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _Chip(
+                  icon: todo.isSchedule
+                      ? Icons.event_available_outlined
+                      : Icons.checklist_outlined,
+                  label: todo.isSchedule
+                      ? l10n.todoStatusScheduleCandidate
+                      : todo.isCompleted
+                      ? l10n.todoStatusCompleted
+                      : l10n.todoStatusSuggestedAction,
+                ),
+                if (todo.completedAt != null)
+                  _Chip(
+                    icon: Icons.done_all_outlined,
+                    label: l10n.todoCompletedAtLabel(
+                      _dateLabel(todo.completedAt!),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
             Text(
-              title,
+              localizedTodoTitle(l10n, todo.title),
               style: Theme.of(
                 context,
-              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            if (todo.isSchedule) ...[
+              const SizedBox(height: 10),
+              Text(
+                l10n.todoDetailScheduleNotice,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+            if (todo.isCompleted) ...[
+              const SizedBox(height: 10),
+              Text(
+                l10n.todoDetailCompletedNotice,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Section extends StatelessWidget {
+  const _Section({
+    required this.title,
+    required this.icon,
+    required this.child,
+  });
+
+  final String title;
+  final IconData icon;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 18, color: colorScheme.primary),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                ),
+              ],
             ),
             const SizedBox(height: 10),
             child,
@@ -390,125 +260,145 @@ class _Section extends StatelessWidget {
   }
 }
 
-class _Label extends StatelessWidget {
-  const _Label({required this.text});
+class _SubtaskRow extends StatelessWidget {
+  const _SubtaskRow({
+    required this.subtask,
+    required this.completed,
+    super.key,
+  });
 
-  final String text;
+  final TodoSubtask subtask;
+  final bool completed;
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-        color: Theme.of(context).colorScheme.onSurfaceVariant,
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            completed ? Icons.check_circle : Icons.radio_button_unchecked,
+            size: 20,
+            color: completed ? colorScheme.primary : colorScheme.outline,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              subtask.title,
+              style: TextStyle(
+                decoration: completed ? TextDecoration.lineThrough : null,
+                color: completed ? colorScheme.onSurfaceVariant : null,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _ChoiceChipButton extends StatelessWidget {
-  const _ChoiceChipButton({
-    required this.label,
-    required this.selected,
-    required this.onPressed,
-    super.key,
-  });
+class _InfoLine extends StatelessWidget {
+  const _InfoLine({required this.icon, required this.text});
 
-  final String label;
-  final bool selected;
-  final VoidCallback onPressed;
+  final IconData icon;
+  final String text;
 
   @override
   Widget build(BuildContext context) {
-    return ChoiceChip(
-      label: Text(label),
-      selected: selected,
-      onSelected: (_) => onPressed(),
-    );
-  }
-}
-
-class _StepperRow extends StatelessWidget {
-  const _StepperRow({
-    required this.label,
-    required this.decreaseKey,
-    required this.increaseKey,
-    required this.onDecrease,
-    required this.onIncrease,
-    this.decreaseIcon = Icons.remove,
-    this.increaseIcon = Icons.add,
-  });
-
-  final String label;
-  final Key decreaseKey;
-  final Key increaseKey;
-  final VoidCallback onDecrease;
-  final VoidCallback onIncrease;
-  final IconData decreaseIcon;
-  final IconData increaseIcon;
-
-  @override
-  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(child: _Label(text: label)),
-        IconButton(
-          key: decreaseKey,
-          onPressed: onDecrease,
-          icon: Icon(decreaseIcon),
-        ),
-        IconButton(
-          key: increaseKey,
-          onPressed: onIncrease,
-          icon: Icon(increaseIcon),
+        Icon(icon, size: 18, color: colorScheme.onSurfaceVariant),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
         ),
       ],
     );
   }
 }
 
-class _InfoChip extends StatelessWidget {
-  const _InfoChip({required this.icon, required this.label});
+class _Chip extends StatelessWidget {
+  const _Chip({required this.icon, required this.label});
 
   final IconData icon;
   final String label;
 
   @override
   Widget build(BuildContext context) {
-    return Chip(
-      avatar: Icon(icon, size: 16),
-      label: Text(label),
-      visualDensity: VisualDensity.compact,
+    final colorScheme = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: colorScheme.onSurfaceVariant),
+            const SizedBox(width: 5),
+            Text(label, style: Theme.of(context).textTheme.labelSmall),
+          ],
+        ),
+      ),
     );
   }
 }
 
-String _priorityLabel(AppLocalizations l10n, String? priority) {
-  return switch (priority) {
-    'high' => l10n.todoPriorityHigh,
-    'medium' => l10n.todoPriorityMedium,
-    'low' => l10n.todoPriorityLow,
-    _ => l10n.todoPriorityNone,
-  };
-}
+class _BottomAction extends ConsumerWidget {
+  const _BottomAction({required this.todo});
 
-bool _isDuePreset(TodoListItem todo, TodoDuePreset preset, DateTime now) {
-  final dueAt = todo.dueAt;
-  if (dueAt == null || preset == TodoDuePreset.none) {
-    return dueAt == null && preset == TodoDuePreset.none;
+  final TodoListItem todo;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (!todo.isAction) {
+      return const SizedBox.shrink();
+    }
+    final l10n = context.l10n;
+    return SafeArea(
+      minimum: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      child: FilledButton.icon(
+        key: Key('todo-detail-toggle-${todo.id}'),
+        onPressed: () {
+          final controller = ref.read(todoControllerProvider.notifier);
+          if (todo.isCompleted) {
+            controller.reopen(todo.id);
+          } else {
+            controller.complete(todo.id);
+          }
+        },
+        icon: Icon(
+          todo.isCompleted ? Icons.undo_outlined : Icons.check_circle_outline,
+        ),
+        label: Text(
+          todo.isCompleted ? l10n.todoActionReopen : l10n.todoActionComplete,
+        ),
+      ),
+    );
   }
-  final dueDay = _startOfDay(dueAt.toLocal());
-  final today = _startOfDay(now);
-  return switch (preset) {
-    TodoDuePreset.today => dueDay == today,
-    TodoDuePreset.tomorrow => dueDay == today.add(const Duration(days: 1)),
-    TodoDuePreset.later => dueDay.isAfter(today.add(const Duration(days: 1))),
-    TodoDuePreset.none => false,
-  };
 }
 
-DateTime _startOfDay(DateTime value) {
-  return DateTime(value.year, value.month, value.day);
+String _dueLabel(AppLocalizations l10n, TodoListItem todo) {
+  final dueLabel = todo.dueLabel;
+  if (dueLabel != null && dueLabel.isNotEmpty) {
+    return l10n.todoDueLabel(dueLabel);
+  }
+  final dueAt = todo.dueAt;
+  if (dueAt == null) {
+    return l10n.todoDueNone;
+  }
+  return l10n.todoDueLabel(_dateLabel(dueAt));
 }
 
 String _dateLabel(DateTime value) {
