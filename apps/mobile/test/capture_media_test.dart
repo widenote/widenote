@@ -501,6 +501,22 @@ void main() {
       }
       expect(File(paddedHeaderSession.path).existsSync(), isFalse);
 
+      final truncatedSession = await fileStore.prepareVoiceSession();
+      await File(
+        truncatedSession.path,
+      ).writeAsBytes(_wavBytes(dataLength: 128, includeData: false));
+      try {
+        await fileStore.storeVoiceRecording(
+          truncatedSession,
+          truncatedSession.path,
+        );
+        fail('Expected truncated recording to fail');
+      } on CaptureMediaException catch (error) {
+        expect(error.reason, CaptureMediaFailureReason.unavailable);
+        expect(error.message, 'Voice recording produced an empty file.');
+      }
+      expect(File(truncatedSession.path).existsSync(), isFalse);
+
       final emptySession = await fileStore.prepareVoiceSession();
       await File(emptySession.path).writeAsBytes(<int>[]);
       try {
@@ -513,9 +529,39 @@ void main() {
       expect(File(emptySession.path).existsSync(), isFalse);
     },
   );
+
+  test('streaming WAV writer preserves audio bytes when finalizing', () async {
+    final tempDir = await Directory.systemTemp.createTemp(
+      'widenote-streaming-wav-test-',
+    );
+    addTearDown(() async {
+      if (tempDir.existsSync()) {
+        await tempDir.delete(recursive: true);
+      }
+    });
+    final output = File('${tempDir.path}/stream.wav');
+    final firstChunk = Uint8List.fromList(<int>[1, 2, 3, 4]);
+    final secondChunk = Uint8List.fromList(<int>[5, 6, 7, 8]);
+
+    await writeStreamingWavFileForTest(
+      file: output,
+      chunks: <Uint8List>[firstChunk, secondChunk],
+    );
+
+    final bytes = await output.readAsBytes();
+    expect(bytes.length, 52);
+    expect(String.fromCharCodes(bytes.sublist(0, 4)), 'RIFF');
+    expect(String.fromCharCodes(bytes.sublist(8, 12)), 'WAVE');
+    expect(_readUint32(bytes, 40), 8);
+    expect(bytes.sublist(44), <int>[1, 2, 3, 4, 5, 6, 7, 8]);
+  });
 }
 
-List<int> _wavBytes({required int dataLength, int junkLength = 0}) {
+List<int> _wavBytes({
+  required int dataLength,
+  int junkLength = 0,
+  bool includeData = true,
+}) {
   final builder = BytesBuilder(copy: false);
 
   void addAscii(String value) {
@@ -552,8 +598,18 @@ List<int> _wavBytes({required int dataLength, int junkLength = 0}) {
   }
   addAscii('data');
   addUint32(dataLength);
-  builder.add(List<int>.filled(dataLength, 1));
+  if (includeData) {
+    builder.add(List<int>.filled(dataLength, 1));
+  }
   return builder.takeBytes();
+}
+
+int _readUint32(List<int> bytes, int offset) {
+  return ByteData.sublistView(
+    Uint8List.fromList(bytes),
+    offset,
+    offset + 4,
+  ).getUint32(0, Endian.little);
 }
 
 final class _CountingPhotoAdapter implements PhotoCaptureAdapter {

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
@@ -452,16 +453,18 @@ Future<bool> _hasVoiceAudioData(File file, int byteLength) async {
   if (!_hasAscii(header, 0, 'RIFF') || !_hasAscii(header, 8, 'WAVE')) {
     return true;
   }
-  final dataLength = _wavDataChunkLength(header);
-  return dataLength != null && dataLength > 0;
+  final dataChunk = _wavDataChunk(header);
+  return dataChunk != null &&
+      dataChunk.length > 0 &&
+      byteLength >= dataChunk.dataOffset + dataChunk.length;
 }
 
-int? _wavDataChunkLength(Uint8List header) {
+_WavDataChunk? _wavDataChunk(Uint8List header) {
   var offset = 12;
   while (offset + 8 <= header.length) {
     final chunkLength = _uint32LittleEndian(header, offset + 4);
     if (_hasAscii(header, offset, 'data')) {
-      return chunkLength;
+      return _WavDataChunk(dataOffset: offset + 8, length: chunkLength);
     }
     final paddedLength = chunkLength.isOdd ? chunkLength + 1 : chunkLength;
     final nextOffset = offset + 8 + paddedLength;
@@ -471,6 +474,13 @@ int? _wavDataChunkLength(Uint8List header) {
     offset = nextOffset;
   }
   return null;
+}
+
+final class _WavDataChunk {
+  const _WavDataChunk({required this.dataOffset, required this.length});
+
+  final int dataOffset;
+  final int length;
 }
 
 bool _hasAscii(Uint8List bytes, int offset, String value) {
@@ -532,7 +542,7 @@ final class _StreamingWavFileWriter {
       sampleRate: sampleRate,
       numChannels: numChannels,
     );
-    final handle = await file.open(mode: FileMode.write);
+    final handle = await file.open(mode: FileMode.append);
     try {
       await handle.setPosition(0);
       await handle.writeFrom(header);
@@ -548,6 +558,25 @@ final class _StreamingWavFileWriter {
       await file.delete();
     }
   }
+}
+
+@visibleForTesting
+Future<void> writeStreamingWavFileForTest({
+  required File file,
+  required Iterable<Uint8List> chunks,
+  int sampleRate = 16000,
+  int numChannels = 1,
+}) async {
+  final writer = _StreamingWavFileWriter(
+    file: file,
+    sampleRate: sampleRate,
+    numChannels: numChannels,
+  );
+  await writer.open();
+  for (final chunk in chunks) {
+    writer.add(chunk);
+  }
+  await writer.finalizeFile();
 }
 
 Uint8List _wavHeader({
