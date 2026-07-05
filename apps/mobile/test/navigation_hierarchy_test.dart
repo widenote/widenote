@@ -60,6 +60,50 @@ void main() {
     expect(find.byKey(const Key('home-page')), findsOneWidget);
   });
 
+  testWidgets('home detail shortcuts construct declared parent stacks', (
+    tester,
+  ) async {
+    await _pumpRoute(tester, '/', seed: _seedHomeShortcutTargets);
+
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('record-row-capture-nav-shortcut')),
+      160,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('record-row-capture-nav-shortcut')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('timeline-item-detail-page')), findsOneWidget);
+
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('timeline-page')), findsOneWidget);
+
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('home-page')), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('home-open-insight-insight-nav-shortcut')),
+      220,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const Key('home-open-insight-insight-nav-shortcut')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('insight-detail-page')), findsOneWidget);
+
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('insights-page')), findsOneWidget);
+
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('home-page')), findsOneWidget);
+  });
+
   testWidgets('settings child pages return through settings before home', (
     tester,
   ) async {
@@ -233,6 +277,7 @@ void main() {
       '/settings/traces/raw',
       '/settings/traces/raw/missing-trace',
       '/chat/session/missing-session',
+      '/todos/missing-todo',
       '/plugins/packs',
     ];
 
@@ -734,6 +779,20 @@ void main() {
         parentKey: Key('settings-page'),
       ),
       _FlatRouteCase(
+        location: '/settings/debugging',
+        routePattern: '/settings/debugging',
+        pageKey: Key('debugging-page'),
+        parentPath: '/settings',
+        parentKey: Key('settings-page'),
+      ),
+      _FlatRouteCase(
+        location: '/settings/usage-stats',
+        routePattern: '/settings/usage-stats',
+        pageKey: Key('usage-stats-page'),
+        parentPath: '/settings',
+        parentKey: Key('settings-page'),
+      ),
+      _FlatRouteCase(
         location: '/settings/traces',
         routePattern: '/settings/traces',
         pageKey: Key('trace-console-page'),
@@ -1061,6 +1120,37 @@ void _seedTodo(WideNoteLocalDatabase database) {
       },
       createdAt: now,
       updatedAt: now,
+    ),
+  );
+}
+
+void _seedHomeShortcutTargets(WideNoteLocalDatabase database) {
+  final now = DateTime.utc(2026, 7, 2, 10);
+  database.captures.insert(
+    CaptureRecord(
+      id: 'capture-nav-shortcut',
+      sourceType: 'manual',
+      status: 'processed',
+      payload: const <String, Object?>{
+        'text': 'Home shortcut should keep the timeline parent stack.',
+      },
+      createdAt: now,
+      updatedAt: now,
+    ),
+  );
+  database.insights.insert(
+    InsightRecord(
+      id: 'insight-nav-shortcut',
+      insightKind: 'behavior_loop',
+      title: 'Shortcut navigation',
+      summary: 'Home shortcut should keep the insights parent stack.',
+      sourceRefs: const <Object?>[
+        <String, Object?>{'kind': 'capture', 'id': 'capture-nav-shortcut'},
+      ],
+      status: 'active',
+      payload: const <String, Object?>{},
+      createdAt: now.add(const Duration(minutes: 1)),
+      updatedAt: now.add(const Duration(minutes: 1)),
     ),
   );
 }

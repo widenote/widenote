@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/mobile_navigation.dart';
 import '../../../l10n/l10n.dart';
 import '../../recap/application/daily_recap_repository.dart';
 import '../../recap/domain/daily_recap_models.dart';
@@ -655,8 +656,10 @@ class _InsightTeaser extends StatelessWidget {
             const SizedBox(height: 10),
             OutlinedButton.icon(
               key: Key('home-open-insight-${insight.id}'),
-              onPressed: () =>
-                  context.push('/insights/${Uri.encodeComponent(insight.id)}'),
+              onPressed: () => openMobileRouteWithParentStack(
+                context,
+                '/insights/${Uri.encodeComponent(insight.id)}',
+              ),
               icon: const Icon(Icons.open_in_new),
               label: Text(l10n.homeOpenInsightsAction),
             ),
@@ -827,7 +830,8 @@ class _RecordsSection extends StatelessWidget {
                             onRetry: () => onRetry(record.id),
                           )
                         : null,
-                    onTap: () => context.push(
+                    onTap: () => openMobileRouteWithParentStack(
+                      context,
                       '/timeline/items/${Uri.encodeComponent(record.id)}',
                     ),
                   ),
