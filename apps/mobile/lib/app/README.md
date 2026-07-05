@@ -62,9 +62,9 @@ All other pages are child pages:
 - Settings children: `/settings/permissions`,
   `/settings/system-permissions`, `/settings/model-providers`,
   `/settings/retrieval`, `/settings/transcription`, `/settings/location`,
-  `/settings/backup`, `/settings/traces`, `/settings/traces/agents`,
-  `/settings/traces/events`, `/settings/traces/raw`,
-  `/settings/traces/raw/:traceId`
+  `/settings/backup`, `/settings/debugging`, `/settings/usage-stats`,
+  `/settings/traces`, `/settings/traces/agents`, `/settings/traces/events`,
+  `/settings/traces/raw`, `/settings/traces/raw/:traceId`
 - Plugins children: `/plugins/packs`
 
 UI controls that open direct child pages should use push-style navigation.
