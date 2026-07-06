@@ -14,9 +14,23 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
         setIntent(intent)
+        super.onNewIntent(intent)
         BackupImportChannelHandler.handleIntent(this, intent)
+    }
+
+    override fun getInitialRoute(): String? {
+        if (BackupImportChannelHandler.isBackupImportIntent(this, intent)) {
+            return "/"
+        }
+        return super.getInitialRoute()
+    }
+
+    override fun shouldHandleDeeplinking(): Boolean {
+        if (BackupImportChannelHandler.isBackupImportIntent(this, intent)) {
+            return false
+        }
+        return super.shouldHandleDeeplinking()
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {

@@ -203,7 +203,15 @@ final class BackupImportBridge: NSObject, FlutterStreamHandler, UIDocumentPicker
     case .export:
       result(url.absoluteString)
     case .importBackup:
-      result(copyToCache(url: url))
+      if let path = copyToCache(url: url) {
+        result(path)
+      } else {
+        result(FlutterError(
+          code: "copy_failed",
+          message: "Selected backup file could not be read.",
+          details: nil
+        ))
+      }
     case .none:
       result(nil)
     }

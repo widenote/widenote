@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/mobile_navigation.dart';
@@ -6,7 +7,7 @@ import '../../../l10n/l10n.dart';
 import '../application/agent_execution_status_controller.dart';
 import '../application/agent_status_platform.dart';
 
-class AgentExecutionStatusLayer extends ConsumerWidget {
+class AgentExecutionStatusLayer extends ConsumerStatefulWidget {
   const AgentExecutionStatusLayer({
     required this.child,
     required this.showBottomNavigationBar,
@@ -17,10 +18,24 @@ class AgentExecutionStatusLayer extends ConsumerWidget {
   final bool showBottomNavigationBar;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AgentExecutionStatusLayer> createState() =>
+      _AgentExecutionStatusLayerState();
+}
+
+class _AgentExecutionStatusLayerState
+    extends ConsumerState<AgentExecutionStatusLayer> {
+  double? _overlayHeight;
+
+  @override
+  Widget build(BuildContext context) {
     final snapshot = ref.watch(agentExecutionStatusControllerProvider);
     final showOverlay = snapshot.hasVisibleStatus;
-    final bottomPadding = showOverlay ? 78.0 : 0.0;
+    final bottomGap = widget.showBottomNavigationBar ? 12.0 : 16.0;
+    final bottomPadding = showOverlay
+        ? (_overlayHeight ?? _estimatedOverlayHeight(context)) +
+              bottomGap +
+              MediaQuery.paddingOf(context).bottom
+        : 0.0;
     return SizedBox.expand(
       child: Stack(
         fit: StackFit.expand,
@@ -30,14 +45,14 @@ class AgentExecutionStatusLayer extends ConsumerWidget {
               duration: const Duration(milliseconds: 180),
               curve: Curves.easeOutCubic,
               padding: EdgeInsets.only(bottom: bottomPadding),
-              child: child,
+              child: widget.child,
             ),
           ),
           const AgentExecutionStatusPlatformSync(),
           Positioned(
             left: 16,
             right: 16,
-            bottom: showBottomNavigationBar ? 12 : 16,
+            bottom: bottomGap,
             child: SafeArea(
               top: false,
               child: AnimatedSwitcher(
@@ -58,7 +73,10 @@ class AgentExecutionStatusLayer extends ConsumerWidget {
                   );
                 },
                 child: showOverlay
-                    ? _AgentExecutionStatusPill(snapshot: snapshot)
+                    ? _MeasuredSize(
+                        onChange: _handleOverlaySizeChanged,
+                        child: _AgentExecutionStatusPill(snapshot: snapshot),
+                      )
                     : const SizedBox.shrink(
                         key: Key('agent-status-overlay-hidden'),
                       ),
@@ -68,6 +86,65 @@ class AgentExecutionStatusLayer extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  void _handleOverlaySizeChanged(Size size) {
+    if (!mounted || size.height <= 0) {
+      return;
+    }
+    final previous = _overlayHeight;
+    if (previous != null && (previous - size.height).abs() < 0.5) {
+      return;
+    }
+    setState(() {
+      _overlayHeight = size.height;
+    });
+  }
+
+  double _estimatedOverlayHeight(BuildContext context) {
+    final textScaleFactor = MediaQuery.textScalerOf(context).scale(1);
+    return 64 * textScaleFactor;
+  }
+}
+
+class _MeasuredSize extends SingleChildRenderObjectWidget {
+  const _MeasuredSize({required this.onChange, required super.child});
+
+  final ValueChanged<Size> onChange;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) {
+    return _MeasuredSizeRenderObject(onChange);
+  }
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _MeasuredSizeRenderObject renderObject,
+  ) {
+    renderObject.onChange = onChange;
+  }
+}
+
+class _MeasuredSizeRenderObject extends RenderProxyBox {
+  _MeasuredSizeRenderObject(this.onChange);
+
+  ValueChanged<Size> onChange;
+  Size? _lastSize;
+
+  @override
+  void performLayout() {
+    super.performLayout();
+    final newSize = child?.size ?? Size.zero;
+    if (_lastSize == newSize) {
+      return;
+    }
+    _lastSize = newSize;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (attached) {
+        onChange(newSize);
+      }
+    });
   }
 }
 

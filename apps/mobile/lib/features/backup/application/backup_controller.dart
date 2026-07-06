@@ -122,6 +122,10 @@ abstract interface class BackupFileStore {
   Future<void> discardPreparedImport(BackupImportPayload payload);
 }
 
+final class BackupPickerCanceledException implements Exception {
+  const BackupPickerCanceledException();
+}
+
 final class BackupImportPayload {
   const BackupImportPayload({
     required this.backup,
@@ -388,7 +392,7 @@ final class AppSupportBackupFileStore implements BackupFileStore {
   Future<BackupImportPayload> pickArchive() async {
     final path = await _platform.pickBackup();
     if (path == null || path.trim().isEmpty) {
-      throw const FileSystemException('No WideNote backup file selected.');
+      throw const BackupPickerCanceledException();
     }
     return readArchive(path);
   }
@@ -787,6 +791,8 @@ final class BackupController extends Notifier<BackupState> {
         clearError: true,
       );
       return true;
+    } on BackupPickerCanceledException {
+      return false;
     } catch (error) {
       state = state.copyWith(
         outcome: BackupOutcome.failed,

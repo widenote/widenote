@@ -795,7 +795,8 @@ void main() {
   ) async {
     await _pumpApp(tester);
 
-    await _openSettingsShortcutAndReturnHome(
+    await _openPluginsTab(tester);
+    await _openPluginChildAndReturn(
       tester,
       entryKey: const Key('permission-gate-entry'),
       pageKey: const Key('permission-gate-page'),

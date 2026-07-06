@@ -59,6 +59,7 @@ class _ControlList extends ConsumerWidget {
             onTap: () => openMobileRouteWithParentStack(
               context,
               '/settings/permissions',
+              sourceParentPath: '/plugins',
             ),
           ),
           const Divider(height: 20),

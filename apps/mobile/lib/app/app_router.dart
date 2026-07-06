@@ -290,6 +290,18 @@ class WideNoteShell extends ConsumerWidget {
   // Index 2 is the center Record action; it opens capture and is not routable.
   static const _paths = ['/', '/chat', '', '/todos', '/plugins'];
   static const _bottomNavigationPaths = {'/', '/chat', '/todos', '/plugins'};
+  static const _shellBackHeaderPaths = {
+    '/timeline',
+    '/memory',
+    '/settings',
+    '/settings/permissions',
+    '/settings/model-providers',
+    '/settings/transcription',
+    '/settings/location',
+    '/settings/backup',
+    '/settings/traces',
+    '/plugins/packs',
+  };
 
   int get _selectedIndex {
     return switch (location) {
@@ -304,13 +316,19 @@ class WideNoteShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final showBottomNavigationBar = _bottomNavigationPaths.contains(location);
+    final showShellBackHeader = _shellBackHeaderPaths.contains(location);
     return BackButtonListener(
       onBackButtonPressed: () => _handleBackButton(context),
       child: Scaffold(
         body: SafeArea(
           child: AgentExecutionStatusLayer(
             showBottomNavigationBar: showBottomNavigationBar,
-            child: child,
+            child: showShellBackHeader
+                ? _ChildPageBackShell(
+                    onBack: () => _handleVisibleBackButton(context),
+                    child: child,
+                  )
+                : child,
           ),
         ),
         bottomNavigationBar: showBottomNavigationBar
@@ -368,6 +386,17 @@ class WideNoteShell extends ConsumerWidget {
     return true;
   }
 
+  void _handleVisibleBackButton(BuildContext context) {
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
+    final parentPath = mobileParentPathFor(location);
+    if (parentPath != null) {
+      context.go(parentPath);
+    }
+  }
+
   void _openTab(BuildContext context, WidgetRef ref, int index) {
     if (index == 2) {
       ref.read(captureSheetRequestProvider.notifier).request();
@@ -380,5 +409,55 @@ class WideNoteShell extends ConsumerWidget {
     if (location != nextPath) {
       context.go(nextPath);
     }
+  }
+}
+
+class _ChildPageBackShell extends StatelessWidget {
+  const _ChildPageBackShell({required this.onBack, required this.child});
+
+  final VoidCallback onBack;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _ChildPageBackHeader(onBack: onBack),
+        Expanded(child: child),
+      ],
+    );
+  }
+}
+
+class _ChildPageBackHeader extends StatelessWidget {
+  const _ChildPageBackHeader({required this.onBack});
+
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      key: const Key('child-page-back-header'),
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        border: Border(bottom: BorderSide(color: colorScheme.outlineVariant)),
+      ),
+      child: SizedBox(
+        height: 52,
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: IconButton(
+              key: const Key('child-page-back-button'),
+              tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+              onPressed: onBack,
+              icon: const Icon(Icons.arrow_back),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

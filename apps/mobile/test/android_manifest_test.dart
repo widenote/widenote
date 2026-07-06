@@ -107,12 +107,21 @@ void main() {
     expect(activityContents, contains('BackupImportChannelHandler'));
     expect(activityContents, contains('BackupExportChannelHandler'));
     expect(activityContents, contains('onNewIntent'));
+    expect(activityContents, contains('getInitialRoute'));
+    expect(activityContents, contains('shouldHandleDeeplinking'));
+    expect(activityContents, contains('isBackupImportIntent'));
     expect(activityContents, contains('onActivityResult'));
+    expect(
+      activityContents.indexOf('setIntent(intent)'),
+      lessThan(activityContents.indexOf('super.onNewIntent(intent)')),
+    );
 
     final handlerContents = handler.readAsStringSync();
     expect(handlerContents, contains('app.widenote/backup_import'));
     expect(handlerContents, contains('ByteArray(8 * 1024)'));
     expect(handlerContents, contains('Intent.EXTRA_STREAM'));
+    expect(handlerContents, contains('isBackupImportIntent'));
+    expect(handlerContents, contains('Intent.ACTION_VIEW'));
 
     final exportContents = exportHandler.readAsStringSync();
     expect(exportContents, contains('app.widenote/backup_export'));

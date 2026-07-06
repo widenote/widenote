@@ -7,14 +7,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 final backupImportIntentServiceProvider = Provider<BackupImportIntentService>((
   ref,
 ) {
-  return BackupImportIntentService.instance;
+  return MethodChannelBackupImportIntentService.instance;
 });
 
-final class BackupImportIntentService {
-  BackupImportIntentService._();
+abstract interface class BackupImportIntentService {
+  Future<String?> consumeInitialBackupPath();
 
-  static final BackupImportIntentService instance =
-      BackupImportIntentService._();
+  Stream<String> get backupPathStream;
+}
+
+final class MethodChannelBackupImportIntentService
+    implements BackupImportIntentService {
+  MethodChannelBackupImportIntentService._();
+
+  static final MethodChannelBackupImportIntentService instance =
+      MethodChannelBackupImportIntentService._();
 
   static const _methodChannel = MethodChannel('app.widenote/backup_import');
   static const _eventChannel = EventChannel(
@@ -23,6 +30,7 @@ final class BackupImportIntentService {
 
   Stream<String>? _backupPathStream;
 
+  @override
   Future<String?> consumeInitialBackupPath() async {
     if (!_supportsPlatformImport) {
       return null;
@@ -43,6 +51,7 @@ final class BackupImportIntentService {
     }
   }
 
+  @override
   Stream<String> get backupPathStream {
     if (!_supportsPlatformImport) {
       return const Stream<String>.empty();

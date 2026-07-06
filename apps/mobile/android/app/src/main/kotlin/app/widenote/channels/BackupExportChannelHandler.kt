@@ -93,7 +93,15 @@ object BackupExportChannelHandler {
                         uri,
                         displayName(activity.contentResolver, uri),
                     )
-                    result.success(copiedPath)
+                    if (copiedPath == null) {
+                        result.error(
+                            "copy_failed",
+                            "Selected backup file could not be read.",
+                            null,
+                        )
+                    } else {
+                        result.success(copiedPath)
+                    }
                     true
                 } else {
                     result.success(null)

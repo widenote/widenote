@@ -72,7 +72,10 @@ Shortcuts that skip an intermediate parent should construct the declared parent
 stack. Bottom tab switches should use replacement-style navigation. Direct
 links to child pages must still return through the declared parent on system
 back. Contextual source links may preserve the visible source page as the
-immediate back target.
+immediate back target. Feature-owned shortcuts into another feature's durable
+child route may also provide an explicit source parent when the visible origin
+should be the immediate Back destination; the durable route parent must remain
+unchanged for direct links and owner-owned entries.
 
 The shell also keeps a parent-route fallback for non-root pages. If a child
 page is opened as a single-page stack by a platform entrypoint or future
@@ -85,7 +88,10 @@ navigation hierarchy widget tests in the same change.
 
 The Plugins tab may surface visual shortcuts for permissions, model providers,
 backup, and traces, but those shortcuts navigate to the Settings-owned
-`/settings/...` routes instead of declaring duplicate `/plugins/...` pages.
+`/settings/...` routes instead of declaring duplicate `/plugins/...` pages. The
+Permission Gate shortcut opens `/settings/permissions` with `/plugins` as its
+source parent so Back returns to Plugins; direct links and Settings-owned
+entries for `/settings/permissions` still return through Settings.
 The legacy `/settings/traces/events` path redirects to the canonical raw-log
 list at `/settings/traces/raw`.
 

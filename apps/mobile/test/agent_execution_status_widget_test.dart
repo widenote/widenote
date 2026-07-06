@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:widenote_local_db/widenote_local_db.dart';
+import 'package:widenote_mobile/app/app_router.dart';
+import 'package:widenote_mobile/app/app_theme.dart';
 import 'package:widenote_mobile/app/local_database.dart';
 import 'package:widenote_mobile/app/widenote_app.dart';
 import 'package:widenote_mobile/features/agent_status/application/agent_execution_status_controller.dart';
@@ -170,6 +172,57 @@ void main() {
     expect(find.byKey(const Key('trace-agents-page')), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
   });
+
+  testWidgets(
+    'settings child content stays above status overlay on compact large text viewport',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(360, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+      final database = WideNoteLocalDatabase.inMemory();
+      final now = DateTime.utc(2026, 7, 3, 12);
+      _insertTask(
+        database,
+        _task(
+          'task-running',
+          status: 'running',
+          leasedUntil: now.add(const Duration(minutes: 3)),
+          updatedAt: now,
+        ),
+      );
+
+      await _pumpAppRoute(
+        tester,
+        database,
+        initialLocation: '/settings',
+        now: now,
+      );
+
+      expect(find.byKey(const Key('settings-page')), findsOneWidget);
+      expect(find.byKey(const Key('agent-status-overlay')), findsOneWidget);
+      expect(find.byType(NavigationBar), findsNothing);
+
+      await tester.drag(
+        find.byKey(const Key('settings-page')),
+        const Offset(0, -2000),
+      );
+      await tester.pumpAndSettle();
+
+      final settingsBottom = tester
+          .getRect(find.byKey(const Key('settings-page')))
+          .bottom;
+      final overlayTop = tester
+          .getRect(find.byKey(const Key('agent-status-overlay')))
+          .top;
+      expect(
+        settingsBottom,
+        lessThanOrEqualTo(overlayTop),
+        reason: 'Settings scrollable viewport should end above agent status.',
+      );
+    },
+  );
 }
 
 Future<void> _pumpOverlay(
@@ -222,6 +275,41 @@ Future<void> _pumpApp(
         ),
       ],
       child: const WideNoteApp(),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
+Future<void> _pumpAppRoute(
+  WidgetTester tester,
+  WideNoteLocalDatabase database, {
+  required String initialLocation,
+  required DateTime now,
+}) async {
+  final router = createAppRouter(initialLocation: initialLocation);
+  addTearDown(database.close);
+  addTearDown(router.dispose);
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        localDatabaseProvider.overrideWithValue(database),
+        agentExecutionStatusNowProvider.overrideWithValue(() => now),
+        agentStatusPlatformClientProvider.overrideWithValue(
+          const _NoopPlatformClient(),
+        ),
+        locationSettingsRepositoryProvider.overrideWithValue(
+          InMemoryLocationSettingsRepository(),
+        ),
+      ],
+      child: MaterialApp.router(
+        title: 'WideNote',
+        debugShowCheckedModeBanner: false,
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: WideNoteAppTheme.light(),
+        routerConfig: router,
+      ),
     ),
   );
   await tester.pumpAndSettle();
