@@ -26,9 +26,13 @@ String? mobileParentPathFor(String location) {
 
 void openMobileRouteWithParentStack(
   BuildContext context,
-  String targetLocation,
-) {
-  final stack = mobileRouteStackFor(targetLocation);
+  String targetLocation, {
+  String? sourceParentPath,
+}) {
+  final stack = mobileRouteStackFor(
+    targetLocation,
+    sourceParentPath: sourceParentPath,
+  );
   if (stack.isEmpty) {
     return;
   }
@@ -40,10 +44,12 @@ void openMobileRouteWithParentStack(
   }
 }
 
-List<String> mobileRouteStackFor(String location) {
+List<String> mobileRouteStackFor(String location, {String? sourceParentPath}) {
   final targetPath = _normalizeMobilePath(location);
   final reversedStack = <String>[targetPath];
-  var parentPath = mobileParentPathFor(targetPath);
+  var parentPath = sourceParentPath == null
+      ? mobileParentPathFor(targetPath)
+      : _normalizeMobilePath(sourceParentPath);
   while (parentPath != null) {
     reversedStack.add(parentPath);
     parentPath = mobileParentPathFor(parentPath);

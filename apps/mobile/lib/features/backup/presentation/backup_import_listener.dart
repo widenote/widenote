@@ -8,9 +8,14 @@ import '../application/backup_controller.dart';
 import '../application/backup_import_intent_service.dart';
 
 class BackupImportListener extends ConsumerStatefulWidget {
-  const BackupImportListener({required this.child, super.key});
+  const BackupImportListener({
+    required this.child,
+    this.openRouteWithParentStack,
+    super.key,
+  });
 
   final Widget child;
+  final void Function(String targetLocation)? openRouteWithParentStack;
 
   @override
   ConsumerState<BackupImportListener> createState() =>
@@ -61,7 +66,12 @@ class _BackupImportListenerState extends ConsumerState<BackupImportListener> {
         .read(backupControllerProvider.notifier)
         .loadArchivePathForImport(path);
     if (mounted) {
-      openMobileRouteWithParentStack(context, '/settings/backup');
+      final opener = widget.openRouteWithParentStack;
+      if (opener != null) {
+        opener('/settings/backup');
+      } else {
+        openMobileRouteWithParentStack(context, '/settings/backup');
+      }
     }
   }
 }

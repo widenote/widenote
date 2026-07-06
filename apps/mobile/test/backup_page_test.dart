@@ -407,6 +407,49 @@ void main() {
     );
   });
 
+  test(
+    'backup controller keeps prepared import when picker is canceled',
+    () async {
+      final source = WideNoteLocalDatabase.inMemory();
+      final target = WideNoteLocalDatabase.inMemory();
+      _seedLocalData(source);
+      final payload = BackupImportPayload(
+        backup: LocalBackupService(
+          source,
+        ).exportBackup(mode: LocalBackupMode.full),
+        sourceLabel: '/tmp/widenote-backup.widenote',
+      );
+      final fileStore = _MemoryBackupFileStore()..latestPayload = payload;
+      final container = ProviderContainer(
+        overrides: [
+          localDatabaseProvider.overrideWithValue(target),
+          backupFileStoreProvider.overrideWithValue(fileStore),
+        ],
+      );
+      addTearDown(() {
+        container.dispose();
+        source.close();
+        target.close();
+      });
+
+      final controller = container.read(backupControllerProvider.notifier);
+      expect(await controller.pickArchiveForImport(), isTrue);
+      expect(
+        container.read(backupControllerProvider).outcome,
+        BackupOutcome.importReady,
+      );
+
+      fileStore.cancelNextPick = true;
+      expect(await controller.pickArchiveForImport(), isFalse);
+
+      final state = container.read(backupControllerProvider);
+      expect(state.outcome, BackupOutcome.importReady);
+      expect(state.errorDetails, isNull);
+      expect(state.importSourceLabel, '/tmp/widenote-backup.widenote');
+      expect(state.preparedImport, same(payload));
+    },
+  );
+
   testWidgets(
     'backup page saves exported .widenote archive through file store',
     (tester) async {
@@ -699,7 +742,43 @@ void main() {
     expect(await credentials.readMimoAsrApiKey(), 'mimo-secret');
   });
 
-  testWidgets('backup import error recovers after valid file is selected', (
+  testWidgets('backup picker cancel leaves import state idle without failure', (
+    tester,
+  ) async {
+    final target = WideNoteLocalDatabase.inMemory();
+    final fileStore = _MemoryBackupFileStore()..cancelNextPick = true;
+    await _pumpBackupPage(
+      tester,
+      database: target,
+      overrides: [backupFileStoreProvider.overrideWithValue(fileStore)],
+    );
+
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('backup-import-file-button')),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.ensureVisible(
+      find.byKey(const Key('backup-import-file-button')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('backup-import-file-button')));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, 1000));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'Local data stays on this device until you create or import a backup.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Backup failed'), findsNothing);
+    expect(find.byKey(const Key('backup-inline-outcome')), findsNothing);
+    expect(target.captures.readAll(), isEmpty);
+  });
+
+  testWidgets('backup import invalid file error recovers after valid file', (
     tester,
   ) async {
     final source = WideNoteLocalDatabase.inMemory();
@@ -707,7 +786,7 @@ void main() {
     _seedLocalData(source);
 
     final target = WideNoteLocalDatabase.inMemory();
-    final fileStore = _MemoryBackupFileStore()..failNextPick = true;
+    final fileStore = _MemoryBackupFileStore()..invalidNextPick = true;
     await _pumpBackupPage(
       tester,
       database: target,
@@ -724,7 +803,8 @@ void main() {
     await tester.tap(find.byKey(const Key('backup-import-file-button')));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('No saved backup file found'), findsOneWidget);
+    expect(find.textContaining('Invalid backup format'), findsOneWidget);
+    expect(find.textContaining('No saved backup file found'), findsNothing);
     expect(target.captures.readAll(), isEmpty);
 
     fileStore.latestPayload = BackupImportPayload(
@@ -774,7 +854,8 @@ Future<void> _pumpBackupPage(
 final class _MemoryBackupFileStore implements BackupFileStore {
   BackupImportPayload? latestPayload;
   LocalDataBackup? savedBackup;
-  bool failNextPick = false;
+  bool cancelNextPick = false;
+  bool invalidNextPick = false;
   bool shared = false;
 
   @override
@@ -824,9 +905,13 @@ final class _MemoryBackupFileStore implements BackupFileStore {
 
   @override
   Future<BackupImportPayload> pickArchive() async {
-    if (failNextPick) {
-      failNextPick = false;
-      throw const FileSystemException('No WideNote backup file selected.');
+    if (cancelNextPick) {
+      cancelNextPick = false;
+      throw const BackupPickerCanceledException();
+    }
+    if (invalidNextPick) {
+      invalidNextPick = false;
+      throw const FormatException('Invalid .widenote archive.');
     }
     return _payloadOrThrow();
   }

@@ -54,9 +54,23 @@ class _WideNoteAppState extends State<WideNoteApp> {
               ),
             ),
           ],
-          child: BackupImportListener(child: child ?? const SizedBox.shrink()),
+          child: BackupImportListener(
+            openRouteWithParentStack: _openRouteWithParentStack,
+            child: child ?? const SizedBox.shrink(),
+          ),
         );
       },
     );
+  }
+
+  void _openRouteWithParentStack(String targetLocation) {
+    final stack = mobileRouteStackFor(targetLocation);
+    if (stack.isEmpty) {
+      return;
+    }
+    _router.go(stack.first);
+    for (final path in stack.skip(1)) {
+      _router.push(path);
+    }
   }
 }

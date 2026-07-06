@@ -104,7 +104,7 @@ void main() {
     expect(find.byKey(const Key('home-page')), findsOneWidget);
   });
 
-  testWidgets('settings child pages return through settings before home', (
+  testWidgets('settings permission gate returns through settings before home', (
     tester,
   ) async {
     await _pumpWideNoteApp(tester);
@@ -114,20 +114,17 @@ void main() {
     expect(find.byKey(const Key('settings-page')), findsOneWidget);
 
     await tester.ensureVisible(
-      find.byKey(const Key('settings-model-providers-entry')),
+      find.byKey(const Key('settings-permissions-entry')),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('settings-model-providers-entry')));
+    await tester.tap(find.byKey(const Key('settings-permissions-entry')));
     await tester.pumpAndSettle();
-    expect(
-      find.byKey(const Key('model-provider-settings-page')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const Key('permission-gate-page')), findsOneWidget);
 
     expect(await tester.binding.handlePopRoute(), isTrue);
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('settings-page')), findsOneWidget);
-    expect(find.byKey(const Key('model-provider-settings-page')), findsNothing);
+    expect(find.byKey(const Key('permission-gate-page')), findsNothing);
 
     expect(await tester.binding.handlePopRoute(), isTrue);
     await tester.pumpAndSettle();
@@ -288,6 +285,121 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpAndSettle();
     }
+  });
+
+  testWidgets('child pages without owned app bars expose pinned shell back', (
+    tester,
+  ) async {
+    const cases = <_ShellBackCase>[
+      _ShellBackCase(
+        path: '/timeline',
+        pageKey: Key('timeline-page'),
+        parentKey: Key('home-page'),
+      ),
+      _ShellBackCase(
+        path: '/memory',
+        pageKey: Key('memory-page'),
+        parentKey: Key('home-page'),
+      ),
+      _ShellBackCase(
+        path: '/settings',
+        pageKey: Key('settings-page'),
+        parentKey: Key('home-page'),
+      ),
+      _ShellBackCase(
+        path: '/settings/permissions',
+        pageKey: Key('permission-gate-page'),
+        parentKey: Key('settings-page'),
+      ),
+      _ShellBackCase(
+        path: '/settings/model-providers',
+        pageKey: Key('model-provider-settings-page'),
+        parentKey: Key('settings-page'),
+      ),
+      _ShellBackCase(
+        path: '/settings/transcription',
+        pageKey: Key('voice-transcription-settings-page'),
+        parentKey: Key('settings-page'),
+      ),
+      _ShellBackCase(
+        path: '/settings/location',
+        pageKey: Key('location-settings-page'),
+        parentKey: Key('settings-page'),
+      ),
+      _ShellBackCase(
+        path: '/settings/backup',
+        pageKey: Key('backup-page'),
+        parentKey: Key('settings-page'),
+      ),
+      _ShellBackCase(
+        path: '/settings/traces',
+        pageKey: Key('trace-console-page'),
+        parentKey: Key('settings-page'),
+      ),
+      _ShellBackCase(
+        path: '/plugins/packs',
+        pageKey: Key('pack-library-page'),
+        parentKey: Key('plugins-page'),
+      ),
+    ];
+
+    for (final routeCase in cases) {
+      await _pumpRoute(tester, routeCase.path);
+      expect(
+        find.byKey(routeCase.pageKey),
+        findsOneWidget,
+        reason: routeCase.path,
+      );
+      expect(
+        find.byKey(const Key('child-page-back-header')),
+        findsOneWidget,
+        reason: routeCase.path,
+      );
+      expect(
+        find.byKey(const Key('child-page-back-button')).hitTestable(),
+        findsOneWidget,
+        reason: routeCase.path,
+      );
+      expect(find.byType(NavigationBar), findsNothing, reason: routeCase.path);
+
+      await tester.tap(find.byKey(const Key('child-page-back-button')));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(routeCase.parentKey),
+        findsOneWidget,
+        reason: routeCase.path,
+      );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    }
+  });
+
+  testWidgets('settings keeps shell back visible after scrolling', (
+    tester,
+  ) async {
+    await _pumpRoute(tester, '/settings');
+
+    expect(find.byKey(const Key('settings-page')), findsOneWidget);
+    expect(
+      find.byKey(const Key('child-page-back-button')).hitTestable(),
+      findsOneWidget,
+    );
+
+    await tester.drag(
+      find.byKey(const Key('settings-page')),
+      const Offset(0, -900),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const Key('child-page-back-button')).hitTestable(),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const Key('child-page-back-button')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('home-page')), findsOneWidget);
   });
 
   testWidgets('agent status overlay preserves shell navigation hierarchy', (
@@ -565,14 +677,66 @@ void main() {
     expect(find.byKey(const Key('plugins-page')), findsOneWidget);
   });
 
-  testWidgets('plugins shortcuts construct settings parent stacks', (
+  testWidgets('plugins permission gate shortcut returns to plugins tab root', (
+    tester,
+  ) async {
+    expect(mobileParentPathFor('/settings/permissions'), '/settings');
+    expect(mobileRouteStackFor('/settings/permissions'), <String>[
+      '/',
+      '/settings',
+      '/settings/permissions',
+    ]);
+    expect(
+      mobileRouteStackFor(
+        '/settings/permissions',
+        sourceParentPath: '/plugins',
+      ),
+      <String>['/plugins', '/settings/permissions'],
+    );
+
+    await _pumpWideNoteApp(tester);
+
+    await tester.tap(find.byKey(const Key('tab-plugins')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('plugins-page')), findsOneWidget);
+
+    await tester.ensureVisible(find.byKey(const Key('permission-gate-entry')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('permission-gate-entry')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('permission-gate-page')), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
+    expect(
+      find.byKey(const Key('child-page-back-button')).hitTestable(),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const Key('child-page-back-button')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('plugins-page')), findsOneWidget);
+    expect(find.byType(NavigationBar), findsOneWidget);
+
+    await tester.ensureVisible(find.byKey(const Key('permission-gate-entry')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('permission-gate-entry')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('permission-gate-page')), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
+
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('plugins-page')), findsOneWidget);
+    expect(find.byType(NavigationBar), findsOneWidget);
+
+    expect(await tester.binding.handlePopRoute(), isFalse);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('plugins-page')), findsOneWidget);
+  });
+
+  testWidgets('plugins settings shortcuts construct settings parent stacks', (
     tester,
   ) async {
     const cases = <_ShortcutCase>[
-      _ShortcutCase(
-        entryKey: Key('permission-gate-entry'),
-        pageKey: Key('permission-gate-page'),
-      ),
       _ShortcutCase(
         entryKey: Key('model-provider-entry'),
         pageKey: Key('model-provider-settings-page'),
@@ -911,6 +1075,18 @@ class _ShortcutCase {
 
   final Key entryKey;
   final Key pageKey;
+}
+
+class _ShellBackCase {
+  const _ShellBackCase({
+    required this.path,
+    required this.pageKey,
+    required this.parentKey,
+  });
+
+  final String path;
+  final Key pageKey;
+  final Key parentKey;
 }
 
 class _FlatRouteCase {

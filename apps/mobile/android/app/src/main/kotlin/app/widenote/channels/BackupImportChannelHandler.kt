@@ -21,6 +21,10 @@ object BackupImportChannelHandler {
     private var pendingBackupPath: String? = null
     private var eventSink: EventChannel.EventSink? = null
 
+    fun isBackupImportIntent(activity: Activity, intent: Intent?): Boolean {
+        return backupImportRequest(activity, intent) != null
+    }
+
     fun register(flutterEngine: FlutterEngine) {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, METHOD_CHANNEL)
             .setMethodCallHandler { call, result ->
@@ -48,20 +52,30 @@ object BackupImportChannelHandler {
     }
 
     fun handleIntent(activity: Activity, intent: Intent?) {
-        val sourceIntent = intent ?: return
-        val uri = backupUri(sourceIntent) ?: return
+        val request = backupImportRequest(activity, intent) ?: return
         val resolver = activity.contentResolver
-        val mimeType = sourceIntent.type ?: resolver.getType(uri)
-        val displayName = displayName(resolver, uri)
-        if (!looksLikeWideNoteBackup(uri, displayName, mimeType)) return
 
         Thread {
-            val copiedPath = copyToCache(activity, resolver, uri, displayName)
-            if (copiedPath != null) {
-                pendingBackupPath = copiedPath
-                activity.runOnUiThread { eventSink?.success(copiedPath) }
-            }
+            val importPath = copyToCache(activity, resolver, request.uri, request.displayName)
+                ?: createUnreadableImportMarker(activity, request.displayName ?: request.uri.lastPathSegment)
+            pendingBackupPath = importPath
+            activity.runOnUiThread { eventSink?.success(importPath) }
         }.start()
+    }
+
+    private data class BackupImportRequest(
+        val uri: Uri,
+        val displayName: String?,
+    )
+
+    private fun backupImportRequest(activity: Activity, intent: Intent?): BackupImportRequest? {
+        val sourceIntent = intent ?: return null
+        val uri = backupUri(sourceIntent) ?: return null
+        val resolver = activity.contentResolver
+        val mimeType = sourceIntent.type ?: mimeType(resolver, uri)
+        val displayName = displayName(resolver, uri)
+        if (!looksLikeWideNoteBackup(uri, displayName, mimeType)) return null
+        return BackupImportRequest(uri = uri, displayName = displayName)
     }
 
     @Suppress("DEPRECATION")
@@ -81,6 +95,14 @@ object BackupImportChannelHandler {
         return mimeType == BACKUP_MIME_TYPE ||
             displayName?.endsWith(".widenote", ignoreCase = true) == true ||
             uri.lastPathSegment?.endsWith(".widenote", ignoreCase = true) == true
+    }
+
+    private fun mimeType(resolver: ContentResolver, uri: Uri): String? {
+        return try {
+            resolver.getType(uri)
+        } catch (_: Exception) {
+            null
+        }
     }
 
     private fun copyToCache(
@@ -107,6 +129,14 @@ object BackupImportChannelHandler {
         } catch (_: Exception) {
             null
         }
+    }
+
+    private fun createUnreadableImportMarker(activity: Activity, displayName: String?): String {
+        val importDir = File(activity.cacheDir, "backup_imports")
+        if (!importDir.exists()) importDir.mkdirs()
+        val destination = File(importDir, "unreadable_${sanitizeBackupFileName(displayName)}")
+        destination.writeText("WideNote could not read the selected backup source.")
+        return destination.absolutePath
     }
 
     private fun displayName(resolver: ContentResolver, uri: Uri): String? {
