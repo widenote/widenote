@@ -9,6 +9,7 @@ decisions/        Accepted, rejected, superseded, and deprecated ADRs.
 rfcs/             Design proposals and accepted implementation baselines.
 research/         External research and summarized discussion evidence.
 agent-context/    Entry points for future AI agents working in this repo.
+workflows/        Repeatable task workflows for code-change orchestration.
 templates/        Reusable ADR, RFC, and conversation-summary templates.
 ```
 
@@ -23,6 +24,7 @@ historical decisions, rationale, and supersession history, use
 
 - [Current Architecture Contracts](./architecture/current-contracts.md)
 - [Operational Principles](./architecture/operational-principles.md)
+- [Code Change Orchestration](./workflows/code-change-orchestration.md)
 - [Insight Interaction Candidates](./research/2026-07-04-insight-interaction-candidates.html)
 - [Mobile Child Page Bottom Tabs Kimi Review](./research/2026-07-03-mobile-child-page-tabs-kimi-review.md)
 - [Model Provider Token Plan Parity](./research/2026-07-03-model-provider-token-plan-parity.md)
@@ -104,4 +106,6 @@ Project context should be discoverable in layers:
   maintain by default.
 - Area READMEs explain top-level directories.
 - Module READMEs explain ownership boundaries and generated artifacts.
+- Workflow docs explain repeatable code-change orchestration, subagent
+  handoff, validation evidence, and human-review boundaries.
 - `agent-context/project-map.md` points to the current context entrypoints.
