@@ -91,6 +91,17 @@ It should stay short. It points to the right local context instead of duplicatin
 - `docs/research/2026-06-24-omi-clean-room-plan.md`
 - `docs/research/2026-06-24-omi-android-qa.md`
 
+## Workflows
+
+- `docs/workflows/README.md`
+- `docs/workflows/code-change-orchestration.md`
+
+## Agent Assets
+
+- `.agents/README.md`
+- `.agents/skills/README.md`
+- `.agents/skills/widenote-code-change-orchestrator/SKILL.md`
+
 ## RFCs
 
 - `docs/rfcs/agent-runtime-capability-boundaries.md`
@@ -127,6 +138,7 @@ It should stay short. It points to the right local context instead of duplicatin
 | Docs | `docs/README.md` | Product, architecture, decisions, and research |
 | Infra | `infra/README.md` | Deployment and self-hosting assets |
 | Tools | `tools/README.md` | Repository automation, validation, and generation helpers |
+| Agent assets | `.agents/README.md` | Repo-scoped Codex skills and task assets |
 
 ## Modules
 

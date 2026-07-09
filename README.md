@@ -45,6 +45,7 @@ packs/                 Agent Pack definitions.
 docs/                  Product, architecture, decisions, RFCs, and agent context.
 infra/                 Deployment and self-hosting assets.
 tools/                 Repository automation, validation scripts, and generation helpers.
+.agents/               Repo-scoped Codex skills and agent task assets.
 ```
 
 ## Broad Orientation

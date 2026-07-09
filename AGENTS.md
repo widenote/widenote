@@ -28,6 +28,19 @@ Backend services, remote runners, sync, hosted registries, broad imports,
 community Agent Packs, and advanced exports are optional enhancements unless an
 ADR or RFC says otherwise.
 
+## Codex Code-Change Workflow
+
+For new requirements, bug fixes, code changes, or PR preparation, use the
+repo-scoped `widenote-code-change-orchestrator` skill before editing files.
+Ordinary read-only research, code explanation, and product discussion keep the
+normal lightweight context flow.
+
+The workflow should minimize human interruption. Humans provide vision,
+scenarios, key product decisions, and final acceptance; AI agents handle
+research, planning, implementation, QA, review, validation evidence, and PR
+preparation unless an interruption gate in
+`docs/workflows/code-change-orchestration.md` is triggered.
+
 ## Read First
 
 Load the smallest context that can safely answer the task. Do not treat the
